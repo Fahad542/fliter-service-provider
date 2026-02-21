@@ -1,0 +1,13 @@
+{
+  "@@locale": "ar",
+  "appTitle": "مقدمي خدمات الفلاتر",
+  "homeTitle": "الخدمات",
+  "settingsTitle": "الإعدادات",
+  "language": "اللغة",
+  "theme": "المظهر",
+  "lightTheme": "فاتح",
+  "darkTheme": "داكن",
+  "systemTheme": "النظام",
+  "errorFetchingServices": "خطأ في جلب الخدمات",
+  "noServicesAvailable": "لا توجد خدمات متاحة"
+}

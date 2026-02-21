@@ -1,0 +1,13 @@
+{
+  "@@locale": "en",
+  "appTitle": "Filter Service Providers",
+  "homeTitle": "Services",
+  "settingsTitle": "Settings",
+  "language": "Language",
+  "theme": "Theme",
+  "lightTheme": "Light",
+  "darkTheme": "Dark",
+  "systemTheme": "System",
+  "errorFetchingServices": "Error fetching services",
+  "noServicesAvailable": "No services available"
+}
