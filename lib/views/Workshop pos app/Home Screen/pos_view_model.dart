@@ -436,13 +436,17 @@ class PosViewModel extends ChangeNotifier {
   }
 
   void setSpecificQuantity(PosProduct product, double qty) {
+    if (qty <= 0) {
+      removeFromCart(product);
+      return;
+    }
+    
     final index = _cartItems.indexWhere((item) => item.product.id == product.id);
     if (index != -1) {
       _cartItems[index].quantity = qty;
-      if (_cartItems[index].quantity <= 0) {
-        _cartItems.removeAt(index);
-      }
       notifyListeners();
+    } else {
+      addToCart(product, qty: qty);
     }
   }
 

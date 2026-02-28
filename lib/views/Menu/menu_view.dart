@@ -4,8 +4,12 @@ import '../../l10n/app_localizations.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/widgets.dart';
+import '../Workshop pos app/Login/login_view.dart';
 import '../Workshop pos app/More Tab/settings_view_model.dart';
-import '../Login/login_view.dart';
+import '../Locker App/Auth/locker_login_view.dart';
+import '../Workshop Owner/Auth/owner_login_view.dart';
+import '../Workshop Owner/owner_shell.dart';
+import '../Technician App/Auth/tech_login_view.dart';
 
 class MenuView extends StatelessWidget {
   const MenuView({super.key});
@@ -54,20 +58,26 @@ class MenuView extends StatelessWidget {
               physics: const BouncingScrollPhysics(),
               children: [
                 MenuCard(
-                  title: 'Workshop\nPortal',
+                  title: 'Workshop\nOwner',
                   icon: Icons.store_rounded,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Coming Soon'), duration: Duration(seconds: 1)),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const OwnerLoginView(),
+                      ),
                     );
                   },
                 ),
                 MenuCard(
-                  title: 'Multi Branch\nView',
-                  icon: Icons.domain_rounded,
+                  title: 'Technician\nApp',
+                  icon: Icons.engineering_rounded,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Coming Soon'), duration: Duration(seconds: 1)),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TechLoginView(),
+                      ),
                     );
                   },
                 ),
@@ -84,11 +94,14 @@ class MenuView extends StatelessWidget {
                   },
                 ),
                 MenuCard(
-                  title: 'Supplier\nPortal',
-                  icon: Icons.inventory_2_rounded,
+                  title: 'Locker\nPortal',
+                  icon: Icons.lock_rounded,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Coming Soon'), duration: Duration(seconds: 1)),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LockerLoginView(),
+                      ),
                     );
                   },
                 ),

@@ -19,4 +19,32 @@ class AuthRepository {
       rethrow;
     }
   }
+  Future<AuthResponse> adminLogin(String email, String password) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.adminLoginEndpoint,
+        {
+          'email': email,
+          'password': password,
+        },
+      );
+      return AuthResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+  Future<AuthResponse> technicianLogin(String email, String password) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.technicianLoginEndpoint,
+        {
+          'email': email,
+          'password': password,
+        },
+      );
+      return AuthResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

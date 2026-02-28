@@ -4,10 +4,11 @@ import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../Home Screen/pos_view_model.dart';
-import '../../Login/login_view.dart';
+// import '../../Login/login_view.dart';
+// import '../../Login/login_view_model.dart';
+import '../../Menu/menu_view.dart';
 import '../../../widgets/pos_widgets.dart';
-import '../More Tab/pos_more_view.dart'; // Added
-import '../Promo/promo_code_dialog.dart'; // Added
+import '../Login/login_view_model.dart';
 import 'store_closing_view_model.dart';
 
 class PosStoreClosingView extends StatefulWidget {
@@ -29,23 +30,15 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final isReconciled = context.watch<StoreClosingViewModel>().isReconciled;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PosScreenAppBar(
         title: 'Store Closing',
-        onBack: () {
-          PosMoreView.show(context, (index) {
-            if (index == 5) {
-              showDialog(
-                context: context,
-                builder: (context) => const PromoCodeDialog(),
-              );
-            } else {
-              context.read<PosViewModel>().setShellSelectedIndex(index);
-            }
-          });
-        },
+        showBackButton: false,
+        showHamburger: !isReconciled,
+        onMenuPressed: () => Scaffold.of(context).openDrawer(),
       ),
       body: Consumer<StoreClosingViewModel>(
         builder: (context, closingVm, _) {
@@ -452,7 +445,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
 
   Widget _buildBottomActions(bool isTablet, PosViewModel posVm, StoreClosingViewModel closingVm) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 16),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
@@ -476,31 +469,32 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             )
           else ...[
             Expanded(
-              child: OutlinedButton.icon(
+              child: ElevatedButton(
                 onPressed: closingVm.isGeneratingReport ? null : () => closingVm.buildReport(context),
-                icon: closingVm.isGeneratingReport 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.picture_as_pdf_outlined),
-                label: const Text('Generate Report'),
-                style: OutlinedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
                   minimumSize: const Size(0, 48), // Reduced from 56
-                  side: const BorderSide(color: AppColors.secondaryLight),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+                child: closingVm.isGeneratingReport 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.secondaryLight))
+                  : const Text('Generate Report', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => LoginView(appName: 'Filter')),
-                    (route) => false,
-                  );
+              child: ElevatedButton(
+                onPressed: () async {
+                  await context.read<LoginViewModel>().logout();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MenuView()),
+                      (route) => false,
+                    );
+                  }
                 },
-                icon: const Icon(Icons.logout, size: 20),
-                label: const Text('Final Logout'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF44336),
                   foregroundColor: Colors.white,
@@ -509,6 +503,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   elevation: 6,
                   shadowColor: Colors.red.withOpacity(0.3),
                 ),
+                child: const Text('Final Logout', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
           ],

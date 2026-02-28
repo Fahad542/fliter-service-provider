@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 import '../../../models/pos_product_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
+import '../../../utils/app_formatters.dart';
 import '../../../widgets/pos_widgets.dart';
-import '../../Navbar/pos_shell.dart';
+
 import '../Home Screen/pos_view_model.dart';
-import '../Promo/pos_promo_view.dart';
+import '../Navbar/pos_shell.dart';
+import '../Promo/promo_code_dialog.dart';
 import '../Technician Assignment/pos_technician_assignment_view.dart';
 import 'product_grid_view_model.dart';
 
@@ -444,8 +446,58 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         _buildTotalRow('Total Amount Gross', 'SAR ${_subtotal.toStringAsFixed(2)}', isTablet),
                         SizedBox(height: isTablet ? 8 : 6),
                         
-                        // New Discount 
-                        _buildTotalRow('Discount', '- SAR ${_discountAmount.toStringAsFixed(2)}', isTablet, color: Colors.green),
+                        // Editable Global Discount
+                        Row(
+                          children: [
+                            Text('Discount', style: TextStyle(fontSize: isTablet ? 18 : 10, color: Colors.green)),
+                            const Spacer(),
+                            SizedBox(
+                              width: isTablet ? 80 : 60,
+                              height: isTablet ? 28 : 24,
+                              child: TextFormField(
+                                initialValue: context.read<PosViewModel>().globalDiscount > 0
+                                    ? (context.read<PosViewModel>().globalDiscount % 1 == 0
+                                        ? context.read<PosViewModel>().globalDiscount.toInt().toString()
+                                        : context.read<PosViewModel>().globalDiscount.toString())
+                                    : '',
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: [EnglishNumberFormatter()],
+                                onChanged: (val) {
+                                  final discount = double.tryParse(val) ?? 0.0;
+                                  context.read<PosViewModel>().setGlobalDiscount(discount, context.read<PosViewModel>().isGlobalDiscountPercent);
+                                },
+                                style: TextStyle(fontSize: isTablet ? 14 : 11, color: Colors.green),
+                                textAlign: TextAlign.center,
+                                decoration: InputDecoration(
+                                  contentPadding: EdgeInsets.zero,
+                                  hintText: '0',
+                                  hintStyle: const TextStyle(color: Colors.green),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Colors.green)),
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () {
+                                final vm = context.read<PosViewModel>();
+                                vm.setGlobalDiscount(vm.globalDiscount, !vm.isGlobalDiscountPercent);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 6, vertical: isTablet ? 4 : 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                                ),
+                                child: Text(
+                                  context.watch<PosViewModel>().isGlobalDiscountPercent ? '%' : 'SAR',
+                                  style: TextStyle(fontSize: isTablet ? 12 : 9, fontWeight: FontWeight.w700, color: Colors.green),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         SizedBox(height: isTablet ? 8 : 6),
                         
                         _buildTotalRow('Price after discount', 'SAR ${(_subtotal - _discountAmount).toStringAsFixed(2)}', isTablet),
@@ -475,9 +527,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PosPromoView()),
+                        showDialog(
+                          context: context,
+                          builder: (_) => const PromoCodeDialog(),
                         );
                       },
                       child: Container(
@@ -1149,6 +1201,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
             TextField(
               controller: controller,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [EnglishNumberFormatter()],
               autofocus: true,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: isTablet ? 22 : 18, fontWeight: FontWeight.w700),

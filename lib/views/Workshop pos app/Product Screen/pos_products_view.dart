@@ -65,7 +65,8 @@ class _PosProductsViewState extends State<PosProductsView> {
         infoTitle: vm.workshopName,
         infoBranch: 'Branch: ${vm.branchName}',
         infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
-        customHeight: isHeaderTablet ? 156 : 99,
+        showDrawer: false,
+        showGlobalLeft: true,
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<PosViewModel>().fetchProducts(),

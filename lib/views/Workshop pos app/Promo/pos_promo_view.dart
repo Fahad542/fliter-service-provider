@@ -7,8 +7,6 @@ import '../../../utils/app_text_styles.dart';
 import '../../../utils/app_formatters.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../widgets/pos_widgets.dart';
-
-import '../../Navbar/pos_shell.dart';
 import '../More Tab/pos_more_view.dart'; // Added
 import 'promo_code_dialog.dart'; // Added (same folder)
 import 'promo_view_model.dart';
@@ -38,18 +36,9 @@ class _PosPromoViewState extends State<PosPromoView> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PosScreenAppBar(
         title: 'Promo Code',
-        onBack: () {
-          PosMoreView.show(context, (index) {
-            if (index == 5) {
-              showDialog(
-                context: context,
-                builder: (context) => const PromoCodeDialog(),
-              );
-            } else {
-              context.read<PosViewModel>().setShellSelectedIndex(index);
-            }
-          });
-        },
+        showBackButton: false,
+        showHamburger: true,
+        onMenuPressed: () => Scaffold.of(context).openDrawer(),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

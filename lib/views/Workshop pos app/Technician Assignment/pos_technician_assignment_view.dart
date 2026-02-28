@@ -44,6 +44,7 @@ class _PosTechnicianAssignmentViewState
         builder: (ctx) => _BroadcastTimerDialog(
           isWorkshop: false,
           specificTechNames: List.from(assignVm.selectedTechnicianNames),
+          assignVm: assignVm,
         ),
       );
     } else {
@@ -139,7 +140,7 @@ class _PosTechnicianAssignmentViewState
                           itemCount: technicians.length,
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: isTablet ? 3 : 1,
-                            childAspectRatio: isTablet ? 2.5 : 4.5,
+                            childAspectRatio: isTablet ? 2.8 : 3.2,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
@@ -183,6 +184,7 @@ class _PosTechnicianAssignmentViewState
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
                                             tech.name,
@@ -216,14 +218,18 @@ class _PosTechnicianAssignmentViewState
                                                     : Colors.blue.shade400,
                                               ),
                                               const SizedBox(width: 4),
-                                              Text(
-                                                'Slots: ${tech.slotsUsed}/${tech.totalSlots} used',
-                                                style: TextStyle(
-                                                  fontSize: isTablet ? 12 : 10,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: tech.slotsUsed >= tech.totalSlots 
-                                                      ? Colors.red.shade600 
-                                                      : Colors.blue.shade600,
+                                              Expanded(
+                                                child: Text(
+                                                  'Slots: ${tech.slotsUsed}/${tech.totalSlots} used',
+                                                  style: TextStyle(
+                                                    fontSize: isTablet ? 12 : 10,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: tech.slotsUsed >= tech.totalSlots 
+                                                        ? Colors.red.shade600 
+                                                        : Colors.blue.shade600,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
                                             ],
@@ -267,44 +273,60 @@ class _PosTechnicianAssignmentViewState
                 ? Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: OutlinedButton(
                           onPressed: () {
-                            _showBroadcastWorkshopDialog();
+                            _showBroadcastWorkshopDialog(context);
                           },
-                          icon: const Icon(Icons.campaign_outlined, size: 18),
-                          label: Text(
-                            'Broadcast to Workshop',
-                            style: TextStyle(fontSize: isTablet ? 14 : 12, fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.secondaryLight,
                             side: const BorderSide(color: AppColors.secondaryLight),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.campaign_outlined, size: 18),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Broadcast to Workshop',
+                                  style: TextStyle(fontSize: isTablet ? 14 : 12, fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton.icon(
+                        child: ElevatedButton(
                           onPressed: () {
-                            _showBroadcastOnCallDialog();
+                            _showBroadcastOnCallDialog(context);
                           },
-                          icon: const Icon(Icons.online_prediction, size: 18),
-                          label: Text(
-                            'Broadcast to On-Call',
-                            style: TextStyle(fontSize: isTablet ? 14 : 12, fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryLight,
                             foregroundColor: AppColors.secondaryLight,
                             elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.online_prediction, size: 18),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Broadcast to On-Call',
+                                  style: TextStyle(fontSize: isTablet ? 14 : 12, fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -314,22 +336,33 @@ class _PosTechnicianAssignmentViewState
                     builder: (context, vm, child) => Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton.icon(
+                          child: ElevatedButton(
                             onPressed: vm.isAssigning ? null : () => _handleMultiAssign(context, assignVm),
-                            icon: vm.isAssigning 
-                                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Icon(Icons.assignment_ind, size: 18),
-                            label: Text(
-                              vm.isAssigning 
-                                  ? 'Assigning...' 
-                                  : 'Assign to ${assignVm.selectedTechnicianIds.length} Technician${assignVm.selectedTechnicianIds.length > 1 ? 's' : ''}',
-                              style: TextStyle(fontSize: isTablet ? 14 : 12, fontWeight: FontWeight.bold),
-                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.secondaryLight,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (vm.isAssigning) 
+                                  const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                else 
+                                  const Icon(Icons.assignment_ind, size: 18),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    vm.isAssigning 
+                                        ? 'Assigning...' 
+                                        : 'Assign to ${assignVm.selectedTechnicianIds.length} Technician${assignVm.selectedTechnicianIds.length > 1 ? 's' : ''}',
+                                    style: TextStyle(fontSize: isTablet ? 14 : 12, fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -345,19 +378,27 @@ class _PosTechnicianAssignmentViewState
 );
 }
 
-  void _showBroadcastWorkshopDialog() {
+  void _showBroadcastWorkshopDialog(BuildContext context) {
+    final assignVm = context.read<TechnicianAssignmentViewModel>();
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const _BroadcastTimerDialog(isWorkshop: true),
+      builder: (ctx) => _BroadcastTimerDialog(
+        isWorkshop: true,
+        assignVm: assignVm,
+      ),
     );
   }
 
-  void _showBroadcastOnCallDialog() {
+  void _showBroadcastOnCallDialog(BuildContext context) {
+    final assignVm = context.read<TechnicianAssignmentViewModel>();
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const _BroadcastTimerDialog(isWorkshop: false),
+      builder: (ctx) => _BroadcastTimerDialog(
+        isWorkshop: false,
+        assignVm: assignVm,
+      ),
     );
   }
 }
@@ -365,7 +406,13 @@ class _PosTechnicianAssignmentViewState
 class _BroadcastTimerDialog extends StatefulWidget {
   final bool isWorkshop;
   final List<String>? specificTechNames;
-  const _BroadcastTimerDialog({required this.isWorkshop, this.specificTechNames});
+  final TechnicianAssignmentViewModel assignVm;
+  
+  const _BroadcastTimerDialog({
+    required this.isWorkshop, 
+    this.specificTechNames,
+    required this.assignVm,
+  });
 
   @override
   State<_BroadcastTimerDialog> createState() => _BroadcastTimerDialogState();
@@ -376,7 +423,7 @@ class _BroadcastTimerDialogState extends State<_BroadcastTimerDialog> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TechnicianAssignmentViewModel>().startBroadcastTimer(
+      widget.assignVm.startBroadcastTimer(
         context, widget.isWorkshop, widget.specificTechNames,
       );
     });
@@ -396,10 +443,13 @@ class _BroadcastTimerDialogState extends State<_BroadcastTimerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<TechnicianAssignmentViewModel>();
-    final specificNamesText = widget.specificTechNames?.join(', ');
+    return ListenableBuilder(
+      listenable: widget.assignVm,
+      builder: (context, _) {
+        final vm = widget.assignVm;
+        final specificNamesText = widget.specificTechNames?.join(', ');
 
-    final titleText = widget.specificTechNames != null
+        final titleText = widget.specificTechNames != null
         ? 'Assign to $specificNamesText'
         : widget.isWorkshop ? 'Broadcast to Workshop' : 'Broadcast to On-Call';
         
@@ -413,113 +463,287 @@ class _BroadcastTimerDialogState extends State<_BroadcastTimerDialog> {
         ? 'Direct Assignment'
         : widget.isWorkshop ? 'Workshop Broadcast Active' : '3 Available On-Call';
 
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Center(
-        child: Text(titleText, style: const TextStyle(fontWeight: FontWeight.bold)),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!vm.isAccepted) ...[
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primaryLight.withValues(alpha: 0.1),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                   SizedBox(
-                     width: 100,
-                     height: 100,
-                     child: CircularProgressIndicator(
-                       value: vm.secondsRemaining / 300,
-                       strokeWidth: 8,
-                       backgroundColor: Colors.grey.shade200,
-                       valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
-                     ),
-                   ),
-                   Text(
-                    _formatTime(vm.secondsRemaining),
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.secondaryLight),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              waitingText,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: widget.isWorkshop ? Colors.blue.shade50 : Colors.green.shade50,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                availableCountText,
-                style: TextStyle(
-                  color: widget.isWorkshop ? Colors.blue.shade700 : Colors.green.shade700, 
-                  fontWeight: FontWeight.bold
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      elevation: 0,
+      child: Container(
+        width: double.maxFinite,
+        constraints: const BoxConstraints(maxWidth: 380),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 30,
+              spreadRadius: 2,
+              offset: const Offset(0, 10),
+            )
+          ],
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Simple Header
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Icon(
+                        widget.specificTechNames != null ? Icons.person_search_rounded : Icons.radar_rounded,
+                        size: 28,
+                        color: AppColors.secondaryLight,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        titleText, 
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Color(0xFF1E2124), letterSpacing: -0.2),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            // Developer Testing actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextButton(
-                  onPressed: () => context.read<TechnicianAssignmentViewModel>().handleBroadcastTimeout(context, widget.isWorkshop, widget.specificTechNames),
-                  child: const Text('Simulate Timeout', style: TextStyle(color: Colors.red)),
+              
+              Padding(
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
+                child: Column(
+                  children: [
+                    if (!vm.isAccepted) ...[
+                      // Upgraded Timer Element
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                           Container(
+                             width: 140,
+                             height: 140,
+                             decoration: BoxDecoration(
+                               shape: BoxShape.circle,
+                               color: Colors.white,
+                               boxShadow: [
+                                 BoxShadow(
+                                   color: AppColors.primaryLight.withValues(alpha: 0.1),
+                                   blurRadius: 30,
+                                   spreadRadius: 5,
+                                 )
+                               ],
+                             ),
+                           ),
+                           SizedBox(
+                             width: 150,
+                             height: 150,
+                             child: CircularProgressIndicator(
+                               value: vm.secondsRemaining / 300,
+                               strokeWidth: 10,
+                               backgroundColor: Colors.grey.shade100,
+                               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
+                               strokeCap: StrokeCap.round,
+                             ),
+                           ),
+                           Column(
+                             mainAxisSize: MainAxisSize.min,
+                             children: [
+                               Text(
+                                _formatTime(vm.secondsRemaining),
+                                style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.secondaryLight, letterSpacing: -1.0),
+                               ),
+                               if (vm.secondsRemaining < 60)
+                                 const Text('Left', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                             ],
+                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      
+                      // Status Chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: widget.isWorkshop ? Colors.blue.shade50 : Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              widget.isWorkshop ? Icons.info_outline_rounded : Icons.local_taxi_rounded,
+                              size: 18,
+                              color: widget.isWorkshop ? Colors.blue.shade700 : Colors.green.shade700,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                availableCountText,
+                                style: TextStyle(
+                                  color: widget.isWorkshop ? Colors.blue.shade700 : Colors.green.shade700, 
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                  letterSpacing: 0.2,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        waitingText,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 15, color: Colors.black54, height: 1.4, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 36),
+                      
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () {
+                                vm.cancelTimer();
+                                Navigator.pop(context);
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                foregroundColor: Colors.red.shade400,
+                                backgroundColor: Colors.red.shade50,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              ),
+                              child: const Text('Cancel Request', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      // Dev Testing Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => vm.handleBroadcastTimeout(context, widget.isWorkshop, widget.specificTechNames),
+                              style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+                              child: const Text('Timeout', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => vm.simulateAccept(context, widget.specificTechNames),
+                              style: OutlinedButton.styleFrom(foregroundColor: Colors.green, side: const BorderSide(color: Colors.green)),
+                              child: const Text('Accept', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      // Premium Success State
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.green.shade400, Colors.green.shade600],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                              offset: const Offset(0, 8),
+                            )
+                          ],
+                        ),
+                        child: const Icon(Icons.check_rounded, color: Colors.white, size: 50),
+                      ),
+                      const SizedBox(height: 32),
+                      const Text(
+                        'Ready to Roll!',
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: Color(0xFF1E2124)),
+                      ),
+                      const SizedBox(height: 12),
+                      RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.5, fontWeight: FontWeight.w500),
+                          children: [
+                            const TextSpan(text: 'Accepted by\n'),
+                            TextSpan(text: vm.acceptedBy, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.secondaryLight)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      if (!widget.isWorkshop && widget.specificTechNames == null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(16)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.timer_outlined, size: 20, color: Colors.orange.shade700),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Text(
+                                  'Arrival in ~${vm.arrivalMinutes} min',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.orange.shade900),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(16)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.storefront_outlined, size: 20, color: Colors.blue.shade700),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Text(
+                                  'Present at Workshop',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.blue.shade900),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 40),
+                      const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Colors.green)),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ],
                 ),
-                TextButton(
-                  onPressed: () => context.read<TechnicianAssignmentViewModel>().simulateAccept(context, widget.specificTechNames),
-                  child: const Text('Simulate Accept', style: TextStyle(color: Colors.green)),
-                ),
-              ],
-            ),
-          ] else ...[
-            const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
-            const SizedBox(height: 16),
-            Text(
-              'Accepted by ${vm.acceptedBy}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            if (!widget.isWorkshop && widget.specificTechNames == null) ...[
-              Text(
-                'Estimated Arrival in ${vm.arrivalMinutes} min',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-            ] else ...[
-              const Text(
-                'Technicians are present at the workshop',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-                textAlign: TextAlign.center,
               ),
             ],
-            const SizedBox(height: 24),
-            const CircularProgressIndicator(),
-          ],
-        ],
-      ),
-      actions: [
-        if (!vm.isAccepted)
-          TextButton(
-            onPressed: () {
-              context.read<TechnicianAssignmentViewModel>().cancelTimer();
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel Request', style: TextStyle(color: Colors.grey)),
           ),
-      ],
+        ),
+      ),
+    );
+      },
     );
   }
 }

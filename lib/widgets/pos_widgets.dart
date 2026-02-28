@@ -17,13 +17,24 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/toast_service.dart';
 import '../views/Workshop pos app/Notifications/notifications_view.dart'; // Added import
+import '../views/Workshop pos app/Order Screen/pos_order_review_view.dart';
 
 // ── Reusable POS Screen AppBar (Back + Title + Global Icon) ──
 class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onBack;
+  final bool showBackButton;
+  final bool showHamburger;
+  final VoidCallback? onMenuPressed;
 
-  const PosScreenAppBar({super.key, required this.title, this.onBack});
+  const PosScreenAppBar({
+    super.key, 
+    required this.title, 
+    this.onBack, 
+    this.showBackButton = true,
+    this.showHamburger = false,
+    this.onMenuPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,10 +54,35 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: onBack ?? () => Navigator.pop(context),
-          ),
+          automaticallyImplyLeading: showBackButton,
+          leading: showBackButton 
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: onBack ?? () => Navigator.pop(context),
+              )
+            : showHamburger
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    child: InkWell(
+                      onTap: onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryLight,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.secondaryLight.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.menu_rounded, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  )
+                : null,
           title: Text(
             title,
             style: TextStyle(
@@ -67,20 +103,19 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                     settings.updateLocale(newLocale);
                   },
                   child: Container(
-                    width: iconContainerSize,
-                    height: iconContainerSize,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.secondaryLight,
+                      color: Colors.white.withOpacity(0.3),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Image.asset(
                         'assets/images/global.png',
-                        width: iconSize,
-                        height: iconSize,
-                        color: Colors.white,
+                        width: 20,
+                        color: Colors.black,
                         errorBuilder: (context, error, stackTrace) =>
-                            Icon(Icons.language, size: iconSize, color: Colors.white),
+                            const Icon(Icons.language_rounded, size: 20, color: Colors.black),
                       ),
                     ),
                   ),
@@ -105,6 +140,9 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? infoTime;
   final double? customHeight;
   final bool showBackButton;
+  final VoidCallback? onMenuPressed;
+  final bool showDrawer;
+  final bool showGlobalLeft;
 
   const PosAppBar({
     super.key,
@@ -114,6 +152,9 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.infoTime,
     this.customHeight,
     this.showBackButton = false,
+    this.onMenuPressed,
+    this.showDrawer = true,
+    this.showGlobalLeft = false,
   });
 
   @override
@@ -133,26 +174,69 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
           bottom: Radius.circular(32),
         ),
       ),
-      toolbarHeight: isTablet ? kToolbarHeight + 40 : 50,
-      leadingWidth: isTablet ? 250 : 160,
-      leading: Padding(
-        padding: EdgeInsets.only(left: 8, top: isTablet ? 20 : 0, bottom: isTablet ? 8 : 0),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (showBackButton)
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-                onPressed: () => Navigator.maybePop(context),
+      toolbarHeight: isTablet ? kToolbarHeight + 40 : 60,
+      leadingWidth: showGlobalLeft ? (isTablet ? 74 : 64) : (showDrawer ? (isTablet ? 74 : 64) : 0),
+      leading: showGlobalLeft 
+        ? Padding(
+            padding: EdgeInsets.only(left: 10, top: isTablet ? 20 : 8, bottom: isTablet ? 8 : 8),
+            child: Consumer<SettingsViewModel>(
+              builder: (context, settings, _) {
+                return InkWell(
+                  onTap: () {
+                    final newLocale = settings.locale.languageCode == 'en'
+                        ? const Locale('ar')
+                        : const Locale('en');
+                    settings.updateLocale(newLocale);
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/global.png',
+                        width: 20,
+                        color: Colors.black,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.language_rounded, size: 20, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
+        : showDrawer ? Padding(
+          padding: EdgeInsets.only(left: 10, top: isTablet ? 20 : 8, bottom: isTablet ? 8 : 8),
+          child: InkWell(
+            onTap: onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.secondaryLight,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondaryLight.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            Expanded(child: Center(child: UserChip(name: userName ?? 'Cashier', isTablet: isTablet))),
-          ],
-        ),
-      ),
+              child: const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
+            ),
+          ),
+        ) : null,
       title: Padding(
-        padding: EdgeInsets.only(left: 0, right: 0, top: isTablet ? 25 : 0),
+        padding: EdgeInsets.only(top: isTablet ? 25 : 0),
         child: SizedBox(
-          height: isTablet ? 45 : 28, // Reduced from 35
+          height: isTablet ? 45 : 28,
           child: Image.asset(
             'assets/images/icon.png',
             color: Colors.black,
@@ -162,6 +246,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+      if (!showGlobalLeft) ...[
         // Language Pill
         Padding(
           padding: EdgeInsets.only(top: isTablet ? 20 : 0, bottom: isTablet ? 8 : 0),
@@ -174,21 +259,21 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                       : const Locale('en');
                   settings.updateLocale(newLocale);
                 },
+                borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  width: iconContainerSize,
-                  height: iconContainerSize,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.secondaryLight,
+                    color: Colors.white.withOpacity(0.3),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Image.asset(
                       'assets/images/global.png',
-                      width: iconSize,
-                      height: iconSize,
-                      color: Colors.white,
+                      width: 20,
+                      color: Colors.black,
                       errorBuilder: (context, error, stackTrace) =>
-                           Icon(Icons.language, size: iconSize, color: Colors.white),
+                          const Icon(Icons.language_rounded, size: 20, color: Colors.black),
                     ),
                   ),
                 ),
@@ -197,74 +282,62 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         const SizedBox(width: 12),
+      ],
 
-        Padding(
-          padding: EdgeInsets.only(top: isTablet ? 20 : 0, bottom: isTablet ? 8 : 0),
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificationsView()),
-              );
-            },
-            borderRadius: BorderRadius.circular(iconContainerSize / 2),
-            child: Container(
-              width: iconContainerSize,
-              height: iconContainerSize,
-              decoration: BoxDecoration(
-                color: AppColors.secondaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Image.asset(
-                    'assets/images/notifications.png',
-                    width: iconSize,
-                    height: iconSize,
-                    color: Colors.white,
-                    errorBuilder: (context, error, stackTrace) =>
-                         Icon(Icons.notifications, size: iconSize, color: Colors.white),
-                  ),
-                  Positioned(
-                    top: isTablet ? 12 : 10,
-                    right: isTablet ? 12 : 10,
-                    child: Container(
-                      width: isTablet ? 8 : 6,
-                      height: isTablet ? 8 : 6,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                        border: Border.fromBorderSide(
-                            BorderSide(color: Colors.white, width: 1.5)),
-                      ),
+      Padding(
+        padding: EdgeInsets.only(top: isTablet ? 20 : 0, bottom: isTablet ? 8 : 0),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NotificationsView()),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/notifications.png',
+                  width: 22,
+                  color: Colors.black,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.notifications_rounded, size: 22, color: Colors.black),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(width: 16),
+      ),
+      const SizedBox(width: 16),
       ],
-      bottom: hasInfo
-          ? PreferredSize(
-              preferredSize: Size.fromHeight(isTablet ? 60 : 30),
-              child: Transform.translate(
-                offset: Offset(0, isTablet ? 0 : -5),
-                child: PosInfoBar(
-                  title: infoTitle!,
-                  branch: infoBranch!,
-                  time: infoTime,
-                ),
-              ),
-            )
-          : null,
     );
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(customHeight ?? (kToolbarHeight + 100)); // Default fallback if not provided
+  Size get preferredSize {
+    if (customHeight != null) return Size.fromHeight(customHeight!);
+    return Size.fromHeight(kToolbarHeight + 10);
+  }
 }
 
 class PosInfoBar extends StatelessWidget {
@@ -293,13 +366,8 @@ class PosInfoBar extends StatelessWidget {
         mainAxisAlignment: isTablet ? MainAxisAlignment.start : MainAxisAlignment.center,
         children: [
           Flexible(child: _buildInfoChip(context, Icons.person, title)),
-          const SizedBox(width: 4),
+          const Spacer(),
           Flexible(child: _buildInfoChip(context, null, branch)),
-          if (time != null) ...[
-             const SizedBox(width: 4),
-             if (isTablet) const Spacer(),
-             Flexible(child: _buildInfoChip(context, null, time!)),
-          ]
         ],
       ),
     );
@@ -421,9 +489,11 @@ class SearchHistoryItem extends StatelessWidget {
   final String customer;
   final String lastVisit;
   final String lastService;
+  final String? orderNumber;
   final bool isCorporate;
   final VoidCallback? onContinue;
   final VoidCallback? onViewHistory;
+  final VoidCallback? onSalesReturn;
 
   const SearchHistoryItem({
     super.key,
@@ -432,9 +502,11 @@ class SearchHistoryItem extends StatelessWidget {
     required this.customer,
     required this.lastVisit,
     required this.lastService,
+    this.orderNumber,
     required this.isCorporate,
     this.onContinue,
     this.onViewHistory,
+    this.onSalesReturn,
   });
 
   @override
@@ -521,12 +593,17 @@ class SearchHistoryItem extends StatelessWidget {
                         children: [
                           Icon(Icons.history, size: 14, color: Colors.amber.shade700), // Reduced from 16
                           const SizedBox(width: 8),
-                          Text(
-                            '$lastVisit ($lastService)',
-                            style: TextStyle(
-                              color: Colors.grey.shade800,
-                              fontSize: 11, // Reduced from 12
-                              fontWeight: FontWeight.w500,
+                          Flexible(
+                            child: Text(
+                              orderNumber != null
+                                  ? '$lastVisit ($lastService)  •  Order: #$orderNumber'
+                                  : '$lastVisit ($lastService)',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.grey.shade800,
+                                fontSize: 11, // Reduced from 12
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
@@ -569,6 +646,26 @@ class SearchHistoryItem extends StatelessWidget {
               ),
             ],
           ),
+          if (onSalesReturn != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onSalesReturn,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.red.shade700,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.red.shade200),
+                  ),
+                ),
+                child: const Text('Sales Return / Credit Note', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -609,7 +706,6 @@ class PosBottomBar extends StatelessWidget {
               _buildNavItem(context, 1, Icons.inventory_2_outlined, 'Products'),
               _buildNavItem(context, 2, Icons.receipt_long_outlined, 'Orders'),
               _buildNavItem(context, 3, Icons.engineering_outlined, 'Technician'),
-              _buildNavItem(context, 4, Icons.more_horiz, 'More'),
             ],
           ),
         ),
@@ -618,7 +714,7 @@ class PosBottomBar extends StatelessWidget {
   }
 
   Widget _buildNavItem(BuildContext context, int index, IconData icon, String label) {
-    final isSelected = (index == 4) ? currentIndex >= 4 : currentIndex == index;
+    final isSelected = currentIndex == index;
     final isTablet = MediaQuery.of(context).size.width > 600;
 
     return GestureDetector(
@@ -828,19 +924,19 @@ class _OrderItemCardState extends State<OrderItemCard> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppColors.secondaryLight.withOpacity(0.06),
+                                color: AppColors.secondaryLight,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.layers_rounded, size: 12, color: AppColors.secondaryLight),
+                                  Icon(Icons.layers_rounded, size: 12, color: Colors.white),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${widget.order.jobsCount} JOBS',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w900,
-                                      color: AppColors.secondaryLight,
+                                      color: Colors.white,
                                       letterSpacing: 0.4,
                                     ),
                                   ),
@@ -870,35 +966,31 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                 
                                 return _buildActionButton(
                                   onPressed: posVm.isInvoiceLoading 
-                                    ? null                                      : () async {
-                                          CreateInvoiceResponse? response;
-                                          if (isInvoiced) {
-                                            response = await posVm.fetchInvoiceByOrder(widget.order.id);
-                                          } else {
-                                            final genResponse = await posVm.generateInvoice(widget.order.id);
-                                            if (genResponse != null && genResponse.success) {
-                                              if (context.mounted) {
-                                                ToastService.showSuccess(context, 'Invoice created successfully');
-                                              }
-                                              response = await posVm.fetchInvoiceByOrder(widget.order.id);
-                                            } else {
-                                              response = genResponse;
-                                            }
+                                    ? null
+                                    : () async {
+                                        if (isInvoiced) {
+                                          // Fetch and show existing invoice
+                                          final response = await posVm.fetchInvoiceByOrder(widget.order.id);
+                                          if (response != null && response.success && response.invoice != null && context.mounted) {
+                                            await showDialog(
+                                              context: context,
+                                              builder: (ctx) => InvoiceDialog(invoice: response.invoice!),
+                                            );
+                                          } else if (response != null && !response.success && context.mounted) {
+                                            ToastService.showError(context, response.message);
                                           }
-                                          
-                                          if (response != null) {
-                                            if (response.success && response.invoice != null) {
-                                              if (context.mounted) {
-                                                await showDialog(
-                                                  context: context,
-                                                  builder: (context) => InvoiceDialog(invoice: response!.invoice!),
-                                                );
-                                              }
-                                            } else if (!response.success && context.mounted) {
-                                              ToastService.showError(context, response.message);
-                                            }
+                                        } else {
+                                          // Navigate to the Final Review Screen - no API call
+                                          if (context.mounted) {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => PosOrderReviewView(order: widget.order),
+                                              ),
+                                            );
                                           }
-                                        },
+                                        }
+                                      },
                                   isLoading: isCurrentOrderLoading,
                                   icon: isInvoiced ? Icons.receipt_long_rounded : Icons.auto_awesome_rounded,
                                   label: isInvoiced ? 'Invoice' : 'Gen. Invoice',
@@ -1443,42 +1535,75 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width ?? 125,
-      height: 100, // Reduced height as icons are removed
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      height: 115, // Slightly increased height to prevent overflow
+      margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: accentColor.withOpacity(0.12),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
             color: accentColor.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          Text(
-            value,
-            style: AppTextStyles.h2.copyWith(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: AppColors.secondaryLight,
+          // Subtle Background Decorative Icon
+          Positioned(
+            right: -5,
+            bottom: -5,
+            child: Icon(
+              icon,
+              size: 50,
+              color: accentColor.withOpacity(0.05),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.secondaryLight.withOpacity(0.7),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: accentColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  value,
+                  style: AppTextStyles.h2.copyWith(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.secondaryLight,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

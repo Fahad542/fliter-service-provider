@@ -1,0 +1,60 @@
+Running `(cd /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/; ANDROID_HOME=/Users/fahad/Library/Android/sdk TMPDIR=/var/folders/64/707g917x7135xf_n6j22383w0000gn/T/ PATH=/Applications/Xcode.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/local/bin:/Applications/Xcode.app/Contents/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/usr/local/bin:/opt/homebrew/opt/python@3.11/libexec/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/fahad/Downloads/flutter/bin HOME=/Users/fahad /Users/fahad/Downloads/flutter/bin/cache/dart-sdk/bin/dart '--packages=/Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/package_config.json' '/Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/objective_c/7ad245dadc068daf8ba9d7bb51a8ef8e/hook.dill' '--config=/Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/objective_c/7ad245dadc068daf8ba9d7bb51a8ef8e/input.json' )`.
+INFO: 2026-02-24 17:48:11.207524: Running `/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang --version`.
+
+INFO: 2026-02-24 17:48:11.223156: Running `/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang --version`.
+
+INFO: 2026-02-24 17:48:11.238046: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/include/dart_api_dl.c -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-02-24 17:48:11.238674: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/objective_c.c -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.c.o
+
+INFO: 2026-02-24 17:48:11.238950: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/test/util.c -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/test/util.c.o
+
+INFO: 2026-02-24 17:48:11.239079: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/input_stream_adapter.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-02-24 17:48:11.239199: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/objective_c.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.m.o
+
+INFO: 2026-02-24 17:48:11.239402: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/observer.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/observer.m.o
+
+INFO: 2026-02-24 17:48:11.239641: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/protocol.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o
+
+
+
+INFO: 2026-02-24 17:48:11.239749: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/objective_c_bindings_generated.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-02-24 17:48:11.365034: 
+INFO: 2026-02-24 17:48:11.365137: 
+INFO: 2026-02-24 17:48:11.365168: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.c.o
+INFO: 2026-02-24 17:48:11.365559: 
+INFO: 2026-02-24 17:48:11.365580: 
+INFO: 2026-02-24 17:48:11.365590: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/include/dart_api_dl.c.o
+INFO: 2026-02-24 17:48:11.365680: 
+INFO: 2026-02-24 17:48:11.365692: 
+INFO: 2026-02-24 17:48:11.365701: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/observer.m.o
+
+INFO: 2026-02-24 17:48:11.369842: 
+INFO: 2026-02-24 17:48:11.369883: 
+INFO: 2026-02-24 17:48:11.369894: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o
+
+INFO: 2026-02-24 17:48:11.373742: 
+INFO: 2026-02-24 17:48:11.373780: 
+INFO: 2026-02-24 17:48:11.373952: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/test/util.c.o
+
+INFO: 2026-02-24 17:48:11.622220: 
+INFO: 2026-02-24 17:48:11.622270: 
+INFO: 2026-02-24 17:48:11.622282: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/ns_number.m.o
+
+INFO: 2026-02-24 17:48:11.634081: 
+INFO: 2026-02-24 17:48:11.634125: 
+INFO: 2026-02-24 17:48:11.634139: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.m.o
+INFO: 2026-02-24 17:48:11.634225: 
+
+INFO: 2026-02-24 17:48:11.648231: 
+INFO: 2026-02-24 17:48:11.648268: 
+INFO: 2026-02-24 17:48:11.648279: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-02-24 17:48:11.648615: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -shared -Wl,-encryptable -undefined dynamic_lookup -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/include/dart_api_dl.c.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.c.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/test/util.c.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/input_stream_adapter.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/observer.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/ns_number.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c_bindings_generated.m.o -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/objective_c.dylib
+
+INFO: 2026-02-24 17:48:11.683410: 
+INFO: 2026-02-24 17:48:11.683473: 
+INFO: 2026-02-24 17:48:11.683484: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/objective_c.dylib
+

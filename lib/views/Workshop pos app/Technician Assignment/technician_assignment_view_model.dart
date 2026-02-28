@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../models/pos_technician_model.dart';
-import '../../Navbar/pos_shell.dart';
+import '../Navbar/pos_shell.dart';
+
 
 class TechnicianAssignmentViewModel extends ChangeNotifier {
   String _searchQuery = '';

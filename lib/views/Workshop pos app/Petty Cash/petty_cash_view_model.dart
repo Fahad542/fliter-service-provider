@@ -110,6 +110,10 @@ class PettyCashViewModel extends ChangeNotifier {
       onError('Please enter a valid amount');
       return false;
     }
+    if (amount > _pettyCashBalance) {
+      onError('Low balance – request fund first');
+      return false;
+    }
     if (_selectedCategory == null) {
       onError('Please select a category');
       return false;

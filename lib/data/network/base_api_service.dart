@@ -52,15 +52,26 @@ class BaseApiService {
   dynamic _returnResponse(http.Response response) {
     print('Response Status Code: ${response.statusCode}');
     print('Response Body: ${response.body}');
+    
+    String errorMessage = response.body;
+    try {
+      final json = jsonDecode(response.body);
+      if (json['message'] != null) {
+        errorMessage = json['message'];
+      }
+    } catch (_) {
+
+    }
+
     switch (response.statusCode) {
       case 200:
       case 201:
         return jsonDecode(response.body);
       case 400:
-        throw BadRequestException(response.body.toString());
+        throw BadRequestException(errorMessage);
       case 401:
       case 403:
-        throw UnauthorisedException(response.body.toString());
+        throw UnauthorisedException(errorMessage);
       case 500:
       default:
         throw FetchDataException(

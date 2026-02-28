@@ -86,6 +86,7 @@ class PromoViewModel extends ChangeNotifier {
 
     _isLoading = true;
     _promoErrorMessage = null;
+    _validResult = null;
     notifyListeners();
 
     try {
@@ -99,21 +100,22 @@ class PromoViewModel extends ChangeNotifier {
       );
 
       if (response.success && response.valid && response.promoCode != null) {
-        posVm.applyPromoCode(
-          response.promoCode!.code,
-          response.promoCode!.discount,
-          response.promoCode!.isPercent,
-        );
-        if (context.mounted) {
-          ToastService.showSuccess(context, 'Promo code applied successfully');
-        }
+        _validResult = {
+          'discount': response.promoCode!.discount,
+          'isPercent': response.promoCode!.isPercent,
+          'message': response.promoCode!.isPercent
+              ? '${response.promoCode!.discount}% Discount'
+              : 'SAR ${response.promoCode!.discount} Discount',
+          'store': response.promoCode!.applicableStore ?? 'All Branches',
+          'products': response.promoCode!.applicableProducts ?? 'All Products',
+          'period': response.promoCode!.validityPeriod ?? 'No Expiry',
+        };
+        // Don't apply to cart yet, let user confirm first.
       } else {
         final msg = response.message.isNotEmpty ? response.message : 'Invalid Promo Code';
         _promoErrorMessage = msg;
         posVm.clearPromoCode();
-        if (context.mounted) {
-          ToastService.showError(context, msg);
-        }
+        _validResult = null;
       }
     } catch (e) {
       _promoErrorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -128,8 +130,16 @@ class PromoViewModel extends ChangeNotifier {
   }
 
   void clearPromoError() {
+    bool changed = false;
     if (_promoErrorMessage != null) {
       _promoErrorMessage = null;
+      changed = true;
+    }
+    if (_validResult != null) {
+      _validResult = null;
+      changed = true;
+    }
+    if (changed) {
       notifyListeners();
     }
   }

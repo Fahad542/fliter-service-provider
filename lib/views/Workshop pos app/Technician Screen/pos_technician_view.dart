@@ -34,7 +34,8 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         infoTitle: posVm.workshopName,
         infoBranch: 'Branch: ${posVm.branchName}',
         infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
-        customHeight: isTablet ? 156 : 99,
+        showDrawer: false,
+        showGlobalLeft: true,
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<TechnicianViewModel>().fetchTechnicians(),

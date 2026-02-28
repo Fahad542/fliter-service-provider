@@ -7,11 +7,18 @@ class AuthResponse {
   AuthResponse({this.success, this.message, this.token, this.user});
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    // If workshop or branch are at the root level, inject them into the user object
+    final userJson = json['user'] != null ? Map<String, dynamic>.from(json['user']) : null;
+    if (userJson != null) {
+      if (json['workshop'] != null) userJson['workshop'] = json['workshop'];
+      if (json['branch'] != null) userJson['branch'] = json['branch'];
+    }
+
     return AuthResponse(
       success: json['success'],
       message: json['message'],
       token: json['token'],
-      user: json['user'] != null ? User.fromJson(json['user']) : null,
+      user: userJson != null ? User.fromJson(userJson) : null,
     );
   }
 

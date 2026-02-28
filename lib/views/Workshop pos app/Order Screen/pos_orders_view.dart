@@ -35,7 +35,8 @@ class _PosOrdersViewState extends State<PosOrdersView> {
         infoTitle: vm.workshopName,
         infoBranch: 'Branch: ${vm.branchName}',
         infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
-        customHeight: isTablet ? 156 : 99,
+        showDrawer: false,
+        showGlobalLeft: true,
       ),
       body: Consumer<PosViewModel>(
         builder: (context, vm, child) {
@@ -106,31 +107,31 @@ class _PosOrdersViewState extends State<PosOrdersView> {
         'title': 'Total Orders',
         'value': stats.total.toString(),
         'icon': Icons.assignment_rounded,
-        'color': AppColors.primaryLight,
+        'color': AppColors.secondaryLight,
       },
       {
         'title': 'Waiting',
         'value': stats.draft.toString(),
-        'icon': Icons.phone_callback_rounded,
+        'icon': Icons.hourglass_top_rounded,
         'color': AppColors.primaryLight,
       },
       {
         'title': 'In Progress',
         'value': stats.inProgress.toString(),
-        'icon': Icons.pending_actions_rounded,
-        'color': AppColors.primaryLight,
+        'icon': Icons.auto_mode_rounded,
+        'color': const Color(0xFF2D9CDB), // Professional Blue
       },
       {
-        'title': 'Pending Order',
+        'title': 'Ready for Invoice',
         'value': stats.readyForInvoice.toString(),
-        'icon': Icons.hourglass_empty_rounded,
-        'color': AppColors.primaryLight,
+        'icon': Icons.receipt_long_rounded,
+        'color': const Color(0xFFF2994A), // Professional Amber/Orange
       },
       {
         'title': 'Completed',
         'value': stats.invoiced.toString(),
         'icon': Icons.check_circle_rounded,
-        'color': AppColors.primaryLight,
+        'color': const Color(0xFF27AE60), // Professional Green
       },
     ];
 
@@ -149,7 +150,9 @@ class _PosOrdersViewState extends State<PosOrdersView> {
     } else {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none, // Allow shadows to be visible
         physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), // Padding for shadows
         child: Row(
           children: statList.map((stat) => StatCard(
             title: stat['title'] as String,
