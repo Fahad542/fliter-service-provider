@@ -11,6 +11,7 @@ import 'Reports/reports_management_view.dart';
 import 'POS Monitoring/pos_monitoring_view.dart';
 import 'Suppliers/suppliers_view.dart';
 import 'Accounting/accounting_view.dart';
+import 'Promo/owner_promo_view.dart';
 import 'Approvals/approvals_view.dart';
 import 'Notifications/owner_notifications_view.dart';
 import 'Settings/owner_settings_view.dart';
@@ -91,6 +92,7 @@ class OwnerShellState extends State<OwnerShell> {
     const SizedBox(),                // 11 — overridden by _currentView (Notifications)
     const OwnerSettingsView(),       // 12
     const DepartmentManagementView(),// 13
+    const OwnerPromoView(),          // 14
   ];
 
   // Returns the view for the current index, injecting params where needed
@@ -151,6 +153,8 @@ class OwnerShellState extends State<OwnerShell> {
                 _buildDrawerItem(8, 'Suppliers & Purchases', Icons.local_shipping_rounded),
                 const SizedBox(height: 4),
                 _buildDrawerItem(9, 'Accounting', Icons.account_balance_rounded),
+                const SizedBox(height: 4),
+                _buildDrawerItem(14, 'Promo Codes', Icons.local_offer_rounded),
                 const SizedBox(height: 4),
                 _buildDrawerItem(11, 'Notifications', Icons.notifications_rounded),
                 const SizedBox(height: 4),

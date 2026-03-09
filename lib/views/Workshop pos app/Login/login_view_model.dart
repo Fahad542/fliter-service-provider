@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../services/session_service.dart';
-// import '../../data/repositories/auth_repository.dart';
-// import '../../services/session_service.dart';
-// import '../../data/network/api_response.dart';
+
 
 class LoginViewModel extends ChangeNotifier {
   final AuthRepository _authRepository;
@@ -55,6 +54,16 @@ class LoginViewModel extends ChangeNotifier {
       }
 
       await _sessionService.saveSession(authResponse);
+      await _sessionService.saveCredentials(email, password);
+
+      if (authResponse.token != null) {
+        try {
+          await _authRepository.openSession(email, password, authResponse.token!);
+        } catch (e) {
+          debugPrint('Failed to open shift session: $e');
+        }
+      }
+
       _setLoading(false);
       return true;
     } catch (e) {
@@ -65,7 +74,20 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    try {
+      final creds = await _sessionService.getCredentials();
+      final token = await _sessionService.getToken();
+      if (creds != null && token != null) {
+        await _authRepository.closeSession(creds['email']!, creds['password']!, token);
+      }
+    } catch (e) {
+      debugPrint('Failed to close shift session: $e');
+    }
+
     await _sessionService.clearSession();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('pos_user_email');
+    await prefs.remove('pos_user_password');
     notifyListeners();
   }
 }

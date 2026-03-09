@@ -72,7 +72,7 @@ class _PosTechnicianAssignmentViewState
             final assignVm = context.watch<TechnicianAssignmentViewModel>();
             return Scaffold(
               backgroundColor: const Color(0xFFFBF9F6),
-              appBar: const PosScreenAppBar(title: 'Technician Assignment '),
+              appBar: PosScreenAppBar(title: 'Technician Assignment '),
         body: Consumer<TechnicianViewModel>(
           builder: (context, vm, child) {
             if (vm.isLoading && vm.technicians.isEmpty) {

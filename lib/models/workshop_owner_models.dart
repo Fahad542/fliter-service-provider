@@ -124,6 +124,7 @@ class OwnerProduct {
   final String name;
   final String type; // 'product', 'service'
   final String? category;
+  final String? departmentName;
   final List<String> departmentIds;
   final String unit;
   final double conversionFactor;
@@ -143,6 +144,7 @@ class OwnerProduct {
     required this.name,
     required this.type,
     this.category,
+    this.departmentName,
     required this.departmentIds,
     required this.unit,
     this.conversionFactor = 1.0,
@@ -163,20 +165,64 @@ class OwnerProduct {
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       type: json['type'] ?? 'product',
-      category: json['category'],
-      departmentIds: List<String>.from(json['department_ids'] ?? []),
-      unit: json['unit'] ?? '',
+      category: json['categoryName'] ?? json['category'] ?? '',
+      departmentName: json['departmentName'],
+      departmentIds: [json['departmentId']?.toString() ?? ''].where((id) => id.isNotEmpty).toList(),
+      unit: json['unit'] ?? 'pcs',
       conversionFactor: (json['conversion_factor'] ?? 1.0).toDouble(),
-      purchasePrice: (json['purchase_price_excl'] ?? 0.0).toDouble(),
-      salePrice: (json['sale_price_incl'] ?? 0.0).toDouble(),
-      corporateBasePrice: (json['corporate_price'] ?? 0.0).toDouble(),
-      corporateLowerLimit: (json['corporate_lower_limit'] ?? 0.0).toDouble(),
-      corporateUpperLimit: (json['corporate_upper_limit'] ?? 0.0).toDouble(),
-      stockQty: (json['stock_qty'] ?? 0.0).toDouble(),
-      criticalLevel: (json['critical_level'] ?? 0.0).toDouble(),
+      purchasePrice: double.tryParse(json['purchasePrice']?.toString() ?? '0') ?? (json['purchase_price_excl'] ?? 0.0).toDouble(),
+      salePrice: double.tryParse(json['salePrice']?.toString() ?? '0') ?? (json['sale_price_incl'] ?? 0.0).toDouble(),
+      corporateBasePrice: double.tryParse(json['corporate_price']?.toString() ?? '0') ?? 0.0,
+      corporateLowerLimit: double.tryParse(json['corporate_lower_limit']?.toString() ?? '0') ?? 0.0,
+      corporateUpperLimit: double.tryParse(json['corporate_upper_limit']?.toString() ?? '0') ?? 0.0,
+      stockQty: double.tryParse(json['openingQty']?.toString() ?? '0') ?? (json['stock_qty'] ?? 0.0).toDouble(),
+      criticalLevel: double.tryParse(json['criticalStockPoint']?.toString() ?? '0') ?? (json['critical_level'] ?? 0.0).toDouble(),
       reorderLevel: (json['reorder_level'] ?? 0.0).toDouble(),
       imageUrl: json['image_url'],
       isPriceEditable: json['is_price_editable'] ?? false,
+    );
+  }
+}
+
+class OwnerSubCategory {
+  final String id;
+  final String name;
+
+  OwnerSubCategory({required this.id, required this.name});
+
+  factory OwnerSubCategory.fromJson(Map<String, dynamic> json) {
+    return OwnerSubCategory(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+    );
+  }
+}
+
+class OwnerCategory {
+  final String id;
+  final String name;
+  final String type;
+  final String workshopId;
+  final List<OwnerSubCategory> subCategories;
+
+  OwnerCategory({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.workshopId,
+    this.subCategories = const [],
+  });
+
+  factory OwnerCategory.fromJson(Map<String, dynamic> json) {
+    return OwnerCategory(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      type: json['type'] ?? '',
+      workshopId: json['workshopId']?.toString() ?? '',
+      subCategories: (json['subCategories'] as List?)
+              ?.map((e) => OwnerSubCategory.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 }
@@ -188,6 +234,8 @@ class CorporateCustomer {
   final String contactName;
   final String mobile;
   final String email;
+  final double creditLimit;
+  final double dueBalance;
   final List<String> allowedBranchIds;
   final String status;
   final String category; // e.g., 'Bronze', 'Silver', 'Gold'
@@ -201,6 +249,8 @@ class CorporateCustomer {
     required this.contactName,
     required this.mobile,
     required this.email,
+    this.creditLimit = 0.0,
+    this.dueBalance = 0.0,
     required this.allowedBranchIds,
     this.status = 'active',
     this.category = 'Bronze',
@@ -211,12 +261,18 @@ class CorporateCustomer {
   factory CorporateCustomer.fromJson(Map<String, dynamic> json) {
     return CorporateCustomer(
       id: json['id']?.toString() ?? '',
-      companyName: json['company_name'] ?? '',
-      vatNumber: json['vat_number'] ?? '',
-      contactName: json['contact_name'] ?? '',
-      mobile: json['mobile'] ?? '',
-      email: json['email'] ?? '',
-      allowedBranchIds: List<String>.from(json['allowed_branch_ids'] ?? []),
+      companyName: json['companyName'] ?? json['company_name'] ?? '',
+      vatNumber: (json['customer'] != null && json['customer']['taxId'] != null)
+          ? json['customer']['taxId'].toString()
+          : (json['vat_number'] ?? ''),
+      contactName: json['contactPerson'] ?? json['contact_name'] ?? '',
+      mobile: (json['customer'] != null && json['customer']['mobile'] != null)
+          ? json['customer']['mobile'].toString()
+          : (json['mobile'] ?? ''),
+      email: json['email'] ?? '', // Email isn't explicitly in the screenshot but good to have fallback
+      creditLimit: double.tryParse(json['creditLimit']?.toString() ?? '0') ?? 0.0,
+      dueBalance: double.tryParse(json['dueBalance']?.toString() ?? '0') ?? 0.0,
+      allowedBranchIds: List<String>.from(json['selectedBranchIds'] ?? json['allowed_branch_ids'] ?? []),
       status: json['status'] ?? 'active',
       category: json['category'] ?? 'Bronze',
       totalSales: (json['total_sales'] ?? 0.0).toDouble(),
@@ -249,6 +305,39 @@ class MonthlyBill {
     this.status = 'Pending',
     this.pdfUrl,
   });
+
+  factory MonthlyBill.fromJson(Map<String, dynamic> json) {
+    int parsedMonth = 1;
+    int parsedYear = 2026;
+    
+    final periodStr = json['billingPeriod']?.toString() ?? '';
+    // Expected format: "Month: 2/2025"
+    if (periodStr.contains('/')) {
+      final parts = periodStr.replaceAll('Month:', '').trim().split('/');
+      if (parts.length == 2) {
+        parsedMonth = int.tryParse(parts[0]) ?? 1;
+        parsedYear = int.tryParse(parts[1]) ?? 2026;
+      }
+    }
+
+    // Capitalize status
+    String statusStr = json['status']?.toString() ?? 'Pending';
+    if (statusStr.isNotEmpty) {
+       statusStr = statusStr[0].toUpperCase() + statusStr.substring(1);
+    }
+
+    return MonthlyBill(
+      id: json['invoiceId']?.toString() ?? '',
+      corporateCustomerId: '', // Not provided directly in this list API
+      customerName: json['customerName'] ?? 'Unknown Customer',
+      month: parsedMonth,
+      year: parsedYear,
+      totalAmount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
+      paidAmount: statusStr.toLowerCase() == 'paid' ? (double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0) : 0.0,
+      dueDate: json['invoiceDate'] != null ? DateTime.tryParse(json['invoiceDate']) ?? DateTime.now() : DateTime.now(),
+      status: statusStr,
+    );
+  }
 
   double get outstandingAmount => totalAmount - paidAmount;
 }
@@ -360,6 +449,189 @@ class PosCounter {
   double get locker => (systemTotal ?? 0) - (physicalTotal ?? 0);
 }
 
+// ─── Reports & Analytics ─────────────────────────────
+class DailyRevenue {
+  final String day;
+  final String date;
+  final double amount;
+
+  DailyRevenue({required this.day, required this.date, required this.amount});
+
+  factory DailyRevenue.fromJson(Map<String, dynamic> json) {
+    return DailyRevenue(
+      day: json['day'] ?? '',
+      date: json['date'] ?? '',
+      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
+    );
+  }
+}
+
+class FinancialOverview {
+  final double totalRevenue;
+  final double revenueChangePercent;
+  final List<DailyRevenue> dailyRevenue;
+
+  FinancialOverview({
+    required this.totalRevenue,
+    required this.revenueChangePercent,
+    required this.dailyRevenue,
+  });
+
+  factory FinancialOverview.fromJson(Map<String, dynamic> json) {
+    return FinancialOverview(
+      totalRevenue: double.tryParse(json['totalRevenue']?.toString() ?? '0') ?? 0.0,
+      revenueChangePercent: double.tryParse(json['revenueChangePercent']?.toString() ?? '0') ?? 0.0,
+      dailyRevenue: (json['dailyRevenue'] as List?)
+          ?.map((e) => DailyRevenue.fromJson(e))
+          .toList() ?? [],
+    );
+  }
+}
+
+class OperationalPerformance {
+  final String employeeId;
+  final String name;
+  final int totalJobs;
+  final double commission;
+
+  OperationalPerformance({
+    required this.employeeId,
+    required this.name,
+    required this.totalJobs,
+    required this.commission,
+  });
+
+  factory OperationalPerformance.fromJson(Map<String, dynamic> json) {
+    return OperationalPerformance(
+      employeeId: json['employeeId']?.toString() ?? '',
+      name: json['name'] ?? '',
+      totalJobs: int.tryParse(json['totalJobs']?.toString() ?? '0') ?? 0,
+      commission: double.tryParse(json['commission']?.toString() ?? '0') ?? 0.0,
+    );
+  }
+}
+
+class InventoryValuation {
+  final double stockValueCost;
+  final double potentialProfit;
+  final int activeSkus;
+
+  InventoryValuation({
+    required this.stockValueCost,
+    required this.potentialProfit,
+    required this.activeSkus,
+  });
+
+  factory InventoryValuation.fromJson(Map<String, dynamic> json) {
+    return InventoryValuation(
+      stockValueCost: double.tryParse(json['stockValueCost']?.toString() ?? '0') ?? 0.0,
+      potentialProfit: double.tryParse(json['potentialProfit']?.toString() ?? '0') ?? 0.0,
+      activeSkus: int.tryParse(json['activeSkus']?.toString() ?? '0') ?? 0,
+    );
+  }
+}
+
+class ReportsAnalyticsResponse {
+  final FinancialOverview financialOverview;
+  final List<OperationalPerformance> operationalPerformance;
+  final InventoryValuation inventoryValuation;
+
+  ReportsAnalyticsResponse({
+    required this.financialOverview,
+    required this.operationalPerformance,
+    required this.inventoryValuation,
+  });
+
+  factory ReportsAnalyticsResponse.fromJson(Map<String, dynamic> json) {
+    return ReportsAnalyticsResponse(
+      financialOverview: FinancialOverview.fromJson(json['financialOverview'] ?? {}),
+      operationalPerformance: (json['operationalPerformance'] as List?)
+          ?.map((e) => OperationalPerformance.fromJson(e))
+          .toList() ?? [],
+      inventoryValuation: InventoryValuation.fromJson(json['inventoryValuation'] ?? {}),
+    );
+  }
+}
+
+// ─── Promo Codes ────────────────────────────────────
+class PromoCode {
+  final String id;
+  final String workshopId;
+  final String code;
+  final String discountType;
+  final double discountValue;
+  final String validFrom;
+  final String validTo;
+  final int usageLimit;
+  final int usageCount;
+  final double minOrderAmount;
+  final String description;
+  final bool isActive;
+  final String createdAt;
+
+  PromoCode({
+    required this.id,
+    required this.workshopId,
+    required this.code,
+    required this.discountType,
+    required this.discountValue,
+    required this.validFrom,
+    required this.validTo,
+    required this.usageLimit,
+    required this.usageCount,
+    required this.minOrderAmount,
+    required this.description,
+    required this.isActive,
+    required this.createdAt,
+  });
+
+  factory PromoCode.fromJson(Map<String, dynamic> json) {
+    return PromoCode(
+      id: json['id']?.toString() ?? '',
+      workshopId: json['workshopId']?.toString() ?? '',
+      code: json['code'] ?? '',
+      discountType: json['discountType'] ?? '',
+      discountValue: double.tryParse(json['discountValue']?.toString() ?? '0') ?? 0.0,
+      validFrom: json['validFrom'] ?? '',
+      validTo: json['validTo'] ?? '',
+      usageLimit: int.tryParse(json['usageLimit']?.toString() ?? '0') ?? 0,
+      usageCount: int.tryParse(json['usageCount']?.toString() ?? '0') ?? 0,
+      minOrderAmount: double.tryParse(json['minOrderAmount']?.toString() ?? '0') ?? 0.0,
+      description: json['description'] ?? '',
+      isActive: json['isActive'] ?? false,
+      createdAt: json['createdAt'] ?? '',
+    );
+  }
+}
+
+class PromoCodesResponse {
+  final bool success;
+  final int total;
+  final int limit;
+  final int offset;
+  final List<PromoCode> promoCodes;
+
+  PromoCodesResponse({
+    required this.success,
+    required this.total,
+    required this.limit,
+    required this.offset,
+    required this.promoCodes,
+  });
+
+  factory PromoCodesResponse.fromJson(Map<String, dynamic> json) {
+    return PromoCodesResponse(
+      success: json['success'] ?? false,
+      total: json['total'] ?? 0,
+      limit: json['limit'] ?? 20,
+      offset: json['offset'] ?? 0,
+      promoCodes: (json['promoCodes'] as List?)
+          ?.map((e) => PromoCode.fromJson(e))
+          .toList() ?? [],
+    );
+  }
+}
+
 // ─── Approvals ─────────────────────────────────────
 class OwnerApproval {
   final String id;
@@ -423,5 +695,70 @@ class OwnerNotification {
     required this.timestamp,
     this.isRead = false,
   });
+}
+
+// ─── Dashboard ─────────────────────────────────────
+class BranchPerformance {
+  final String id;
+  final String name;
+  final String address;
+  final double monthlySales;
+
+  BranchPerformance({
+    required this.id,
+    required this.name,
+    required this.address,
+    required this.monthlySales,
+  });
+
+  factory BranchPerformance.fromJson(Map<String, dynamic> json) {
+    return BranchPerformance(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      address: json['address'] ?? '',
+      monthlySales: double.tryParse(json['monthlySales']?.toString() ?? '0') ?? 0.0,
+    );
+  }
+}
+
+class OwnerDashboardResponse {
+  final bool success;
+  final String dataScope;
+  final String dataScopeLabel;
+  final String? branchId;
+  final double totalSalesToday;
+  final double totalSalesThisMonth;
+  final int pendingInvoicesCount;
+  final int lowStockAlertsCount;
+  final List<BranchPerformance> branchPerformance;
+
+  OwnerDashboardResponse({
+    required this.success,
+    required this.dataScope,
+    required this.dataScopeLabel,
+    this.branchId,
+    required this.totalSalesToday,
+    required this.totalSalesThisMonth,
+    required this.pendingInvoicesCount,
+    required this.lowStockAlertsCount,
+    required this.branchPerformance,
+  });
+
+  factory OwnerDashboardResponse.fromJson(Map<String, dynamic> json) {
+    return OwnerDashboardResponse(
+      success: json['success'] ?? false,
+      dataScope: json['dataScope'] ?? '',
+      dataScopeLabel: json['dataScopeLabel'] ?? '',
+      branchId: json['branchId']?.toString(),
+      totalSalesToday: double.tryParse(json['totalSalesToday']?.toString() ?? '0') ?? 0.0,
+      totalSalesThisMonth: double.tryParse(json['totalSalesThisMonth']?.toString() ?? '0') ?? 0.0,
+      pendingInvoicesCount: int.tryParse(json['pendingInvoicesCount']?.toString() ?? '0') ?? 0,
+      lowStockAlertsCount: int.tryParse(json['lowStockAlertsCount']?.toString() ?? '0') ?? 0,
+      branchPerformance: (json['branchPerformance'] as List?)
+              ?.map((e) => BranchPerformance.fromJson(e))
+              .toList() ??
+          [],
+    );
+  }
 }
 

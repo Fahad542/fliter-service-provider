@@ -146,7 +146,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3F0),
-      appBar: const PosScreenAppBar(title: 'Point of Sale'),
+      appBar: PosScreenAppBar(title: 'Point of Sale'),
       body: vm.isLoading
           ? const Center(child: CircularProgressIndicator())
           : isTablet
@@ -300,7 +300,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
               child: Container(
-              height: MediaQuery.of(context).size.height * (isTablet ? 0.9 : 0.85),
+              height: MediaQuery.of(context).size.height * (isTablet ? 0.70 : 0.65),
               decoration: const BoxDecoration(
                 color: Color(0xFFFBF9F6),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

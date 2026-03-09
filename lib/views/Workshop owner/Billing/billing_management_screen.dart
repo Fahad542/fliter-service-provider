@@ -53,6 +53,9 @@ class _BillingManagementViewState extends State<BillingManagementView> {
   }
 
   Widget _buildCurrentScreen(BillingManagementViewModel vm) {
+    if (vm.isLoading && _currentScreen == 0) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
+    }
     switch (_currentScreen) {
       case 0: return _buildDashboard(vm);
       case 1: return _buildGenerator(vm);

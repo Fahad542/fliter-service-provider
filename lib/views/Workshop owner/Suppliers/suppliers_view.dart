@@ -273,12 +273,13 @@ class _SuppliersViewState extends State<SuppliersView> with SingleTickerProvider
   }
 
   void _showAddSupplierSheet(BuildContext context) {
+    final vm = context.read<SuppliersViewModel>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ChangeNotifierProvider.value(
-        value: context.read<SuppliersViewModel>(),
+      builder: (sheetContext) => ChangeNotifierProvider.value(
+        value: vm,
         child: const _AddSupplierSheet(),
       ),
     );
@@ -302,7 +303,7 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
+      height: MediaQuery.of(context).size.height * 0.55,
       decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       child: Column(
         children: [
@@ -536,7 +537,7 @@ class _AddSupplierSheet extends StatelessWidget {
 
     return FocusScope(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.75,
+        height: MediaQuery.of(context).size.height * 0.55,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),

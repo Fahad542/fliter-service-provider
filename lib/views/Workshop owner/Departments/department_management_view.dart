@@ -24,8 +24,6 @@ class DepartmentManagementView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context),
-                const SizedBox(height: 24),
                 Expanded(child: _buildDepartmentList(vm)),
               ],
             ),
@@ -42,22 +40,7 @@ class DepartmentManagementView extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'My Departments',
-          style: AppTextStyles.h2.copyWith(fontSize: 24, color: AppColors.secondaryLight),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Manage all service departments for your workshop.',
-          style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: 13),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildDepartmentList(DepartmentManagementViewModel vm) {
     if (vm.isLoading) {
@@ -79,8 +62,8 @@ class DepartmentManagementView extends StatelessWidget {
 
   Widget _buildDepartmentCard(BuildContext context, Department department) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -96,40 +79,46 @@ class DepartmentManagementView extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [AppColors.primaryLight.withOpacity(0.2), AppColors.primaryLight.withOpacity(0.05)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.category_rounded, color: AppColors.secondaryLight, size: 28),
+            child: const Icon(Icons.category_rounded, color: AppColors.secondaryLight, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  department.name,
-                  style: AppTextStyles.h2.copyWith(fontSize: 17, color: AppColors.secondaryLight),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  department.isActive ? 'Active' : 'Inactive',
-                  style: TextStyle(
-                    color: department.isActive ? Colors.green.shade700 : Colors.red.shade700, 
-                    fontSize: 12, 
-                    fontWeight: FontWeight.bold
-                  ),
-                ),
-              ],
+            child: Text(
+              department.name,
+              style: AppTextStyles.h2.copyWith(fontSize: 15, color: AppColors.secondaryLight),
             ),
           ),
+          _buildStatusBadge(department.isActive),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(bool isActive) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.green.withOpacity(0.12) : Colors.orange.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        isActive ? 'ACTIVE' : 'INACTIVE',
+        style: TextStyle(
+          color: isActive ? Colors.green.shade700 : Colors.orange.shade700,
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }

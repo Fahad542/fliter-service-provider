@@ -22,6 +22,7 @@ import 'views/Workshop pos app/Corporate Bookings/corporate_booking_view_model.d
 import 'views/Workshop pos app/Notifications/notifications_view_model.dart';
 import 'views/Workshop pos app/Petty Cash/petty_cash_view_model.dart';
 import 'views/Workshop pos app/Store Closing/store_closing_view_model.dart';
+import 'views/Workshop pos app/Current Shift/current_shift_view_model.dart';
 import 'views/Workshop pos app/Promo/promo_view_model.dart';
 import 'views/Workshop pos app/Product Grid/product_grid_view_model.dart';
 import 'views/Workshop pos app/Sales Return/sales_return_view_model.dart';
@@ -33,7 +34,10 @@ import 'views/Workshop Owner/Inventory/inventory_management_view_model.dart';
 import 'views/Workshop Owner/Billing/billing_management_view_model.dart';
 import 'views/Workshop Owner/Departments/department_management_view_model.dart';
 import 'views/Workshop owner/Suppliers/suppliers_view_model.dart';
+import 'views/Workshop Owner/Reports/reports_management_view_model.dart';
 import 'views/Workshop Owner/Auth/owner_login_view_model.dart';
+import 'views/Super Admin/Auth/super_admin_login_view_model.dart';
+import 'views/Workshop Owner/Promo/owner_promo_view_model.dart';
 import 'views/Technician App/technician_view_model.dart';
 import 'views/Locker App/locker_view_model.dart';
 
@@ -42,8 +46,7 @@ void main() {
   runApp(const MyApp());
 }
 
-/// Checks which portal was last used and whether its session is still valid.
-/// Returns the portal name string ('owner', 'cashier') or null if no session.
+
 Future<String?> _resolveStartScreen(SessionService session) async {
   final lastPortal = await session.getLastPortal();
   if (lastPortal == null) return null;
@@ -51,8 +54,22 @@ Future<String?> _resolveStartScreen(SessionService session) async {
   return isLoggedIn ? lastPortal : null;
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late Future<String?> _startScreenFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _startScreenFuture = _resolveStartScreen(SessionService());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +133,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<StoreClosingViewModel>(
           create: (_) => StoreClosingViewModel(),
         ),
+        ChangeNotifierProvider<CurrentShiftViewModel>(
+          create: (context) => CurrentShiftViewModel(
+            authRepository: context.read<AuthRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+        ),
         ChangeNotifierProxyProvider2<PosRepository, SessionService, PromoViewModel>(
           create: (context) => PromoViewModel(
             posRepository: context.read<PosRepository>(),
@@ -168,7 +191,14 @@ class MyApp extends StatelessWidget {
           update: (context, ownerRepo, sessionService, previous) =>
               previous ?? InventoryManagementViewModel(ownerRepository: ownerRepo, sessionService: sessionService),
         ),
-        ChangeNotifierProvider<BillingManagementViewModel>(create: (_) => BillingManagementViewModel()),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, BillingManagementViewModel>(
+          create: (context) => BillingManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? BillingManagementViewModel(ownerRepository: ownerRepo, sessionService: sessionService),
+        ),
         ChangeNotifierProxyProvider2<OwnerRepository, SessionService, DepartmentManagementViewModel>(
           create: (context) => DepartmentManagementViewModel(
             ownerRepository: context.read<OwnerRepository>(),
@@ -185,6 +215,22 @@ class MyApp extends StatelessWidget {
           update: (context, ownerRepo, sessionService, previous) =>
               previous ?? SuppliersViewModel(ownerRepository: ownerRepo, sessionService: sessionService),
         ),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, ReportsManagementViewModel>(
+          create: (context) => ReportsManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? ReportsManagementViewModel(ownerRepository: ownerRepo, sessionService: sessionService),
+        ),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, OwnerPromoViewModel>(
+          create: (context) => OwnerPromoViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? OwnerPromoViewModel(ownerRepository: ownerRepo, sessionService: sessionService),
+        ),
         ChangeNotifierProvider<TechAppViewModel>(
           create: (_) => TechAppViewModel()..init(),
         ),
@@ -193,6 +239,12 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<OwnerLoginViewModel>(
           create: (context) => OwnerLoginViewModel(
+            authRepository: context.read<AuthRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+        ),
+        ChangeNotifierProvider<SuperAdminLoginViewModel>(
+          create: (context) => SuperAdminLoginViewModel(
             authRepository: context.read<AuthRepository>(),
             sessionService: context.read<SessionService>(),
           ),
@@ -222,7 +274,7 @@ class MyApp extends StatelessWidget {
             ],
             
             home: FutureBuilder<String?>(
-              future: _resolveStartScreen(context.read<SessionService>()),
+              future: _startScreenFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Scaffold(

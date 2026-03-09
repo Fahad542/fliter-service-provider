@@ -14,6 +14,7 @@ import '../../../widgets/custom_text_field.dart';
 
 import '../Navbar/pos_shell.dart';
 import 'login_view_model.dart';
+import '../Home Screen/pos_view_model.dart'; // Add this import
 // import '../Navbar/pos_shell.dart';
 // import '../../services/session_service.dart';
 
@@ -59,6 +60,7 @@ class _LoginViewState extends State<LoginView> {
       if (mounted) {
         ToastService.showSuccess(context, 'Login successful');
         await context.read<SessionService>().saveLastPortal('cashier');
+        context.read<PosViewModel>().setShellSelectedIndex(0); // Add this line
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const PosShell()),

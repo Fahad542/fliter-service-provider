@@ -23,7 +23,7 @@ class NotificationsView extends StatelessWidget {
       ),
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
-        appBar: const PosScreenAppBar(title: 'Notifications'),
+        appBar: PosScreenAppBar(title: 'Notifications'),
         body: Consumer<NotificationsViewModel>(
           builder: (context, vm, child) {
             final notifications = vm.notifications;

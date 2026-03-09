@@ -24,8 +24,6 @@ class BranchManagementView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context),
-                const SizedBox(height: 24),
                 Expanded(child: _buildBranchList(vm)),
               ],
             ),
@@ -44,22 +42,7 @@ class BranchManagementView extends StatelessWidget {
 
   // AppBar is now replaced by the shared OwnerAppBar widget
 
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'My Branches',
-          style: AppTextStyles.h2.copyWith(fontSize: 24, color: AppColors.secondaryLight),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Manage and monitor all your workshop locations.',
-          style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: 13),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildBranchList(BranchManagementViewModel vm) {
     if (vm.isLoading) {
@@ -81,8 +64,8 @@ class BranchManagementView extends StatelessWidget {
 
   Widget _buildBranchCard(BuildContext context, Branch branch) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -101,36 +84,36 @@ class BranchManagementView extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [AppColors.primaryLight.withOpacity(0.2), AppColors.primaryLight.withOpacity(0.05)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.store_rounded, color: AppColors.secondaryLight, size: 28),
+                child: const Icon(Icons.store_rounded, color: AppColors.secondaryLight, size: 22),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       branch.name,
-                      style: AppTextStyles.h2.copyWith(fontSize: 17, color: AppColors.secondaryLight),
+                      style: AppTextStyles.h2.copyWith(fontSize: 15, color: AppColors.secondaryLight),
                     ),
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(Icons.location_on_rounded, color: Colors.grey, size: 12),
+                        const Icon(Icons.location_on_rounded, color: Colors.grey, size: 10),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             branch.location,
-                            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600),
+                            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.w600),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -190,7 +173,7 @@ class _AddBranchSheet extends StatelessWidget {
 
     return FocusScope(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.45,
+        height: MediaQuery.of(context).size.height * 0.30,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),

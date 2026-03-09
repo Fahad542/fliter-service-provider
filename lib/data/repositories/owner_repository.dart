@@ -52,6 +52,21 @@ class OwnerRepository {
     }
   }
 
+  Future<dynamic> getCorporateCustomers(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.corporateCustomersEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<dynamic> createCorporateUser(Map<String, dynamic> data, String token) async {
     try {
       final response = await _apiService.post(
@@ -119,7 +134,23 @@ class OwnerRepository {
   Future<dynamic> createProduct(Map<String, dynamic> data, String token) async {
     try {
       final response = await _apiService.post(
-        ApiConstants.productsEndpoint,
+        ApiConstants.createProductEndpoint,
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> createCategory(Map<String, dynamic> data, String token) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.createCategoryEndpoint,
         data,
         headers: {
           'Authorization': 'Bearer $token',
@@ -166,6 +197,112 @@ class OwnerRepository {
     try {
       final response = await _apiService.get(
         ApiConstants.departmentsEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getBillingDashboard(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.billingDashboardEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getReportsAnalytics(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.reportsAnalyticsEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getPromoCodes(String token) async {
+    try {
+      final response = await _apiService.get(
+        '${ApiConstants.promoCodesEndpoint}?isActive=true&limit=20&offset=0',
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> createPromoCode(String token, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.createPromoCodeEndpoint,
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getCategories(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.categoriesEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getProducts(String token, String workshopId) async {
+    try {
+      final response = await _apiService.get(
+        '${ApiConstants.productsEndpoint}?workshopId=$workshopId',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getDashboardData(String token, {String? branchId}) async {
+    try {
+      String endpoint = ApiConstants.dashboardEndpoint;
+      if (branchId != null && branchId.isNotEmpty) {
+        endpoint += '?branchId=$branchId';
+      }
+      final response = await _apiService.get(
+        endpoint,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

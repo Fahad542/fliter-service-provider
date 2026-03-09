@@ -7,6 +7,7 @@ import '../../../widgets/widgets.dart';
 import '../owner_shell.dart';
 import 'owner_login_view_model.dart';
 import '../../../services/session_service.dart';
+import 'owner_registration_view.dart';
 
 class OwnerLoginView extends StatefulWidget {
   const OwnerLoginView({super.key});
@@ -152,6 +153,26 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const OwnerRegistrationView(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            "Don't have an account? Sign up",
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.backgroundDark,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -163,3 +184,4 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
     );
   }
 }
+

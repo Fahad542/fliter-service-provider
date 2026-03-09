@@ -21,6 +21,9 @@ class CorporateManagementViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  bool _isListLoading = false;
+  bool get isListLoading => _isListLoading;
+
   List<CorporateCustomer> _corporateCustomers = [];
   List<CorporateCustomer> get corporateCustomers => _corporateCustomers;
 
@@ -28,20 +31,28 @@ class CorporateManagementViewModel extends ChangeNotifier {
     required this.ownerRepository,
     required this.sessionService,
   }) {
-    _init();
+    Future.microtask(_init);
   }
 
   Future<void> _init() async {
-    _isLoading = true;
+    _isListLoading = true;
     notifyListeners();
     
-    await Future.delayed(const Duration(seconds: 1));
-    _corporateCustomers = [
-      CorporateCustomer(id: '1', companyName: 'Aramco Logistics', vatNumber: '300099887766', contactName: 'John Doe', mobile: '0567788990', email: 'logistics@aramco.com', allowedBranchIds: ['1', '2'], category: 'Gold', totalSales: 450000.0, vehicleCount: 25),
-      CorporateCustomer(id: '2', companyName: 'Sabic Transport', vatNumber: '300055443322', contactName: 'Jane Smith', mobile: '0544332211', email: 'fleet@sabic.com', allowedBranchIds: ['1', '3'], category: 'Silver', totalSales: 210000.0, vehicleCount: 12),
-    ];
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token != null) {
+        final response = await ownerRepository.getCorporateCustomers(token);
+        if (response['success'] == true && response['corporateCustomers'] != null) {
+          _corporateCustomers = (response['corporateCustomers'] as List)
+              .map((e) => CorporateCustomer.fromJson(e))
+              .toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching corporate customers: $e');
+    }
 
-    _isLoading = false;
+    _isListLoading = false;
     notifyListeners();
   }
 
@@ -88,6 +99,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
         ToastService.showSuccess(context, 'Corporate Account Created Successfully');
         clearForm();
         Navigator.pop(context); // Close the sheet
+        _init(); // Refresh list automatically
       }
     } catch (e) {
       if (context.mounted) {

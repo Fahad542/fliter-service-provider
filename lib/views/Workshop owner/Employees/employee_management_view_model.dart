@@ -15,9 +15,11 @@ class EmployeeManagementViewModel extends ChangeNotifier {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController departmentController = TextEditingController();
   final TextEditingController baseSalaryController = TextEditingController();
-  final TextEditingController commissionPercentController = TextEditingController();
+  final TextEditingController commissionPercentController =
+      TextEditingController();
   final TextEditingController addressController = TextEditingController();
-  final TextEditingController openingBalanceController = TextEditingController();
+  final TextEditingController openingBalanceController =
+      TextEditingController();
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -117,13 +119,30 @@ class EmployeeManagementViewModel extends ChangeNotifier {
     required String? departmentId,
     required bool isWorkshopTechnician,
   }) async {
-    if (nameController.text.trim().isEmpty || 
+    if (nameController.text.trim().isEmpty ||
         mobileController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
-        passwordController.text.trim().isEmpty ||
-        branchId == null ||
-        departmentId == null) {
-      ToastService.showError(context, 'Please fill in all required fields');
+        passwordController.text.trim().isEmpty) {
+      ToastService.showError(
+        context,
+        'Please fill in all required text fields.',
+      );
+      return;
+    }
+
+    if (branchId == null || branchId.isEmpty) {
+      ToastService.showError(
+        context,
+        'Please create a branch first to assign this employee.',
+      );
+      return;
+    }
+
+    if (departmentId == null || departmentId.isEmpty) {
+      ToastService.showError(
+        context,
+        'Please create a department first to assign this employee.',
+      );
       return;
     }
 
@@ -141,7 +160,8 @@ class EmployeeManagementViewModel extends ChangeNotifier {
         "password": passwordController.text.trim(),
         "branchId": branchId,
         "technicianType": isWorkshopTechnician ? "workshop" : "oncall",
-        "commissionPercent": double.tryParse(commissionPercentController.text.trim()) ?? 0,
+        "commissionPercent":
+            double.tryParse(commissionPercentController.text.trim()) ?? 0,
         "departmentIds": [departmentId],
       };
 
@@ -167,12 +187,22 @@ class EmployeeManagementViewModel extends ChangeNotifier {
     BuildContext context, {
     required String? branchId,
   }) async {
-    if (nameController.text.trim().isEmpty || 
+    if (nameController.text.trim().isEmpty ||
         mobileController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
-        passwordController.text.trim().isEmpty ||
-        branchId == null) {
-      ToastService.showError(context, 'Please fill in all required fields');
+        passwordController.text.trim().isEmpty) {
+      ToastService.showError(
+        context,
+        'Please fill in all required text fields.',
+      );
+      return;
+    }
+
+    if (branchId == null || branchId.isEmpty) {
+      ToastService.showError(
+        context,
+        'Please create a branch first to assign this cashier.',
+      );
       return;
     }
 
@@ -210,7 +240,7 @@ class EmployeeManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> submitSupplierForm(BuildContext context) async {
-    if (nameController.text.trim().isEmpty || 
+    if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         mobileController.text.trim().isEmpty ||
         addressController.text.trim().isEmpty ||
@@ -231,7 +261,8 @@ class EmployeeManagementViewModel extends ChangeNotifier {
         "email": emailController.text.trim(),
         "mobile": mobileController.text.trim(),
         "address": addressController.text.trim(),
-        "openingBalance": double.tryParse(openingBalanceController.text.trim()) ?? 0,
+        "openingBalance":
+            double.tryParse(openingBalanceController.text.trim()) ?? 0,
         "password": passwordController.text.trim(),
       };
 

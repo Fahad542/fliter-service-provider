@@ -36,11 +36,13 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(),
-                const SizedBox(height: 20),
                 _buildSearchBar(),
                 const SizedBox(height: 24),
-                Expanded(child: _buildCustomerList(filteredCustomers)),
+                Expanded(
+                  child: vm.isListLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _buildCustomerList(filteredCustomers),
+                ),
               ],
             ),
           ),
@@ -56,22 +58,7 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
     );
   }
 
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Corporate Partners',
-          style: AppTextStyles.h2.copyWith(fontSize: 24, color: AppColors.secondaryLight),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Manage billing and branch access for corporate clients.',
-          style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: 13),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildSearchBar() {
     return TextField(
@@ -109,8 +96,8 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
 
   Widget _buildCustomerCard(CorporateCustomer customer) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -128,26 +115,26 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
           Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [AppColors.primaryLight.withOpacity(0.2), AppColors.primaryLight.withOpacity(0.05)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.business_rounded, color: AppColors.secondaryLight, size: 28),
+                child: const Icon(Icons.business_rounded, color: AppColors.secondaryLight, size: 22),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(customer.companyName, style: AppTextStyles.h2.copyWith(fontSize: 17, color: AppColors.secondaryLight)),
+                    Text(customer.companyName, style: AppTextStyles.h2.copyWith(fontSize: 15, color: AppColors.secondaryLight)),
                     const SizedBox(height: 2),
-                    Text('VAT: ${customer.vatNumber}', style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
+                    Text('VAT: ${customer.vatNumber}', style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -169,12 +156,16 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton.icon(
+              ElevatedButton.icon(
                 onPressed: () => _showAddUserSheet(context, context.read<CorporateManagementViewModel>(), customer.id),
-                icon: const Icon(Icons.person_add_rounded, size: 18),
-                label: const Text('Add User', style: TextStyle(fontWeight: FontWeight.bold)),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primaryLight,
+                icon: const Icon(Icons.person_add_rounded, size: 14),
+                label: const Text('Add User', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ],
@@ -255,7 +246,7 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
   Widget build(BuildContext context) {
     final vm = context.watch<CorporateManagementViewModel>();
     return Container(
-      height: MediaQuery.of(context).size.height * 0.72,
+      height: MediaQuery.of(context).size.height * 0.52,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -342,8 +333,10 @@ class _AddCorporateUserSheet extends StatefulWidget {
 class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<CorporateManagementViewModel>();
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.65,
+      height: MediaQuery.of(context).size.height * 0.48,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -361,19 +354,19 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
                   const SizedBox(height: 8),
                   const Text('Create credentials for a user associated with this corporate account.', style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 30),
-                  _buildTextField('Full Name', Icons.person_rounded, widget.vm.userNameController),
-                  _buildTextField('Email Address', Icons.email_rounded, widget.vm.userEmailController, keyboardType: TextInputType.emailAddress),
-                  _buildTextField('Password', Icons.lock_rounded, widget.vm.userPasswordController, obscureText: true),
+                  _buildTextField('Full Name', Icons.person_rounded, vm.userNameController),
+                  _buildTextField('Email Address', Icons.email_rounded, vm.userEmailController, keyboardType: TextInputType.emailAddress),
+                  _buildTextField('Password', Icons.lock_rounded, vm.userPasswordController, obscureText: true),
                   const SizedBox(height: 40),
                   ElevatedButton(
-                    onPressed: widget.vm.isLoading ? null : () => widget.vm.submitCorporateUserForm(context, widget.corporateAccountId),
+                    onPressed: vm.isLoading ? null : () => vm.submitCorporateUserForm(context, widget.corporateAccountId),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondaryLight,
                       minimumSize: const Size.fromHeight(56),
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: widget.vm.isLoading 
+                    child: vm.isLoading 
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Create User', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
                   ),

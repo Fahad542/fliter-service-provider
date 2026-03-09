@@ -25,14 +25,16 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final bool showBackButton;
   final bool showHamburger;
+  final bool showGlobalLeft;
   final VoidCallback? onMenuPressed;
 
   const PosScreenAppBar({
-    super.key, 
-    required this.title, 
-    this.onBack, 
+    super.key,
+    required this.title,
+    this.onBack,
     this.showBackButton = true,
     this.showHamburger = false,
+    this.showGlobalLeft = false,
     this.onMenuPressed,
   });
 
@@ -47,82 +49,183 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: Container(
         decoration: const BoxDecoration(
           color: AppColors.primaryLight,
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(24),
-          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
         ),
         child: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: showBackButton,
-          leading: showBackButton 
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: onBack ?? () => Navigator.pop(context),
-              )
-            : showHamburger
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    child: InkWell(
-                      onTap: onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.secondaryLight,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.secondaryLight.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+          leading: showBackButton
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  onPressed: onBack ?? () => Navigator.pop(context),
+                )
+              : showGlobalLeft
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: Consumer<SettingsViewModel>(
+                    builder: (context, settings, _) {
+                      return InkWell(
+                        onTap: () {
+                          final newLocale = settings.locale.languageCode == 'en'
+                              ? const Locale('ar')
+                              : const Locale('en');
+                          settings.updateLocale(newLocale);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Image.asset(
+                              'assets/images/global.png',
+                              width: 20,
+                              color: Colors.black,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                    Icons.language_rounded,
+                                    size: 20,
+                                    color: Colors.black,
+                                  ),
                             ),
-                          ],
+                          ),
                         ),
-                        child: const Icon(Icons.menu_rounded, color: Colors.white, size: 20),
+                      );
+                    },
+                  ),
+                )
+              : showHamburger
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: InkWell(
+                    onTap:
+                        onMenuPressed ??
+                        () => Scaffold.of(context).openDrawer(),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryLight,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.secondaryLight.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.menu_rounded,
+                        color: Colors.white,
+                        size: 20,
                       ),
                     ),
-                  )
-                : null,
+                  ),
+                )
+              : null,
           title: Text(
             title,
             style: TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
-            fontSize: isTablet ? 21 : 19,
+              fontSize: isTablet ? 21 : 19,
             ),
           ),
           centerTitle: true,
           actions: [
-            Consumer<SettingsViewModel>(
-              builder: (context, settings, _) {
-                return InkWell(
+            if (!showGlobalLeft)
+              Consumer<SettingsViewModel>(
+                builder: (context, settings, _) {
+                  return InkWell(
+                    onTap: () {
+                      final newLocale = settings.locale.languageCode == 'en'
+                          ? const Locale('ar')
+                          : const Locale('en');
+                      settings.updateLocale(newLocale);
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/global.png',
+                          width: 20,
+                          color: Colors.black,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.language_rounded,
+                                size: 20,
+                                color: Colors.black,
+                              ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            if (showGlobalLeft)
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: InkWell(
                   onTap: () {
-                    final newLocale = settings.locale.languageCode == 'en'
-                        ? const Locale('ar')
-                        : const Locale('en');
-                    settings.updateLocale(newLocale);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationsView(),
+                      ),
+                    );
                   },
+                  borderRadius: BorderRadius.circular(20),
                   child: Container(
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/images/global.png',
-                        width: 20,
-                        color: Colors.black,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.language_rounded, size: 20, color: Colors.black),
-                      ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/notifications.png',
+                          width: 22,
+                          color: Colors.black,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.notifications_rounded,
+                                size: 22,
+                                color: Colors.black,
+                              ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              },
-            ),
-            const SizedBox(width: 12),
+                ),
+              ),
+            if (!showGlobalLeft) const SizedBox(width: 12),
           ],
         ),
       ),
@@ -170,15 +273,108 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       centerTitle: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(32),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       toolbarHeight: isTablet ? kToolbarHeight + 40 : 60,
-      leadingWidth: showGlobalLeft ? (isTablet ? 74 : 64) : (showDrawer ? (isTablet ? 74 : 64) : 0),
-      leading: showGlobalLeft 
-        ? Padding(
-            padding: EdgeInsets.only(left: 10, top: isTablet ? 20 : 8, bottom: isTablet ? 8 : 8),
+      leadingWidth: showGlobalLeft
+          ? (isTablet ? 74 : 64)
+          : (showDrawer ? (isTablet ? 74 : 64) : 0),
+      leading: showGlobalLeft
+          ? Padding(
+              padding: EdgeInsets.only(
+                left: 10,
+                top: isTablet ? 20 : 8,
+                bottom: isTablet ? 8 : 8,
+              ),
+              child: Consumer<SettingsViewModel>(
+                builder: (context, settings, _) {
+                  return InkWell(
+                    onTap: () {
+                      final newLocale = settings.locale.languageCode == 'en'
+                          ? const Locale('ar')
+                          : const Locale('en');
+                      settings.updateLocale(newLocale);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/global.png',
+                          width: 20,
+                          color: Colors.black,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.language_rounded,
+                                size: 20,
+                                color: Colors.black,
+                              ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          : showDrawer
+          ? Padding(
+              padding: EdgeInsets.only(
+                left: 10,
+                top: isTablet ? 20 : 8,
+                bottom: isTablet ? 8 : 8,
+              ),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryLight,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.secondaryLight.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.menu_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            )
+          : null,
+      title: Padding(
+        padding: EdgeInsets.only(top: isTablet ? 25 : 0),
+        child: SizedBox(
+          height: isTablet ? 45 : 28,
+          child: Image.asset(
+            'assets/images/icon.png',
+            color: Colors.black,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.store, color: Colors.black),
+          ),
+        ),
+      ),
+      actions: [
+        if (!showGlobalLeft) ...[
+          // Language Pill
+          Padding(
+            padding: EdgeInsets.only(
+              top: isTablet ? 20 : 0,
+              bottom: isTablet ? 8 : 0,
+            ),
             child: Consumer<SettingsViewModel>(
               builder: (context, settings, _) {
                 return InkWell(
@@ -202,133 +398,74 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                         width: 20,
                         color: Colors.black,
                         errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.language_rounded, size: 20, color: Colors.black),
+                            const Icon(
+                              Icons.language_rounded,
+                              size: 20,
+                              color: Colors.black,
+                            ),
                       ),
                     ),
                   ),
                 );
               },
             ),
-          )
-        : showDrawer ? Padding(
-          padding: EdgeInsets.only(left: 10, top: isTablet ? 20 : 8, bottom: isTablet ? 8 : 8),
-          child: InkWell(
-            onTap: onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.secondaryLight,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.secondaryLight.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
-            ),
           ),
-        ) : null,
-      title: Padding(
-        padding: EdgeInsets.only(top: isTablet ? 25 : 0),
-        child: SizedBox(
-          height: isTablet ? 45 : 28,
-          child: Image.asset(
-            'assets/images/icon.png',
-            color: Colors.black,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => const Icon(Icons.store, color: Colors.black),
-          ),
-        ),
-      ),
-      actions: [
-      if (!showGlobalLeft) ...[
-        // Language Pill
+          const SizedBox(width: 12),
+        ],
+
         Padding(
-          padding: EdgeInsets.only(top: isTablet ? 20 : 0, bottom: isTablet ? 8 : 0),
-          child: Consumer<SettingsViewModel>(
-            builder: (context, settings, _) {
-              return InkWell(
-                onTap: () {
-                  final newLocale = settings.locale.languageCode == 'en'
-                      ? const Locale('ar')
-                      : const Locale('en');
-                  settings.updateLocale(newLocale);
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/global.png',
-                      width: 20,
-                      color: Colors.black,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.language_rounded, size: 20, color: Colors.black),
-                    ),
-                  ),
+          padding: EdgeInsets.only(
+            top: isTablet ? 20 : 0,
+            bottom: isTablet ? 8 : 0,
+          ),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsView(),
                 ),
               );
             },
-          ),
-        ),
-        const SizedBox(width: 12),
-      ],
-
-      Padding(
-        padding: EdgeInsets.only(top: isTablet ? 20 : 0, bottom: isTablet ? 8 : 0),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const NotificationsView()),
-            );
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/notifications.png',
-                  width: 22,
-                  color: Colors.black,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.notifications_rounded, size: 22, color: Colors.black),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/notifications.png',
+                    width: 22,
+                    color: Colors.black,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.notifications_rounded,
+                      size: 22,
+                      color: Colors.black,
                     ),
                   ),
-                ),
-              ],
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-      const SizedBox(width: 16),
+        const SizedBox(width: 16),
       ],
     );
   }
@@ -355,7 +492,7 @@ class PosInfoBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    
+
     return Container(
       padding: EdgeInsets.fromLTRB(10, 0, 10, isTablet ? 12 : 8),
       decoration: const BoxDecoration(
@@ -363,7 +500,9 @@ class PosInfoBar extends StatelessWidget {
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       child: Row(
-        mainAxisAlignment: isTablet ? MainAxisAlignment.start : MainAxisAlignment.center,
+        mainAxisAlignment: isTablet
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.center,
         children: [
           Flexible(child: _buildInfoChip(context, Icons.person, title)),
           const Spacer(),
@@ -373,14 +512,26 @@ class PosInfoBar extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip(BuildContext context, IconData? icon, String text, {bool isBlack = false}) {
+  Widget _buildInfoChip(
+    BuildContext context,
+    IconData? icon,
+    String text, {
+    bool isBlack = false,
+  }) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 12 : 6, vertical: isTablet ? 6 : 4), // Reduced horizontal padding on mobile to fit 3 items
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 12 : 6,
+        vertical: isTablet ? 6 : 4,
+      ), // Reduced horizontal padding on mobile to fit 3 items
       decoration: BoxDecoration(
-        color: isBlack ? const Color(0xFF212529) : Colors.white.withOpacity(0.5),
+        color: isBlack
+            ? const Color(0xFF212529)
+            : Colors.white.withOpacity(0.5),
         borderRadius: BorderRadius.circular(30),
-        border: isBlack ? null : Border.all(color: Colors.white.withOpacity(0.3)),
+        border: isBlack
+            ? null
+            : Border.all(color: Colors.white.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -389,7 +540,8 @@ class PosInfoBar extends StatelessWidget {
             Icon(icon, size: isTablet ? 15 : 11, color: Colors.white),
             SizedBox(width: isTablet ? 8 : 4),
           ],
-          Flexible( // Use Flexible to prevent overflow if text is long
+          Flexible(
+            // Use Flexible to prevent overflow if text is long
             child: Text(
               text,
               style: AppTextStyles.bodyMedium.copyWith(
@@ -440,7 +592,11 @@ class UserChip extends StatelessWidget {
             child: const CircleAvatar(
               radius: 10,
               backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 14, color: AppColors.secondaryLight),
+              child: Icon(
+                Icons.person,
+                size: 14,
+                color: AppColors.secondaryLight,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -536,7 +692,11 @@ class SearchHistoryItem extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.grey.shade200),
                 ),
-                child: const Icon(Icons.directions_car, color: AppColors.primaryLight, size: 24), // Increased from 20
+                child: const Icon(
+                  Icons.directions_car,
+                  color: AppColors.primaryLight,
+                  size: 24,
+                ), // Increased from 20
               ),
               const SizedBox(width: 16), // Increased from 12
               Expanded(
@@ -555,7 +715,10 @@ class SearchHistoryItem extends StatelessWidget {
                         if (isCorporate) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.blue.shade50,
                               borderRadius: BorderRadius.circular(6),
@@ -583,7 +746,10 @@ class SearchHistoryItem extends StatelessWidget {
                     ),
                     const SizedBox(height: 8), // Reduced from 10
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced from 12, 8
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ), // Reduced from 12, 8
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(10),
@@ -591,7 +757,11 @@ class SearchHistoryItem extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.history, size: 14, color: Colors.amber.shade700), // Reduced from 16
+                          Icon(
+                            Icons.history,
+                            size: 14,
+                            color: Colors.amber.shade700,
+                          ), // Reduced from 16
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
@@ -624,10 +794,17 @@ class SearchHistoryItem extends StatelessWidget {
                     backgroundColor: AppColors.primaryLight,
                     foregroundColor: AppColors.secondaryLight,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10), // Reduced from 14
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                    ), // Reduced from 14
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text('Continue Order', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)), // Reduced from 14
+                  child: const Text(
+                    'Continue Order',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                  ), // Reduced from 14
                 ),
               ),
               const SizedBox(width: 12),
@@ -638,10 +815,17 @@ class SearchHistoryItem extends StatelessWidget {
                     backgroundColor: AppColors.secondaryLight,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10), // Reduced from 14
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                    ), // Reduced from 14
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text('Full History', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)), // Reduced from 14
+                  child: const Text(
+                    'Full History',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                  ), // Reduced from 14
                 ),
               ),
             ],
@@ -662,7 +846,10 @@ class SearchHistoryItem extends StatelessWidget {
                     side: BorderSide(color: Colors.red.shade200),
                   ),
                 ),
-                child: const Text('Sales Return / Credit Note', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                child: const Text(
+                  'Sales Return / Credit Note',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                ),
               ),
             ),
           ],
@@ -671,6 +858,7 @@ class SearchHistoryItem extends StatelessWidget {
     );
   }
 }
+
 class PosBottomBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -705,7 +893,12 @@ class PosBottomBar extends StatelessWidget {
               _buildNavItem(context, 0, Icons.home_rounded, 'Home'),
               _buildNavItem(context, 1, Icons.inventory_2_outlined, 'Products'),
               _buildNavItem(context, 2, Icons.receipt_long_outlined, 'Orders'),
-              _buildNavItem(context, 3, Icons.engineering_outlined, 'Technician'),
+              _buildNavItem(
+                context,
+                3,
+                Icons.engineering_outlined,
+                'Technician',
+              ),
             ],
           ),
         ),
@@ -713,7 +906,12 @@ class PosBottomBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, int index, IconData icon, String label) {
+  Widget _buildNavItem(
+    BuildContext context,
+    int index,
+    IconData icon,
+    String label,
+  ) {
     final isSelected = currentIndex == index;
     final isTablet = MediaQuery.of(context).size.width > 600;
 
@@ -727,7 +925,9 @@ class PosBottomBar extends StatelessWidget {
           vertical: 8,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryLight.withOpacity(0.15) : Colors.transparent,
+          color: isSelected
+              ? AppColors.primaryLight.withOpacity(0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
@@ -808,7 +1008,10 @@ class PosSearchBar extends StatelessWidget {
                 ),
                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
               ),
               inputFormatters: inputFormatters ?? [EnglishNumberFormatter()],
               onChanged: onChanged,
@@ -821,7 +1024,11 @@ class PosSearchBar extends StatelessWidget {
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.search, color: AppColors.secondaryLight, size: isTablet ? 20 : 18),
+            child: Icon(
+              Icons.search,
+              color: AppColors.secondaryLight,
+              size: isTablet ? 20 : 18,
+            ),
           ),
         ],
       ),
@@ -863,7 +1070,10 @@ class _OrderItemCardState extends State<OrderItemCard> {
             InkWell(
               onTap: () => setState(() => _isExpanded = !_isExpanded),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: Column(
                   children: [
                     Column(
@@ -922,14 +1132,21 @@ class _OrderItemCardState extends State<OrderItemCard> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.secondaryLight,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.layers_rounded, size: 12, color: Colors.white),
+                                  Icon(
+                                    Icons.layers_rounded,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${widget.order.jobsCount} JOBS',
@@ -944,7 +1161,9 @@ class _OrderItemCardState extends State<OrderItemCard> {
                               ),
                             ),
                             Icon(
-                              _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                              _isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
                               color: Colors.grey.shade300,
                               size: 20,
                             ),
@@ -961,40 +1180,66 @@ class _OrderItemCardState extends State<OrderItemCard> {
                           Expanded(
                             child: Consumer<pvm.PosViewModel>(
                               builder: (context, posVm, child) {
-                                final isInvoiced = widget.order.status.toLowerCase() == 'invoiced';
-                                final isCurrentOrderLoading = posVm.isInvoiceLoading && posVm.loadingOrderId == widget.order.id;
-                                
+                                final isInvoiced =
+                                    widget.order.status.toLowerCase() ==
+                                    'invoiced';
+                                final isCurrentOrderLoading =
+                                    posVm.isInvoiceLoading &&
+                                    posVm.loadingOrderId == widget.order.id;
+
                                 return _buildActionButton(
-                                  onPressed: posVm.isInvoiceLoading 
-                                    ? null
-                                    : () async {
-                                        if (isInvoiced) {
-                                          // Fetch and show existing invoice
-                                          final response = await posVm.fetchInvoiceByOrder(widget.order.id);
-                                          if (response != null && response.success && response.invoice != null && context.mounted) {
-                                            await showDialog(
-                                              context: context,
-                                              builder: (ctx) => InvoiceDialog(invoice: response.invoice!),
-                                            );
-                                          } else if (response != null && !response.success && context.mounted) {
-                                            ToastService.showError(context, response.message);
+                                  onPressed: posVm.isInvoiceLoading
+                                      ? null
+                                      : () async {
+                                          if (isInvoiced) {
+                                            // Fetch and show existing invoice
+                                            final response = await posVm
+                                                .fetchInvoiceByOrder(
+                                                  widget.order.id,
+                                                );
+                                            if (response != null &&
+                                                response.success &&
+                                                response.invoice != null &&
+                                                context.mounted) {
+                                              await showDialog(
+                                                context: context,
+                                                builder: (ctx) => InvoiceDialog(
+                                                  invoice: response.invoice!,
+                                                ),
+                                              );
+                                            } else if (response != null &&
+                                                !response.success &&
+                                                context.mounted) {
+                                              ToastService.showError(
+                                                context,
+                                                response.message,
+                                              );
+                                            }
+                                          } else {
+                                            // Navigate to the Final Review Screen - no API call
+                                            if (context.mounted) {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      PosOrderReviewView(
+                                                        order: widget.order,
+                                                      ),
+                                                ),
+                                              );
+                                            }
                                           }
-                                        } else {
-                                          // Navigate to the Final Review Screen - no API call
-                                          if (context.mounted) {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => PosOrderReviewView(order: widget.order),
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      },
+                                        },
                                   isLoading: isCurrentOrderLoading,
-                                  icon: isInvoiced ? Icons.receipt_long_rounded : Icons.auto_awesome_rounded,
-                                  label: isInvoiced ? 'Invoice' : 'Gen. Invoice',
-                                  color: isInvoiced ? AppColors.secondaryLight : const Color(0xFF1E2124),
+                                  icon: isInvoiced
+                                      ? Icons.receipt_long_rounded
+                                      : Icons.auto_awesome_rounded,
+                                  label: isInvoiced
+                                      ? 'Invoice'
+                                      : 'Gen. Invoice',
+                                  color: isInvoiced
+                                      ? AppColors.secondaryLight
+                                      : const Color(0xFF1E2124),
                                 );
                               },
                             ),
@@ -1007,8 +1252,10 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                   onPressed: () {
                                     posVm.setCustomerData(
                                       name: widget.order.customerName,
-                                      vat: '', // VAT doesn't seem to be in PosOrder list model directly
-                                      mobile: widget.order.customer?.mobile ?? '',
+                                      vat:
+                                          '', // VAT doesn't seem to be in PosOrder list model directly
+                                      mobile:
+                                          widget.order.customer?.mobile ?? '',
                                       vehicleNumber: widget.order.plateNumber,
                                       make: widget.order.vehicle?.make ?? '',
                                       model: widget.order.vehicle?.model ?? '',
@@ -1016,7 +1263,10 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                     );
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (_) => const PosDepartmentView()),
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const PosDepartmentView(),
+                                      ),
                                     );
                                   },
                                   icon: Icons.add_business_rounded,
@@ -1059,7 +1309,11 @@ class _OrderItemCardState extends State<OrderItemCard> {
     );
   }
 
-  Widget _buildPremiumDetailItem(String title, {String? subtitle, CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
+  Widget _buildPremiumDetailItem(
+    String title, {
+    String? subtitle,
+    CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
+  }) {
     return Column(
       crossAxisAlignment: crossAxisAlignment,
       children: [
@@ -1096,7 +1350,9 @@ class _OrderItemCardState extends State<OrderItemCard> {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: isSecondary ? AppColors.primaryLight.withOpacity(0.2) : color.withOpacity(0.06),
+        color: isSecondary
+            ? AppColors.primaryLight.withOpacity(0.2)
+            : color.withOpacity(0.06),
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextButton.icon(
@@ -1104,12 +1360,24 @@ class _OrderItemCardState extends State<OrderItemCard> {
         style: TextButton.styleFrom(
           foregroundColor: color,
           padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        icon: isLoading 
-          ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1E2124)))
-          : Icon(icon, size: 16),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+        icon: isLoading
+            ? const SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF1E2124),
+                ),
+              )
+            : Icon(icon, size: 16),
+        label: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+        ),
       ),
     );
   }
@@ -1122,7 +1390,10 @@ class InvoiceDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: 'SAR ', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(
+      symbol: 'SAR ',
+      decimalDigits: 2,
+    );
     final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
     final DateTime? invDate = DateTime.tryParse(invoice.invoiceDate);
 
@@ -1150,7 +1421,10 @@ class InvoiceDialog extends StatelessWidget {
               // Header Gradient
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 40,
+                  horizontal: 20,
+                ),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [AppColors.secondaryLight, Color(0xFF2C3E50)],
@@ -1191,8 +1465,17 @@ class InvoiceDialog extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildMetaItem('Date', invDate != null ? dateFormat.format(invDate) : invoice.invoiceDate),
-                          _buildMetaItem('Status', invoice.paymentStatus.toUpperCase(), color: Colors.green),
+                          _buildMetaItem(
+                            'Date',
+                            invDate != null
+                                ? dateFormat.format(invDate)
+                                : invoice.invoiceDate,
+                          ),
+                          _buildMetaItem(
+                            'Status',
+                            invoice.paymentStatus.toUpperCase(),
+                            color: Colors.green,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -1214,30 +1497,50 @@ class InvoiceDialog extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            _buildInfoRow(Icons.person_outline, 'Customer', invoice.customerName),
+                            _buildInfoRow(
+                              Icons.person_outline,
+                              'Customer',
+                              invoice.customerName,
+                            ),
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: Divider(height: 1),
                             ),
-                            _buildInfoRow(Icons.directions_car_outlined, 'Vehicle', invoice.vehicleInfo),
+                            _buildInfoRow(
+                              Icons.directions_car_outlined,
+                              'Vehicle',
+                              invoice.vehicleInfo,
+                            ),
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: Divider(height: 1),
                             ),
-                            _buildInfoRow(Icons.pin_outlined, 'Plate No', invoice.plateNo.toUpperCase()),
+                            _buildInfoRow(
+                              Icons.pin_outlined,
+                              'Plate No',
+                              invoice.plateNo.toUpperCase(),
+                            ),
                             if (invoice.cashierName != null) ...[
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 8),
                                 child: Divider(height: 1),
                               ),
-                              _buildInfoRow(Icons.person_pin_outlined, 'Cashier', invoice.cashierName!),
+                              _buildInfoRow(
+                                Icons.person_pin_outlined,
+                                'Cashier',
+                                invoice.cashierName!,
+                              ),
                             ],
                             if (invoice.branchName != null) ...[
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 8),
                                 child: Divider(height: 1),
                               ),
-                              _buildInfoRow(Icons.storefront_outlined, 'Branch', invoice.branchName!),
+                              _buildInfoRow(
+                                Icons.storefront_outlined,
+                                'Branch',
+                                invoice.branchName!,
+                              ),
                             ],
                           ],
                         ),
@@ -1253,33 +1556,44 @@ class InvoiceDialog extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      ...invoice.items.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.productName,
-                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                                  ),
-                                  Text(
-                                    '${item.qty.toInt()} x ${currencyFormat.format(item.unitPrice)}',
-                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                                  ),
-                                ],
+                      ...invoice.items.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.productName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${item.qty.toInt()} x ${currencyFormat.format(item.unitPrice)}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Text(
-                              currencyFormat.format(item.lineTotal),
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                            ),
-                          ],
+                              Text(
+                                currencyFormat.format(item.lineTotal),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      )),
+                      ),
                       const SizedBox(height: 20),
                       Container(
                         padding: const EdgeInsets.all(20),
@@ -1290,12 +1604,22 @@ class InvoiceDialog extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            _buildPriceRow('Subtotal', currencyFormat.format(invoice.subtotal)),
+                            _buildPriceRow(
+                              'Subtotal',
+                              currencyFormat.format(invoice.subtotal),
+                            ),
                             const SizedBox(height: 8),
-                            _buildPriceRow('VAT (15%)', currencyFormat.format(invoice.vatAmount)),
+                            _buildPriceRow(
+                              'VAT (15%)',
+                              currencyFormat.format(invoice.vatAmount),
+                            ),
                             if (invoice.discountAmount > 0) ...[
                               const SizedBox(height: 8),
-                              _buildPriceRow('Discount', '-${currencyFormat.format(invoice.discountAmount)}', isDiscount: true),
+                              _buildPriceRow(
+                                'Discount',
+                                '-${currencyFormat.format(invoice.discountAmount)}',
+                                isDiscount: true,
+                              ),
                             ],
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 12),
@@ -1329,31 +1653,50 @@ class InvoiceDialog extends StatelessWidget {
                           buffer.writeln('Customer: ${invoice.customerName}');
                           buffer.writeln('Vehicle: ${invoice.vehicleInfo}');
                           buffer.writeln('Plate No: ${invoice.plateNo}');
-                          if (invoice.cashierName != null) buffer.writeln('Cashier: ${invoice.cashierName}');
-                          if (invoice.branchName != null) buffer.writeln('Branch: ${invoice.branchName}');
+                          if (invoice.cashierName != null)
+                            buffer.writeln('Cashier: ${invoice.cashierName}');
+                          if (invoice.branchName != null)
+                            buffer.writeln('Branch: ${invoice.branchName}');
                           buffer.writeln('---------------------------');
                           buffer.writeln('ITEMS:');
                           for (var item in invoice.items) {
-                            buffer.writeln('- ${item.productName}: ${item.qty.toInt()} x SAR ${item.unitPrice.toStringAsFixed(2)} = SAR ${item.lineTotal.toStringAsFixed(2)}');
+                            buffer.writeln(
+                              '- ${item.productName}: ${item.qty.toInt()} x SAR ${item.unitPrice.toStringAsFixed(2)} = SAR ${item.lineTotal.toStringAsFixed(2)}',
+                            );
                           }
                           buffer.writeln('---------------------------');
-                          buffer.writeln('Subtotal: SAR ${invoice.subtotal.toStringAsFixed(2)}');
-                          buffer.writeln('VAT (15%): SAR ${invoice.vatAmount.toStringAsFixed(2)}');
+                          buffer.writeln(
+                            'Subtotal: SAR ${invoice.subtotal.toStringAsFixed(2)}',
+                          );
+                          buffer.writeln(
+                            'VAT (15%): SAR ${invoice.vatAmount.toStringAsFixed(2)}',
+                          );
                           if (invoice.discountAmount > 0) {
-                            buffer.writeln('Discount: -SAR ${invoice.discountAmount.toStringAsFixed(2)}');
+                            buffer.writeln(
+                              'Discount: -SAR ${invoice.discountAmount.toStringAsFixed(2)}',
+                            );
                           }
-                          buffer.writeln('TOTAL AMOUNT: SAR ${invoice.totalAmount.toStringAsFixed(2)}');
-                          buffer.writeln('Status: ${invoice.paymentStatus.toUpperCase()}');
+                          buffer.writeln(
+                            'TOTAL AMOUNT: SAR ${invoice.totalAmount.toStringAsFixed(2)}',
+                          );
+                          buffer.writeln(
+                            'Status: ${invoice.paymentStatus.toUpperCase()}',
+                          );
                           buffer.writeln('---------------------------');
                           buffer.writeln('Thank you for choosing our service!');
 
-                          Share.share(buffer.toString(), subject: 'Invoice ${invoice.invoiceNo}');
+                          Share.share(
+                            buffer.toString(),
+                            subject: 'Invoice ${invoice.invoiceNo}',
+                          );
                         },
                         icon: const Icon(Icons.share_outlined, size: 18),
                         label: const Text('Share'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
                           side: BorderSide(color: Colors.grey.shade300),
                         ),
                       ),
@@ -1367,12 +1710,17 @@ class InvoiceDialog extends StatelessWidget {
                           backgroundColor: AppColors.primaryLight,
                           foregroundColor: AppColors.secondaryLight,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
                           elevation: 0,
                         ),
                         child: const Text(
                           'Done',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -1393,13 +1741,21 @@ class InvoiceDialog extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '$label:',
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(color: Color(0xFF1E2124), fontSize: 13, fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              color: Color(0xFF1E2124),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
             textAlign: TextAlign.right,
           ),
         ),
@@ -1411,7 +1767,14 @@ class InvoiceDialog extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade500,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(
           value,
@@ -1425,7 +1788,12 @@ class InvoiceDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceRow(String label, String value, {bool isTotal = false, bool isDiscount = false}) {
+  Widget _buildPriceRow(
+    String label,
+    String value, {
+    bool isTotal = false,
+    bool isDiscount = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -1442,7 +1810,11 @@ class InvoiceDialog extends StatelessWidget {
           style: TextStyle(
             fontSize: isTotal ? 20 : 14,
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.w800,
-            color: isDiscount ? Colors.red : (isTotal ? AppColors.secondaryLight : const Color(0xFF1E2124)),
+            color: isDiscount
+                ? Colors.red
+                : (isTotal
+                      ? AppColors.secondaryLight
+                      : const Color(0xFF1E2124)),
           ),
         ),
       ],
@@ -1457,7 +1829,7 @@ class TechnicianCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1477,7 +1849,11 @@ class TechnicianCard extends StatelessWidget {
           CircleAvatar(
             radius: isTablet ? 20 : 24,
             backgroundColor: AppColors.primaryLight.withOpacity(0.1),
-            child: Icon(Icons.person, size: isTablet ? 20 : 24, color: AppColors.secondaryLight),
+            child: Icon(
+              Icons.person,
+              size: isTablet ? 20 : 24,
+              color: AppColors.secondaryLight,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1503,7 +1879,9 @@ class TechnicianCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: isTablet ? 10 : 12,
-                    color: tech.statusInfo.contains('Castrol') ? Colors.black54 : Colors.grey,
+                    color: tech.statusInfo.contains('Castrol')
+                        ? Colors.black54
+                        : Colors.grey,
                   ),
                 ),
               ],
@@ -1559,11 +1937,7 @@ class StatCard extends StatelessWidget {
           Positioned(
             right: -5,
             bottom: -5,
-            child: Icon(
-              icon,
-              size: 50,
-              color: accentColor.withOpacity(0.05),
-            ),
+            child: Icon(icon, size: 50, color: accentColor.withOpacity(0.05)),
           ),
           Padding(
             padding: const EdgeInsets.all(12),
@@ -1572,11 +1946,7 @@ class StatCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      icon,
-                      size: 16,
-                      color: accentColor,
-                    ),
+                    Icon(icon, size: 16, color: accentColor),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -1640,19 +2010,28 @@ class CategorySelector extends StatelessWidget {
                 onTap: () => vm.setCategory(cat),
                 child: Container(
                   margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primaryLight : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isSelected ? AppColors.primaryLight : Colors.grey.shade200,
+                      color: isSelected
+                          ? AppColors.primaryLight
+                          : Colors.grey.shade200,
                     ),
                   ),
                   child: Text(
                     cat,
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: isSelected ? AppColors.secondaryLight : Colors.grey.shade600,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      color: isSelected
+                          ? AppColors.secondaryLight
+                          : Colors.grey.shade600,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       fontSize: 12,
                     ),
                   ),
@@ -1685,10 +2064,7 @@ class ProductCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.transparent,
-          width: 2,
-        ),
+        border: Border.all(color: Colors.transparent, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -1706,7 +2082,10 @@ class ProductCard extends StatelessWidget {
               children: [
                 Text(
                   product.name,
-                  style: AppTextStyles.h2.copyWith(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: AppTextStyles.h2.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1714,7 +2093,10 @@ class ProductCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: stockColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
@@ -1732,7 +2114,10 @@ class ProductCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         product.subtitle,
-                        style: AppTextStyles.bodyMedium.copyWith(fontSize: 10, color: Colors.grey),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontSize: 10,
+                          color: Colors.grey,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1753,12 +2138,20 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      (product.price * 1.15).toStringAsFixed(2), // Price incl. VAT
-                      style: AppTextStyles.h2.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
+                      (product.price * 1.15).toStringAsFixed(
+                        2,
+                      ), // Price incl. VAT
+                      style: AppTextStyles.h2.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Text(
                       ' (Inc. VAT)',
-                      style: TextStyle(fontSize: 8, color: Colors.grey.shade400),
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: Colors.grey.shade400,
+                      ),
                     ),
                   ],
                 ),
@@ -1779,13 +2172,8 @@ class DottedContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: CustomPaint(
-        painter: DottedPainter(),
-        child: child,
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+      child: CustomPaint(painter: DottedPainter(), child: child),
     );
   }
 }
@@ -1801,7 +2189,12 @@ class DottedPainter extends CustomPainter {
     const dashWidth = 5;
     const dashSpace = 3;
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, size.height), const Radius.circular(16)));
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          const Radius.circular(16),
+        ),
+      );
 
     for (var i = 0; i < path.computeMetrics().length; i++) {
       final metric = path.computeMetrics().elementAt(i);

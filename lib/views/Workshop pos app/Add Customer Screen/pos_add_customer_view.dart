@@ -50,7 +50,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           final vm = context.watch<AddCustomerViewModel>();
           return Scaffold(
             backgroundColor: const Color(0xFFFBF9F6),
-            appBar: const PosScreenAppBar(title: 'Add New Customer'),
+            appBar: PosScreenAppBar(title: 'Add New Customer'),
             body: Column(
               children: [
           const SizedBox(height: 20),

@@ -11,6 +11,7 @@ class CustomTextField extends StatelessWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
+  final bool showBorder;
 
   const CustomTextField({
     super.key,
@@ -22,6 +23,7 @@ class CustomTextField extends StatelessWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.validator,
+    this.showBorder = true,
   });
 
   @override
@@ -41,25 +43,25 @@ class CustomTextField extends StatelessWidget {
         errorStyle: AppTextStyles.bodyMedium.copyWith(color: Colors.red, fontSize: 12),
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
-        border: OutlineInputBorder(
+        border: showBorder ? OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-        ),
-        enabledBorder: OutlineInputBorder(
+        ) : InputBorder.none,
+        enabledBorder: showBorder ? OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
+        ) : InputBorder.none,
+        focusedBorder: showBorder ? OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primaryLight),
-        ),
-        errorBorder: OutlineInputBorder(
+        ) : InputBorder.none,
+        errorBorder: showBorder ? OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
+        ) : InputBorder.none,
+        focusedErrorBorder: showBorder ? OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
+        ) : InputBorder.none,
       ),
     );
   }

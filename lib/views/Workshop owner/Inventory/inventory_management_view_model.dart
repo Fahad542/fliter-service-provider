@@ -8,7 +8,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   
-  // Product Form Controllers
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController unitController = TextEditingController();
   final TextEditingController categoryIdController = TextEditingController();
@@ -21,14 +21,18 @@ class InventoryManagementViewModel extends ChangeNotifier {
   bool allowDecimalQty = false;
   bool isActive = true;
 
+  // Category controllers
+  final TextEditingController categoryNameController = TextEditingController();
+  final TextEditingController categoryTypeController = TextEditingController(); // typically 'product' or 'expense'
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
   List<OwnerProduct> _products = [];
   List<OwnerProduct> get products => _products;
 
-  List<String> _categories = ['Engine Oil', 'Brake Pads', 'Air Filters', 'Spark Plugs', 'Coolant'];
-  List<String> get categories => _categories;
+  List<OwnerCategory> _categories = [];
+  List<OwnerCategory> get categories => _categories;
 
   InventoryManagementViewModel({
     required this.ownerRepository,
@@ -38,16 +42,78 @@ class InventoryManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> _init() async {
+    await fetchCategories();
+    await fetchProducts();
+  }
+
+  Future<void> fetchCategories() async {
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token == null) return;
+
+      final response = await ownerRepository.getCategories(token);
+      if (response != null && response['success'] == true && response['categories'] != null) {
+        _categories = (response['categories'] as List)
+            .map((c) => OwnerCategory.fromJson(c))
+            .toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching categories: $e');
+    }
+  }
+
+  Future<void> fetchProducts() async {
     _isLoading = true;
     notifyListeners();
     
-    await Future.delayed(const Duration(seconds: 1));
-    _products = [
-      // Mock data can be added here if needed, currently empty in the original view model too
-    ];
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      final user = await sessionService.getUser(role: 'owner');
+      if (token == null) throw Exception('No token found');
+      final workshopId = user?.workshopId ?? '3';
 
-    _isLoading = false;
-    notifyListeners();
+      final response = await ownerRepository.getProducts(token, workshopId);
+      
+      if (response != null && response['success'] == true) {
+        List<OwnerProduct> allProducts = [];
+        
+        // 1. Process nested categories/subcategories
+        if (response['categories'] != null) {
+          for (var cat in response['categories']) {
+            if (cat['subCategories'] != null) {
+              for (var sub in cat['subCategories']) {
+                if (sub['products'] != null) {
+                  for (var prod in sub['products']) {
+                    allProducts.add(OwnerProduct.fromJson(prod));
+                  }
+                }
+              }
+            }
+            // 2. Process products without subcategories under a category
+            if (cat['productsWithoutSub'] != null) {
+              for (var prod in cat['productsWithoutSub']) {
+                allProducts.add(OwnerProduct.fromJson(prod));
+              }
+            }
+          }
+        }
+        
+        // 3. Process uncategorized products at the root level
+        if (response['uncategorizedProducts'] != null) {
+          for (var prod in response['uncategorizedProducts']) {
+            allProducts.add(OwnerProduct.fromJson(prod));
+          }
+        }
+
+        _products = allProducts;
+      }
+    } catch (e) {
+      debugPrint('Error fetching products: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void toggleAllowDecimal(bool value) {
@@ -72,6 +138,9 @@ class InventoryManagementViewModel extends ChangeNotifier {
     kmTypeValueController.clear();
     allowDecimalQty = false;
     isActive = true;
+    
+    categoryNameController.clear();
+    categoryTypeController.text = 'product';
   }
 
   Future<void> submitProductForm(
@@ -84,7 +153,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
         purchasePriceController.text.trim().isEmpty ||
         salePriceController.text.trim().isEmpty ||
         openingQtyController.text.trim().isEmpty ||
-        departmentId == null || categoryId == null || subCategoryId == null) {
+        departmentId == null || categoryId == null) {
       ToastService.showError(context, 'Please fill in all required fields, including department and category selections.');
       return;
     }
@@ -96,18 +165,21 @@ class InventoryManagementViewModel extends ChangeNotifier {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) throw Exception('No token found');
 
+      String finalSubCategoryId = subCategoryIdController.text.trim().isEmpty ? (subCategoryId ?? '') : subCategoryIdController.text.trim();
       final data = {
         "name": nameController.text.trim(),
-        "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
         "departmentId": departmentId,
         "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
-        "subCategoryId": subCategoryIdController.text.trim().isEmpty ? subCategoryId : subCategoryIdController.text.trim(),
-        "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0,
-        "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0,
+        if (finalSubCategoryId.isNotEmpty)
+          "subCategoryId": finalSubCategoryId,
+        "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
+        "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0.0,
+        "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
         "openingQty": double.tryParse(openingQtyController.text.trim()) ?? 0,
         "criticalStockPoint": double.tryParse(criticalStockPointController.text.trim()) ?? 5,
-        "kmTypeValue": int.tryParse(kmTypeValueController.text.trim()) ?? 0,
+        "kmTypeValue": int.tryParse(kmTypeValueController.text.trim()) ?? 5000,
         "allowDecimalQty": allowDecimalQty,
+        "isActive": isActive,
       };
 
       await ownerRepository.createProduct(data, token);
@@ -116,11 +188,48 @@ class InventoryManagementViewModel extends ChangeNotifier {
         ToastService.showSuccess(context, 'Product Created Successfully');
         clearForm();
         Navigator.pop(context); // Close the sheet
-        // Re-fetch products if a generic fetchProducts method exists
+        await fetchProducts(); // Refresh the list
       }
     } catch (e) {
       if (context.mounted) {
         ToastService.showError(context, 'Failed to create product');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> submitCategoryForm(BuildContext context) async {
+    if (categoryNameController.text.trim().isEmpty || 
+        categoryTypeController.text.trim().isEmpty) {
+      ToastService.showError(context, 'Please fill in all required fields.');
+      return;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token == null) throw Exception('No token found');
+
+      final data = {
+        "name": categoryNameController.text.trim(),
+        "type": categoryTypeController.text.trim(),
+      };
+
+      await ownerRepository.createCategory(data, token);
+
+      if (context.mounted) {
+        ToastService.showSuccess(context, 'Category Created Successfully');
+        clearForm();
+        Navigator.pop(context); // Close the sheet
+        await fetchCategories(); // Refresh the list
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, 'Failed to create category');
       }
     } finally {
       _isLoading = false;
@@ -139,6 +248,8 @@ class InventoryManagementViewModel extends ChangeNotifier {
     openingQtyController.dispose();
     criticalStockPointController.dispose();
     kmTypeValueController.dispose();
+    categoryNameController.dispose();
+    categoryTypeController.dispose();
     super.dispose();
   }
 }

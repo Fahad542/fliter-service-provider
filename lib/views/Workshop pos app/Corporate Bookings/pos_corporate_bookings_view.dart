@@ -35,7 +35,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFFBF9F6),
-        appBar: const PosScreenAppBar(
+        appBar: PosScreenAppBar(
           title: 'Corporate Bookings',
         ),
         body: Consumer<CorporateBookingViewModel>(

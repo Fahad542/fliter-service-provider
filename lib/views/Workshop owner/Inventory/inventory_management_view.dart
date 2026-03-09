@@ -21,7 +21,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -48,7 +48,6 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                   controller: _tabController,
                   children: [
                     _buildProductsTab(vm),
-                    _buildDepartmentsTab(vm),
                     _buildCategoriesTab(vm),
                   ],
                 ),
@@ -70,8 +69,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
   String _getAddLabel() {
     switch (_tabController.index) {
       case 0: return 'Add Product';
-      case 1: return 'Add Department';
-      case 2: return 'Add Category';
+      case 1: return 'Add Category';
       default: return 'Add';
     }
   }
@@ -114,7 +112,6 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
             tabs: const [
               Tab(text: 'PRODUCTS'),
-              Tab(text: 'DEPARTMENTS'),
               Tab(text: 'CATEGORIES'),
             ],
           ),
@@ -124,6 +121,10 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
   }
 
   Widget _buildProductsTab(InventoryManagementViewModel vm) {
+    if (vm.products.isEmpty) {
+      return const Center(child: Text('No products found.'));
+    }
+
     final filteredProducts = vm.products.where((p) => 
       p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
       p.category!.toLowerCase().contains(_searchQuery.toLowerCase())
@@ -172,11 +173,11 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Container(
-                  width: 56, height: 56,
+                  width: 44, height: 44,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -192,17 +193,19 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                   child: Icon(
                     product.type == 'product' ? Icons.inventory_2_rounded : Icons.home_repair_service_rounded,
                     color: AppColors.secondaryLight.withOpacity(0.8),
-                    size: 26,
+                    size: 20,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         product.name, 
-                        style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight),
+                        style: AppTextStyles.h2.copyWith(fontSize: 14, color: AppColors.secondaryLight),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       const SizedBox(height: 2),
                       Row(
@@ -219,9 +222,13 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            product.departmentIds.first,
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w700),
+                          Expanded(
+                            child: Text(
+                              product.departmentName ?? (product.departmentIds.isNotEmpty ? product.departmentIds.first : ''),
+                              style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w700),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
                         ],
                       ),
@@ -234,18 +241,20 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
           ),
           Container(height: 1, color: Colors.grey.withOpacity(0.05)),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildMetricItem(
-                  'STOCK', 
-                  '${product.stockQty.toInt()} ${product.unit}', 
-                  isStockLow ? AppColors.errorLight : AppColors.secondaryLight,
-                  isAlert: isStockLow,
+                Expanded(
+                  child: _buildMetricItem(
+                    'STOCK', 
+                    '${product.stockQty.toInt()} ${product.unit}', 
+                    isStockLow ? AppColors.errorLight : AppColors.secondaryLight,
+                    isAlert: isStockLow,
+                  ),
                 ),
-                _buildMetricItem('PURCHASE', 'SAR ${product.purchasePrice.toInt()}', Colors.grey.shade500),
-                _buildMetricItem('CORPORATE', 'SAR ${product.corporateBasePrice?.toInt() ?? "0"}', AppColors.primaryLight),
+                Expanded(child: _buildMetricItem('PURCHASE', 'SAR ${product.purchasePrice.toInt()}', Colors.grey.shade500)),
+                Expanded(child: _buildMetricItem('CORPORATE', 'SAR ${product.corporateBasePrice?.toInt() ?? "0"}', AppColors.primaryLight)),
               ],
             ),
           ),
@@ -262,7 +271,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
           'SAR ${price.toStringAsFixed(0)}',
           style: const TextStyle(
             fontWeight: FontWeight.w900,
-            fontSize: 18,
+            fontSize: 15,
             color: AppColors.secondaryLight,
             letterSpacing: -0.5,
           ),
@@ -295,7 +304,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
               value,
               style: TextStyle(
                 fontWeight: FontWeight.w900,
-                fontSize: 14,
+                fontSize: 12,
                 color: color == AppColors.primaryLight ? AppColors.secondaryLight : color,
                 backgroundColor: color == AppColors.primaryLight ? AppColors.primaryLight.withOpacity(0.2) : null,
               ),
@@ -306,33 +315,68 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
     );
   }
 
-  Widget _buildDepartmentsTab(InventoryManagementViewModel vm) {
-    return Consumer<DepartmentManagementViewModel>(
-      builder: (context, departmentVm, child) {
-        return ListView.builder(
-          padding: const EdgeInsets.all(20),
-          itemCount: departmentVm.departments.length,
-          itemBuilder: (context, index) {
-            return _buildSimpleActionCard(
-              departmentVm.departments[index].name,
-              Icons.account_tree_rounded,
-              AppColors.primaryLight,
-            );
-          },
-        );
-      }
-    );
-  }
-
   Widget _buildCategoriesTab(InventoryManagementViewModel vm) {
+    if (vm.categories.isEmpty) {
+      return const Center(child: Text('No categories found.'));
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(20),
       itemCount: vm.categories.length,
       itemBuilder: (context, index) {
-        return _buildSimpleActionCard(
-          vm.categories[index],
-          Icons.category_rounded,
-          AppColors.primaryLight,
+        final category = vm.categories[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(color: AppColors.secondaryLight.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
+            border: Border.all(color: Colors.grey.withOpacity(0.05)),
+          ),
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.category_rounded, color: AppColors.secondaryLight, size: 20),
+              ),
+              title: Text(
+                category.name,
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.secondaryLight),
+              ),
+              subtitle: Text(
+                '${category.subCategories.length} Sub-Categories',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              children: category.subCategories.isEmpty
+                ? [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 72, bottom: 16),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('No sub-categories', style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic)),
+                      ),
+                    )
+                  ]
+                : category.subCategories.map((sub) {
+                return ListTile(
+                  contentPadding: const EdgeInsets.only(left: 72, right: 24),
+                  title: Text(
+                    sub.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
+                  ),
+                  trailing: Icon(Icons.subdirectory_arrow_right_rounded, color: Colors.grey.shade400, size: 16),
+                );
+              }).toList(),
+            ),
+          ),
         );
       },
     );
@@ -365,6 +409,8 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
             child: Text(
               title,
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.secondaryLight),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
           Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade300, size: 14),
@@ -418,14 +464,15 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
           child: const _AddProductSheet(),
         ),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Adding New ${_getAddLabel().split(" ").last}...'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          backgroundColor: AppColors.secondaryLight,
-        )
+    } else if (_tabController.index == 1) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => ChangeNotifierProvider.value(
+          value: vm,
+          child: const _AddCategorySheet(),
+        ),
       );
     }
   }
@@ -441,9 +488,8 @@ class _AddProductSheet extends StatefulWidget {
 class _AddProductSheetState extends State<_AddProductSheet> {
   String? selectedDepartmentId;
 
-  // Placeholder static values until the category APIs are implemented
-  String selectedCategoryId = '1';
-  String selectedSubCategoryId = '1';
+  String? selectedCategoryId;
+  String? selectedSubCategoryId;
 
   @override
   void initState() {
@@ -452,6 +498,17 @@ class _AddProductSheetState extends State<_AddProductSheet> {
     if (deptVm.departments.isNotEmpty) {
       selectedDepartmentId = deptVm.departments.first.id;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vm = context.read<InventoryManagementViewModel>();
+      if (vm.categories.isNotEmpty) {
+        setState(() {
+          selectedCategoryId = vm.categories.first.id;
+          if (vm.categories.first.subCategories.isNotEmpty) {
+            selectedSubCategoryId = vm.categories.first.subCategories.first.id;
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -461,7 +518,7 @@ class _AddProductSheetState extends State<_AddProductSheet> {
 
     return FocusScope(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.90,
+        height: MediaQuery.of(context).size.height * 0.70,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -495,8 +552,53 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                         },
                       ),
 
-                    _buildTextField('Category ID', Icons.category_rounded, controller: vm.categoryIdController, isNumber: true),
-                    _buildTextField('Sub-Category ID', Icons.subdirectory_arrow_right_rounded, controller: vm.subCategoryIdController, isNumber: true),
+                    // Category Dropdown
+                    if (vm.categories.isNotEmpty)
+                      _buildDropdown(
+                        'Category',
+                        vm.categories.map((c) => c.name).toList(),
+                        value: vm.categories.firstWhere(
+                          (c) => c.id == selectedCategoryId,
+                          orElse: () => vm.categories.first,
+                        ).name,
+                        onChanged: (val) {
+                          setState(() {
+                            final cat = vm.categories.firstWhere((c) => c.name == val);
+                            selectedCategoryId = cat.id;
+                            if (cat.subCategories.isNotEmpty) {
+                              selectedSubCategoryId = cat.subCategories.first.id;
+                            } else {
+                              selectedSubCategoryId = null; // No subcategories
+                            }
+                          });
+                        },
+                      ),
+
+                    // Sub-Category Dropdown (only show if category has them)
+                    Builder(
+                      builder: (context) {
+                        if (selectedCategoryId == null) return const SizedBox.shrink();
+                        final selectedCat = vm.categories.firstWhere(
+                          (c) => c.id == selectedCategoryId,
+                          orElse: () => vm.categories.first,
+                        );
+                        if (selectedCat.subCategories.isEmpty) return const SizedBox.shrink();
+
+                        return _buildDropdown(
+                          'Sub-Category',
+                          selectedCat.subCategories.map((s) => s.name).toList(),
+                          value: selectedCat.subCategories.firstWhere(
+                            (s) => s.id == selectedSubCategoryId,
+                            orElse: () => selectedCat.subCategories.first,
+                          ).name,
+                          onChanged: (val) {
+                            setState(() => selectedSubCategoryId =
+                                selectedCat.subCategories.firstWhere((s) => s.name == val).id);
+                          },
+                        );
+                      },
+                    ),
+
                     _buildTextField('Product Name', Icons.inventory_2_rounded, controller: vm.nameController),
                     _buildTextField('Unit (e.g., pcs)', Icons.straighten_rounded, controller: vm.unitController),
                     _buildTextField('Purchase Price', Icons.attach_money_rounded, isNumber: true, controller: vm.purchasePriceController),
@@ -511,6 +613,14 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                       activeColor: AppColors.primaryLight,
                       value: vm.allowDecimalQty,
                       onChanged: (value) => vm.toggleAllowDecimal(value),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    SwitchListTile(
+                      title: const Text('Is Active', style: TextStyle(fontWeight: FontWeight.w600)),
+                      activeColor: AppColors.primaryLight,
+                      value: vm.isActive,
+                      onChanged: (value) => vm.toggleIsActive(value),
                       contentPadding: EdgeInsets.zero,
                     ),
 
@@ -602,6 +712,111 @@ class _AddProductSheetState extends State<_AddProductSheet> {
         }).toList(),
         onChanged: onChanged,
         icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
+      ),
+    );
+  }
+}
+
+class _AddCategorySheet extends StatelessWidget {
+  const _AddCategorySheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<InventoryManagementViewModel>();
+
+    return FocusScope(
+      child: Container(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Create Category', style: AppTextStyles.h2.copyWith(fontSize: 22)),
+                    const SizedBox(height: 8),
+                    const Text('Enter details for the new product category.', style: TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 30),
+
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: TextField(
+                        controller: vm.categoryNameController,
+                        decoration: InputDecoration(
+                          labelText: 'Category Name',
+                          prefixIcon: const Icon(Icons.category_rounded, color: AppColors.secondaryLight, size: 20),
+                          filled: true,
+                          fillColor: Colors.grey.withOpacity(0.05),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          labelStyle: const TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: DropdownButtonFormField<String>(
+                        value: vm.categoryTypeController.text.isNotEmpty ? vm.categoryTypeController.text : 'product',
+                        decoration: InputDecoration(
+                          labelText: 'Category Type',
+                          filled: true,
+                          fillColor: Colors.grey.withOpacity(0.05),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'product', child: Text('Product')),
+                          DropdownMenuItem(value: 'expense', child: Text('Expense')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            vm.categoryTypeController.text = val;
+                          }
+                        },
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: vm.isLoading ? null : () => vm.submitCategoryForm(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondaryLight,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        minimumSize: const Size.fromHeight(56),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: vm.isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Save Category',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                            ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -12,7 +12,7 @@ class PosSearchHistoryView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: const PosScreenAppBar(title: 'Search History'),
+      appBar: PosScreenAppBar(title: 'Search History'),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: historyItems.length,

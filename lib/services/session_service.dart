@@ -53,4 +53,20 @@ class SessionService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('last_portal');
   }
+
+  Future<void> saveCredentials(String email, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pos_user_email', email);
+    await prefs.setString('pos_user_password', password);
+  }
+
+  Future<Map<String, String>?> getCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('pos_user_email');
+    final password = prefs.getString('pos_user_password');
+    if (email != null && password != null) {
+      return {'email': email, 'password': password};
+    }
+    return null;
+  }
 }

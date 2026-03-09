@@ -1,64 +1,69 @@
 import 'package:flutter/material.dart';
 import '../../../../models/workshop_owner_models.dart';
+import '../../../../data/repositories/owner_repository.dart';
+import '../../../../services/session_service.dart';
 
 class BillingManagementViewModel extends ChangeNotifier {
+  final OwnerRepository ownerRepository;
+  final SessionService sessionService;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
   List<MonthlyBill> _monthlyBills = [];
   List<MonthlyBill> get monthlyBills => _monthlyBills;
 
-  double get totalBilledMonth => 125000.0;
-  double get totalReceivedMonth => 85000.0;
-  double get totalOutstanding => 40000.0;
-  double get overdueAmount => 15000.0;
+  double _totalBilledMonth = 0.0;
+  double get totalBilledMonth => _totalBilledMonth;
 
-  BillingManagementViewModel() {
+  double _totalReceivedMonth = 0.0;
+  double get totalReceivedMonth => _totalReceivedMonth;
+
+  double _totalOutstanding = 0.0;
+  double get totalOutstanding => _totalOutstanding;
+
+  double _overdueAmount = 0.0;
+  double get overdueAmount => _overdueAmount;
+
+
+  BillingManagementViewModel({
+    required this.ownerRepository,
+    required this.sessionService,
+  }) {
     _init();
   }
 
   Future<void> _init() async {
+    await fetchDashboardData();
+  }
+
+  Future<void> fetchDashboardData() async {
     _isLoading = true;
     notifyListeners();
     
-    await Future.delayed(const Duration(seconds: 1));
-    _monthlyBills = [
-      MonthlyBill(
-        id: '1', 
-        corporateCustomerId: '1', 
-        customerName: 'Aramco Logistics', 
-        month: 1, 
-        year: 2026, 
-        totalAmount: 45000.0, 
-        paidAmount: 45000.0, 
-        dueDate: DateTime(2026, 2, 15), 
-        status: 'Paid',
-      ),
-      MonthlyBill(
-        id: '2', 
-        corporateCustomerId: '2', 
-        customerName: 'Sabic Transport', 
-        month: 1, 
-        year: 2026, 
-        totalAmount: 32000.0, 
-        paidAmount: 12000.0, 
-        dueDate: DateTime(2026, 2, 15), 
-        status: 'Partially Paid',
-      ),
-      MonthlyBill(
-        id: '3', 
-        corporateCustomerId: '1', 
-        customerName: 'Aramco Logistics', 
-        month: 12, 
-        year: 2025, 
-        totalAmount: 28000.0, 
-        paidAmount: 0.0, 
-        dueDate: DateTime(2026, 1, 15), 
-        status: 'Overdue',
-      ),
-    ];
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token == null) throw Exception('No token found');
 
-    _isLoading = false;
-    notifyListeners();
+      final response = await ownerRepository.getBillingDashboard(token);
+
+      if (response != null && response['success'] == true) {
+        _totalBilledMonth = double.tryParse(response['totalBilled']?.toString() ?? '0') ?? 0.0;
+        _totalReceivedMonth = double.tryParse(response['totalReceived']?.toString() ?? '0') ?? 0.0;
+        _totalOutstanding = double.tryParse(response['outstanding']?.toString() ?? '0') ?? 0.0;
+        _overdueAmount = double.tryParse(response['overdue']?.toString() ?? '0') ?? 0.0;
+
+        if (response['recentBillingActivity'] != null) {
+          _monthlyBills = (response['recentBillingActivity'] as List)
+              .map((activity) => MonthlyBill.fromJson(activity))
+              .toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching billing dashboard: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

@@ -33,6 +33,28 @@ class BaseApiService {
     }
   }
 
+  Future<dynamic> getWithBody(String endpoint, dynamic data, {Map<String, String>? headers}) async {
+    try {
+      final url = '${ApiConstants.baseUrl}$endpoint';
+      print('GET(body) Request URL: $url');
+      print('GET(body) Request Body: ${jsonEncode(data)}');
+      
+      final request = http.Request('GET', Uri.parse(url));
+      if (headers != null) {
+        request.headers.addAll(headers);
+      } else {
+        request.headers['Content-Type'] = 'application/json';
+      }
+      request.body = jsonEncode(data);
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return _returnResponse(response);
+    } on SocketException {
+      throw FetchDataException('No Internet connection');
+    }
+  }
+
   Future<dynamic> post(String endpoint, dynamic data, {Map<String, String>? headers}) async {
     try {
       final url = '${ApiConstants.baseUrl}$endpoint';

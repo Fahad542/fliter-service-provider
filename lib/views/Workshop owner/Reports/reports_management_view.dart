@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
-import '../Dashboard/owner_dashboard_view_model.dart';
+import 'reports_management_view_model.dart';
 import '../widgets/owner_app_bar.dart';
 import '../owner_shell.dart';
 
@@ -11,7 +11,7 @@ class ReportsManagementView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<OwnerDashboardViewModel>(
+    return Consumer<ReportsManagementViewModel>(
       builder: (context, vm, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FD),
@@ -24,7 +24,9 @@ class ReportsManagementView extends StatelessWidget {
             onNotificationPressed: () => OwnerShell.goToNotifications(context),
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
           ),
-          body: SingleChildScrollView(
+          body: vm.isLoading 
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
+            : SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +57,19 @@ class ReportsManagementView extends StatelessWidget {
     );
   }
 
-  Widget _buildSalesChart(OwnerDashboardViewModel vm) {
+  Widget _buildSalesChart(ReportsManagementViewModel vm) {
+    final fin = vm.reportsData?.financialOverview;
+    final totalRev = fin?.totalRevenue ?? 0.0;
+    final revChange = fin?.revenueChangePercent ?? 0.0;
+    final dailyRev = fin?.dailyRevenue ?? [];
+    
+    // Find max value to determine bar heights correctly
+    double maxAmt = 1.0;
+    if (dailyRev.isNotEmpty) {
+      maxAmt = dailyRev.map((e) => e.amount).reduce((a, b) => a > b ? a : b);
+      if (maxAmt == 0) maxAmt = 1.0;
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -68,36 +82,35 @@ class ReportsManagementView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Total Revenue', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  Text('SAR 268,500', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+                  const Text('Total Revenue', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text('SAR $totalRev', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
                 ],
               ),
-              Container(
+              if (revChange != 0) Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                child: const Text('+12.5%', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                decoration: BoxDecoration(color: (revChange >= 0 ? Colors.green : Colors.red).withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                child: Text('${revChange >= 0 ? '+' : ''}$revChange%', style: TextStyle(color: revChange >= 0 ? Colors.green : Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          // Mock Bar Chart
+          // Dynamic Bar Chart from dailyRev
           SizedBox(
-            height: 100,
+            height: 120, // Increased height to accommodate the value text
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildBar('Sun', 0.4),
-                _buildBar('Mon', 0.6),
-                _buildBar('Tue', 0.8),
-                _buildBar('Wed', 0.5),
-                _buildBar('Thu', 0.9, isToday: true),
-                _buildBar('Fri', 0.3),
-                _buildBar('Sat', 0.7),
-              ],
+              children: dailyRev.isEmpty 
+                  ? [const Text('No data for this week', style: TextStyle(color: Colors.white54))]
+                  : dailyRev.map((r) {
+                      final isToday = r.date == DateTime.now().toString().split(' ')[0];
+                      // If maxAmt is 1 (all zeros), we give a small visual height or just 0
+                      double heightRatio = maxAmt > 0 ? (r.amount / maxAmt).clamp(0.0, 1.0) : 0.0;
+                      return _buildBar(r.day, heightRatio, r.amount, isToday: isToday);
+                    }).toList(),
             ),
           ),
         ],
@@ -105,13 +118,18 @@ class ReportsManagementView extends StatelessWidget {
     );
   }
 
-  Widget _buildBar(String day, double height, {bool isToday = false}) {
+  Widget _buildBar(String day, double height, double amount, {bool isToday = false}) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
+        Text(
+          amount >= 1000 ? '${(amount / 1000).toStringAsFixed(1)}k' : amount.toStringAsFixed(0),
+          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
         Container(
           width: 24,
-          height: 80 * height,
+          height: (80 * height).clamp(4.0, 80.0), // Minimum height of 4 so the bar is visible even at 0
           decoration: BoxDecoration(
             color: isToday ? AppColors.primaryLight : Colors.white24,
             borderRadius: BorderRadius.circular(6),
@@ -123,9 +141,12 @@ class ReportsManagementView extends StatelessWidget {
     );
   }
 
-  Widget _buildTechCommissionList(OwnerDashboardViewModel vm) {
+  Widget _buildTechCommissionList(ReportsManagementViewModel vm) {
+    if (vm.reportsData == null || vm.reportsData!.operationalPerformance.isEmpty) {
+      return const Text('No operational performance data', style: TextStyle(color: Colors.grey));
+    }
     return Column(
-      children: vm.employees.where((e) => e.role == 'Technician').map((tech) {
+      children: vm.reportsData!.operationalPerformance.map((tech) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -143,14 +164,14 @@ class ReportsManagementView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(tech.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const Text('Total Jobs: 48', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                    Text('Total Jobs: ${tech.totalJobs}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
                   ],
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('SAR ${(tech.commissionPercent * 250).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.green)),
+                  Text('SAR ${tech.commission}', style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.green)),
                   const Text('Commission', style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -161,7 +182,8 @@ class ReportsManagementView extends StatelessWidget {
     );
   }
 
-  Widget _buildInventoryStatus(OwnerDashboardViewModel vm) {
+  Widget _buildInventoryStatus(ReportsManagementViewModel vm) {
+    final inv = vm.reportsData?.inventoryValuation;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -171,11 +193,11 @@ class ReportsManagementView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildInventoryRow('Stock Value (Cost)', 'SAR 142,000', Colors.blue),
+          _buildInventoryRow('Stock Value (Cost)', 'SAR ${inv?.stockValueCost ?? 0.0}', Colors.blue),
           const SizedBox(height: 32),
-          _buildInventoryRow('Potential Profit', 'SAR 85,400', Colors.green),
+          _buildInventoryRow('Potential Profit', 'SAR ${inv?.potentialProfit ?? 0.0}', Colors.green),
           const SizedBox(height: 32),
-          _buildInventoryRow('Active SKUs', '1,245 Items', Colors.orange),
+          _buildInventoryRow('Active SKUs', '${inv?.activeSkus ?? 0} Items', Colors.orange),
         ],
       ),
     );

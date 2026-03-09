@@ -15,6 +15,8 @@ import '../Sales Return/pos_sales_return_view.dart';
 import '../Store Closing/pos_store_closing_view.dart';
 import '../Store Closing/store_closing_view_model.dart';
 import '../Technician Screen/pos_technician_view.dart';
+import '../Current Shift/pos_current_shift_view.dart';
+import '../Current Shift/current_shift_view_model.dart';
 // import '../../utils/app_colors.dart';
 // import '../../utils/app_text_styles.dart';
 // import '../Workshop pos app/Home Screen/pos_home_view.dart';
@@ -60,6 +62,7 @@ class _PosShellState extends State<PosShell> {
     PosPromoView(),
     PosStoreClosingView(),
     PosSalesReturnView(),
+    PosCurrentShiftView(),
   ];
 
   @override
@@ -91,7 +94,7 @@ class _PosShellState extends State<PosShell> {
             children: _screens,
           ),
         ),
-        bottomNavigationBar: [4, 5, 6, 7].contains(validIndex)
+        bottomNavigationBar: [4, 5, 6, 7, 8].contains(validIndex)
             ? const SizedBox.shrink()
             : PosBottomBar(
                 currentIndex: currentIndex,
@@ -123,6 +126,8 @@ class _PosShellState extends State<PosShell> {
     } else if (index == 4) {
       // Always fetch for Petty Cash as per user request
       context.read<PettyCashViewModel>().initPettyCash();
+    } else if (index == 8) {
+      context.read<CurrentShiftViewModel>().fetchCurrentSession();
     }
   }
 
@@ -146,6 +151,8 @@ class _PosShellState extends State<PosShell> {
                 _buildDrawerItem(4, 'Petty Cash', Icons.payments_rounded),
                 const SizedBox(height: 4),
                 _buildDrawerItem(5, 'Promo Codes', Icons.local_offer_rounded),
+                const SizedBox(height: 4),
+                _buildDrawerItem(8, 'Current Shift', Icons.access_time_filled_rounded),
                 const SizedBox(height: 4),
                 _buildDrawerItem(6, 'Store Closing', Icons.store_rounded),
                 const SizedBox(height: 4),

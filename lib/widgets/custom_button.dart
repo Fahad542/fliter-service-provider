@@ -7,6 +7,9 @@ class CustomButton extends StatelessWidget {
   final bool isLoading;
   final Color? backgroundColor;
   final Color? textColor;
+  final EdgeInsetsGeometry? padding;
+  final TextStyle? textStyle;
+  final FontWeight? fontWeight;
 
   const CustomButton({
     super.key,
@@ -15,6 +18,9 @@ class CustomButton extends StatelessWidget {
     this.isLoading = false,
     this.backgroundColor,
     this.textColor,
+    this.padding,
+    this.textStyle,
+    this.fontWeight,
   });
 
   @override
@@ -24,7 +30,7 @@ class CustomButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor ?? Theme.of(context).primaryColor,
         foregroundColor: textColor ?? Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: padding ?? const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -40,7 +46,10 @@ class CustomButton extends StatelessWidget {
             )
           : Text(
               text,
-              style: AppTextStyles.button,
+              style: textStyle ?? AppTextStyles.button.copyWith(
+                color: textColor ?? Colors.white,
+                fontWeight: fontWeight,
+              ),
             ),
     );
   }
