@@ -9,7 +9,7 @@ import '../Home Screen/pos_view_model.dart';
 import '../../../models/petty_cash_model.dart';
 import '../../../models/expense_category_model.dart'; // Added
 import '../../../widgets/pos_widgets.dart';
-import '../../Navbar/pos_shell.dart';
+
 import '../More Tab/pos_more_view.dart'; // Added
 import '../Promo/promo_code_dialog.dart'; // Added
 import 'petty_cash_view_model.dart';
@@ -57,18 +57,9 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PosScreenAppBar(
         title: 'Petty Cash',
-        onBack: () {
-          PosMoreView.show(context, (index) {
-            if (index == 5) {
-              showDialog(
-                context: context,
-                builder: (context) => const PromoCodeDialog(),
-              );
-            } else {
-              context.read<PosViewModel>().setShellSelectedIndex(index);
-            }
-          });
-        },
+        showBackButton: false,
+        showHamburger: true,
+        onMenuPressed: () => Scaffold.of(context).openDrawer(),
       ),
       body: vm.isPettyCashLoading
           ? const Center(child: CircularProgressIndicator())
@@ -323,7 +314,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 if (mounted) _showError(error);
               }).then((success) {
                 if (success && mounted) {
-                  ToastService.showSuccess(context, 'Expense submitted');
+                  ToastService.showSuccess(context, 'Expense submitted – pending approval');
                 }
               });
             },

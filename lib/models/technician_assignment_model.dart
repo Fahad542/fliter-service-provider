@@ -1,10 +1,10 @@
 class AssignTechnicianRequest {
-  final String employeeId;
+  final List<String> employeeIds;
 
-  AssignTechnicianRequest({required this.employeeId});
+  AssignTechnicianRequest({required this.employeeIds});
 
   Map<String, dynamic> toJson() => {
-        'employeeId': employeeId,
+        'employeeIds': employeeIds,
       };
 }
 

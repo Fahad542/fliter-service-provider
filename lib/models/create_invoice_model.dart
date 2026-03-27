@@ -2,11 +2,15 @@ class CreateInvoiceRequest {
   final String orderId;
   final double discountAmount;
   final String invoicedDate;
+  final String? paymentMethod;
+  final bool? isCorporate;
 
   CreateInvoiceRequest({
     required this.orderId,
     this.discountAmount = 0,
     required this.invoicedDate,
+    this.paymentMethod,
+    this.isCorporate,
   });
 
   Map<String, dynamic> toJson() {
@@ -14,6 +18,8 @@ class CreateInvoiceRequest {
       'orderId': orderId,
       'discountAmount': discountAmount,
       'invoicedDate': invoicedDate,
+      if (paymentMethod != null) 'paymentMethod': paymentMethod,
+      if (isCorporate != null) 'isCorporate': isCorporate,
     };
   }
 }
@@ -35,7 +41,9 @@ class CreateInvoiceResponse {
     return CreateInvoiceResponse(
       success: json['success'] ?? false,
       message: json['message'] ?? '',
-      invoice: json['invoice'] != null ? Invoice.fromJson(json['invoice']) : null,
+      invoice: json['invoice'] != null
+          ? Invoice.fromJson(json['invoice'])
+          : null,
       statusCode: json['statusCode'],
     );
   }
@@ -50,8 +58,16 @@ class Invoice {
   final double discountAmount;
   final double totalAmount;
   final String paymentStatus;
+  final String? paymentMethod;
+  final String? promoCodeName;
   final List<InvoiceItem> items;
+  final List<InvoiceDepartment> departments;
+  final List<InvoicePayment> payments;
   final String customerName;
+  final String customerType;
+  final String? customerMobile;
+  final String? customerTaxId;
+  final int? odometerReading;
   final String vehicleInfo;
   final String plateNo;
   final String? branchName;
@@ -66,8 +82,16 @@ class Invoice {
     required this.discountAmount,
     required this.totalAmount,
     required this.paymentStatus,
+    this.paymentMethod,
+    this.promoCodeName,
     required this.items,
+    required this.departments,
+    required this.payments,
     required this.customerName,
+    required this.customerType,
+    this.customerMobile,
+    this.customerTaxId,
+    this.odometerReading,
     required this.vehicleInfo,
     required this.plateNo,
     this.branchName,
@@ -76,11 +100,43 @@ class Invoice {
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
     var salesOrder = json['salesOrder'] ?? {};
-    var itemsList = salesOrder['items'] as List? ?? [];
-    var customer = salesOrder['customer'] ?? {};
-    var vehicle = salesOrder['vehicle'] ?? {};
     var branch = json['branch'] ?? {};
     var createdByUser = json['createdByUser'] ?? {};
+    var customer = salesOrder['customer'] ?? {};
+    var vehicle = salesOrder['vehicle'] ?? {};
+
+    // Parse Departments from jobs array or fallback to departments
+    var departmentsList =
+        salesOrder['jobs'] as List? ?? salesOrder['departments'] as List? ?? [];
+    List<InvoiceDepartment> parsedDepartments = departmentsList
+        .map((d) => InvoiceDepartment.fromJson(d))
+        .toList();
+
+    // Fallback for legacy flat items
+    var flatItemsList = salesOrder['items'] as List? ?? [];
+    if (parsedDepartments.isEmpty && flatItemsList.isNotEmpty) {
+      parsedDepartments.add(
+        InvoiceDepartment(
+          departmentId: 'legacy',
+          departmentName: 'General Items',
+          subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
+          commissions: [],
+          items: flatItemsList.map((i) => InvoiceItem.fromJson(i)).toList(),
+        ),
+      );
+    }
+
+    // Preserve flat items list for legacy widgets
+    List<InvoiceItem> allItems = [];
+    for (var d in parsedDepartments) {
+      allItems.addAll(d.items);
+    }
+
+    // Parse Payments
+    var paymentsList = json['payments'] as List? ?? [];
+    List<InvoicePayment> parsedPayments = paymentsList
+        .map((p) => InvoicePayment.fromJson(p))
+        .toList();
 
     return Invoice(
       id: json['id']?.toString() ?? '',
@@ -88,11 +144,29 @@ class Invoice {
       invoiceDate: json['invoiceDate'] ?? '',
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
       vatAmount: double.tryParse(json['vatAmount']?.toString() ?? '0') ?? 0,
-      discountAmount: double.tryParse(json['discountAmount']?.toString() ?? '0') ?? 0,
+      discountAmount: [
+        double.tryParse(json['discountAmount']?.toString() ?? '0') ?? 0,
+        double.tryParse(json['totalDiscountValue']?.toString() ?? '0') ?? 0,
+        double.tryParse(salesOrder['discountAmount']?.toString() ?? '0') ?? 0,
+        double.tryParse(salesOrder['totalDiscountValue']?.toString() ?? '0') ?? 0,
+      ].reduce((a, b) => a > b ? a : b),
       totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0,
       paymentStatus: json['paymentStatus'] ?? '',
-      items: itemsList.map((i) => InvoiceItem.fromJson(i)).toList(),
+      paymentMethod: json['paymentMethod'],
+      promoCodeName: json['promoCodeName']?.toString() ?? salesOrder['promoCodeName']?.toString(),
+      items: allItems,
+      departments: parsedDepartments,
+      payments: parsedPayments,
       customerName: customer['name'] ?? 'Unknown',
+      customerType:
+          customer['customerType']?.toString() ??
+          customer['type']?.toString() ??
+          'Individual',
+      customerMobile: customer['mobile']?.toString(),
+      customerTaxId: customer['taxId']?.toString(),
+      odometerReading: int.tryParse(
+        salesOrder['odometerReading']?.toString() ?? '',
+      ),
       vehicleInfo: '${vehicle['make'] ?? ""} ${vehicle['model'] ?? ""}'.trim(),
       plateNo: vehicle['plateNo'] ?? '',
       branchName: branch['name'],
@@ -107,6 +181,8 @@ class InvoiceItem {
   final double qty;
   final double unitPrice;
   final double lineTotal;
+  final String? discountType;
+  final double? discountValue;
 
   InvoiceItem({
     required this.id,
@@ -114,15 +190,100 @@ class InvoiceItem {
     required this.qty,
     required this.unitPrice,
     required this.lineTotal,
+    this.discountType,
+    this.discountValue,
   });
 
   factory InvoiceItem.fromJson(Map<String, dynamic> json) {
     return InvoiceItem(
       id: json['id']?.toString() ?? '',
-      productName: json['productName'] ?? '',
+      productName: json['productName'] ?? json['name'] ?? '',
       qty: double.tryParse(json['qty']?.toString() ?? '0') ?? 0,
       unitPrice: double.tryParse(json['unitPrice']?.toString() ?? '0') ?? 0,
       lineTotal: double.tryParse(json['lineTotal']?.toString() ?? '0') ?? 0,
+      discountType: json['discountType']?.toString(),
+      discountValue: double.tryParse(json['discountValue']?.toString() ?? '0') ?? 0.0,
+    );
+  }
+}
+
+class InvoiceDepartment {
+  final String departmentId;
+  final String departmentName;
+  final double subtotal;
+  final List<InvoiceCommission> commissions;
+  final List<InvoiceItem> items;
+
+  InvoiceDepartment({
+    required this.departmentId,
+    required this.departmentName,
+    required this.subtotal,
+    required this.commissions,
+    required this.items,
+  });
+
+  factory InvoiceDepartment.fromJson(Map<String, dynamic> json) {
+    var commissionsList =
+        json['technicians'] as List? ?? json['commissions'] as List? ?? [];
+    var itemsList = json['items'] as List? ?? [];
+
+    return InvoiceDepartment(
+      departmentId: json['departmentId']?.toString() ?? '',
+      departmentName: json['department'] ?? json['departmentName'] ?? '',
+      subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
+      commissions: commissionsList
+          .map((c) => InvoiceCommission.fromJson(c))
+          .toList(),
+      items: itemsList.map((i) => InvoiceItem.fromJson(i)).toList(),
+    );
+  }
+}
+
+class InvoiceCommission {
+  final String technicianName;
+  final double commissionAmount;
+  final double commissionPercent;
+
+  InvoiceCommission({
+    required this.technicianName,
+    required this.commissionAmount,
+    this.commissionPercent = 0,
+  });
+
+  factory InvoiceCommission.fromJson(Map<String, dynamic> json) {
+    return InvoiceCommission(
+      technicianName: json['name'] ?? json['technicianName'] ?? '',
+      commissionAmount:
+          double.tryParse(json['commissionAmount']?.toString() ?? '0') ?? 0,
+      commissionPercent:
+          double.tryParse(json['commissionPercent']?.toString() ?? '0') ?? 0,
+    );
+  }
+}
+
+class InvoicePayment {
+  final String id;
+  final String paidAt;
+  final String method;
+  final double amount;
+  final String? receivedBy;
+
+  InvoicePayment({
+    required this.id,
+    required this.paidAt,
+    required this.method,
+    required this.amount,
+    this.receivedBy,
+  });
+
+  factory InvoicePayment.fromJson(Map<String, dynamic> json) {
+    var receivedByUser = json['receivedByUser'] ?? {};
+    return InvoicePayment(
+      id: json['id']?.toString() ?? '',
+      paidAt: json['paidAt'] ?? '',
+      method: json['method'] ?? '',
+      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0,
+      receivedBy: receivedByUser['name'],
     );
   }
 }

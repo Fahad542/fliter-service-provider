@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../Home Screen/pos_view_model.dart';
-import '../../Login/login_view.dart';
+// import '../../Login/login_view.dart';
+// import '../../Login/login_view_model.dart';
+import '../../Menu/menu_view.dart';
 import '../../../widgets/pos_widgets.dart';
-import '../More Tab/pos_more_view.dart'; // Added
-import '../Promo/promo_code_dialog.dart'; // Added
+import '../Login/login_view_model.dart';
+import 'package:filter_service_providers/utils/restart_widget.dart';
 import 'store_closing_view_model.dart';
 
 class PosStoreClosingView extends StatefulWidget {
@@ -29,44 +31,62 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final isReconciled = context.watch<StoreClosingViewModel>().isReconciled;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PosScreenAppBar(
-        title: 'Store Closing',
-        onBack: () {
-          PosMoreView.show(context, (index) {
-            if (index == 5) {
-              showDialog(
-                context: context,
-                builder: (context) => const PromoCodeDialog(),
-              );
-            } else {
-              context.read<PosViewModel>().setShellSelectedIndex(index);
-            }
-          });
-        },
-      ),
-      body: Consumer<StoreClosingViewModel>(
-        builder: (context, closingVm, _) {
+      appBar: isReconciled
+          ? AppBar(
+              automaticallyImplyLeading: false,
+              backgroundColor: AppColors.primaryLight,
+              elevation: 0,
+              centerTitle: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+              ),
+              title: Text(
+                'Store Closing',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: isTablet ? 21 : 19,
+                ),
+              ),
+            )
+          : const PosScreenAppBar(
+              title: 'Store Closing',
+              showBackButton: false,
+              showGlobalLeft: true,
+            ),
+      body: Consumer2<StoreClosingViewModel, PosViewModel>(
+        builder: (context, closingVm, posVm, _) {
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildReconciliationSummary(isTablet),
+                _buildReconciliationSummary(isTablet, posVm),
                 const SizedBox(height: 24),
                 _buildSectionTitle('Counter Reconciliation', Icons.account_balance_rounded),
                 const SizedBox(height: 16),
-                if (!closingVm.isReconciled) _buildPhysicalCountForm(isTablet, closingVm) else _buildReconciliationResult(isTablet, closingVm),
+                if (!closingVm.isReconciled)
+                  _buildPhysicalCountForm(isTablet, closingVm)
+                else ...[
+                  _buildReconciliationResult(isTablet, closingVm),
+                  const SizedBox(height: 24),
+                  _buildBottomActions(isTablet, posVm, closingVm),
+                ],
               ],
             ),
           );
         },
       ),
-      bottomNavigationBar: Consumer2<PosViewModel, StoreClosingViewModel>(
-        builder: (context, posVm, closingVm, _) => _buildBottomActions(isTablet, posVm, closingVm),
-      ),
+      bottomNavigationBar: isReconciled
+          ? const SizedBox.shrink()
+          : Consumer2<PosViewModel, StoreClosingViewModel>(
+              builder: (context, posVm, closingVm, _) =>
+                  _buildBottomActions(isTablet, posVm, closingVm),
+            ),
     );
   }
 
@@ -96,7 +116,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
     );
   }
 
-  Widget _buildReconciliationSummary(bool isTablet) {
+  Widget _buildReconciliationSummary(bool isTablet, PosViewModel posVm) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -153,9 +173,9 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           const SizedBox(height: 24),
           Row(
             children: [
-              _buildSummaryItem('Cashier', 'M. Sheraz', Icons.person_outline),
+              _buildSummaryItem('Cashier', posVm.cashierName, Icons.person_outline),
               Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1), margin: const EdgeInsets.symmetric(horizontal: 20)),
-              _buildSummaryItem('Branch', 'Riyadh Branch', Icons.storefront_outlined),
+              _buildSummaryItem('Branch', posVm.branchName.isNotEmpty ? posVm.branchName : 'Main Branch', Icons.storefront_outlined),
             ],
           ),
         ],
@@ -236,6 +256,20 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             label: 'Corporate Invoices',
             controller: closingVm.corporateController,
             icon: Icons.business_outlined,
+            onChanged: (_) => closingVm.updatePhysicalCount(),
+          ),
+          const SizedBox(height: 16),
+          _buildInputField(
+            label: 'Tamara Credits',
+            controller: closingVm.tamaraController,
+            icon: Icons.receipt_long_outlined,
+            onChanged: (_) => closingVm.updatePhysicalCount(),
+          ),
+          const SizedBox(height: 16),
+          _buildInputField(
+            label: 'Tabby Credits',
+            controller: closingVm.tabbyController,
+            icon: Icons.receipt_long_outlined,
             onChanged: (_) => closingVm.updatePhysicalCount(),
           ),
           const SizedBox(height: 24),
@@ -369,6 +403,10 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           _buildResultRow('Bank / Cards', report.systemBank, report.physicalBank, report.bankDiff),
           const SizedBox(height: 12),
           _buildResultRow('Corporate', report.systemCorporate, report.physicalCorporate, report.corporateDiff),
+          const SizedBox(height: 12),
+          _buildResultRow('Tamara', report.systemTamara, report.physicalTamara, report.tamaraDiff),
+          const SizedBox(height: 12),
+          _buildResultRow('Tabby', report.systemTabby, report.physicalTabby, report.tabbyDiff),
           const Divider(height: 32),
           _buildTotalDifferenceRow(closingVm),
         ],
@@ -452,17 +490,23 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
 
   Widget _buildBottomActions(bool isTablet, PosViewModel posVm, StoreClosingViewModel closingVm) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 16),
+      padding: closingVm.isReconciled
+          ? const EdgeInsets.symmetric(vertical: 8)
+          : const EdgeInsets.fromLTRB(24, 16, 24, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        color: closingVm.isReconciled ? Colors.transparent : Colors.white,
+        border: closingVm.isReconciled
+            ? null
+            : Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         children: [
           if (!closingVm.isReconciled)
             Expanded(
               child: ElevatedButton(
-                onPressed: closingVm.physicalTotal > 0 ? () => closingVm.reconcile(posVm.orders, posVm.branchName, posVm.cashierName) : null,
+                onPressed: (closingVm.physicalTotal > 0 && !closingVm.isReconciling) 
+                    ? () => closingVm.reconcile(posVm.orders, posVm.branchName, posVm.cashierName, context) 
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
                   foregroundColor: AppColors.secondaryLight,
@@ -471,36 +515,30 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   elevation: 6,
                   shadowColor: AppColors.primaryLight.withOpacity(0.3),
                 ),
-                child: const Text('Reconcile Shift Now', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                child: closingVm.isReconciling 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.secondaryLight))
+                  : const Text('Reconcile Shift Now', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
               ),
             )
           else ...[
             Expanded(
-              child: OutlinedButton.icon(
+              child: ElevatedButton(
                 onPressed: closingVm.isGeneratingReport ? null : () => closingVm.buildReport(context),
-                icon: closingVm.isGeneratingReport 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.picture_as_pdf_outlined),
-                label: const Text('Generate Report'),
-                style: OutlinedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
                   minimumSize: const Size(0, 48), // Reduced from 56
-                  side: const BorderSide(color: AppColors.secondaryLight),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+                child: closingVm.isGeneratingReport 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.secondaryLight))
+                  : const Text('Generate Report', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => LoginView(appName: 'Filter')),
-                    (route) => false,
-                  );
-                },
-                icon: const Icon(Icons.logout, size: 20),
-                label: const Text('Final Logout'),
+              child: ElevatedButton(
+                onPressed: () => _showLogoutDialog(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF44336),
                   foregroundColor: Colors.white,
@@ -509,10 +547,76 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   elevation: 6,
                   shadowColor: Colors.red.withOpacity(0.3),
                 ),
+                child: const Text('Final Logout', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Log out',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.secondaryLight),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Are you sure you want to log out from your account?',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.5),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.secondaryLight)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await context.read<LoginViewModel>().logout();
+                        if (context.mounted) {
+                          RestartWidget.restartApp(context);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryLight,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Log out', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

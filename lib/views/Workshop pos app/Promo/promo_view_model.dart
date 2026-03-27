@@ -43,42 +43,41 @@ class PromoViewModel extends ChangeNotifier {
   Map<String, dynamic>? _validResult;
   Map<String, dynamic>? get validResult => _validResult;
 
-  final List<AvailablePromotion> _availablePromotions = [
-    AvailablePromotion(
-      code: 'SAVE10',
-      title: 'Welcome Discount',
-      description: 'Get 10% off on your first order.',
-      discount: 10.0,
-      isPercent: true,
-      applicableStore: 'All Branches',
-      applicableProducts: 'All Products',
-      validityPeriod: 'Until 31 Dec 2026',
-    ),
-    AvailablePromotion(
-      code: 'FILTER50',
-      title: 'Oil Service Special',
-      description: 'SAR 50 off on all oil change services.',
-      discount: 50.0,
-      isPercent: false,
-      applicableStore: 'Riyadh Main Branch',
-      applicableProducts: 'Oil Change Services',
-      validityPeriod: 'Until 30 Jun 2026',
-    ),
-    AvailablePromotion(
-      code: 'REFER15',
-      title: 'Referral Bonus',
-      description: 'Get 15% off when you refer a friend.',
-      discount: 15.0,
-      isPercent: true,
-      applicableStore: 'All Branches',
-      applicableProducts: 'Services Only',
-      validityPeriod: 'Until 31 Dec 2026',
-    ),
-  ];
+  List<AvailablePromotion> _availablePromotions = [];
+  bool _isLoadingPromos = false;
 
   bool get isLoading => _isLoading;
+  bool get isLoadingPromos => _isLoadingPromos;
   String? get promoErrorMessage => _promoErrorMessage;
   List<AvailablePromotion> get availablePromotions => _availablePromotions;
+
+  Future<void> fetchAvailablePromos() async {
+    _isLoadingPromos = true;
+    notifyListeners();
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) throw Exception('Token not found');
+
+      final response = await posRepository.getPromoCodes(token);
+      if (response.success && response.promoCodes != null) {
+        _availablePromotions = response.promoCodes!.map((code) => AvailablePromotion(
+          code: code.code,
+          title: code.discountLabel ?? (code.isPercent ? '${code.discount}% Discount' : 'SAR ${code.discount} Discount'),
+          description: code.description ?? 'Promotional discount',
+          discount: code.discount,
+          isPercent: code.isPercent,
+          applicableStore: code.applicableStore ?? 'All Branches',
+          applicableProducts: code.applicableProducts ?? 'All Products',
+          validityPeriod: code.validityPeriod ?? 'No Expiry',
+        )).toList();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch promos: $e');
+    } finally {
+      _isLoadingPromos = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> validatePromo(String code, PosViewModel posVm, BuildContext context) async {
     final cleanCode = code.trim().toUpperCase();
@@ -86,6 +85,7 @@ class PromoViewModel extends ChangeNotifier {
 
     _isLoading = true;
     _promoErrorMessage = null;
+    _validResult = null;
     notifyListeners();
 
     try {
@@ -99,21 +99,22 @@ class PromoViewModel extends ChangeNotifier {
       );
 
       if (response.success && response.valid && response.promoCode != null) {
-        posVm.applyPromoCode(
-          response.promoCode!.code,
-          response.promoCode!.discount,
-          response.promoCode!.isPercent,
-        );
-        if (context.mounted) {
-          ToastService.showSuccess(context, 'Promo code applied successfully');
-        }
+        _validResult = {
+          'discount': response.promoCode!.discount,
+          'isPercent': response.promoCode!.isPercent,
+          'message': response.promoCode!.isPercent
+              ? '${response.promoCode!.discount}% Discount'
+              : 'SAR ${response.promoCode!.discount} Discount',
+          'store': response.promoCode!.applicableStore ?? 'All Branches',
+          'products': response.promoCode!.applicableProducts ?? 'All Products',
+          'period': response.promoCode!.validityPeriod ?? 'No Expiry',
+        };
+        // Don't apply to cart yet, let user confirm first.
       } else {
         final msg = response.message.isNotEmpty ? response.message : 'Invalid Promo Code';
         _promoErrorMessage = msg;
         posVm.clearPromoCode();
-        if (context.mounted) {
-          ToastService.showError(context, msg);
-        }
+        _validResult = null;
       }
     } catch (e) {
       _promoErrorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -128,8 +129,16 @@ class PromoViewModel extends ChangeNotifier {
   }
 
   void clearPromoError() {
+    bool changed = false;
     if (_promoErrorMessage != null) {
       _promoErrorMessage = null;
+      changed = true;
+    }
+    if (_validResult != null) {
+      _validResult = null;
+      changed = true;
+    }
+    if (changed) {
       notifyListeners();
     }
   }

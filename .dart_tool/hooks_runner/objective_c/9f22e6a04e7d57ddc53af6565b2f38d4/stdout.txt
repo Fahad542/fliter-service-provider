@@ -1,0 +1,59 @@
+Running `(cd /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/; ANDROID_HOME=/Users/fahad/Library/Android/sdk TMPDIR=/var/folders/64/707g917x7135xf_n6j22383w0000gn/T/ PATH=/Applications/Xcode.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/local/bin:/Applications/Xcode.app/Contents/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/usr/local/bin:/Users/fahad/.antigravity/antigravity/bin:/Users/fahad/.local/bin:/opt/homebrew/opt/postgresql@16/bin:/opt/homebrew/opt/python@3.11/libexec/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/fahad/Downloads/flutter/bin HOME=/Users/fahad /Users/fahad/Downloads/flutter/bin/cache/dart-sdk/bin/dart '--packages=/Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/package_config.json' '/Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/objective_c/9f22e6a04e7d57ddc53af6565b2f38d4/hook.dill' '--config=/Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/objective_c/9f22e6a04e7d57ddc53af6565b2f38d4/input.json' )`.
+INFO: 2026-03-23 09:45:47.870746: Running `/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang --version`.
+
+INFO: 2026-03-23 09:45:47.888523: Running `/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang --version`.
+
+INFO: 2026-03-23 09:45:47.904116: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/include/dart_api_dl.c -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-03-23 09:45:47.904522: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/objective_c.c -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c.c.o
+
+INFO: 2026-03-23 09:45:47.904694: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/input_stream_adapter.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-03-23 09:45:47.904809: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/objective_c.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c.m.o
+
+INFO: 2026-03-23 09:45:47.904916: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/observer.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/observer.m.o
+
+INFO: 2026-03-23 09:45:47.905018: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/ns_number.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/ns_number.m.o
+
+INFO: 2026-03-23 09:45:47.905120: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/protocol.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/protocol.m.o
+
+INFO: 2026-03-23 09:45:47.905300: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 -x objective-c -fobjc-arc -c /Users/fahad/.pub-cache/hosted/pub.dev/objective_c-9.3.0/src/objective_c_bindings_generated.m -fpic -I src -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-03-23 09:45:47.948707: 
+INFO: 2026-03-23 09:45:47.948796: 
+INFO: 2026-03-23 09:45:47.948831: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c.c.o
+INFO: 2026-03-23 09:45:47.949096: 
+INFO: 2026-03-23 09:45:47.949112: 
+INFO: 2026-03-23 09:45:47.949122: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-03-23 09:45:47.968144: 
+INFO: 2026-03-23 09:45:47.968184: 
+INFO: 2026-03-23 09:45:47.968196: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/protocol.m.o
+
+INFO: 2026-03-23 09:45:47.968733: 
+INFO: 2026-03-23 09:45:47.968749: 
+INFO: 2026-03-23 09:45:47.968760: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/observer.m.o
+
+INFO: 2026-03-23 09:45:48.050260: 
+INFO: 2026-03-23 09:45:48.050304: 
+INFO: 2026-03-23 09:45:48.050316: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/ns_number.m.o
+
+INFO: 2026-03-23 09:45:48.056837: 
+INFO: 2026-03-23 09:45:48.056882: 
+INFO: 2026-03-23 09:45:48.056894: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c.m.o
+
+INFO: 2026-03-23 09:45:48.057851: 
+INFO: 2026-03-23 09:45:48.057875: 
+INFO: 2026-03-23 09:45:48.057885: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-03-23 09:45:48.078861: 
+INFO: 2026-03-23 09:45:48.078902: 
+INFO: 2026-03-23 09:45:48.078914: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-03-23 09:45:48.079272: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -shared -Wl,-encryptable -undefined dynamic_lookup -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios-simulator -mios-version-min=12 /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/include/dart_api_dl.c.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c.c.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/input_stream_adapter.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/observer.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/ns_number.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/protocol.m.o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/obj/src/objective_c_bindings_generated.m.o -o /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/objective_c.dylib
+
+INFO: 2026-03-23 09:45:48.120229: 
+INFO: 2026-03-23 09:45:48.120309: ld: warning: -undefined dynamic_lookup is deprecated on iOS-simulator
+
+INFO: 2026-03-23 09:45:48.120323: Generated /Users/fahad/Downloads/Filter Apps/fliter-service-provider/.dart_tool/hooks_runner/shared/objective_c/build/9f22e6a04e/objective_c.dylib
+

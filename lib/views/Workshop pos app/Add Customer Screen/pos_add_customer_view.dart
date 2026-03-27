@@ -30,6 +30,25 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
+    _tabController.addListener(_onTabChanged);
+    if (widget.initialTab == 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fetchCorporateAccountsIfEmpty();
+      });
+    }
+  }
+
+  void _onTabChanged() {
+    if (_tabController.index == 1 && !_tabController.indexIsChanging) {
+      _fetchCorporateAccountsIfEmpty();
+    }
+  }
+
+  void _fetchCorporateAccountsIfEmpty() {
+    final posVm = context.read<PosViewModel>();
+    if (posVm.corporateAccounts.isEmpty && !posVm.isCorpAccountsLoading) {
+      posVm.fetchCorporateAccounts(silent: false);
+    }
   }
 
   @override
@@ -50,7 +69,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           final vm = context.watch<AddCustomerViewModel>();
           return Scaffold(
             backgroundColor: const Color(0xFFFBF9F6),
-            appBar: const PosScreenAppBar(title: 'Add New Customer'),
+            appBar: PosScreenAppBar(title: 'Add New Customer'),
             body: Column(
               children: [
           const SizedBox(height: 20),
@@ -338,44 +357,68 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
             // Corporate Dropdown
             _buildSectionHeader('Corporate Account', isTablet: isTablet),
             SizedBox(height: isTablet ? 16.0 : 12.0),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16, vertical: isTablet ? 4 : 0),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: vm.selectedCorporate,
-                  hint: Text(
-                    'Select Corporate Account',
-                    style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: isTablet ? 15 : 13),
-                  ),
-                  isExpanded: true,
-                  icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade400, size: isTablet ? 28 : 24),
-                  items: context.read<PosViewModel>().corporateList.map((corp) {
-                    return DropdownMenuItem<String>(
-                      value: corp['name'],
-                      child: Text(
-                        corp['name']!,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: isTablet ? 15 : 13,
-                        ),
+            Consumer<PosViewModel>(
+              builder: (context, posVm, child) {
+                if (posVm.isCorpAccountsLoading) {
+                  return Container(
+                    height: isTablet ? 60 : 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryLight),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      final corpData = context.read<PosViewModel>().corporateList.firstWhere(
-                        (corp) => corp['name'] == value,
-                      );
-                      vm.setCorporate(value, corpData);
-                    }
-                  },
-                ),
-              ),
+                    ),
+                  );
+                }
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16, vertical: isTablet ? 4 : 0),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: vm.selectedCorporate,
+                      hint: Text(
+                        posVm.corporateAccounts.isEmpty 
+                            ? 'No Corporate Accounts Found' 
+                            : 'Select Corporate Account',
+                        style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: isTablet ? 15 : 13),
+                      ),
+                      isExpanded: true,
+                      icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade400, size: isTablet ? 28 : 24),
+                      items: posVm.corporateAccounts.map((corp) {
+                        return DropdownMenuItem<String>(
+                          value: corp.companyName,
+                          child: Text(
+                            corp.companyName,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: isTablet ? 15 : 13,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: posVm.corporateAccounts.isEmpty ? null : (value) {
+                        if (value != null) {
+                          final corpData = posVm.corporateAccounts.firstWhere(
+                            (corp) => corp.companyName == value,
+                          );
+                          vm.setCorporate(value, corpData);
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
 
             SizedBox(height: isTablet ? 24.0 : 20.0),
@@ -384,11 +427,11 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
             if (vm.selectedCorporateData != null) ...[
               _buildSectionHeader('Company Details (Auto-filled)', isTablet: isTablet),
               SizedBox(height: isTablet ? 16.0 : 12.0),
-              _buildReadOnlyField('Company Name', vm.selectedCorporateData!['name']!, Icons.business, isTablet: isTablet),
+              _buildReadOnlyField('Company Name', vm.selectedCorporateData!.companyName, Icons.business, isTablet: isTablet),
               SizedBox(height: fieldGap),
-              _buildReadOnlyField('VAT Number', vm.selectedCorporateData!['vat']!, Icons.receipt_long_outlined, isTablet: isTablet),
+              _buildReadOnlyField('VAT Number', 'N/A', Icons.receipt_long_outlined, isTablet: isTablet),
               SizedBox(height: fieldGap),
-              _buildReadOnlyField('Billing Address', vm.selectedCorporateData!['address']!, Icons.location_on_outlined, isTablet: isTablet),
+              _buildReadOnlyField('Billing Address', vm.selectedCorporateData!.address ?? 'N/A', Icons.location_on_outlined, isTablet: isTablet),
               SizedBox(height: isTablet ? 24.0 : 20.0),
             ],
 

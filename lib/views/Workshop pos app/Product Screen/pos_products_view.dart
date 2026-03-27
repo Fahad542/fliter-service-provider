@@ -65,7 +65,8 @@ class _PosProductsViewState extends State<PosProductsView> {
         infoTitle: vm.workshopName,
         infoBranch: 'Branch: ${vm.branchName}',
         infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
-        customHeight: isHeaderTablet ? 156 : 99,
+        showDrawer: false,
+        showGlobalLeft: true,
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<PosViewModel>().fetchProducts(),
@@ -171,13 +172,14 @@ class _PosProductsViewState extends State<PosProductsView> {
                   crossAxisCount: isTablet ? 2 : 1,
                   childAspectRatio: isTablet
                       ? 3.5
-                      : (MediaQuery.of(context).size.width > 600 ? 5.0 : 2.8),
+                      : (MediaQuery.of(context).size.width > 600 ? 5.0 : 2.5),
                   crossAxisSpacing: 12,
-                  mainAxisSpacing: 8,
+                  mainAxisSpacing: 12,
                 ),
                 itemCount: products.length,
                 itemBuilder: (context, index) {
-                  return ProductCard(product: products[index]);
+                  return
+                  ProductCard(product: products[index]);
                 },
               );
             },

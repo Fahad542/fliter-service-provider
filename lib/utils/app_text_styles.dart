@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTextStyles {
-  // Headings
+
   static TextStyle get h1 => GoogleFonts.manrope(
         fontSize: 32,
         fontWeight: FontWeight.bold,

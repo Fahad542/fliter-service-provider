@@ -10,8 +10,11 @@ import '../Search History/pos_search_history_view.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:flutter/services.dart';
 import '../../../utils/app_formatters.dart';
+import '../Product Grid/pos_product_grid_view.dart';
+import '../Sales Return/sales_return_view_model.dart';
+import '../Sales Return/pos_sales_return_view.dart';
+import '../Department/pos_department_view.dart';
 import 'pos_view_model.dart';
-import '../Promo/pos_promo_view.dart';
 import 'pos_customer_history_view.dart';
 import '../Corporate Bookings/pos_corporate_bookings_view.dart';
 
@@ -34,7 +37,7 @@ class PosHomeView extends StatelessWidget {
           infoTitle: vm.workshopName,
           infoBranch: 'Branch: ${vm.branchName}',
           infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
-          customHeight: isTablet ? 156 : 99,
+          onMenuPressed: () => Scaffold.of(context).openDrawer(),
         ),
         body: GestureDetector(
         onTap: () {
@@ -52,7 +55,7 @@ class PosHomeView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
                   // Title
                   RichText(
                     textAlign: TextAlign.center,
@@ -62,7 +65,7 @@ class PosHomeView extends StatelessWidget {
                           text: 'Workshop ',
                           style: AppTextStyles.h1.copyWith(
                             color: AppColors.primaryLight,
-                            fontSize: 28,
+                            fontSize: 34,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -70,7 +73,7 @@ class PosHomeView extends StatelessWidget {
                           text: 'POS',
                           style: AppTextStyles.h1.copyWith(
                             color: AppColors.secondaryLight,
-                            fontSize: 28,
+                            fontSize: 34,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -82,7 +85,7 @@ class PosHomeView extends StatelessWidget {
                     'Search by vehicle number, phone number,\nor customer name',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.grey,
-                      fontSize: 13,
+                      fontSize: 15,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -188,6 +191,7 @@ class PosHomeView extends StatelessWidget {
                       customer: customer.name,
                       lastVisit: latestOrder != null ? vm.formatDate(latestOrder.createdAt) : 'N/A',
                       lastService: latestOrder?.status.toUpperCase() ?? 'N/A',
+                      orderNumber: latestOrder?.id,
                       isCorporate: customer.customerType.toLowerCase() == 'corporate',
                       onContinue: () {
                         context.read<PosViewModel>().setCustomerData(
@@ -203,7 +207,7 @@ class PosHomeView extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const PosAddCustomerView(initialTab: 0),
+                            builder: (_) => const PosDepartmentView(),
                           ),
                         );
                       },
@@ -211,9 +215,18 @@ class PosHomeView extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PosCustomerHistoryView(customer: customer),
+                            builder: (_) => PosCustomerHistoryView(
+                              customer: customer,
+                              focusOrderId: latestOrder?.id,
+                            ),
                           ),
                         );
+                      },
+                      onSalesReturn: () {
+                        final returnVm = context.read<SalesReturnViewModel>();
+                        returnVm.searchController.text = customer.id.toString();
+                        returnVm.searchInvoice();
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const PosSalesReturnView()));
                       },
                     ),
                   );

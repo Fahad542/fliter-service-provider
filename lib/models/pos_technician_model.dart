@@ -2,15 +2,13 @@ class PosTechnicianResponse {
   final bool success;
   final List<PosTechnician> technicians;
 
-  PosTechnicianResponse({
-    required this.success,
-    required this.technicians,
-  });
+  PosTechnicianResponse({required this.success, required this.technicians});
 
   factory PosTechnicianResponse.fromJson(Map<String, dynamic> json) {
     return PosTechnicianResponse(
       success: json['success'] ?? false,
-      technicians: (json['technicians'] as List?)
+      technicians:
+          (json['technicians'] as List?)
               ?.map((t) => PosTechnician.fromJson(t))
               .toList() ??
           [],
@@ -30,6 +28,7 @@ class PosTechnician {
   final String branchId;
   final String userId;
   final bool isActive;
+  final bool isEligible;
   final List<PosDepartmentInfo> departments;
   final PosTechnicianStatus status;
   final int slotsUsed;
@@ -38,6 +37,25 @@ class PosTechnician {
   // Compatibility getters
   String get serviceCategory => technicianType;
   String get statusInfo => status.status;
+  bool get isOnline => status.status.toLowerCase() == 'online';
+
+  String get formattedLastSeen {
+    if (status.lastSeenAt.isEmpty) return 'Never';
+    try {
+      final dateTime = DateTime.parse(status.lastSeenAt);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+
+      if (difference.inMinutes < 1) return 'Just now';
+      if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+      if (difference.inHours < 24) return '${difference.inHours}h ago';
+      if (difference.inDays < 7) return '${difference.inDays}d ago';
+
+      return status.lastSeenAt.split('T')[0]; // Return YYYY-MM-DD as fallback
+    } catch (e) {
+      return '';
+    }
+  }
 
   PosTechnician({
     required this.id,
@@ -51,6 +69,7 @@ class PosTechnician {
     this.branchId = '',
     this.userId = '',
     this.isActive = true,
+    this.isEligible = true,
     this.departments = const [],
     this.status = const PosTechnicianStatus(status: 'offline', lastSeenAt: ''),
     this.slotsUsed = 0,
@@ -70,13 +89,21 @@ class PosTechnician {
       branchId: json['branchId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       isActive: json['isActive'] ?? false,
-      departments: (json['departments'] as List?)
+      isEligible: json['isEligible'] ?? true,
+      departments:
+          (json['departments'] as List?)
               ?.map((d) => PosDepartmentInfo.fromJson(d))
               .toList() ??
           [],
-      status: PosTechnicianStatus.fromJson(json['status'] ?? {}),
-      slotsUsed: (json['slotsUsed'] as int?) ?? ((json['id']?.toString() ?? '').hashCode % 4), // Mock 0 to 3
-      totalSlots: (json['totalSlots'] as int?) ?? 3, // Mock default 3
+      status: PosTechnicianStatus.fromJson(
+        json['technicianStatus'] ?? json['status'] ?? {},
+      ),
+      slotsUsed: (json['slots'] != null && json['slots'] is Map)
+          ? int.tryParse(json['slots']['active']?.toString() ?? '') ?? 0
+          : int.tryParse(json['slotsUsed']?.toString() ?? '') ?? 0,
+      totalSlots: (json['slots'] != null && json['slots'] is Map)
+          ? int.tryParse(json['slots']['total']?.toString() ?? '') ?? 3
+          : int.tryParse(json['totalSlots']?.toString() ?? '') ?? 3,
     );
   }
 }
@@ -85,10 +112,7 @@ class PosDepartmentInfo {
   final String id;
   final String name;
 
-  PosDepartmentInfo({
-    required this.id,
-    required this.name,
-  });
+  PosDepartmentInfo({required this.id, required this.name});
 
   factory PosDepartmentInfo.fromJson(Map<String, dynamic> json) {
     return PosDepartmentInfo(
@@ -102,14 +126,9 @@ class PosTechnicianStatus {
   final String status;
   final String lastSeenAt;
 
-  const PosTechnicianStatus({
-    required this.status,
-    required this.lastSeenAt,
-  });
+  const PosTechnicianStatus({required this.status, required this.lastSeenAt});
 
-  const PosTechnicianStatus.empty()
-      : status = 'offline',
-        lastSeenAt = '';
+  const PosTechnicianStatus.empty() : status = 'offline', lastSeenAt = '';
 
   factory PosTechnicianStatus.fromJson(Map<String, dynamic> json) {
     return PosTechnicianStatus(

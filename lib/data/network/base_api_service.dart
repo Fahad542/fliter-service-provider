@@ -11,8 +11,11 @@ class BaseApiService {
       print('GET Request URL: $url');
       final response = await http.get(Uri.parse(url), headers: headers);
       return _returnResponse(response);
-    } on SocketException {
-      throw FetchDataException('No Internet connection');
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
     }
   }
 
@@ -28,8 +31,36 @@ class BaseApiService {
         },
       );
       return _returnResponse(response);
-    } on SocketException {
-      throw FetchDataException('No Internet connection');
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getWithBody(String endpoint, dynamic data, {Map<String, String>? headers}) async {
+    try {
+      final url = '${ApiConstants.baseUrl}$endpoint';
+      print('GET(body) Request URL: $url');
+      print('GET(body) Request Body: ${jsonEncode(data)}');
+      
+      final request = http.Request('GET', Uri.parse(url));
+      if (headers != null) {
+        request.headers.addAll(headers);
+      } else {
+        request.headers['Content-Type'] = 'application/json';
+      }
+      request.body = jsonEncode(data);
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return _returnResponse(response);
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
     }
   }
 
@@ -44,27 +75,76 @@ class BaseApiService {
         headers: headers ?? {'Content-Type': 'application/json'},
       );
       return _returnResponse(response);
-    } on SocketException {
-      throw FetchDataException('No Internet connection');
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
+    }
+  }
+
+  Future<dynamic> patch(String endpoint, dynamic data, {Map<String, String>? headers}) async {
+    try {
+      final url = '${ApiConstants.baseUrl}$endpoint';
+      print('PATCH Request URL: $url');
+      print('PATCH Request Body: ${jsonEncode(data)}');
+      final response = await http.patch(
+        Uri.parse(url),
+        body: jsonEncode(data),
+        headers: headers ?? {'Content-Type': 'application/json'},
+      );
+      return _returnResponse(response);
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
+    }
+  }
+
+  Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
+    try {
+      final url = '${ApiConstants.baseUrl}$endpoint';
+      print('DELETE Request URL: $url');
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: headers ?? {'Content-Type': 'application/json'},
+      );
+      return _returnResponse(response);
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
     }
   }
 
   dynamic _returnResponse(http.Response response) {
     print('Response Status Code: ${response.statusCode}');
     print('Response Body: ${response.body}');
+    
+    String errorMessage = response.body;
+    try {
+      final json = jsonDecode(response.body);
+      if (json['message'] != null) {
+        errorMessage = json['message'];
+      }
+    } catch (_) {
+
+    }
+
     switch (response.statusCode) {
       case 200:
       case 201:
         return jsonDecode(response.body);
       case 400:
-        throw BadRequestException(response.body.toString());
+        throw BadRequestException(errorMessage);
       case 401:
       case 403:
-        throw UnauthorisedException(response.body.toString());
+        throw UnauthorisedException(errorMessage);
       case 500:
       default:
-        throw FetchDataException(
-            'Error occurred while Communication with Server with StatusCode : ${response.statusCode}');
+        throw FetchDataException(errorMessage);
     }
   }
 }

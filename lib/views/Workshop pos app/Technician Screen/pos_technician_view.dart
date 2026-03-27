@@ -29,12 +29,11 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F6),
-      appBar: PosAppBar(
-        userName: posVm.cashierName,
-        infoTitle: posVm.workshopName,
-        infoBranch: 'Branch: ${posVm.branchName}',
-        infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
-        customHeight: isTablet ? 156 : 99,
+      appBar: PosScreenAppBar(
+        title: 'Technicians',
+        showBackButton: false,
+        showHamburger: true,
+        onMenuPressed: () => Scaffold.of(context).openDrawer(),
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<TechnicianViewModel>().fetchTechnicians(),
@@ -123,36 +122,21 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
   }
 
   Widget _buildCategoryBlock(String category, List<PosTechnician> technicians, bool isTablet) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(category, style: AppTextStyles.h2.copyWith(fontSize: 18, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          const Text('Workshop Technicians', style: TextStyle(color: Colors.grey, fontSize: 12)),
-          const SizedBox(height: 24),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: technicians.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: isTablet ? 4 : 1,
-              childAspectRatio: isTablet ? 2.1 : 4, // Adjusted ratio to prevent overflow with scaling
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-            ),
-            itemBuilder: (context, index) {
-              return TechnicianCard(tech: technicians[index]);
-            },
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: technicians.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isTablet ? 4 : 1,
+          childAspectRatio: isTablet ? 2.1 : 4, // Adjusted ratio to prevent overflow with scaling
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemBuilder: (context, index) {
+          return TechnicianCard(tech: technicians[index]);
+        },
       ),
     );
   }

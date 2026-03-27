@@ -30,12 +30,10 @@ class _PosOrdersViewState extends State<PosOrdersView> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFD),
-      appBar: PosAppBar(
-        userName: vm.cashierName,
-        infoTitle: vm.workshopName,
-        infoBranch: 'Branch: ${vm.branchName}',
-        infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
-        customHeight: isTablet ? 156 : 99,
+      appBar: const PosScreenAppBar(
+        title: 'Orders',
+        showBackButton: false,
+        showGlobalLeft: true,
       ),
       body: Consumer<PosViewModel>(
         builder: (context, vm, child) {
@@ -79,14 +77,16 @@ class _PosOrdersViewState extends State<PosOrdersView> {
                       parent: BouncingScrollPhysics(),
                     ),
                     padding: EdgeInsets.symmetric(
-                        horizontal: isTablet ? 32 : 16, vertical: 24),
+                        horizontal: isTablet ? 20 : 12, vertical: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildStatCards(vm.orderStats, isTablet),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 16),
                         _buildSearchAndFilter(context, isTablet),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
+                        _buildTabs(context, isTablet, vm.orderStatusFilter),
+                        const SizedBox(height: 20),
                         _buildOrdersList(context, vm.orders, isTablet),
                       ],
                     ),
@@ -106,31 +106,25 @@ class _PosOrdersViewState extends State<PosOrdersView> {
         'title': 'Total Orders',
         'value': stats.total.toString(),
         'icon': Icons.assignment_rounded,
-        'color': AppColors.primaryLight,
+        'color': AppColors.secondaryLight,
       },
       {
         'title': 'Waiting',
         'value': stats.draft.toString(),
-        'icon': Icons.phone_callback_rounded,
+        'icon': Icons.hourglass_top_rounded,
         'color': AppColors.primaryLight,
       },
       {
         'title': 'In Progress',
         'value': stats.inProgress.toString(),
-        'icon': Icons.pending_actions_rounded,
-        'color': AppColors.primaryLight,
-      },
-      {
-        'title': 'Pending Order',
-        'value': stats.readyForInvoice.toString(),
-        'icon': Icons.hourglass_empty_rounded,
-        'color': AppColors.primaryLight,
+        'icon': Icons.auto_mode_rounded,
+        'color': const Color(0xFF2D9CDB), // Professional Blue
       },
       {
         'title': 'Completed',
         'value': stats.invoiced.toString(),
         'icon': Icons.check_circle_rounded,
-        'color': AppColors.primaryLight,
+        'color': const Color(0xFF27AE60), // Professional Green
       },
     ];
 
@@ -143,20 +137,26 @@ class _PosOrdersViewState extends State<PosOrdersView> {
             icon: stat['icon'] as IconData,
             accentColor: stat['color'] as Color,
             width: double.infinity,
+            backgroundColor: Colors.white,
+            textColor: AppColors.secondaryLight,
           ),
         )).toList(),
       );
     } else {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none, // Allow shadows to be visible
         physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), // Padding for shadows
         child: Row(
           children: statList.map((stat) => StatCard(
             title: stat['title'] as String,
             value: stat['value'] as String,
             icon: stat['icon'] as IconData,
             accentColor: stat['color'] as Color,
-            width: 115,
+            width: 90,
+            backgroundColor: Colors.white,
+            textColor: AppColors.secondaryLight,
           )).toList(),
         ),
       );
@@ -165,10 +165,60 @@ class _PosOrdersViewState extends State<PosOrdersView> {
 
   Widget _buildSearchAndFilter(BuildContext context, bool isTablet) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 0 : 4),
+      padding: EdgeInsets.symmetric(horizontal: 0),
       child: PosSearchBar(
         hintText: 'Search by Customer or Plate Number...',
         onChanged: (val) => context.read<PosViewModel>().setOrderSearchQuery(val),
+      ),
+    );
+  }
+
+  Widget _buildTabs(BuildContext context, bool isTablet, String currentStatus) {
+    final statuses = [
+      'All',
+      'Draft',
+      'Waiting',
+      'Accepted by Tech',
+      'In Progress',
+      'Tech Completed',
+      'Completed',
+      'Cancelled',
+    ];
+
+    return SizedBox(
+      height: isTablet ? 38 : 32,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 0),
+        itemCount: statuses.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final status = statuses[index];
+          final isSelected = currentStatus == status;
+          return GestureDetector(
+            onTap: () => context.read<PosViewModel>().setOrderStatusFilter(status),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 12, vertical: isTablet ? 8 : 6),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primaryLight : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? AppColors.primaryLight : Colors.grey.shade300,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: isTablet ? 14 : 11,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? AppColors.secondaryLight : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

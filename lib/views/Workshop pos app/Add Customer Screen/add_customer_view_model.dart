@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Home Screen/pos_view_model.dart';
+import '../../../models/cashier_corporate_accounts_api_model.dart';
 
 class AddCustomerViewModel extends ChangeNotifier {
   final BuildContext context;
@@ -24,12 +25,12 @@ class AddCustomerViewModel extends ChangeNotifier {
   final TextEditingController corpOdoMeterController = TextEditingController();
 
   String? _selectedCorporate;
-  Map<String, String>? _selectedCorporateData;
+  CashierCorporateAccount? _selectedCorporateData;
 
   String? get selectedCorporate => _selectedCorporate;
-  Map<String, String>? get selectedCorporateData => _selectedCorporateData;
+  CashierCorporateAccount? get selectedCorporateData => _selectedCorporateData;
 
-  void setCorporate(String name, Map<String, String>? data) {
+  void setCorporate(String name, CashierCorporateAccount? data) {
     _selectedCorporate = name;
     _selectedCorporateData = data;
     notifyListeners();

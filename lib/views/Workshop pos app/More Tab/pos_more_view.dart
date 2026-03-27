@@ -99,6 +99,18 @@ class PosMoreView extends StatelessWidget {
                     isTablet: isTablet,
                   ),
                   const SizedBox(height: 12),
+                  _buildMenuItem(
+                    label: 'Sales Return',
+                    icon: Icons.assignment_return_outlined,
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (onSelect != null) {
+                        onSelect!(7); // Index 7: Sales Return
+                      }
+                    },
+                    isTablet: isTablet,
+                  ),
+                  const SizedBox(height: 12),
                 ],
               );
             },

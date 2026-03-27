@@ -31,7 +31,6 @@ class PosDepartmentView extends StatefulWidget {
 }
 
 class _PosDepartmentViewState extends State<PosDepartmentView> {
-
   @override
   void initState() {
     super.initState();
@@ -253,40 +252,47 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
   }
 
   Widget _buildProductsButton(BuildContext context, Department dept, bool isTablet) {
-    return ElevatedButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PosProductGridView(
-              departmentName: dept.name,
-              departmentId: dept.id,
-              preSelectedProducts: widget.preSelectedProducts,
+    return Consumer<PosViewModel>(
+      builder: (context, posViewModel, child) {
+        return ElevatedButton(
+          onPressed: posViewModel.isLoading
+              ? null
+              : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PosProductGridView(
+                        departmentName: dept.name,
+                        departmentId: dept.id,
+                        preSelectedItems: widget.preSelectedProducts?.map((id) => {'productId': id}).toList(),
+                      ),
+                    ),
+                  );
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryLight,
+            foregroundColor: AppColors.secondaryLight,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+            ),
+          ),
+          child: Text(
+            'Continue to Products',
+            style: AppTextStyles.button.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: isTablet ? 15 : 13,
             ),
           ),
         );
       },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryLight,
-        foregroundColor: AppColors.secondaryLight,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
-        ),
-      ),
-      child: Text(
-        'Continue to Products',
-        style: AppTextStyles.button.copyWith(
-          fontWeight: FontWeight.w700,
-          fontSize: isTablet ? 15 : 13,
-        ),
-      ),
     );
   }
 
   Widget _buildTechnicianButton(BuildContext context, Department dept, bool isTablet) {
     return Consumer<PosViewModel>(
       builder: (context, posViewModel, child) {
+        final isLoadingHere = posViewModel.isLoading;
         return ElevatedButton(
           onPressed: posViewModel.isLoading
               ? null
@@ -301,7 +307,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                           MaterialPageRoute(builder: (_) => PosTechnicianAssignmentView(jobId: orderId)),
                         );
                       } else {
-                        posViewModel?.setShellSelectedIndex(2); // Orders Tab
+                        posViewModel.setShellSelectedIndex(2); // Orders Tab
                         posViewModel.fetchOrders();
                         Navigator.popUntil(context, (route) => route.isFirst);
                       }
@@ -316,7 +322,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
               borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
             ),
           ),
-          child: posViewModel.isLoading
+          child: isLoadingHere
               ? const SizedBox(
                   height: 20,
                   width: 20,

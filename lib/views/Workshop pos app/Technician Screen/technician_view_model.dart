@@ -94,7 +94,7 @@ class TechnicianViewModel extends ChangeNotifier {
       }
 
       final response =
-          await _posRepository.assignTechnician(jobId, employeeId, token);
+          await _posRepository.assignTechnicians(jobId, [employeeId], token);
       _assignmentMessage = response.message;
       _assignmentSuccess = response.success;
       return response.success;
@@ -121,21 +121,11 @@ class TechnicianViewModel extends ChangeNotifier {
         throw Exception('Token not found');
       }
 
-      bool allSuccess = true;
-      String? lastMessage;
-
-      // Call API sequentially for each technician
-      for (final employeeId in employeeIds) {
-        final response = await _posRepository.assignTechnician(jobId, employeeId, token);
-        if (!response.success) {
-          allSuccess = false;
-        }
-        lastMessage = response.message;
-      }
-
-      _assignmentSuccess = allSuccess;
-      _assignmentMessage = allSuccess ? 'All assigned successfully' : (lastMessage ?? 'Some assignments failed');
-      return allSuccess;
+      final response = await _posRepository.assignTechnicians(jobId, employeeIds, token);
+      
+      _assignmentSuccess = response.success;
+      _assignmentMessage = response.message;
+      return response.success;
     } catch (e) {
       _assignmentMessage = e.toString();
       _assignmentSuccess = false;

@@ -1,3 +1,4 @@
+import 'package:filter_service_providers/services/owner_data_service.dart';
 import 'package:filter_service_providers/views/Workshop%20pos%20app/Department/department_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,36 +11,80 @@ import 'views/Menu/menu_view.dart';
 import 'utils/app_theme.dart';
 import 'data/repositories/auth_repository.dart';
 import 'services/session_service.dart';
-import 'views/Login/login_view_model.dart';
-import 'views/Navbar/pos_shell.dart';
+import 'views/Workshop pos app/Login/login_view_model.dart';
+import 'views/Workshop pos app/Navbar/pos_shell.dart';
+import 'views/Workshop Owner/owner_shell.dart';
+import 'views/Technician App/technician_shell.dart';
 // import 'data/repositories/department_repository.dart';
 import 'data/repositories/pos_repository.dart';
+import 'data/repositories/owner_repository.dart';
+import 'data/repositories/technician_repository.dart';
 // import 'views/Department/department_view_model.dart';
 import 'views/Workshop pos app/Technician Screen/technician_view_model.dart';
 import 'views/Workshop pos app/Corporate Bookings/corporate_booking_view_model.dart';
 import 'views/Workshop pos app/Notifications/notifications_view_model.dart';
 import 'views/Workshop pos app/Petty Cash/petty_cash_view_model.dart';
 import 'views/Workshop pos app/Store Closing/store_closing_view_model.dart';
+import 'views/Workshop pos app/Current Shift/current_shift_view_model.dart';
 import 'views/Workshop pos app/Promo/promo_view_model.dart';
 import 'views/Workshop pos app/Product Grid/product_grid_view_model.dart';
+import 'views/Workshop pos app/Sales Return/sales_return_view_model.dart';
+import 'views/Workshop Owner/Dashboard/owner_dashboard_view_model.dart';
+import 'views/Workshop Owner/Branches/branch_management_view_model.dart';
+import 'views/Workshop Owner/Employees/employee_management_view_model.dart';
+import 'views/Workshop Owner/Corporate/corporate_management_view_model.dart';
+import 'views/Workshop Owner/Inventory/inventory_management_view_model.dart';
+import 'views/Workshop Owner/Billing/billing_management_view_model.dart';
+import 'views/Workshop Owner/Departments/department_management_view_model.dart';
+import 'views/Workshop owner/Suppliers/suppliers_view_model.dart';
+import 'views/Workshop Owner/Reports/reports_management_view_model.dart';
+import 'views/Workshop Owner/Auth/owner_login_view_model.dart';
+import 'views/Super Admin/Auth/super_admin_login_view_model.dart';
+import 'views/Super Admin/Departments/super_admin_departments_view_model.dart';
+import 'views/Workshop Owner/Promo/owner_promo_view_model.dart';
+import 'views/Technician App/technician_view_model.dart';
+import 'views/Locker App/locker_view_model.dart';
+import 'views/Workshop Owner/POS Monitoring/pos_monitoring_view_model.dart';
+import 'package:filter_service_providers/utils/restart_widget.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(const RestartWidget(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+Future<String?> _resolveStartScreen(SessionService session) async {
+  final lastPortal = await session.getLastPortal();
+  if (lastPortal == null) return null;
+  final isLoggedIn = await session.isLoggedIn(role: lastPortal);
+  return isLoggedIn ? lastPortal : null;
+}
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late Future<String?> _startScreenFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _startScreenFuture = _resolveStartScreen(SessionService());
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-       // Provider<FilterRepository>(create: (_) => FilterRepository()),
         Provider<AuthRepository>(create: (_) => AuthRepository()),
         Provider<SessionService>(create: (_) => SessionService()),
+        Provider<OwnerRepository>(create: (_) => OwnerRepository()),
+        Provider<TechnicianRepository>(create: (_) => TechnicianRepository()),
         ChangeNotifierProvider<SettingsViewModel>(create: (_) => SettingsViewModel()),
-        Provider<PosRepository>(create: (_) => PosRepository()),
         Provider<PosRepository>(create: (_) => PosRepository()),
         ChangeNotifierProvider<LoginViewModel>(
           create: (context) => LoginViewModel(
@@ -47,6 +92,7 @@ class MyApp extends StatelessWidget {
             sessionService: context.read<SessionService>(),
           ),
         ),
+
         ChangeNotifierProxyProvider2<PosRepository, SessionService, DepartmentViewModel>(
           create: (context) => DepartmentViewModel(
             departmentRepository: context.read<PosRepository>(),
@@ -76,8 +122,13 @@ class MyApp extends StatelessWidget {
               TechnicianViewModel(
                   posRepository: posRepo, sessionService: sessionService),
         ),
-        ChangeNotifierProvider<CorporateBookingViewModel>(
-          create: (_) => CorporateBookingViewModel(),
+        ChangeNotifierProxyProvider2<PosRepository, SessionService, CorporateBookingViewModel>(
+          create: (context) => CorporateBookingViewModel(
+            repository: context.read<PosRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, posRepo, sessionService, previous) =>
+              previous ?? CorporateBookingViewModel(repository: posRepo, sessionService: sessionService),
         ),
         ChangeNotifierProvider<NotificationsViewModel>(
           create: (_) => NotificationsViewModel(),
@@ -93,6 +144,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<StoreClosingViewModel>(
           create: (_) => StoreClosingViewModel(),
         ),
+        ChangeNotifierProvider<CurrentShiftViewModel>(
+          create: (context) => CurrentShiftViewModel(
+            authRepository: context.read<AuthRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+        ),
         ChangeNotifierProxyProvider2<PosRepository, SessionService, PromoViewModel>(
           create: (context) => PromoViewModel(
             posRepository: context.read<PosRepository>(),
@@ -104,11 +161,184 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<ProductGridViewModel>(
           create: (_) => ProductGridViewModel(),
         ),
+        ChangeNotifierProxyProvider2<PosRepository, SessionService, SalesReturnViewModel>(
+          create: (context) => SalesReturnViewModel(
+            posRepository: context.read<PosRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, posRepo, sessionService, previous) =>
+              previous ?? SalesReturnViewModel(posRepository: posRepo, sessionService: sessionService),
+        ),
+        
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, OwnerDataService>(
+          create: (context) => OwnerDataService(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? OwnerDataService(ownerRepository: ownerRepo, sessionService: sessionService),
+        ),
+
+        ChangeNotifierProxyProvider3<OwnerRepository, SessionService, OwnerDataService, OwnerDashboardViewModel>(
+          create: (context) => OwnerDashboardViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+            ownerDataService: context.read<OwnerDataService>(),
+          ),
+          update: (context, ownerRepo, sessionService, ownerData, previous) =>
+              previous ?? OwnerDashboardViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+                ownerDataService: ownerData,
+              ),
+        ),
+        ChangeNotifierProxyProvider3<OwnerRepository, SessionService, OwnerDataService, BranchManagementViewModel>(
+          create: (context) => BranchManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+            ownerDataService: context.read<OwnerDataService>(),
+          ),
+          update: (context, ownerRepo, sessionService, ownerData, previous) =>
+              previous ?? BranchManagementViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+                ownerDataService: ownerData,
+              ),
+        ),
+        ChangeNotifierProxyProvider3<OwnerRepository, SessionService, OwnerDataService, EmployeeManagementViewModel>(
+          create: (context) => EmployeeManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+            ownerDataService: context.read<OwnerDataService>(),
+          ),
+          update: (context, ownerRepo, sessionService, ownerData, previous) =>
+              previous ?? EmployeeManagementViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+                ownerDataService: ownerData,
+              ),
+        ),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, CorporateManagementViewModel>(
+          create: (context) => CorporateManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? CorporateManagementViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+              ),
+        ),
+        ChangeNotifierProxyProvider3<OwnerRepository, SessionService, OwnerDataService, InventoryManagementViewModel>(
+          create: (context) => InventoryManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+            ownerDataService: context.read<OwnerDataService>(),
+          ),
+          update: (context, ownerRepo, sessionService, ownerData, previous) =>
+              previous ?? InventoryManagementViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+                ownerDataService: ownerData,
+              ),
+        ),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, BillingManagementViewModel>(
+          create: (context) => BillingManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? BillingManagementViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+              ),
+        ),
+        ChangeNotifierProxyProvider3<OwnerRepository, SessionService, OwnerDataService, DepartmentManagementViewModel>(
+          create: (context) => DepartmentManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+            ownerDataService: context.read<OwnerDataService>(),
+          ),
+          update: (context, ownerRepo, sessionService, ownerData, previous) =>
+              previous ?? DepartmentManagementViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+                ownerDataService: ownerData,
+              ),
+        ),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, SuppliersViewModel>(
+          create: (context) => SuppliersViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? SuppliersViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+              ),
+        ),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, ReportsManagementViewModel>(
+          create: (context) => ReportsManagementViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? ReportsManagementViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+              ),
+        ),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, PosMonitoringViewModel>(
+          create: (context) => PosMonitoringViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? PosMonitoringViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+              ),
+        ),
+        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, OwnerPromoViewModel>(
+          create: (context) => OwnerPromoViewModel(
+            ownerRepository: context.read<OwnerRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, ownerRepo, sessionService, previous) =>
+              previous ?? OwnerPromoViewModel(
+                ownerRepository: ownerRepo, 
+                sessionService: sessionService,
+              ),
+        ),
+        ChangeNotifierProvider<TechAppViewModel>(
+          create: (context) => TechAppViewModel(
+            repository: context.read<TechnicianRepository>(),
+            sessionService: context.read<SessionService>(),
+          )..init(),
+        ),
+        ChangeNotifierProvider<LockerViewModel>(
+          create: (_) => LockerViewModel()..init(),
+        ),
+        ChangeNotifierProvider<OwnerLoginViewModel>(
+          create: (context) => OwnerLoginViewModel(
+            authRepository: context.read<AuthRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+        ),
+        ChangeNotifierProvider<SuperAdminLoginViewModel>(
+          create: (context) => SuperAdminLoginViewModel(
+            authRepository: context.read<AuthRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+        ),
+        ChangeNotifierProvider<SuperAdminDepartmentsViewModel>(
+          create: (_) => SuperAdminDepartmentsViewModel(),
+        ),
       ],
       child: Consumer<SettingsViewModel>(
         builder: (context, settings, child) {
           return MaterialApp(
-            title: 'Workshop Portal',
+            title: 'Workshop Owner',
             debugShowCheckedModeBanner: false,
             // Theme Configuration
             theme: AppTheme.lightTheme,
@@ -128,18 +358,24 @@ class MyApp extends StatelessWidget {
               Locale('ar'), // Arabic
             ],
             
-            home: FutureBuilder<bool>(
-              future: context.read<SessionService>().isLoggedIn(),
+            home: FutureBuilder<String?>(
+              future: _startScreenFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   );
                 }
-                if (snapshot.data == true) {
-                  return const PosShell();
+                switch (snapshot.data) {
+                  case 'owner':
+                    return const OwnerShell();
+                  case 'cashier':
+                    return const PosShell();
+                  case 'tech':
+                    return const TechShell();
+                  default:
+                    return const MenuView();
                 }
-                return const MenuView();
               },
             ),
           );

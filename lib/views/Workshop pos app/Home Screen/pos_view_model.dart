@@ -14,17 +14,14 @@ import '../../../models/walk_in_customer_model.dart';
 import '../../../models/customer_search_model.dart';
 import '../../../models/create_invoice_model.dart';
 import '../../../models/expense_category_model.dart'; // Added
-
-
+import '../../../models/cashier_complete_job_model.dart'; // Added
+import '../../../models/cashier_corporate_accounts_api_model.dart';
 
 class PosViewModel extends ChangeNotifier {
   final PosRepository posRepository;
   final SessionService sessionService;
 
-  PosViewModel({
-    required this.posRepository,
-    required this.sessionService,
-  }) {
+  PosViewModel({required this.posRepository, required this.sessionService}) {
     _loadUserInfo();
   }
 
@@ -41,15 +38,35 @@ class PosViewModel extends ChangeNotifier {
     }
   }
 
-  // Mock corporate list (Moved from View)
-  final List<Map<String, String>> _corporateList = [
-    {'name': 'Saudi Aramco', 'vat': '300123456789', 'address': 'Dhahran, Eastern Province'},
-    {'name': 'SABIC', 'vat': '300987654321', 'address': 'Riyadh, Riyadh Province'},
-    {'name': 'STC', 'vat': '300111222333', 'address': 'Riyadh, Olaya District'},
-    {'name': 'Al Rajhi Bank', 'vat': '300444555666', 'address': 'Riyadh, King Fahd Road'},
-  ];
+  List<CashierCorporateAccount> _corporateAccounts = [];
+  bool _isCorpAccountsLoading = false;
 
-  List<Map<String, String>> get corporateList => _corporateList;
+  List<CashierCorporateAccount> get corporateAccounts => _corporateAccounts;
+  bool get isCorpAccountsLoading => _isCorpAccountsLoading;
+
+  Future<void> fetchCorporateAccounts({bool silent = true}) async {
+    if (!silent) {
+      _isCorpAccountsLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) throw Exception('Token not found');
+      final response = await posRepository.getCashierCorporateAccounts(token);
+      if (response.success) {
+        _corporateAccounts = response.accounts;
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = _extractErrorMessage(e.toString());
+    } finally {
+      if (!silent) {
+        _isCorpAccountsLoading = false;
+        notifyListeners();
+      }
+    }
+  }
 
   // Walk-in Customer State
   String _customerName = '';
@@ -59,6 +76,15 @@ class PosViewModel extends ChangeNotifier {
   String _make = '';
   String _model = '';
   int _odometerReading = 0;
+  String? _previousOrderId;
+
+  String get customerName => _customerName;
+  String get vatNumber => _vatNumber;
+  String get mobile => _mobile;
+  String get vehicleNumber => _vehicleNumber;
+  String get make => _make;
+  String get model => _model;
+  int get odometerReading => _odometerReading;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -120,7 +146,6 @@ class PosViewModel extends ChangeNotifier {
     });
   }
 
-
   // Date Formatting (Moved from View logic)
   String formatDate(String dateStr) {
     try {
@@ -137,21 +162,21 @@ class PosViewModel extends ChangeNotifier {
     if (clean.startsWith('Exception: ')) clean = clean.substring(11);
     if (clean.startsWith('Error: ')) clean = clean.substring(7);
     if (clean.startsWith('Invalid Request: ')) clean = clean.substring(17);
-    
+
     // Try to find JSON object
     final startIndex = clean.indexOf('{');
     final endIndex = clean.lastIndexOf('}');
-    
+
     if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
-       try {
-         final jsonStr = clean.substring(startIndex, endIndex + 1);
-         final Map<String, dynamic> json = jsonDecode(jsonStr);
-         if (json.containsKey('message') && json['message'] != null) {
-           return json['message'].toString();
-         }
-       } catch (_) {
-         // JSON parsing failed, just return the cleaned string
-       }
+      try {
+        final jsonStr = clean.substring(startIndex, endIndex + 1);
+        final Map<String, dynamic> json = jsonDecode(jsonStr);
+        if (json.containsKey('message') && json['message'] != null) {
+          return json['message'].toString();
+        }
+      } catch (_) {
+        // JSON parsing failed, just return the cleaned string
+      }
     }
     return clean;
   }
@@ -164,6 +189,7 @@ class PosViewModel extends ChangeNotifier {
     required String make,
     required String model,
     required int odometer,
+    String? previousOrderId,
   }) {
     _customerName = name;
     _vatNumber = vat;
@@ -172,6 +198,7 @@ class PosViewModel extends ChangeNotifier {
     _make = make;
     _model = model;
     _odometerReading = odometer;
+    _previousOrderId = previousOrderId;
     notifyListeners();
   }
 
@@ -183,6 +210,7 @@ class PosViewModel extends ChangeNotifier {
     _make = '';
     _model = '';
     _odometerReading = 0;
+    _previousOrderId = null;
     _cartItems.clear();
     _activePromoCode = '';
     _promoDiscount = 0.0;
@@ -199,7 +227,7 @@ class PosViewModel extends ChangeNotifier {
     required String make,
     required String model,
     required String odometerStr,
-    required Map<String, String>? selectedCorporateData,
+    required CashierCorporateAccount? selectedCorporateData,
     required VoidCallback onSuccess,
     required Function(String) onError,
   }) {
@@ -219,9 +247,9 @@ class PosViewModel extends ChangeNotifier {
         return;
       }
       setCustomerData(
-        name: selectedCorporateData['name'] ?? '',
-        vat: selectedCorporateData['vat'] ?? '',
-        mobile: '',
+        name: selectedCorporateData.companyName,
+        vat: '', // Empty as API doesn't provide VAT
+        mobile: selectedCorporateData.customer?.mobile ?? '',
         vehicleNumber: vehicleNumber,
         make: make,
         model: model,
@@ -230,7 +258,11 @@ class PosViewModel extends ChangeNotifier {
     }
     onSuccess();
   }
-  Future<bool> submitWalkInOrder(List<String> departmentIds, BuildContext context) async {
+
+  Future<bool> submitWalkInOrder(
+    List<String> departmentIds,
+    BuildContext context,
+  ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -241,12 +273,33 @@ class PosViewModel extends ChangeNotifier {
         throw Exception('Authentication token not found');
       }
 
-      final List<RequestedProduct> products = _cartItems.map((item) => RequestedProduct(
-        productId: item.product.id,
-        departmentId: item.product.departmentId ?? departmentIds.first,
-        qty: item.quantity,
-      )).toList();
-      
+      final List<RequestedProduct> products = [];
+      final List<RequestedService> services = [];
+
+      for (var item in _cartItems) {
+        if (item.product.isService) {
+          services.add(
+            RequestedService(
+              serviceId: item.product.id,
+              departmentId: item.product.departmentId ?? departmentIds.first,
+              qty: 1.0,
+              discountType: item.discount > 0 ? (item.isDiscountPercent ? 'percent' : 'amount') : null,
+              discountValue: item.discount > 0 ? item.discount : null,
+            ),
+          );
+        } else {
+          products.add(
+            RequestedProduct(
+              productId: item.product.id,
+              departmentId: item.product.departmentId ?? departmentIds.first,
+              qty: item.quantity,
+              discountType: item.discount > 0 ? (item.isDiscountPercent ? 'percent' : 'amount') : null,
+              discountValue: item.discount > 0 ? item.discount : null,
+            ),
+          );
+        }
+      }
+
       // Combine the passed departmentIds with any departmentIds from the selected products
       final Set<String> allDepartmentIds = {...departmentIds};
       for (var product in products) {
@@ -254,8 +307,14 @@ class PosViewModel extends ChangeNotifier {
           allDepartmentIds.add(product.departmentId);
         }
       }
+      for (var service in services) {
+        if (service.departmentId.isNotEmpty) {
+          allDepartmentIds.add(service.departmentId);
+        }
+      }
 
       final request = WalkInCustomerRequest(
+        orderId: _previousOrderId,
         customerName: _customerName,
         vatNumber: _vatNumber,
         mobile: _mobile,
@@ -264,18 +323,28 @@ class PosViewModel extends ChangeNotifier {
         model: _model,
         odometerReading: _odometerReading,
         departmentIds: allDepartmentIds.toList(),
-        products: products,
+        products: products.isNotEmpty ? products : null,
+        services: services.isNotEmpty ? services : null,
+        totalDiscountType: _globalDiscount > 0 ? (_isGlobalDiscountPercent ? 'percent' : 'amount') : null,
+        totalDiscountValue: _globalDiscount > 0 ? _globalDiscount : null,
+        promoCode: _promoDiscount > 0 ? _activePromoCode : null,
       );
 
       final response = await posRepository.createWalkInOrder(request, token);
-      
+
       if (response.success) {
-        _currentJobId = response.order?.id;
+        // Try to get jobId from the last added department first, then fallback to top-level jobId or order id
+        _currentJobId =
+            (response.order?.departments.isNotEmpty == true
+                ? response.order?.departments.last.jobId
+                : null) ??
+            response.order?.jobId ??
+            response.order?.id;
         _isLoading = false;
         clearCustomerData(); // Reset for next order
         notifyListeners();
         if (context.mounted) {
-           ToastService.showSuccess(context, response.message);
+          ToastService.showSuccess(context, response.message);
         }
         return true;
       } else {
@@ -283,7 +352,7 @@ class PosViewModel extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
         if (context.mounted) {
-           ToastService.showError(context, response.message);
+          ToastService.showError(context, response.message);
         }
         return false;
       }
@@ -292,15 +361,18 @@ class PosViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       if (context.mounted) {
-         ToastService.showError(context, _errorMessage!);
+        ToastService.showError(context, _errorMessage!);
       }
       return false;
     }
   }
 
   List<PosProduct> _allProducts = [];
+  String? _lastFetchedDepartmentId;
+  String? get lastFetchedDepartmentId => _lastFetchedDepartmentId;
 
-  Future<void> fetchProducts() async {
+  Future<void> fetchProducts({String? departmentId}) async {
+    _lastFetchedDepartmentId = departmentId;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -308,15 +380,21 @@ class PosViewModel extends ChangeNotifier {
     try {
       final token = await sessionService.getToken();
       final user = await sessionService.getUser();
-      
+
       if (token == null || user == null || user.workshopId == null) {
         throw Exception('Authentication information missing');
       }
 
-      final response = await posRepository.getProducts(user.workshopId!, token);
-      
+      final response = await posRepository.getProducts(
+        user.workshopId!,
+        token,
+        departmentId: departmentId,
+        branchId: user.branchId,
+      );
+
       if (response.success) {
         _allProducts = [];
+        _apiCategories = response.categories;
         // Flatten categories and subcategories into a single list of products
         for (var cat in response.categories) {
           for (var sub in cat.subCategories) {
@@ -343,16 +421,27 @@ class PosViewModel extends ChangeNotifier {
   double _globalDiscount = 0.0;
   bool _isGlobalDiscountPercent = false;
 
-
-
-
+  String _selectedProductType = 'All';
   String _selectedCategory = 'All';
   String _searchQuery = '';
 
+  List<ProductCategory> _apiCategories = [];
+
   List<PosProduct> get allProducts => _allProducts;
+  List<ProductCategory> get apiCategories => _apiCategories;
   List<CartItem> get cartItems => _cartItems;
+  String get selectedProductType => _selectedProductType;
   String get selectedCategory => _selectedCategory;
   String get searchQuery => _searchQuery;
+
+  void setProductType(String type) {
+    if (_selectedProductType != type) {
+      _selectedProductType = type;
+      _selectedCategory = 'All';
+      notifyListeners();
+    }
+  }
+
   String get activePromoCode => _activePromoCode;
   double get promoDiscount => _promoDiscount;
   bool get isPromoPercent => _isPromoPercent;
@@ -361,43 +450,71 @@ class PosViewModel extends ChangeNotifier {
   bool get isGlobalDiscountPercent => _isGlobalDiscountPercent;
 
   List<String> get uniqueCategories {
-    final cats = _allProducts.map((p) => p.category).toSet().toList();
+    final cats = _allProducts
+        .where((p) {
+          if (_selectedProductType == 'All') return true;
+          return _selectedProductType == 'Products'
+              ? !p.isService
+              : p.isService;
+        })
+        .map((p) => p.category)
+        .toSet()
+        .toList();
     cats.sort();
     return ['All', ...cats];
   }
 
   List<PosProduct> get products {
     return _allProducts.where((p) {
-      final matchesCategory = _selectedCategory == 'All' || p.category == _selectedCategory;
-      final matchesSearch = p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      final matchesType =
+          _selectedProductType == 'All' ||
+          (_selectedProductType == 'Products' ? !p.isService : p.isService);
+      final matchesCategory =
+          _selectedCategory == 'All' || p.category == _selectedCategory;
+      final matchesSearch = p.name.toLowerCase().contains(
+        _searchQuery.toLowerCase(),
+      );
+      return matchesType && matchesCategory && matchesSearch;
     }).toList();
   }
 
-  double get subtotalExclVat => _cartItems.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
-  
-  double get totalIndividualDiscount => _cartItems.fold(0, (sum, item) => sum + item.actualDiscountAmount);
+  double get subtotalExclVat => _cartItems.fold(
+    0,
+    (sum, item) => sum + (item.product.price * item.quantity),
+  );
+
+  double get totalIndividualDiscount =>
+      _cartItems.fold(0, (sum, item) => sum + item.actualDiscountAmount);
 
   double get totalGlobalDiscount {
+    final baseForGlobal = subtotalExclVat - totalIndividualDiscount;
     if (_isGlobalDiscountPercent) {
-      return subtotalExclVat * (_globalDiscount / 100);
+      return baseForGlobal * (_globalDiscount / 100);
     }
     return _globalDiscount;
   }
-  
+
   double get totalPromoDiscount {
-    final baseForPromo = subtotalExclVat - totalIndividualDiscount - totalGlobalDiscount;
+    final baseForPromo =
+        subtotalExclVat - totalIndividualDiscount - totalGlobalDiscount;
     if (_isPromoPercent) {
       return baseForPromo * (_promoDiscount / 100);
     }
     return _promoDiscount;
   }
 
-  double get totalTaxableAmount => subtotalExclVat - totalIndividualDiscount - totalGlobalDiscount - totalPromoDiscount;
+  double get totalTaxableAmount =>
+      subtotalExclVat -
+      totalIndividualDiscount -
+      totalGlobalDiscount -
+      totalPromoDiscount;
   double get totalTax => totalTaxableAmount * 0.15; // 15% VAT
   double get totalAmount => totalTaxableAmount + totalTax;
 
-  int get cartCount => _cartItems.fold(0, (sum, item) => sum + (item.quantity >= 1 ? item.quantity.toInt() : 1));
+  int get cartCount => _cartItems.fold(
+    0,
+    (sum, item) => sum + (item.quantity >= 1 ? item.quantity.toInt() : 1),
+  );
 
   void setCategory(String category) {
     _selectedCategory = category;
@@ -409,14 +526,32 @@ class PosViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addToCart(PosProduct product, {double qty = 1.0}) {
-    final existingIndex = _cartItems.indexWhere((item) => item.product.id == product.id);
+  String? addToCart(PosProduct product, {double qty = 1.0}) {
+    if (!product.allowDecimalQty && qty % 1 != 0) {
+      qty = qty.floorToDouble();
+    }
+    final existingIndex = _cartItems.indexWhere(
+      (item) => item.product.id == product.id,
+    );
     if (existingIndex != -1) {
+      if (product.isService) {
+        return 'Services can only be booked once per order.';
+      }
+      if (!product.isService &&
+          _cartItems[existingIndex].quantity + qty > product.stock) {
+        return 'Cannot exceed available stock limit (${product.stock})';
+      }
       _cartItems[existingIndex].quantity += qty;
     } else {
-      _cartItems.add(CartItem(product: product, quantity: qty, isDiscountPercent: false));
+      if (!product.isService && qty > product.stock) {
+        return 'Cannot exceed available stock limit (${product.stock})';
+      }
+      _cartItems.add(
+        CartItem(product: product, quantity: qty, isDiscountPercent: false),
+      );
     }
     notifyListeners();
+    return null;
   }
 
   void removeFromCart(PosProduct product) {
@@ -424,30 +559,67 @@ class PosViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateQuantity(PosProduct product, double delta) {
-    final index = _cartItems.indexWhere((item) => item.product.id == product.id);
+  String? updateQuantity(PosProduct product, double delta) {
+    if (!product.allowDecimalQty && delta % 1 != 0) {
+      delta = delta.floorToDouble();
+    }
+    final index = _cartItems.indexWhere(
+      (item) => item.product.id == product.id,
+    );
     if (index != -1) {
+      if (product.isService && delta > 0) {
+        return 'Services can only be booked once per order.';
+      }
+      if (!product.isService &&
+          _cartItems[index].quantity + delta > product.stock) {
+        return 'Cannot exceed available stock limit (${product.stock})';
+      }
       _cartItems[index].quantity += delta;
       if (_cartItems[index].quantity <= 0) {
         _cartItems.removeAt(index);
       }
       notifyListeners();
     }
+    return null;
   }
 
-  void setSpecificQuantity(PosProduct product, double qty) {
-    final index = _cartItems.indexWhere((item) => item.product.id == product.id);
+  String? setSpecificQuantity(PosProduct product, double qty) {
+    if (qty <= 0) {
+      removeFromCart(product);
+      return null;
+    }
+    if (!product.allowDecimalQty && qty % 1 != 0) {
+      qty = qty.floorToDouble();
+    }
+
+    if (product.isService && qty > 1) {
+      return 'Services can only be booked once per order.';
+    }
+
+    if (!product.isService && qty > product.stock) {
+      return 'Cannot exceed available stock limit (${product.stock})';
+    }
+
+    final index = _cartItems.indexWhere(
+      (item) => item.product.id == product.id,
+    );
     if (index != -1) {
       _cartItems[index].quantity = qty;
-      if (_cartItems[index].quantity <= 0) {
-        _cartItems.removeAt(index);
-      }
       notifyListeners();
+      return null;
+    } else {
+      return addToCart(product, qty: qty);
     }
   }
 
-  void setIndividualDiscount(PosProduct product, double discount, bool isPercent) {
-    final index = _cartItems.indexWhere((item) => item.product.id == product.id);
+  void setIndividualDiscount(
+    PosProduct product,
+    double discount,
+    bool isPercent,
+  ) {
+    final index = _cartItems.indexWhere(
+      (item) => item.product.id == product.id,
+    );
     if (index != -1) {
       _cartItems[index].discount = discount;
       _cartItems[index].isDiscountPercent = isPercent;
@@ -484,15 +656,59 @@ class PosViewModel extends ChangeNotifier {
     _isPromoPercent = false;
   }
 
-
   String _orderSearchQuery = '';
+  String _orderStatusFilter = 'All';
+
+  String get orderStatusFilter => _orderStatusFilter;
 
   List<PosOrder> get orders {
-    if (_orderSearchQuery.isEmpty) return _orders;
-    return _orders.where((o) => 
-      o.id.toLowerCase().contains(_orderSearchQuery.toLowerCase()) ||
-      o.customerName.toLowerCase().contains(_orderSearchQuery.toLowerCase())
-    ).toList();
+    // Globally filter out invoiced orders based on order status
+    Iterable<PosOrder> filtered = _orders.where(
+      (o) => o.statusText.toLowerCase() != 'invoiced',
+    );
+
+    // 1. Text Search Filter
+    if (_orderSearchQuery.isNotEmpty) {
+      filtered = filtered.where(
+        (o) =>
+            o.id.toLowerCase().contains(_orderSearchQuery.toLowerCase()) ||
+            o.customerName.toLowerCase().contains(
+              _orderSearchQuery.toLowerCase(),
+            ),
+      );
+    }
+
+    // 2. Status Tab Filter
+    if (_orderStatusFilter != 'All') {
+      filtered = filtered.where((o) {
+        String statusStr = o.statusText;
+        if (o.jobs.isNotEmpty) {
+          statusStr = o.latestJob!.status;
+        }
+        final status = statusStr.toLowerCase();
+        switch (_orderStatusFilter) {
+          case 'Draft':
+            return status == 'draft' || status == 'pending assignment' || status == 'pending';
+          case 'Waiting':
+            return status.contains('waiting') ||
+                status == 'assigned';
+          case 'Accepted by Tech':
+            return status.contains('accepted');
+          case 'In Progress':
+            return status == 'in progress';
+          case 'Tech Completed':
+            return status == 'completed by technician';
+          case 'Completed':
+            return status == 'completed';
+          case 'Cancelled':
+            return status.contains('rejected') || status.contains('cancelled');
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filtered.toList();
   }
 
   Future<void> fetchOrders({bool silent = false}) async {
@@ -527,6 +743,11 @@ class PosViewModel extends ChangeNotifier {
 
   void setOrderSearchQuery(String query) {
     _orderSearchQuery = query;
+    notifyListeners();
+  }
+
+  void setOrderStatusFilter(String status) {
+    _orderStatusFilter = status;
     notifyListeners();
   }
 
@@ -574,46 +795,14 @@ class PosViewModel extends ChangeNotifier {
 
   final List<PosTechnician> _allTechnicians = [
     // Oil Change
-    PosTechnician(
-      id: 'T1',
-      name: 'M. Sheraz',
-      technicianType: 'Oil Change',
-    ),
-    PosTechnician(
-      id: 'T2',
-      name: 'M. Sheraz',
-      technicianType: 'Oil Change',
-    ),
-    PosTechnician(
-      id: 'T3',
-      name: 'M. Sheraz',
-      technicianType: 'Oil Change',
-    ),
-    PosTechnician(
-      id: 'T4',
-      name: 'M. Sheraz',
-      technicianType: 'Oil Change',
-    ),
-    PosTechnician(
-      id: 'T5',
-      name: 'M. Sheraz',
-      technicianType: 'Oil Change',
-    ),
-    PosTechnician(
-      id: 'T6',
-      name: 'M. Sheraz',
-      technicianType: 'Oil Change',
-    ),
-    PosTechnician(
-      id: 'T7',
-      name: 'M. Sheraz',
-      technicianType: 'Oil Change',
-    ),
-    PosTechnician(
-      id: 'T8',
-      name: 'M. Sheraz',
-      technicianType: 'Oil Change',
-    ),
+    PosTechnician(id: 'T1', name: 'M. Sheraz', technicianType: 'Oil Change'),
+    PosTechnician(id: 'T2', name: 'M. Sheraz', technicianType: 'Oil Change'),
+    PosTechnician(id: 'T3', name: 'M. Sheraz', technicianType: 'Oil Change'),
+    PosTechnician(id: 'T4', name: 'M. Sheraz', technicianType: 'Oil Change'),
+    PosTechnician(id: 'T5', name: 'M. Sheraz', technicianType: 'Oil Change'),
+    PosTechnician(id: 'T6', name: 'M. Sheraz', technicianType: 'Oil Change'),
+    PosTechnician(id: 'T7', name: 'M. Sheraz', technicianType: 'Oil Change'),
+    PosTechnician(id: 'T8', name: 'M. Sheraz', technicianType: 'Oil Change'),
     // General Repair
     PosTechnician(
       id: 'T9',
@@ -661,9 +850,11 @@ class PosViewModel extends ChangeNotifier {
 
   List<PosTechnician> get technicians {
     if (_techSearchQuery.isEmpty) return _allTechnicians;
-    return _allTechnicians.where((t) => 
-      t.name.toLowerCase().contains(_techSearchQuery.toLowerCase())
-    ).toList();
+    return _allTechnicians
+        .where(
+          (t) => t.name.toLowerCase().contains(_techSearchQuery.toLowerCase()),
+        )
+        .toList();
   }
 
   Map<String, List<PosTechnician>> get techniciansByCategory {
@@ -686,11 +877,11 @@ class PosViewModel extends ChangeNotifier {
     return _cartItems.any((item) => item.product.id == productId);
   }
 
-
-
-
-
-  Future<CreateInvoiceResponse?> generateInvoice(String orderId) async {
+  Future<CreateInvoiceResponse?> generateInvoice(
+    String orderId, {
+    String? paymentMethod,
+    bool? isCorporate,
+  }) async {
     _isInvoiceLoading = true;
     _loadingOrderId = orderId;
     _errorMessage = null;
@@ -706,6 +897,8 @@ class PosViewModel extends ChangeNotifier {
         orderId: orderId,
         discountAmount: 0.0,
         invoicedDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        paymentMethod: paymentMethod,
+        isCorporate: isCorporate,
       );
 
       final response = await posRepository.createInvoice(request, token);
@@ -714,7 +907,7 @@ class PosViewModel extends ChangeNotifier {
         final index = _orders.indexWhere((o) => o.id == orderId);
         if (index != -1) {
           _orders[index] = _orders[index].copyWith(status: 'invoiced');
-          
+
           if (_orderStats.readyForInvoice > 0) {
             _orderStats = OrderStats(
               total: _orderStats.total,
@@ -743,6 +936,39 @@ class PosViewModel extends ChangeNotifier {
       _loadingOrderId = null;
       notifyListeners();
       return CreateInvoiceResponse(success: false, message: _errorMessage!);
+    }
+  }
+
+  Future<CashierCompleteJobResponse?> completeCashierJob(String jobId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) throw Exception('Token not found');
+
+      final response = await posRepository.completeCashierJob(jobId, token);
+      if (response.success) {
+        // Refresh orders to reflect updated statuses implicitly
+        await fetchOrders(silent: true);
+        _isLoading = false;
+        notifyListeners();
+        return response;
+      } else {
+        _errorMessage = response.message;
+        _isLoading = false;
+        notifyListeners();
+        return response;
+      }
+    } catch (e) {
+      _errorMessage = _extractErrorMessage(e.toString());
+      _isLoading = false;
+      notifyListeners();
+      return CashierCompleteJobResponse(
+        success: false,
+        message: _errorMessage!,
+      );
     }
   }
 
