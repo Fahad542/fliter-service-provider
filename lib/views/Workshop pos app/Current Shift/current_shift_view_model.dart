@@ -44,7 +44,24 @@ class CurrentShiftViewModel extends ChangeNotifier {
       final sessionResponse = CurrentSessionResponse.fromJson(response);
       
       if (sessionResponse.success && sessionResponse.hasOpenSession) {
-        _currentSession = sessionResponse.session;
+        var session = sessionResponse.session;
+        if (session != null && (session.cashierName.isEmpty || session.cashierName == 'N/A')) {
+          final user = await _sessionService.getUser();
+          if (user != null) {
+            // Create a new session object with the cashier name if it's missing
+            session = CurrentSession(
+              posSessionId: session.posSessionId,
+              branchId: session.branchId,
+              branchName: session.branchName,
+              branchAddress: session.branchAddress,
+              cashierName: user.name ?? 'Cashier',
+              openedAt: session.openedAt,
+              status: session.status.isEmpty ? 'Active' : session.status,
+              elapsedTime: session.elapsedTime,
+            );
+          }
+        }
+        _currentSession = session;
       } else {
         _currentSession = null;
         _errorMessage = 'No active shift found.';

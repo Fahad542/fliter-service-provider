@@ -1,49 +1,26 @@
 import 'package:flutter/foundation.dart';
+import '../../../data/repositories/pos_repository.dart';
 import '../../../models/corporate_booking_model.dart';
+import '../../../services/session_service.dart';
 
 class CorporateBookingViewModel extends ChangeNotifier {
-  final List<CorporateBooking> _allBookings = [
-    CorporateBooking(
-      id: 'CB-1001',
-      companyName: 'Acme Corp',
-      vehicleName: 'Toyota Camry 2022',
-      vehiclePlate: 'ABC 1234',
-      department: 'Oil Change',
-      bookedDateTime: DateTime.now().subtract(const Duration(hours: 1)),
-      status: 'Waiting Approval',
-      preSelectedProducts: ['p1', 'p2'], // Add mock product IDs here (you would use actual backend IDs)
-    ),
-    CorporateBooking(
-      id: 'CB-1002',
-      companyName: 'B2B Logistics',
-      vehicleName: 'Ford Transit 2021',
-      vehiclePlate: 'XYZ 9876',
-      department: 'Tyre Services',
-      bookedDateTime: DateTime.now().subtract(const Duration(days: 1)),
-      status: 'Completed',
-    ),
-    CorporateBooking(
-      id: 'CB-1003',
-      companyName: 'Tech Innovators',
-      vehicleName: 'Hyundai Sonata 2023',
-      vehiclePlate: 'DEF 5678',
-      department: 'AC Cleaning',
-      bookedDateTime: DateTime.now().add(const Duration(hours: 2)),
-      status: 'Pending', // treated as waiting approval/upcoming
-    ),
-    CorporateBooking(
-      id: 'CB-1004',
-      companyName: 'Acme Corp',
-      vehicleName: 'Toyota Corolla 2020',
-      vehiclePlate: 'LMN 3456',
-      department: 'Repair',
-      bookedDateTime: DateTime.now().subtract(const Duration(hours: 24)),
-      status: 'In Progress',
-    ),
-  ];
+  final PosRepository _repository;
+  final SessionService _sessionService;
 
-  String _currentFilter = 'Today'; // 'Today', 'Pending', 'All'
+  CorporateBookingViewModel({
+    required PosRepository repository,
+    required SessionService sessionService,
+  })  : _repository = repository,
+        _sessionService = sessionService;
 
+  List<CorporateBooking> _allBookings = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  String _currentFilter = 'Pending'; // 'Today', 'Pending', 'All'
   String get currentFilter => _currentFilter;
 
   List<CorporateBooking> get filteredBookings {
@@ -58,7 +35,9 @@ class CorporateBookingViewModel extends ChangeNotifier {
         }).toList();
       case 'Pending':
         return _allBookings.where((b) {
-          return b.status == 'Waiting Approval' || b.status == 'Pending';
+          return b.statusDisplay.toLowerCase().contains('waiting approval') || 
+                 b.status.toLowerCase() == 'pending' || 
+                 b.status.toLowerCase() == 'submitted';
         }).toList();
       case 'All':
       default:
@@ -71,15 +50,84 @@ class CorporateBookingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateBookingStatus(String bookingId, String newStatus, {String? reason}) {
-    final index = _allBookings.indexWhere((b) => b.id == bookingId);
-    if (index != -1) {
-      _allBookings[index] = _allBookings[index].copyWith(status: newStatus);
+  Future<void> fetchCorporateBookings() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final token = await _sessionService.getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      final user = await _sessionService.getUser();
+      final branchId = user?.branchId ?? '4'; // Resolve branch ID from user session
+
+      final response = await _repository.getCorporateBookings('none', branchId, token, limit: 20, offset: 0);
+      if (response.success) {
+        _allBookings = response.bookings;
+      } else {
+        _errorMessage = 'Failed to load bookings';
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
-    if (reason != null && reason.isNotEmpty) {
-      debugPrint('Booking $bookingId $newStatus. Reason: $reason');
-      // In a real app, this would be sent to the backend API here.
+  }
+
+  Future<bool> approveBooking(String bookingId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final token = await _sessionService.getToken();
+      if (token == null) {
+         throw Exception('Authentication token not found');
+      }
+      final success = await _repository.approveCorporateBooking(bookingId, token);
+      if (success) {
+        final index = _allBookings.indexWhere((b) => b.id == bookingId);
+        if (index != -1) {
+          _allBookings[index] = _allBookings[index].copyWith(
+            status: 'Approved', 
+            statusDisplay: 'Approved',
+          );
+        }
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> rejectBooking(String bookingId, String reason) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final token = await _sessionService.getToken();
+      if (token == null) {
+         throw Exception('Authentication token not found');
+      }
+      final success = await _repository.rejectCorporateBooking(bookingId, reason, token);
+      if (success) {
+        final index = _allBookings.indexWhere((b) => b.id == bookingId);
+        if (index != -1) {
+          _allBookings.removeAt(index);
+        }
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

@@ -5,7 +5,8 @@ import '../../../models/technician_models.dart';
 import '../technician_view_model.dart';
 
 class NotificationsView extends StatelessWidget {
-  const NotificationsView({super.key});
+  final bool showDrawerIcon;
+  const NotificationsView({super.key, this.showDrawerIcon = false});
 
   @override
   Widget build(BuildContext context) {
@@ -17,9 +18,35 @@ class NotificationsView extends StatelessWidget {
             backgroundColor: AppColors.primaryLight,
             elevation: 0,
             toolbarHeight: 70,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.secondaryLight, size: 20),
-              onPressed: () => Navigator.pop(context),
+            automaticallyImplyLeading: false,
+            leadingWidth: 70,
+            leading: Center(
+              child: GestureDetector(
+                onTap: () => showDrawerIcon ? Scaffold.of(context).openDrawer() : Navigator.pop(context),
+                child: Container(
+                  width: showDrawerIcon ? 44 : 40,
+                  height: showDrawerIcon ? 44 : 40,
+                  decoration: showDrawerIcon
+                      ? BoxDecoration(
+                          color: AppColors.secondaryLight,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(color: AppColors.secondaryLight.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4)),
+                          ],
+                        )
+                      : BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                  child: Center(
+                    child: Icon(
+                      showDrawerIcon ? Icons.menu_rounded : Icons.arrow_back_ios_new_rounded,
+                      color: showDrawerIcon ? Colors.white : AppColors.secondaryLight,
+                      size: showDrawerIcon ? 22 : 20,
+                    ),
+                  ),
+                ),
+              ),
             ),
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),

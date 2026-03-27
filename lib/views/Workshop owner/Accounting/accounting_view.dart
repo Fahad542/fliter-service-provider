@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../models/workshop_owner_models.dart';
 import '../widgets/owner_app_bar.dart';
+import 'accounting_view_model.dart';
 
 class AccountingView extends StatefulWidget {
   const AccountingView({super.key});
@@ -14,25 +16,35 @@ class AccountingView extends StatefulWidget {
 class _AccountingViewState extends State<AccountingView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  final List<AccountEntry> _entries = [
-    AccountEntry(id: '1', type: 'payable', party: 'Al-Rashid Auto Parts', amount: 12500, date: DateTime.now().subtract(const Duration(days: 5)), reference: 'PO-001', status: 'pending'),
-    AccountEntry(id: '2', type: 'receivable', party: 'Saudi Aramco Corp.', amount: 38000, date: DateTime.now().subtract(const Duration(days: 3)), reference: 'INV-441', status: 'overdue'),
-    AccountEntry(id: '3', type: 'expense', party: 'Electricity Bill', amount: 2800, date: DateTime.now().subtract(const Duration(days: 1)), reference: 'EXP-022', status: 'pending'),
-    AccountEntry(id: '4', type: 'payment', party: 'Gulf Lubricants Co.', amount: 5000, date: DateTime.now(), reference: 'PAY-011', status: 'settled'),
-    AccountEntry(id: '5', type: 'advance', party: 'Ali Hassan', amount: 1500, date: DateTime.now().subtract(const Duration(days: 2)), reference: 'ADV-003', status: 'pending'),
-  ];
-
   final List<String> _tabs = ['Payables', 'Receivables', 'Expenses', 'Advances'];
   final List<String> _types = ['payable', 'receivable', 'expense', 'advance'];
+
+  int _lastFetchedIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_onTabChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final vm = Provider.of<AccountingViewModel>(context, listen: false);
+        vm.fetchSummary();
+        vm.fetchTransactions(_types[0]);
+      }
+    });
+  }
+
+  void _onTabChanged() {
+    if (_tabController.index == _lastFetchedIndex) return;
+    _lastFetchedIndex = _tabController.index;
+    final vm = Provider.of<AccountingViewModel>(context, listen: false);
+    vm.fetchTransactions(_types[_tabController.index]);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -45,29 +57,44 @@ class _AccountingViewState extends State<AccountingView> with SingleTickerProvid
         title: 'Accounting',
         onMenuPressed: () => Scaffold.of(context).openDrawer(),
       ),
-      body: Column(
-        children: [
-          _buildSummaryRow(),
-          _buildTabBar(),
-          Expanded(child: TabBarView(controller: _tabController, children: _types.map(_buildEntryList).toList())),
-        ],
+      body: Consumer<AccountingViewModel>(
+        builder: (context, vm, child) {
+          if (vm.isLoading) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
+          }
+
+          return Column(
+            children: [
+              _buildSummaryRow(vm),
+              _buildTabBar(),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: _types.map((type) => _buildEntryList(type, vm)).toList(),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSummaryRow() {
-    final payables = _entries.where((e) => e.type == 'payable').fold(0.0, (s, e) => s + e.amount);
-    final receivables = _entries.where((e) => e.type == 'receivable' && e.status != 'settled').fold(0.0, (s, e) => s + e.amount);
-    final overdue = _entries.where((e) => e.status == 'overdue').fold(0.0, (s, e) => s + e.amount);
+  Widget _buildSummaryRow(AccountingViewModel vm) {
+    final payables = vm.summaryResponse?.summary.payables ?? 0.0;
+    final receivables = vm.summaryResponse?.summary.receivables ?? 0.0;
+    final overdue = vm.summaryResponse?.summary.overdue ?? 0.0;
+    final currency = vm.summaryResponse?.currency ?? 'SAR';
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          _buildSumCard('Payables', 'SAR ${payables.toInt()}', Icons.arrow_upward_rounded, Colors.orange),
+          _buildSumCard('Payables', '$currency ${payables.toInt()}', Icons.arrow_upward_rounded, Colors.orange),
           const SizedBox(width: 12),
-          _buildSumCard('Receivables', 'SAR ${receivables.toInt()}', Icons.arrow_downward_rounded, Colors.green),
+          _buildSumCard('Receivables', '$currency ${receivables.toInt()}', Icons.arrow_downward_rounded, Colors.green),
           const SizedBox(width: 12),
-          _buildSumCard('Overdue', 'SAR ${overdue.toInt()}', Icons.warning_rounded, Colors.red),
+          _buildSumCard('Overdue', '$currency ${overdue.toInt()}', Icons.warning_rounded, Colors.red),
         ],
       ),
     );
@@ -121,12 +148,29 @@ class _AccountingViewState extends State<AccountingView> with SingleTickerProvid
     );
   }
 
-  Widget _buildEntryList(String type) {
-    final filtered = _entries.where((e) => e.type == type).toList();
-    if (filtered.isEmpty) {
-      return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.account_balance_wallet_outlined, size: 60, color: Colors.black.withOpacity(0.07)), const SizedBox(height: 16), const Text('No entries found', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600))]));
+  Widget _buildEntryList(String type, AccountingViewModel vm) {
+    if (vm.isLoadingType(type)) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
     }
-    return ListView.builder(padding: const EdgeInsets.all(20), itemCount: filtered.length, itemBuilder: (context, i) => _buildEntryCard(filtered[i]));
+
+    final filtered = vm.getTransactionsFor(type);
+    if (filtered.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center, 
+          children: [
+            Icon(Icons.account_balance_wallet_outlined, size: 60, color: Colors.black.withOpacity(0.07)), 
+            const SizedBox(height: 16), 
+            const Text('No entries found', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600))
+          ]
+        )
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(20), 
+      itemCount: filtered.length, 
+      itemBuilder: (context, i) => _buildEntryCard(filtered[i])
+    );
   }
 
   Widget _buildEntryCard(AccountEntry entry) {
@@ -144,12 +188,12 @@ class _AccountingViewState extends State<AccountingView> with SingleTickerProvid
           Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: typeColor.withOpacity(0.08), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: typeColor, size: 18)),
           const SizedBox(width: 14),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(entry.party, style: AppTextStyles.h2.copyWith(fontSize: 14, color: AppColors.secondaryLight)),
+            Text(entry.party, style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight)),
             const SizedBox(height: 3),
-            Text('Ref: ${entry.reference} • ${date.day}/${date.month}/${date.year}', style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
+            Text('Ref: ${entry.reference} • ${date.day}/${date.month}/${date.year}', style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
           ])),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('SAR ${entry.amount.toInt()}', style: AppTextStyles.h2.copyWith(fontSize: 14, color: AppColors.secondaryLight)),
+            Text('SAR ${entry.amount.toInt()}', style: AppTextStyles.h2.copyWith(fontSize: 15, color: AppColors.secondaryLight)),
             const SizedBox(height: 4),
             Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(entry.status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.w900))),
           ]),

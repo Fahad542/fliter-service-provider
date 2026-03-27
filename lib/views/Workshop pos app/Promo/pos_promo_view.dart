@@ -49,7 +49,25 @@ class _PosPromoViewState extends State<PosPromoView> {
             const SizedBox(height: 24),
             _buildSectionTitle('Available Promotions', Icons.stars_outlined),
             const SizedBox(height: 16),
-            _buildPromotionCatalog(promoVm.availablePromotions, isTablet),
+            if (promoVm.isLoadingPromos)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (promoVm.availablePromotions.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Text(
+                    'No promotions available',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                  ),
+                ),
+              )
+            else
+              _buildPromotionCatalog(promoVm.availablePromotions, isTablet),
           ],
         ),
       ),

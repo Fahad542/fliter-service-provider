@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../models/workshop_owner_models.dart';
 import '../widgets/owner_app_bar.dart';
+import 'pos_monitoring_view_model.dart';
 
 class PosMonitoringView extends StatefulWidget {
   const PosMonitoringView({super.key});
@@ -30,6 +32,12 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final vm = Provider.of<PosMonitoringViewModel>(context, listen: false);
+        vm.fetchPosMonitoring();
+      }
+    });
   }
 
   @override
@@ -46,28 +54,36 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
         title: 'POS Monitoring',
         onMenuPressed: () => Scaffold.of(context).openDrawer(),
       ),
-      body: Column(
-        children: [
-          _buildSummaryBar(),
-          _buildTabBar(),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildLiveCounters(),
-                _buildClosingReports(),
-              ],
-            ),
-          ),
-        ],
+      body: Consumer<PosMonitoringViewModel>(
+        builder: (context, vm, child) {
+          if (vm.isLoading) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
+          }
+
+          return Column(
+            children: [
+              _buildSummaryBar(vm),
+              _buildTabBar(),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildLiveCounters(vm),
+                    _buildClosingReports(vm),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSummaryBar() {
-    final totalSales = _liveCounters.fold(0.0, (s, c) => s + c.shiftSales);
-    final activeCounters = _liveCounters.where((c) => c.status == 'open').length;
-    final openOrders = _liveCounters.fold(0, (s, c) => s + c.openOrders);
+  Widget _buildSummaryBar(PosMonitoringViewModel vm) {
+    final int activeCounters = vm.monitoringResponse?.liveCountersCount ?? _liveCounters.where((c) => c.status == 'open').length;
+    final int openOrders = vm.monitoringResponse?.openOrdersCount ?? _liveCounters.fold<int>(0, (s, c) => s + c.openOrders);
+    final double totalSales = vm.monitoringResponse?.todaySales ?? _liveCounters.fold<double>(0.0, (s, c) => s + c.shiftSales);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -77,7 +93,7 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
           const SizedBox(width: 12),
           _buildSummaryCard('Open Orders', '$openOrders', Icons.pending_actions_rounded, Colors.orange),
           const SizedBox(width: 12),
-          _buildSummaryCard('Today Sales', 'SAR ${totalSales.toInt()}', Icons.payments_rounded, AppColors.primaryLight),
+          _buildSummaryCard('Today Sales', 'SAR ${(totalSales).toInt()}', Icons.payments_rounded, AppColors.primaryLight),
         ],
       ),
     );
@@ -138,11 +154,19 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
     );
   }
 
-  Widget _buildLiveCounters() {
+  Widget _buildLiveCounters(PosMonitoringViewModel vm) {
+    final counters = vm.monitoringResponse?.liveCounters ?? _liveCounters;
+
+    if (counters.isEmpty) {
+      return const Center(
+        child: Text('No active live counters', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      itemCount: _liveCounters.length,
-      itemBuilder: (context, index) => _buildLiveCounterCard(_liveCounters[index]),
+      itemCount: counters.length,
+      itemBuilder: (context, index) => _buildLiveCounterCard(counters[index]),
     );
   }
 
@@ -216,11 +240,19 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
     );
   }
 
-  Widget _buildClosingReports() {
+  Widget _buildClosingReports(PosMonitoringViewModel vm) {
+    final reports = vm.monitoringResponse?.closingReports ?? _closingReports;
+
+    if (reports.isEmpty) {
+      return const Center(
+        child: Text('No closing reports available', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      itemCount: _closingReports.length,
-      itemBuilder: (context, index) => _buildClosingCard(_closingReports[index]),
+      itemCount: reports.length,
+      itemBuilder: (context, index) => _buildClosingCard(reports[index]),
     );
   }
 

@@ -38,125 +38,126 @@ class MenuView extends StatelessWidget {
       ).copyWith(textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0)),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Stack(
-          children: [
-            // ── Layer 1: Custom Header ──
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: const CustomAuthHeader(
-                title: 'ALL Apps',
-                subtitle: 'Please choose one of these apps',
-              ),
-            ),
-
-            Positioned(
-              top:
-                  screenHeight *
-                  (isTablet
-                      ? 0.25
-                      : 0.22), // Pushed down for mobile to clear text
-              left: horizontalPadding,
-              right: horizontalPadding,
-              bottom: 60,
-              child: GridView.count(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: childAspectRatio,
-                physics: const BouncingScrollPhysics(),
+        body: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            children: [
+              // ── Layer 1 & 2: Custom Header & Grid ──
+              Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  MenuCard(
-                    title: 'Super Admin\nPortal',
-                    icon: Icons.admin_panel_settings_rounded,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SuperAdminLoginView(),
-                        ),
-                      );
-                    },
+                  const CustomAuthHeader(
+                    title: 'ALL Apps',
+                    subtitle: 'Please choose one of these apps',
                   ),
-                  MenuCard(
-                    title: 'Workshop\nOwner',
-                    icon: Icons.store_rounded,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const OwnerLoginView(),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: screenHeight * (isTablet ? 0.25 : 0.22),
+                      left: horizontalPadding,
+                      right: horizontalPadding,
+                    ),
+                    child: GridView.count(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: childAspectRatio,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        MenuCard(
+                          title: 'Super Admin\nPortal',
+                          icon: Icons.admin_panel_settings_rounded,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SuperAdminLoginView(),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  MenuCard(
-                    title: 'Technician\nApp',
-                    icon: Icons.engineering_rounded,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TechLoginView(),
+                        MenuCard(
+                          title: 'Workshop\nOwner',
+                          icon: Icons.store_rounded,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const OwnerLoginView(),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  MenuCard(
-                    title: 'Workshop\nPOS App',
-                    icon: Icons.point_of_sale_rounded,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const LoginView(appName: 'Workshop POS App'),
+                        MenuCard(
+                          title: 'Technician\nApp',
+                          icon: Icons.engineering_rounded,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const TechLoginView(),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  MenuCard(
-                    title: 'Locker\nPortal',
-                    icon: Icons.lock_rounded,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LockerLoginView(),
+                        MenuCard(
+                          title: 'Workshop\nPOS App',
+                          icon: Icons.point_of_sale_rounded,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LoginView(
+                                    appName: 'Workshop POS App'),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  MenuCard(
-                    title: 'Supplier',
-                    icon: Icons.local_shipping_rounded,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SupplierLoginView(),
+                        MenuCard(
+                          title: 'Locker\nPortal',
+                          icon: Icons.lock_rounded,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LockerLoginView(),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                        MenuCard(
+                          title: 'Supplier',
+                          icon: Icons.local_shipping_rounded,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SupplierLoginView(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
 
-            // ── Layer 3: Version footer ──
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 24,
-              child: Center(
+              const SizedBox(height: 40),
+
+              // ── Layer 3: Version footer ──
+              Center(
                 child: Text(
                   'Version: 1.0.0',
                   style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
                 ),
               ),
-            ),
-          ],
+
+              SizedBox(
+                height: 24 + MediaQuery.of(context).padding.bottom,
+              ),
+            ],
+          ),
         ),
       ),
     );

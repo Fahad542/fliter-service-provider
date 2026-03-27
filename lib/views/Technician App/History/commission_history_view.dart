@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../technician_view_model.dart';
 import '../Notifications/notifications_view.dart';
+import 'package:intl/intl.dart';
+import '../../../models/technician_commission_history_model.dart';
 
 class CommissionHistoryView extends StatelessWidget {
   const CommissionHistoryView({super.key});
@@ -16,11 +18,27 @@ class CommissionHistoryView extends StatelessWidget {
         elevation: 0,
         toolbarHeight: 70,
         automaticallyImplyLeading: false,
-        leading: Container(
-          margin: const EdgeInsets.only(left: 12),
-          width: 40, height: 40,
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), shape: BoxShape.circle),
-          child: Center(child: Image.asset('assets/images/global.png', width: 22, height: 22, color: Colors.black, errorBuilder: (_, __, ___) => const Icon(Icons.language, size: 22, color: Colors.black))),
+        leadingWidth: 70,
+        leading: Center(
+          child: GestureDetector(
+            onTap: () => Scaffold.of(context).openDrawer(),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.secondaryLight,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondaryLight.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Center(child: Icon(Icons.menu_rounded, color: Colors.white, size: 22)),
+            ),
+          ),
         ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
@@ -39,62 +57,104 @@ class CommissionHistoryView extends StatelessWidget {
           const SizedBox(width: 16),
         ],
       ),
-      body: Column(
-        children: [
-          _buildMonthSelector(),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                return _buildCommissionItem(index % 2 == 0);
-              },
-            ),
-          ),
-        ],
+      body: Consumer<TechAppViewModel>(
+        builder: (context, vm, child) {
+          return Column(
+            children: [
+              _buildMonthSelector(vm),
+              Expanded(
+                child: vm.isLoadingCommission
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryLight,
+                        ),
+                      )
+                    : vm.commissionHistory.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No commissions found',
+                              style: TextStyle(
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(20),
+                            itemCount: vm.commissionHistory.length,
+                            itemBuilder: (context, index) {
+                              return _buildCommissionItem(
+                                  vm.commissionHistory[index]);
+                            },
+                          ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildMonthSelector() {
+  Widget _buildMonthSelector(TechAppViewModel vm) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
-          children: [
-            _buildMonthPill('February 2024', true),
-            _buildMonthPill('January 2024', false),
-            _buildMonthPill('December 2023', false),
-          ],
+          children: vm.availableCommissionMonths.map((dt) {
+            final name = DateFormat('MMMM yyyy').format(dt);
+            final isSelected = dt.year == vm.selectedCommissionMonth.year &&
+                dt.month == vm.selectedCommissionMonth.month;
+            return _buildMonthPill(name, isSelected, () {
+              vm.selectCommissionMonth(dt);
+            });
+          }).toList(),
         ),
       ),
     );
   }
 
-  Widget _buildMonthPill(String name, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primaryLight : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: isSelected ? [] : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5)],
-      ),
-      child: Text(
-        name.toUpperCase(),
-        style: TextStyle(
-          color: isSelected ? Colors.black87 : Colors.black38,
-          fontWeight: FontWeight.w900,
-          fontSize: 11,
-          letterSpacing: 0.5,
+  Widget _buildMonthPill(String name, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryLight : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected
+              ? []
+              : [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.02), blurRadius: 5)
+                ],
+        ),
+        child: Text(
+          name.toUpperCase(),
+          style: TextStyle(
+            color: isSelected ? Colors.black87 : Colors.black38,
+            fontWeight: FontWeight.w900,
+            fontSize: 11,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCommissionItem(bool isPaid) {
+  Widget _buildCommissionItem(CommissionEntry entry) {
+    final isPaid = entry.status.toLowerCase() == 'paid';
+    
+    // Parse the date
+    String formattedDate = '';
+    try {
+      final dt = DateTime.parse(entry.date);
+      formattedDate = DateFormat('MMM d, yyyy').format(dt);
+    } catch (_) {
+      formattedDate = entry.date;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
@@ -102,7 +162,10 @@ class CommissionHistoryView extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
         border: Border.all(color: Colors.black.withOpacity(0.04)),
       ),
@@ -114,11 +177,14 @@ class CommissionHistoryView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: (isPaid ? Colors.green : Colors.orange).withOpacity(0.1),
+                  color:
+                      (isPaid ? Colors.green : Colors.orange).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  isPaid ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                  isPaid
+                      ? Icons.check_circle_rounded
+                      : Icons.pending_actions_rounded,
                   color: isPaid ? Colors.green : Colors.orange,
                   size: 20,
                 ),
@@ -127,8 +193,16 @@ class CommissionHistoryView extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('ORD-9901', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 14)),
-                  Text(isPaid ? 'PAID' : 'PENDING', style: TextStyle(color: isPaid ? Colors.green : Colors.orange, fontSize: 10, fontWeight: FontWeight.w900)),
+                  Text(entry.orderId,
+                      style: const TextStyle(
+                          color: AppColors.secondaryLight,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14)),
+                  Text(entry.status.toUpperCase(),
+                      style: TextStyle(
+                          color: isPaid ? Colors.green : Colors.orange,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900)),
                 ],
               ),
             ],
@@ -136,8 +210,16 @@ class CommissionHistoryView extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text('SAR 125.00', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16)),
-              Text('Feb 24, 2024', style: TextStyle(color: Colors.black26, fontSize: 11, fontWeight: FontWeight.w600)),
+              Text('SAR ${entry.commission.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                      color: AppColors.secondaryLight,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16)),
+              Text(formattedDate,
+                  style: const TextStyle(
+                      color: Colors.black26,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600)),
             ],
           ),
         ],

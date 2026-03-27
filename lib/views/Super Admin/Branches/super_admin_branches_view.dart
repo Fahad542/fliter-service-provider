@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
 import 'super_admin_branches_view_model.dart';
 
 class SuperAdminBranchesView extends StatelessWidget {
@@ -228,7 +227,7 @@ class _SuperAdminBranchesContentState extends State<_SuperAdminBranchesContent> 
                           width: 12,
                           height: 12,
                           decoration: BoxDecoration(
-                            color: _getStatusDotColor(branch['status']),
+                            color: _getStatusDotColor(branch.status),
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 2),
                           ),
@@ -243,7 +242,7 @@ class _SuperAdminBranchesContentState extends State<_SuperAdminBranchesContent> 
                       children: [
                         Row(
                           children: [
-                            Text(branch['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight)),
+                            Text(branch.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight)),
                             const Spacer(),
                             _buildDecoratedAction(
                               icon: Icons.edit_rounded,
@@ -252,12 +251,12 @@ class _SuperAdminBranchesContentState extends State<_SuperAdminBranchesContent> 
                             const SizedBox(width: 8),
                             _buildDecoratedAction(
                               icon: Icons.delete_rounded,
-                              onTap: () => vm.deleteBranch(branch['id']),
+                              onTap: () => vm.deleteBranch(branch.id),
                             ),
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Text(branch['location'], style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600)),
+                        Text(branch.address.isNotEmpty ? branch.address : 'No address provided', style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -273,9 +272,9 @@ class _SuperAdminBranchesContentState extends State<_SuperAdminBranchesContent> 
                     children: [
                       Text('BRANCH MANAGER', style: TextStyle(color: Colors.grey.shade400, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
-                      Text(branch['manager'], style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.secondaryLight)),
+                      Text(branch.contactPerson?.isNotEmpty == true ? branch.contactPerson! : 'N/A', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.secondaryLight)),
                       const SizedBox(height: 2),
-                      Text('${branch['staff']} employees', style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w600)),
+                      Text('0 employees', style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w600)),
                     ],
                   ),
                   Column(
@@ -283,9 +282,9 @@ class _SuperAdminBranchesContentState extends State<_SuperAdminBranchesContent> 
                     children: [
                       Text('TOTAL REVENUE', style: TextStyle(color: Colors.grey.shade400, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
-                      Text('SAR ${branch['revenue']}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: _getStatusDotColor(branch['status']))),
+                      Text('SAR 0', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: _getStatusDotColor(branch.status))),
                       const SizedBox(height: 4),
-                      Text('ID: ${branch['id']}', style: TextStyle(color: Colors.grey.shade400, fontSize: 10, fontWeight: FontWeight.w700)),
+                      Text('ID: ${branch.id}', style: TextStyle(color: Colors.grey.shade400, fontSize: 10, fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ],
@@ -298,47 +297,7 @@ class _SuperAdminBranchesContentState extends State<_SuperAdminBranchesContent> 
     );
   }
 
-  Widget _buildBranchAction(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.secondaryLight.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: AppColors.secondaryLight, size: 20),
-      ),
-    );
-  }
 
-  Widget _buildStatusBadge(String status) {
-    bool isActive = status == 'Active';
-    Color color = isActive ? const Color(0xFF10B981) : AppColors.secondaryLight;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            status,
-            style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showAddBranchDialog(BuildContext context) {
     showDialog(

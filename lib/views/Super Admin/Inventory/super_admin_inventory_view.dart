@@ -69,36 +69,6 @@ class _SuperAdminInventoryContentState extends State<_SuperAdminInventoryContent
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Inventory / Warehouse', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.secondaryLight)),
-            const SizedBox(height: 4),
-            Text('Manage overall product database and stock levels.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-          ],
-          ),
-        ),
-        const SizedBox(width: 16),
-        ElevatedButton.icon(
-          onPressed: () => _showAddProductDialog(context),
-          icon: const Icon(Icons.add_box_rounded, size: 18, color: AppColors.secondaryLight),
-          label: const Text('Add Product', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.bold)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryLight,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildTabs(BuildContext context, SuperAdminInventoryViewModel vm) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -190,8 +160,8 @@ class _SuperAdminInventoryContentState extends State<_SuperAdminInventoryContent
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final product = vm.filteredProducts[index];
-        final stock = product['stock'] as int;
-        final minStock = product['minStock'] as int;
+        final stock = product.openingQty;
+        final minStock = 10; // Hardcoded fallback for now, assuming API doesn't provide minStock
         final isLowStock = stock <= minStock;
                 
         return Container(
@@ -234,15 +204,15 @@ class _SuperAdminInventoryContentState extends State<_SuperAdminInventoryContent
                       children: [
                         Row(
                           children: [
-                            Text(product['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight)),
+                            Text(product.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight)),
                             const Spacer(),
                             _buildInventoryAction(Icons.edit_rounded, () => _showAddProductDialog(context)),
                             const SizedBox(width: 8),
-                            _buildInventoryAction(Icons.delete_rounded, () => vm.deleteProduct(product['id'])),
+                            _buildInventoryAction(Icons.delete_rounded, () => vm.deleteProduct(product.id)),
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Text(product['sku'], style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600)),
+                        Text(product.id, style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -261,7 +231,7 @@ class _SuperAdminInventoryContentState extends State<_SuperAdminInventoryContent
                         children: [
                           _buildStockStatus(stock, minStock),
                           const SizedBox(width: 8),
-                          Text(product['category'], style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.secondaryLight)),
+                          Text(product.categoryName ?? 'Uncategorized', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.secondaryLight)),
                         ],
                       ),
                     ],
@@ -271,7 +241,7 @@ class _SuperAdminInventoryContentState extends State<_SuperAdminInventoryContent
                     children: [
                       Text('UNIT PRICE', style: TextStyle(color: Colors.grey.shade400, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
-                      Text('SAR ${product['price']}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.secondaryLight)),
+                      Text('SAR ${product.salePrice}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.secondaryLight)),
                     ],
                   ),
                 ],
@@ -362,138 +332,191 @@ class _SuperAdminInventoryContentState extends State<_SuperAdminInventoryContent
   }
 
   void _showAddProductDialog(BuildContext context) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          width: 500,
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.inventory_2_rounded, color: AppColors.primaryLight),
-                  SizedBox(width: 12),
-                  Text('Add New Product', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.secondaryLight)),
-                ],
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _AddProductSheet(),
+    );
+  }
+}
+
+class _AddProductSheet extends StatefulWidget {
+  const _AddProductSheet();
+
+  @override
+  State<_AddProductSheet> createState() => _AddProductSheetState();
+}
+
+class _AddProductSheetState extends State<_AddProductSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<SuperAdminInventoryViewModel>();
+
+    return FocusScope(
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
               ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Product Name',
-                        labelStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Add New Product', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.secondaryLight)),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close_rounded, color: Colors.grey),
                         ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8F9FD),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'SKU',
-                        labelStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8F9FD),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      ),
+                    const SizedBox(height: 8),
+                    const Text('Enter details for the new product.', style: TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 30),
+
+                    _buildTextField('Product Name', Icons.inventory_2_rounded, controller: vm.nameController),
+                    _buildTextField('SKU', Icons.qr_code_rounded, controller: vm.skuController),
+                    _buildDropdown(
+                      'Category',
+                      ['Oils & Fluids', 'Filters', 'Brakes', 'Ignition', 'Accessories', 'Electrical'],
+                      value: vm.categoryFilter == 'All' ? 'Oils & Fluids' : vm.categoryFilter,
+                      onChanged: (val) {
+                        if (val != null) vm.setCategoryFilter(val);
+                      },
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  labelStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FD),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    _buildDropdown(
+                      'Unit of Measure',
+                      ['Pcs', 'Liter', 'Box', 'Can', 'Kg', 'Set', 'Bottle'],
+                      value: vm.unitController.text,
+                      onChanged: (val) {
+                        if (val != null) vm.unitController.text = val;
+                      },
+                    ),
+
+                    _buildTextField('Purchase Price', Icons.attach_money_rounded, isNumber: true, controller: vm.purchasePriceController),
+                    _buildTextField('Product Selling Price', Icons.sell_rounded, isNumber: true, controller: vm.sellingPriceController),
+                    _buildTextField('Min Corporate Price', Icons.attach_money_rounded, isNumber: true, controller: vm.minCorporatePriceController),
+                    _buildTextField('Max Corporate Price', Icons.attach_money_rounded, isNumber: true, controller: vm.maxCorporatePriceController),
+                    
+                    _buildTextField('Opening Qty', Icons.format_list_numbered_rounded, isNumber: true, controller: vm.minStockController),
+                    _buildTextField('Critical Stock Point', Icons.warning_amber_rounded, isNumber: true, controller: vm.criticalStockPointController),
+                    _buildTextField('KM Type Value (e.g., 5000)', Icons.speed_rounded, isNumber: true, controller: vm.kmTypeValueController),
+
+                    const SizedBox(height: 8),
+                    _buildToggleRow('Allow Decimal Qty', vm.allowDecimalQty, (val) => vm.toggleAllowDecimal(val)),
+                    _buildToggleRow('Is Active', vm.isActive, (val) => vm.toggleIsActive(val)),
+
+                    const SizedBox(height: 32),
+                  ],
                 ),
-                items: ['Oils & Fluids', 'Filters', 'Brakes', 'Ignition', 'Accessories', 'Electrical'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                onChanged: (v) {},
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Price (SAR)',
-                        labelStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8F9FD),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: ElevatedButton(
+                onPressed: vm.isLoading ? null : () => vm.submitProductForm(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  disabledBackgroundColor: Colors.grey.shade300,
+                  minimumSize: const Size.fromHeight(56),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: vm.isLoading
+                    ? const CircularProgressIndicator(color: AppColors.secondaryLight)
+                    : const Text(
+                        'Save Product',
+                        style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
                       ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Min Stock Level',
-                        labelStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8F9FD),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                ],
               ),
-              const SizedBox(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryLight,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Save Product', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(String label, IconData icon, {bool isNumber = false, TextEditingController? controller}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: AppColors.secondaryLight, size: 20),
+          filled: true,
+          fillColor: Colors.grey.withOpacity(0.05),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, List<String> items, {required String value, required void Function(String?) onChanged}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: items.contains(value) ? value : items.first,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+          filled: true,
+          fillColor: Colors.grey.withOpacity(0.05),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        ),
+        items: items.map((item) {
+          return DropdownMenuItem(value: item, child: Text(item));
+        }).toList(),
+        onChanged: onChanged,
+        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
+      ),
+    );
+  }
+
+  Widget _buildToggleRow(String label, bool value, Function(bool) onChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        Switch.adaptive(
+          value: value,
+          onChanged: onChanged,
+          activeColor: AppColors.secondaryLight,
+        ),
+      ],
     );
   }
 }

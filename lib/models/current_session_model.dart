@@ -48,7 +48,7 @@ class CurrentSession {
       cashierName: json['cashierName']?.toString() ?? '',
       openedAt: json['openedAt']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
-      elapsedTime: json['elapsedTime']?.toString() ?? '',
+      elapsedTime: (json['duration'] ?? json['elapsedTime'])?.toString() ?? '',
     );
   }
 }

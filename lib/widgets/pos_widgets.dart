@@ -3,12 +3,9 @@ import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
 import '../models/pos_order_model.dart';
 import '../utils/app_text_styles.dart';
-import '../views/Workshop pos app/Department/pos_department_view.dart';
 import '../views/Workshop pos app/More Tab/settings_view_model.dart';
 import 'package:provider/provider.dart';
-// import '../views/Notifications/notifications_view.dart';
 import '../utils/app_formatters.dart';
-// import '../views/Department/pos_department_view.dart';
 import '../views/Workshop pos app/Home Screen/pos_view_model.dart' as pvm;
 import '../models/create_invoice_model.dart';
 import '../models/pos_technician_model.dart'; // Added import for TechnicianCard
@@ -16,8 +13,11 @@ import '../models/pos_product_model.dart'; // Added import for ProductCard
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/toast_service.dart';
-import '../views/Workshop pos app/Notifications/notifications_view.dart'; // Added import
+import '../views/Workshop pos app/Notifications/notifications_view.dart';
+import '../views/Workshop pos app/Product Grid/pos_product_grid_view.dart';
 import '../views/Workshop pos app/Order Screen/pos_order_review_view.dart';
+import '../views/Workshop pos app/Department/pos_department_view.dart';
+import '../views/Workshop pos app/Technician Assignment/pos_technician_assignment_view.dart';
 
 // ── Reusable POS Screen AppBar (Back + Title + Global Icon) ──
 class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -100,31 +100,33 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                 )
               : showHamburger
               ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  child: InkWell(
-                    onTap:
-                        onMenuPressed ??
-                        () => Scaffold.of(context).openDrawer(),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.secondaryLight,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.secondaryLight.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.menu_rounded,
-                        color: Colors.white,
-                        size: 20,
+                  padding: EdgeInsets.only(left: isTablet ? 14 : 14),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap:
+                          onMenuPressed ??
+                          () => Scaffold.of(context).openDrawer(),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryLight,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.secondaryLight.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.menu_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),
@@ -246,6 +248,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
   final bool showDrawer;
   final bool showGlobalLeft;
+  final String? customTitle;
 
   const PosAppBar({
     super.key,
@@ -258,6 +261,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onMenuPressed,
     this.showDrawer = true,
     this.showGlobalLeft = false,
+    this.customTitle,
   });
 
   @override
@@ -323,32 +327,32 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : showDrawer
           ? Padding(
-              padding: EdgeInsets.only(
-                left: 10,
-                top: isTablet ? 20 : 8,
-                bottom: isTablet ? 8 : 8,
-              ),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryLight,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.secondaryLight.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.menu_rounded,
-                    color: Colors.white,
-                    size: 22,
+              padding: EdgeInsets.only(left: isTablet ? 14 : 14),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap:
+                      onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryLight,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.secondaryLight.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.menu_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                 ),
               ),
@@ -356,16 +360,26 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
           : null,
       title: Padding(
         padding: EdgeInsets.only(top: isTablet ? 25 : 0),
-        child: SizedBox(
-          height: isTablet ? 45 : 28,
-          child: Image.asset(
-            'assets/images/icon.png',
-            color: Colors.black,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.store, color: Colors.black),
-          ),
-        ),
+        child: customTitle != null
+            ? Text(
+                customTitle!,
+                style: AppTextStyles.h2.copyWith(
+                  color: Colors.black,
+                  fontSize: isTablet ? 24 : 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              )
+            : SizedBox(
+                height: isTablet ? 45 : 28,
+                child: Image.asset(
+                  'assets/images/icon.png',
+                  color: Colors.black,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.store, color: Colors.black),
+                ),
+              ),
       ),
       actions: [
         if (!showGlobalLeft) ...[
@@ -893,12 +907,7 @@ class PosBottomBar extends StatelessWidget {
               _buildNavItem(context, 0, Icons.home_rounded, 'Home'),
               _buildNavItem(context, 1, Icons.inventory_2_outlined, 'Products'),
               _buildNavItem(context, 2, Icons.receipt_long_outlined, 'Orders'),
-              _buildNavItem(
-                context,
-                3,
-                Icons.engineering_outlined,
-                'Technician',
-              ),
+              _buildNavItem(context, 3, Icons.store_rounded, 'Store Closing'),
             ],
           ),
         ),
@@ -984,9 +993,9 @@ class PosSearchBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -999,17 +1008,22 @@ class PosSearchBar extends StatelessWidget {
               autofocus: autofocus,
               textAlign: TextAlign.left,
               onTap: onTap,
-              style: AppTextStyles.bodyMedium,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF1E2124),
+                fontWeight: FontWeight.w500,
+              ),
               decoration: InputDecoration(
+                isDense: true,
                 hintText: hintText,
-                hintStyle: AppTextStyles.bodyMedium.copyWith(
+                hintStyle: TextStyle(
                   color: Colors.grey.shade400,
-                  fontSize: isTablet ? 15 : 13,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
                 ),
-                prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
+                  horizontal: 20,
                   vertical: 14,
                 ),
               ),
@@ -1019,15 +1033,15 @@ class PosSearchBar extends StatelessWidget {
           ),
           Container(
             margin: const EdgeInsets.only(right: 6),
-            padding: EdgeInsets.all(isTablet ? 10 : 8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primaryLight,
+              color: const Color(0xFFFCC247), // Updated matched yellow
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.search,
-              color: AppColors.secondaryLight,
-              size: isTablet ? 20 : 18,
+              color: Color(0xFF1E2124), // Updated dark color
+              size: 18,
             ),
           ),
         ],
@@ -1046,347 +1060,1777 @@ class OrderItemCard extends StatefulWidget {
 }
 
 class _OrderItemCardState extends State<OrderItemCard> {
-  bool _isExpanded = false;
-
   @override
   Widget build(BuildContext context) {
+    final displayStatus = widget.order.statusText.toLowerCase();
+    final isInvoiced = widget.order.status.toLowerCase() == 'invoiced';
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 2),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 15,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(color: Colors.black.withOpacity(0.02)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            InkWell(
-              onTap: () => setState(() => _isExpanded = !_isExpanded),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                child: Column(
+        child: InkWell(
+          onTap: isInvoiced
+              ? null
+              : () {
+                  _showOrderDetailsSheet(
+                    context,
+                    widget.order,
+                    widget.isTablet,
+                  );
+                },
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.isTablet ? 24 : 16,
+              vertical: widget.isTablet ? 18 : 14,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.order.customerName,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFF1E2124),
-                                      letterSpacing: -0.5,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    'Order #${widget.order.id.split('-').last.toUpperCase()}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildStatusPill(widget.order),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            _buildPremiumDetailItem(
-                              widget.order.carModel,
-                              subtitle: widget.order.plateNumber.toUpperCase(),
-                            ),
-                            const Spacer(),
-                            _buildPremiumDetailItem(
-                              widget.order.date,
-                              subtitle: '${widget.order.odometerReading} km',
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.secondaryLight,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.layers_rounded,
-                                    size: 12,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${widget.order.jobsCount} JOBS',
-                                    style: const TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                      letterSpacing: 0.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              _isExpanded
-                                  ? Icons.keyboard_arrow_up_rounded
-                                  : Icons.keyboard_arrow_down_rounded,
-                              color: Colors.grey.shade300,
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    if (_isExpanded) ...[
-                      const SizedBox(height: 12),
-                      Divider(height: 1, color: Colors.grey.withOpacity(0.08)),
-                      const SizedBox(height: 12),
-                      Row(
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Consumer<pvm.PosViewModel>(
-                              builder: (context, posVm, child) {
-                                final isInvoiced =
-                                    widget.order.status.toLowerCase() ==
-                                    'invoiced';
-                                final isCurrentOrderLoading =
-                                    posVm.isInvoiceLoading &&
-                                    posVm.loadingOrderId == widget.order.id;
-
-                                return _buildActionButton(
-                                  onPressed: posVm.isInvoiceLoading
-                                      ? null
-                                      : () async {
-                                          if (isInvoiced) {
-                                            // Fetch and show existing invoice
-                                            final response = await posVm
-                                                .fetchInvoiceByOrder(
-                                                  widget.order.id,
-                                                );
-                                            if (response != null &&
-                                                response.success &&
-                                                response.invoice != null &&
-                                                context.mounted) {
-                                              await showDialog(
-                                                context: context,
-                                                builder: (ctx) => InvoiceDialog(
-                                                  invoice: response.invoice!,
-                                                ),
-                                              );
-                                            } else if (response != null &&
-                                                !response.success &&
-                                                context.mounted) {
-                                              ToastService.showError(
-                                                context,
-                                                response.message,
-                                              );
-                                            }
-                                          } else {
-                                            // Navigate to the Final Review Screen - no API call
-                                            if (context.mounted) {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      PosOrderReviewView(
-                                                        order: widget.order,
-                                                      ),
-                                                ),
-                                              );
-                                            }
-                                          }
-                                        },
-                                  isLoading: isCurrentOrderLoading,
-                                  icon: isInvoiced
-                                      ? Icons.receipt_long_rounded
-                                      : Icons.auto_awesome_rounded,
-                                  label: isInvoiced
-                                      ? 'Invoice'
-                                      : 'Gen. Invoice',
-                                  color: isInvoiced
-                                      ? AppColors.secondaryLight
-                                      : const Color(0xFF1E2124),
-                                );
-                              },
+                          Text(
+                            'Order #${widget.order.id.split('-').last.toUpperCase()}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade500,
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Consumer<pvm.PosViewModel>(
-                              builder: (context, posVm, child) {
-                                return _buildActionButton(
-                                  onPressed: () {
-                                    posVm.setCustomerData(
-                                      name: widget.order.customerName,
-                                      vat:
-                                          '', // VAT doesn't seem to be in PosOrder list model directly
-                                      mobile:
-                                          widget.order.customer?.mobile ?? '',
-                                      vehicleNumber: widget.order.plateNumber,
-                                      make: widget.order.vehicle?.make ?? '',
-                                      model: widget.order.vehicle?.model ?? '',
-                                      odometer: widget.order.odometerReading,
-                                    );
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const PosDepartmentView(),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.order.customerName,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF1E2124),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.layers_rounded,
+                                      size: 10,
+                                      color: Color(0xFF1E2124),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${widget.order.jobsCount} JOBS',
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF1E2124),
+                                        letterSpacing: 0.2,
                                       ),
-                                    );
-                                  },
-                                  icon: Icons.add_business_rounded,
-                                  label: 'Add Dept.',
-                                  color: AppColors.secondaryLight,
-                                  isSecondary: true,
-                                );
-                              },
-                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 8),
+                    _buildStatusPill(widget.order),
                   ],
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusPill(PosOrder order) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        order.statusText.toUpperCase(),
-        style: TextStyle(
-          color: AppColors.secondaryLight,
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.8,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPremiumDetailItem(
-    String title, {
-    String? subtitle,
-    CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
-  }) {
-    return Column(
-      crossAxisAlignment: crossAxisAlignment,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1E2124),
-          ),
-        ),
-        if (subtitle != null) ...[
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade400,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildActionButton({
-    required VoidCallback? onPressed,
-    required IconData icon,
-    required String label,
-    required Color color,
-    bool isLoading = false,
-    bool isSecondary = false,
-  }) {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: isSecondary
-            ? AppColors.primaryLight.withOpacity(0.2)
-            : color.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextButton.icon(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: color,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        icon: isLoading
-            ? const SizedBox(
-                height: 16,
-                width: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFF1E2124),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 6,
+                      child: _buildPremiumDetailItem(
+                        widget.order.carModel,
+                        subtitle:
+                            'Plate: ${widget.order.plateNumber.toUpperCase()}',
+                      ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: _buildPremiumDetailItem(
+                        DateFormat(
+                          'yyyy-MM-dd',
+                        ).format(DateTime.parse(widget.order.date)),
+                        subtitle: 'Odo: ${widget.order.odometerReading} km',
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                      ),
+                    ),
+                  ],
                 ),
-              )
-            : Icon(icon, size: 16),
-        label: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                Builder(
+                  builder: (context) {
+                    String displayStatus = widget.order.statusText
+                        .toLowerCase();
+
+                    if (displayStatus == 'completed by technician') {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Consumer<pvm.PosViewModel>(
+                                  builder: (context, posVm, child) {
+                                    final isCurrentOrderLoading =
+                                        posVm.isInvoiceLoading &&
+                                        posVm.loadingOrderId == widget.order.id;
+
+                                    return _buildActionButton(
+                                      onPressed: isCurrentOrderLoading
+                                          ? null
+                                          : () async {
+                                              if (context.mounted) {
+                                                // Get department info from items first, then Jobs, then fallback
+                                                String deptName = 'All';
+                                                String deptId = '1';
+
+                                                bool foundDept = false;
+
+                                                if (widget
+                                                    .order
+                                                    .jobs
+                                                    .isNotEmpty) {
+                                                  final job =
+                                                      widget.order.latestJob!;
+                                                  if (job
+                                                      .department
+                                                      .isNotEmpty) {
+                                                    deptName = job.department;
+                                                  }
+                                                  if (job.items.isNotEmpty &&
+                                                      job
+                                                          .items
+                                                          .first
+                                                          .departmentId
+                                                          .isNotEmpty) {
+                                                    deptId = job
+                                                        .items
+                                                        .first
+                                                        .departmentId;
+                                                    foundDept = true;
+                                                    if (job
+                                                        .items
+                                                        .first
+                                                        .departmentName
+                                                        .isNotEmpty) {
+                                                      deptName = job
+                                                          .items
+                                                          .first
+                                                          .departmentName;
+                                                    }
+                                                  }
+                                                }
+
+                                                if (!foundDept &&
+                                                    widget
+                                                        .order
+                                                        .items
+                                                        .isNotEmpty) {
+                                                  for (final item
+                                                      in widget.order.items) {
+                                                    if (item['departmentId'] !=
+                                                            null &&
+                                                        item['departmentId']
+                                                            .toString()
+                                                            .isNotEmpty) {
+                                                      deptId =
+                                                          item['departmentId']
+                                                              .toString();
+                                                      if (item['departmentName'] !=
+                                                          null) {
+                                                        deptName =
+                                                            item['departmentName']
+                                                                .toString();
+                                                      }
+                                                      foundDept = true;
+                                                      break;
+                                                    }
+                                                  }
+                                                }
+
+                                                if (!foundDept &&
+                                                    widget
+                                                        .order
+                                                        .jobs
+                                                        .isNotEmpty) {
+                                                  try {
+                                                    final matchedProduct = posVm
+                                                        .allProducts
+                                                        .firstWhere(
+                                                          (p) =>
+                                                              p.departmentName
+                                                                      ?.toLowerCase() ==
+                                                                  deptName
+                                                                      .toLowerCase() &&
+                                                              p.departmentId !=
+                                                                  null,
+                                                        );
+                                                    deptId = matchedProduct
+                                                        .departmentId!;
+                                                  } catch (e) {
+                                                    // Ensure valid fallback
+                                                  }
+                                                }
+
+                                                List<dynamic> preSelected = [];
+                                                if (widget
+                                                    .order
+                                                    .jobs
+                                                    .isNotEmpty) {
+                                                  for (var item
+                                                      in widget
+                                                          .order
+                                                          .latestJob!
+                                                          .items) {
+                                                    preSelected.add({
+                                                      'productId':
+                                                          item.productId,
+                                                      'quantity': item.qty,
+                                                      'discountType':
+                                                          item.discountType,
+                                                      'discountValue':
+                                                          item.discountValue ?? 0.0,
+                                                    });
+                                                  }
+                                                } else if (widget
+                                                    .order
+                                                    .items
+                                                    .isNotEmpty) {
+                                                  preSelected =
+                                                      widget.order.items;
+                                                }
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        PosProductGridView(
+                                                          departmentName:
+                                                              deptName,
+                                                          departmentId: deptId,
+                                                          preSelectedItems:
+                                                              preSelected,
+                                                          completingOrderId:
+                                                              widget
+                                                                  .order
+                                                                  .jobs
+                                                                  .isNotEmpty
+                                                              ? widget
+                                                                    .order
+                                                                    .latestJob!
+                                                                    .id
+                                                              : widget.order.id,
+                                                          completingOrder:
+                                                              widget.order,
+                                                        ),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                      isLoading: isCurrentOrderLoading,
+                                      icon: Icons.check_circle_outline_rounded,
+                                      label: 'Service Completed',
+                                      color: AppColors.primaryLight,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+
+                    if (displayStatus == 'completed' ||
+                        displayStatus == 'invoiced' ||
+                        displayStatus.contains('pending')) {
+                      final isInvoiced =
+                          widget.order.status.toLowerCase() == 'invoiced';
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          if (displayStatus.contains('pending') || displayStatus.contains('draft'))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildActionButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => PosTechnicianAssignmentView(
+                                              jobId: widget.order.jobs.isNotEmpty
+                                                  ? widget.order.latestJob!.id
+                                                  : widget.order.id,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: Icons.assignment_ind_rounded,
+                                      label: 'Forward to Technician',
+                                      color: AppColors.primaryLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (!(displayStatus.contains('pending') || displayStatus.contains('draft')))
+                            Row(
+                              children: [
+                              Expanded(
+                                child: Consumer<pvm.PosViewModel>(
+                                  builder: (context, posVm, child) {
+                                    final isCurrentOrderLoading =
+                                        posVm.isInvoiceLoading &&
+                                        posVm.loadingOrderId == widget.order.id;
+
+                                    return _buildActionButton(
+                                      onPressed: posVm.isInvoiceLoading
+                                          ? null
+                                          : () async {
+                                              if (isInvoiced) {
+                                                // Fetch and show existing invoice
+                                                final response = await posVm
+                                                    .fetchInvoiceByOrder(
+                                                      widget.order.id,
+                                                    );
+                                                if (response != null &&
+                                                    response.success &&
+                                                    response.invoice != null &&
+                                                    context.mounted) {
+                                                  await showDialog(
+                                                    context: context,
+                                                    builder: (ctx) =>
+                                                        InvoiceDialog(
+                                                          invoice:
+                                                              response.invoice!,
+                                                        ),
+                                                  );
+                                                } else if (response != null &&
+                                                    !response.success &&
+                                                    context.mounted) {
+                                                  ToastService.showError(
+                                                    context,
+                                                    response.message,
+                                                  );
+                                                }
+                                              } else {
+                                                // Navigate to the Final Review Screen - no API call
+                                                if (context.mounted) {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          PosOrderReviewView(
+                                                            order: widget.order,
+                                                          ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                      isLoading: isCurrentOrderLoading,
+                                      icon: isInvoiced
+                                          ? Icons.receipt_long_rounded
+                                          : Icons.auto_awesome_rounded,
+                                      label: isInvoiced
+                                          ? 'Invoice'
+                                          : 'Gen. Invoice',
+                                      color: isInvoiced
+                                          ? AppColors.secondaryLight
+                                          : AppColors.primaryLight,
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (!isInvoiced) const SizedBox(width: 10),
+                              if (!isInvoiced)
+                                Expanded(
+                                  child: Consumer<pvm.PosViewModel>(
+                                    builder: (context, posVm, child) {
+                                      return _buildActionButton(
+                                        onPressed: () {
+                                          posVm.clearCart();
+                                          posVm.setCustomerData(
+                                            name: widget.order.customerName,
+                                            vat:
+                                                '', // VAT doesn't seem to be in PosOrder list model directly
+                                            mobile:
+                                                widget.order.customer?.mobile ??
+                                                '',
+                                            vehicleNumber:
+                                                widget.order.plateNumber,
+                                            make:
+                                                widget.order.vehicle?.make ??
+                                                '',
+                                            model:
+                                                widget.order.vehicle?.model ??
+                                                '',
+                                            odometer:
+                                                widget.order.odometerReading,
+                                            previousOrderId: widget.order.id,
+                                          );
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const PosDepartmentView(),
+                                            ),
+                                          );
+                                        },
+                                        icon: Icons.add_business_rounded,
+                                        label: 'Add Dept.',
+                                        color: AppColors.secondaryLight,
+                                        isSecondary: true,
+                                      );
+                                    },
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
+void _showOrderDetailsSheet(
+  BuildContext context,
+  PosOrder order,
+  bool isTablet,
+) {
+  Widget buildStatusBadge(String status, {bool isPreviousCompleted = false}) {
+    Color bgColor;
+    Color textColor;
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'invoiced':
+      case 'completed by technician':
+        bgColor = Colors.green.shade50;
+        textColor = Colors.green.shade700;
+        break;
+      case 'pending assignment':
+      case 'waiting for technician acception':
+      case 'waiting for technician':
+      case 'draft':
+        bgColor = Colors.orange.shade50;
+        textColor = Colors.orange.shade700;
+        break;
+      case 'in progress':
+        bgColor = Colors.blue.shade50;
+        textColor = Colors.blue.shade700;
+        break;
+      case 'cancelled':
+        bgColor = Colors.red.shade50;
+        textColor = Colors.red.shade700;
+        break;
+      default:
+        bgColor = Colors.grey.shade100;
+        textColor = Colors.grey.shade700;
+    }
+
+    String displayStatus = status.replaceAll('_', ' ').toUpperCase();
+    if (displayStatus == 'WAITING FOR TECHNICIAN ACCEPTION') {
+      displayStatus = 'WAITING FOR TECHNICIAN';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        displayStatus,
+        style: AppTextStyles.bodySmall.copyWith(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      final sortedJobs = List<PosOrderJob>.from(order.jobs);
+      final latestId = order.latestJob?.id;
+      if (latestId != null) {
+        sortedJobs.sort((a, b) {
+          if (a.id == latestId) return -1;
+          if (b.id == latestId) return 1;
+          return 0; // maintain relative order
+        });
+      }
+
+      return Container(
+        constraints: BoxConstraints(
+          maxHeight:
+              MediaQuery.of(context).size.height * (isTablet ? 0.8 : 0.9),
+        ),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF8F9FA), // Soft beautiful light backdrop
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 48,
+                height: 5,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Order Details',
+                    style: AppTextStyles.h3.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.secondaryLight,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      elevation: 1,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Dark Premium Header Card
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C3036),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.customerName,
+                          style: AppTextStyles.h3.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${order.vehicle?.make ?? ""} ${order.vehicle?.model ?? ""}'
+                                  .trim()
+                                  .isEmpty
+                              ? "Walk-in${order.plateNumber.isNotEmpty ? '  •  ${order.plateNumber}' : ''}"
+                              : '${order.vehicle?.make ?? ""} ${order.vehicle?.model ?? ""}  •  ${order.plateNumber.isNotEmpty ? order.plateNumber : 'N/A'}',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: Colors.grey.shade400,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Order #${order.id.split('-').last.toUpperCase()}',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Expanded(
+              child: sortedJobs.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No departmental data found.',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 30),
+                      itemCount: sortedJobs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final job = sortedJobs[index];
+                        final hasItems = job.items.isNotEmpty;
+                        final isCompleted =
+                            job.status.toLowerCase().contains('completed') &&
+                            job.id != latestId;
+
+                        Widget jobCard = Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.02),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Department Header Background Fill
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryLight.withOpacity(
+                                        0.05,
+                                      ),
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(16),
+                                      ),
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: Colors.grey.shade100,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primaryLight
+                                                .withOpacity(0.15),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.business_center_rounded,
+                                            size: 16,
+                                            color: AppColors.secondaryLight,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            job.department,
+                                            style: AppTextStyles.bodyLarge
+                                                .copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color:
+                                                      AppColors.secondaryLight,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        buildStatusBadge(
+                                          job.status,
+                                          isPreviousCompleted: isCompleted,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Items Body
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (!hasItems)
+                                          Center(
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                              child: Text(
+                                                'No items bound to this department.',
+                                                style: AppTextStyles.bodySmall
+                                                    .copyWith(
+                                                      color:
+                                                          Colors.grey.shade400,
+                                                    ),
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          ...job.items.map((item) {
+                                            final isLast =
+                                                job.items.last == item;
+                                            return Padding(
+                                              padding: EdgeInsets.only(
+                                                bottom: isLast ? 0 : 16,
+                                              ),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.center,
+                                                children: [
+                                                  Container(
+                                                    width: 8,
+                                                    height: 8,
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          Colors.grey.shade300,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          item.productName,
+                                                          style: AppTextStyles
+                                                              .bodyMedium
+                                                              .copyWith(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color: AppColors
+                                                                    .secondaryLight,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Row(
+                                                          children: [
+                                                            Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        6,
+                                                                    vertical: 2,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors
+                                                                    .grey
+                                                                    .shade100,
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      4,
+                                                                    ),
+                                                              ),
+                                                              child: Text(
+                                                                "Qty: ${item.qty.toInt()}",
+                                                                style: AppTextStyles
+                                                                    .bodySmall
+                                                                    .copyWith(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w800,
+                                                                      color: Colors
+                                                                          .grey
+                                                                          .shade600,
+                                                                      fontSize:
+                                                                          10,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 8,
+                                                            ),
+                                                            Text(
+                                                              'SAR ${item.unitPrice.toStringAsFixed(2)} / ea',
+                                                              style: AppTextStyles
+                                                                  .bodySmall
+                                                                  .copyWith(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    color: Colors
+                                                                        .grey
+                                                                        .shade500,
+                                                                  ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    'SAR ${item.lineTotal.toStringAsFixed(2)}',
+                                                    style: AppTextStyles
+                                                        .bodyMedium
+                                                        .copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          color: AppColors
+                                                              .secondaryLight,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }),
+
+                                        // Render Technicians if any
+                                        if (job.technicians.isNotEmpty) ...[
+                                          const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: 12,
+                                            ),
+                                            child: Divider(
+                                              height: 1,
+                                              color: Color(0xFFEEEBE6),
+                                            ),
+                                          ),
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.handyman_rounded,
+                                                size: 16,
+                                                color: Colors.grey,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Assigned Technicians',
+                                                style: AppTextStyles.bodySmall
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      color:
+                                                          Colors.grey.shade600,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          ...job.technicians.map(
+                                            (tech) => Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: 8,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    width: 24,
+                                                    height: 24,
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors
+                                                          .primaryLight
+                                                          .withOpacity(0.15),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.person,
+                                                      size: 14,
+                                                      color: AppColors
+                                                          .primaryLight,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text(
+                                                      tech.name,
+                                                      style: AppTextStyles
+                                                          .bodyMedium
+                                                          .copyWith(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: AppColors
+                                                                .secondaryLight,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  Builder(
+                                                    builder: (context) {
+                                                      final s = tech.status?.toLowerCase() ?? '';
+                                                      Color bgColor = Colors.orange.withOpacity(0.1);
+                                                      Color textColor = Colors.orange.shade700;
+                                                      String displayText = s.isEmpty ? 'PENDING' : tech.status!.toUpperCase();
+
+                                                      if (displayText == 'ACCEPTED_BY_TECHNICIAN') {
+                                                        displayText = 'ACCEPTED';
+                                                      } else if (displayText == 'IN_PROGRESS' || displayText == 'IN PROGRESS') {
+                                                        displayText = 'IN PROGRESS';
+                                                      }
+
+                                                      if (s.contains('completed') || s.contains('accepted')) {
+                                                        bgColor = Colors.green.withOpacity(0.1);
+                                                        textColor = Colors.green.shade700;
+                                                      } else if (s.contains('progress')) {
+                                                        bgColor = Colors.purple.withOpacity(0.1);
+                                                        textColor = Colors.purple.shade700;
+                                                      }
+
+                                                      return Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: bgColor,
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Text(
+                                                          displayText,
+                                                          style: AppTextStyles.bodySmall.copyWith(
+                                                            fontWeight: FontWeight.w800,
+                                                            color: textColor,
+                                                            fontSize: 10,
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (latestId == job.id && !job.status.toLowerCase().contains('complete') && !job.status.toLowerCase().contains('invoice'))
+                              Positioned(
+                                top: -12,
+                                right: 16,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF27AE60),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF27AE60,
+                                        ).withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'ACTIVE',
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 9,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+
+                        return jobCard;
+                      },
+                    ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showCompletionBottomSheet(
+  BuildContext context,
+  PosOrder order,
+  pvm.PosViewModel posVm,
+) {
+  final isTablet = MediaQuery.of(context).size.width > 600;
+
+  // Parse order items for display
+  final List<Map<String, dynamic>> parsedItems = [];
+  if (order.items.isNotEmpty) {
+    for (var item in order.items) {
+      final priceDynamic = item['price'] ?? item['unitPrice'] ?? 0.0;
+      final double price = priceDynamic is int
+          ? priceDynamic.toDouble()
+          : (priceDynamic as double? ?? 0.0);
+      parsedItems.add({
+        'name': item['productName'] ?? item['name'] ?? 'Item',
+        'price': price,
+        'qty': item['quantity'] ?? item['qty'] ?? 1,
+      });
+    }
+  }
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          bool isLoading = false;
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight:
+                    MediaQuery.of(context).size.height *
+                    (isTablet ? 0.70 : 0.85),
+              ),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFBF9F6),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 10, bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+
+                  // Customer & Vehicle Card
+                  Container(
+                    margin: EdgeInsets.fromLTRB(
+                      isTablet ? 32 : 14,
+                      6,
+                      isTablet ? 32 : 14,
+                      0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade100),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 16 : 14,
+                        vertical: isTablet ? 14 : 12,
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3F4F6),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '#${order.id.split('-').last.toUpperCase()}',
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 16 : 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF1E2124),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: isTablet ? 8 : 6),
+                              Expanded(
+                                child: Text(
+                                  order.customerName,
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 22 : 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF1E2124),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  order.statusText.toUpperCase(),
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: isTablet ? 15 : 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: isTablet ? 12 : 10),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.directions_car_outlined,
+                                size: 22,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${order.carModel} • ${order.plateNumber.toUpperCase()}',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: isTablet ? 17 : 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Icon(
+                                Icons.phone_outlined,
+                                size: 22,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                order.customer?.mobile ?? 'N/A',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: isTablet ? 17 : 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  if (parsedItems.isNotEmpty) ...[
+                    // Order Items Header
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        isTablet ? 36 : 18,
+                        isTablet ? 24 : 12,
+                        isTablet ? 36 : 18,
+                        10,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Order Items',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: isTablet ? 20 : 14,
+                              color: const Color(0xFF1E2124),
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${parsedItems.length}',
+                              style: TextStyle(
+                                fontSize: isTablet ? 16 : 11,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1E2124),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Order Items List
+                    Flexible(
+                      child: ListView.builder(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 32 : 14,
+                        ),
+                        shrinkWrap: true,
+                        itemCount: parsedItems.length,
+                        itemBuilder: (context, index) {
+                          final item = parsedItems[index];
+                          final qty = item['qty'] as num;
+                          final price = item['price'] as double;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: EdgeInsets.all(isTablet ? 16 : 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade100),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item['name'] as String,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: isTablet ? 14 : 12,
+                                          color: const Color(0xFF1E2124),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF3F4F6),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '$qty × SAR ${price.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: isTablet ? 11 : 9,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  'SAR ${(price * qty).toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: isTablet ? 14 : 12,
+                                    color: const Color(0xFF1E2124),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // Action Buttons (Confirm only)
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      isTablet ? 32 : 14,
+                      16,
+                      isTablet ? 32 : 14,
+                      MediaQuery.of(ctx).padding.bottom + 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: isTablet ? 56 : 48,
+                            child: ElevatedButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () async {
+                                      setSheetState(() => isLoading = true);
+                                      try {
+                                        final String jobIdToComplete =
+                                            order.jobs.isNotEmpty
+                                            ? order.latestJob!.id
+                                            : order.id;
+                                        final response = await posVm
+                                            .completeCashierJob(
+                                              jobIdToComplete,
+                                            );
+                                        if (response != null &&
+                                            response.success) {
+                                          posVm.fetchOrders();
+                                          if (ctx.mounted) {
+                                            Navigator.of(ctx).pop();
+                                            ToastService.showSuccess(
+                                              ctx,
+                                              'Order marked as completed successfully',
+                                            );
+                                          }
+                                        } else {
+                                          if (ctx.mounted)
+                                            ToastService.showError(
+                                              ctx,
+                                              response?.message ??
+                                                  'Failed to complete job',
+                                            );
+                                        }
+                                      } catch (e) {
+                                        if (ctx.mounted)
+                                          ToastService.showError(
+                                            ctx,
+                                            e.toString(),
+                                          );
+                                      } finally {
+                                        if (ctx.mounted)
+                                          setSheetState(
+                                            () => isLoading = false,
+                                          );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFC145),
+                                foregroundColor: const Color(0xFF1E2124),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Color(0xFF1E2124),
+                                      ),
+                                    )
+                                  : Text(
+                                      'Confirm Completion',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: isTablet ? 16 : 14,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+Widget _buildStatusPill(PosOrder order) {
+  String statusStr = order.statusText;
+
+  String status = statusStr.toLowerCase();
+
+  Color textColor = AppColors.secondaryLight;
+  Color bgColor = AppColors.primaryLight;
+
+  if (status == 'draft' ||
+      status == 'pending' ||
+      status.contains('waiting') ||
+      status.contains('accepted')) {
+    textColor = const Color(0xFFE67E22); // Orange for waiting
+    bgColor = const Color(0xFFE67E22).withOpacity(0.15);
+  } else if (status == 'in progress' || status == 'ready for invoice') {
+    textColor = AppColors.secondaryLight;
+    bgColor = const Color(0xFF2D9CDB).withOpacity(0.15);
+  } else if (status.contains('completed') ||
+      status == 'invoiced' ||
+      status == 'delivered') {
+    textColor = const Color(0xFF27AE60);
+    bgColor = const Color(0xFF27AE60).withOpacity(0.15);
+  } else if (status.contains('rejected') || status.contains('cancelled')) {
+    textColor = Colors.red.shade700;
+    bgColor = Colors.red.withOpacity(0.15);
+  } else {
+    textColor = Colors.grey.shade700;
+    bgColor = Colors.grey.shade200;
+  }
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(
+      statusStr.toUpperCase().replaceAll(' ACCEPTION', ''),
+      style: TextStyle(
+        color: textColor,
+        fontSize: 9,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.5,
+      ),
+    ),
+  );
+}
+
+Widget _buildPremiumDetailItem(
+  String title, {
+  String? subtitle,
+  CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
+}) {
+  return Column(
+    crossAxisAlignment: crossAxisAlignment,
+    children: [
+      Text(
+        title,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF1E2124),
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      if (subtitle != null) ...[
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w400,
+            color: Colors.grey.shade400,
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+Widget _buildActionButton({
+  required VoidCallback? onPressed,
+  required IconData icon,
+  required String label,
+  required Color color,
+  bool isLoading = false,
+  bool isSecondary = false,
+}) {
+  Color bgColor = color;
+  Color textColor = Colors.white;
+
+  if (isSecondary && color == AppColors.secondaryLight) {
+    bgColor = AppColors.secondaryLight;
+    textColor = Colors.white;
+  } else if (color == const Color(0xFF27AE60)) {
+    bgColor = const Color(0xFF27AE60);
+    textColor = Colors.white;
+  } else if (color == AppColors.primaryLight && !isSecondary) {
+    bgColor = AppColors.primaryLight;
+    textColor = AppColors.secondaryLight;
+  }
+
+  return Container(
+    height: 42,
+    decoration: BoxDecoration(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: textColor,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: isLoading
+          ? SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: textColor,
+              ),
+            )
+          : Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: textColor,
+              ),
+            ),
+    ),
+  );
+}
+
+void _showCommissionPopup(BuildContext context, dynamic commissionData) {
+  if (commissionData == null) {
+    ToastService.showSuccess(context, 'Job approved successfully!');
+    return;
+  }
+
+  final String techName = commissionData.technicianName;
+  final double amount = commissionData.commissionAmount;
+
+  showDialog(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF27AE60),
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Job Approved!',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: AppColors.secondaryLight,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Technician commission has been logged.',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F9FD),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'TECHNICIAN',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.grey,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        techName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.secondaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'COMMISSION',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.grey,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'SAR ${amount.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF27AE60),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondaryLight,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class InvoiceDialog extends StatelessWidget {
   final Invoice invoice;
+  final VoidCallback? onDone;
+  final String? requestedPaymentMethod;
 
-  const InvoiceDialog({super.key, required this.invoice});
+  const InvoiceDialog({
+    super.key,
+    required this.invoice,
+    this.onDone,
+    this.requestedPaymentMethod,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1438,14 +2882,16 @@ class InvoiceDialog extends StatelessWidget {
                       'INVOICE READY',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 2,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      invoice.invoiceNo,
+                      invoice.invoiceDate.isNotEmpty
+                          ? '${invoice.invoiceNo}  •  ${invoice.invoiceDate.split('T').first}'
+                          : invoice.invoiceNo,
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 14,
@@ -1502,6 +2948,30 @@ class InvoiceDialog extends StatelessWidget {
                               'Customer',
                               invoice.customerName,
                             ),
+                            if (invoice.customerMobile != null &&
+                                invoice.customerMobile!.isNotEmpty) ...[
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(height: 1),
+                              ),
+                              _buildInfoRow(
+                                Icons.phone_outlined,
+                                'Phone',
+                                invoice.customerMobile!,
+                              ),
+                            ],
+                            if (invoice.customerTaxId != null &&
+                                invoice.customerTaxId!.isNotEmpty) ...[
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(height: 1),
+                              ),
+                              _buildInfoRow(
+                                Icons.receipt_long_outlined,
+                                'Tax ID',
+                                invoice.customerTaxId!,
+                              ),
+                            ],
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: Divider(height: 1),
@@ -1511,6 +2981,17 @@ class InvoiceDialog extends StatelessWidget {
                               'Vehicle',
                               invoice.vehicleInfo,
                             ),
+                            if (invoice.odometerReading != null) ...[
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(height: 1),
+                              ),
+                              _buildInfoRow(
+                                Icons.speed_outlined,
+                                'Odometer',
+                                '${invoice.odometerReading} km',
+                              ),
+                            ],
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: Divider(height: 1),
@@ -1519,6 +3000,42 @@ class InvoiceDialog extends StatelessWidget {
                               Icons.pin_outlined,
                               'Plate No',
                               invoice.plateNo.toUpperCase(),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(height: 1),
+                            ),
+                            _buildInfoRow(
+                              Icons.business_center_outlined,
+                              'Billing',
+                              invoice.customerType.toLowerCase().contains(
+                                        'corporate',
+                                      ) ||
+                                      (requestedPaymentMethod != null &&
+                                          requestedPaymentMethod!.contains(
+                                            'Corporate',
+                                          ))
+                                  ? 'Corporate (Monthly)'
+                                  : 'Individual',
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(height: 1),
+                            ),
+                            _buildInfoRow(
+                              Icons.payment_outlined,
+                              'Method',
+                              invoice.payments.isNotEmpty
+                                  ? invoice.payments
+                                        .map((p) => p.method)
+                                        .join(', ')
+                                  : ((invoice.paymentMethod?.isNotEmpty == true)
+                                        ? invoice.paymentMethod!
+                                        : ((requestedPaymentMethod
+                                                      ?.isNotEmpty ==
+                                                  true)
+                                              ? requestedPaymentMethod!
+                                              : 'Unpaid')),
                             ),
                             if (invoice.cashierName != null) ...[
                               const Padding(
@@ -1556,44 +3073,139 @@ class InvoiceDialog extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      ...invoice.items.map(
-                        (item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                      if (invoice.departments.isNotEmpty)
+                        ...invoice.departments.map(
+                          (dept) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Department Header
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.label_important_rounded,
+                                        size: 14,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          (dept.departmentName.isEmpty
+                                                  ? 'General Services'
+                                                  : dept.departmentName)
+                                              .toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.grey.shade800,
+                                            letterSpacing: 0.8,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Department Items
+                                ...dept.items.map(
+                                  (item) => Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: 8,
+                                      left: 4,
+                                      right: 4,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.productName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Qty: ${item.qty.toInt()}   |   Unit Price: SAR ${currencyFormat.format(item.unitPrice).replaceAll('SAR', '').trim()}',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Total: SAR ${currencyFormat.format(item.lineTotal).replaceAll('SAR', '').trim()}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else // FLAT OLD ITEMS
+                        ...invoice.items.map(
+                          (item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.productName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      item.productName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${item.qty.toInt()} x ${currencyFormat.format(item.unitPrice)}',
+                                      'Qty: ${item.qty.toInt()}   |   Unit Price: SAR ${currencyFormat.format(item.unitPrice).replaceAll('SAR', '').trim()}',
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: 12,
                                       ),
                                     ),
+                                    Text(
+                                      'Total: SAR ${currencyFormat.format(item.lineTotal).replaceAll('SAR', '').trim()}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ],
                                 ),
-                              ),
-                              Text(
-                                currencyFormat.format(item.lineTotal),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                       const SizedBox(height: 20),
                       Container(
                         padding: const EdgeInsets.all(20),
@@ -1644,68 +3256,43 @@ class InvoiceDialog extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
+                      child: ElevatedButton(
                         onPressed: () {
-                          final buffer = StringBuffer();
-                          buffer.writeln('INVOICE: ${invoice.invoiceNo}');
-                          buffer.writeln('Date: ${invoice.invoiceDate}');
-                          buffer.writeln('---------------------------');
-                          buffer.writeln('Customer: ${invoice.customerName}');
-                          buffer.writeln('Vehicle: ${invoice.vehicleInfo}');
-                          buffer.writeln('Plate No: ${invoice.plateNo}');
-                          if (invoice.cashierName != null)
-                            buffer.writeln('Cashier: ${invoice.cashierName}');
-                          if (invoice.branchName != null)
-                            buffer.writeln('Branch: ${invoice.branchName}');
-                          buffer.writeln('---------------------------');
-                          buffer.writeln('ITEMS:');
-                          for (var item in invoice.items) {
-                            buffer.writeln(
-                              '- ${item.productName}: ${item.qty.toInt()} x SAR ${item.unitPrice.toStringAsFixed(2)} = SAR ${item.lineTotal.toStringAsFixed(2)}',
-                            );
-                          }
-                          buffer.writeln('---------------------------');
-                          buffer.writeln(
-                            'Subtotal: SAR ${invoice.subtotal.toStringAsFixed(2)}',
-                          );
-                          buffer.writeln(
-                            'VAT (15%): SAR ${invoice.vatAmount.toStringAsFixed(2)}',
-                          );
-                          if (invoice.discountAmount > 0) {
-                            buffer.writeln(
-                              'Discount: -SAR ${invoice.discountAmount.toStringAsFixed(2)}',
-                            );
-                          }
-                          buffer.writeln(
-                            'TOTAL AMOUNT: SAR ${invoice.totalAmount.toStringAsFixed(2)}',
-                          );
-                          buffer.writeln(
-                            'Status: ${invoice.paymentStatus.toUpperCase()}',
-                          );
-                          buffer.writeln('---------------------------');
-                          buffer.writeln('Thank you for choosing our service!');
-
-                          Share.share(
-                            buffer.toString(),
-                            subject: 'Invoice ${invoice.invoiceNo}',
+                          // TODO: Implement actual Bluetooth/PDF Print logic
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Printing functionality coming soon!',
+                              ),
+                              duration: Duration(seconds: 2),
+                            ),
                           );
                         },
-                        icon: const Icon(Icons.share_outlined, size: 18),
-                        label: const Text('Share'),
-                        style: OutlinedButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondaryLight,
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
-                          side: BorderSide(color: Colors.grey.shade300),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Print',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      flex: 2,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          if (onDone != null) onDone!();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryLight,
                           foregroundColor: AppColors.secondaryLight,
@@ -1826,21 +3413,35 @@ class TechnicianCard extends StatelessWidget {
   final PosTechnician tech;
   const TechnicianCard({super.key, required this.tech});
 
+  Color _getStatusColor(String status) {
+    final lowerStatus = status.toLowerCase();
+    if (lowerStatus.contains('online') ||
+        lowerStatus.contains('available') ||
+        lowerStatus.contains('active')) {
+      return Colors.green.shade600;
+    } else if (lowerStatus.contains('busy') ||
+        lowerStatus.contains('working') ||
+        lowerStatus.contains('ongoing')) {
+      return Colors.orange.shade600;
+    }
+    return Colors.grey.shade500;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final statusColor = _getStatusColor(tech.statusInfo);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1848,14 +3449,14 @@ class TechnicianCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: isTablet ? 20 : 24,
-            backgroundColor: AppColors.primaryLight.withOpacity(0.1),
+            backgroundColor: AppColors.primaryLight.withOpacity(0.15),
             child: Icon(
               Icons.person,
               size: isTablet ? 20 : 24,
               color: AppColors.secondaryLight,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1872,20 +3473,39 @@ class TechnicianCard extends StatelessWidget {
                     color: const Color(0xFF1E2124),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  tech.statusInfo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: isTablet ? 10 : 12,
-                    color: tech.statusInfo.contains('Castrol')
-                        ? Colors.black54
-                        : Colors.grey,
-                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        tech.statusInfo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isTablet ? 11 : 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.grey.shade300,
+            size: 20,
           ),
         ],
       ),
@@ -1899,6 +3519,8 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Color accentColor;
   final double? width;
+  final Color? backgroundColor;
+  final Color? textColor;
 
   const StatCard({
     super.key,
@@ -1907,16 +3529,18 @@ class StatCard extends StatelessWidget {
     required this.icon,
     required this.accentColor,
     this.width,
+    this.backgroundColor,
+    this.textColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width ?? 125,
-      height: 115, // Slightly increased height to prevent overflow
+      width: width ?? 95,
+      height: 85, // Scaled down height
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: backgroundColor ?? Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1933,44 +3557,33 @@ class StatCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Subtle Background Decorative Icon
-          Positioned(
-            right: -5,
-            bottom: -5,
-            child: Icon(icon, size: 50, color: accentColor.withOpacity(0.05)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
+          // Background icon removed as per request
+          Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: [
-                    Icon(icon, size: 16, color: accentColor),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey.shade600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                Text(
+                  title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: textColor ?? Colors.grey.shade600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
-                const Spacer(),
+                const SizedBox(height: 8),
                 Text(
                   value,
                   style: AppTextStyles.h2.copyWith(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.secondaryLight,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: textColor ?? AppColors.secondaryLight,
                     letterSpacing: -0.5,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -2011,15 +3624,15 @@ class CategorySelector extends StatelessWidget {
                 child: Container(
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: 18,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primaryLight : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    color: isSelected ? const Color(0xFFFCC247) : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: isSelected
-                          ? AppColors.primaryLight
+                          ? const Color(0xFFFCC247)
                           : Colors.grey.shade200,
                     ),
                   ),
@@ -2027,12 +3640,12 @@ class CategorySelector extends StatelessWidget {
                     cat,
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: isSelected
-                          ? AppColors.secondaryLight
-                          : Colors.grey.shade600,
+                          ? const Color(0xFF1E2124)
+                          : Colors.grey.shade500,
                       fontWeight: isSelected
                           ? FontWeight.w600
                           : FontWeight.w400,
-                      fontSize: 12,
+                      fontSize: 13,
                     ),
                   ),
                 ),
@@ -2050,7 +3663,7 @@ class ProductCard extends StatelessWidget {
   const ProductCard({super.key, required this.product});
 
   Color _getStockColor(int stock) {
-    if (stock >= 30) return Colors.green;
+    if (stock >= 30) return const Color(0xFF27AE60); // Green
     if (stock >= 10) return Colors.orange;
     return Colors.red;
   }
@@ -2058,13 +3671,14 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stockColor = _getStockColor(product.stock);
+    final currencyFormat = NumberFormat.currency(symbol: '', decimalDigits: 2);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.transparent, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -2073,90 +3687,83 @@ class ProductCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  product.name,
-                  style: AppTextStyles.h2.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: stockColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'Stock: ${product.stock}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: stockColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        product.subtitle,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontSize: 10,
-                          color: Colors.grey,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      'SAR ',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.secondaryLight,
-                      ),
-                    ),
-                    Text(
-                      (product.price * 1.15).toStringAsFixed(
-                        2,
-                      ), // Price incl. VAT
-                      style: AppTextStyles.h2.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      ' (Inc. VAT)',
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: Colors.grey.shade400,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          Text(
+            product.name,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E2124),
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: stockColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Stock: ${product.stock}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: stockColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (product.subtitle.isNotEmpty)
+                Expanded(
+                  child: Text(
+                    product.subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.grey.shade400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                'SAR ',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF1E2124),
+                ),
+              ),
+              Text(
+                currencyFormat.format(product.price * 1.15), // Price incl. VAT
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E2124),
+                ),
+              ),
+              Text(
+                ' (Inc. VAT)',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ],
           ),
         ],
       ),

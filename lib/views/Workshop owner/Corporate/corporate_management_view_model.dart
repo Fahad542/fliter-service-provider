@@ -18,8 +18,8 @@ class CorporateManagementViewModel extends ChangeNotifier {
   final TextEditingController userNameController = TextEditingController();
   final TextEditingController userEmailController = TextEditingController();
   final TextEditingController userPasswordController = TextEditingController();
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  bool _isActionLoading = false;
+  bool get isActionLoading => _isActionLoading;
 
   bool _isListLoading = false;
   bool get isListLoading => _isListLoading;
@@ -78,7 +78,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
       return;
     }
 
-    _isLoading = true;
+    _isActionLoading = true;
     notifyListeners();
 
     try {
@@ -99,14 +99,14 @@ class CorporateManagementViewModel extends ChangeNotifier {
         ToastService.showSuccess(context, 'Corporate Account Created Successfully');
         clearForm();
         Navigator.pop(context); // Close the sheet
-        _init(); // Refresh list automatically
+        _init();
       }
     } catch (e) {
       if (context.mounted) {
         ToastService.showError(context, 'Failed to create corporate account');
       }
     } finally {
-      _isLoading = false;
+      _isActionLoading = false;
       notifyListeners();
     }
   }
@@ -119,7 +119,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
       return;
     }
 
-    _isLoading = true;
+    _isActionLoading = true;
     notifyListeners();
 
     try {
@@ -145,7 +145,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
         ToastService.showError(context, 'Failed to create corporate user');
       }
     } finally {
-      _isLoading = false;
+      _isActionLoading = false;
       notifyListeners();
     }
   }

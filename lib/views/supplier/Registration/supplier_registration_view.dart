@@ -8,8 +8,15 @@ import '../../../widgets/pos_widgets.dart';
 import '../Login/supplier_login_view.dart';
 import 'supplier_registration_view_model.dart';
 
-class SupplierRegistrationView extends StatelessWidget {
+class SupplierRegistrationView extends StatefulWidget {
   const SupplierRegistrationView({super.key});
+
+  @override
+  State<SupplierRegistrationView> createState() => _SupplierRegistrationViewState();
+}
+
+class _SupplierRegistrationViewState extends State<SupplierRegistrationView> {
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -26,12 +33,14 @@ class SupplierRegistrationView extends StatelessWidget {
         ).copyWith(textScaler: TextScaler.linear(isTablet ? 0.9 : 0.85)),
         child: Scaffold(
           backgroundColor: const Color(0xFFFBF9F6),
-          appBar: PosScreenAppBar(title: 'Supplier / Warehouse Registration'),
+          appBar: const PosScreenAppBar(title: 'Supplier / Warehouse Registration'),
           body: Consumer<SupplierRegistrationViewModel>(
             builder: (context, vm, _) {
               return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 32),
                 child: Form(
+                  key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -222,6 +231,7 @@ class SupplierRegistrationView extends StatelessWidget {
                           text: 'Register',
                           isLoading: vm.isLoading,
                           onPressed: () async {
+                            if (!_formKey.currentState!.validate()) return;
                             final success = await vm.register();
                             if (!context.mounted) return;
                             if (success) {

@@ -1,25 +1,73 @@
 import 'package:flutter/material.dart';
+import '../../../../data/repositories/super_admin_repository.dart';
+import '../../../../services/session_service.dart';
+import '../../../../models/super_admin_products_api_model.dart';
 
 class SuperAdminInventoryViewModel extends ChangeNotifier {
+  final SuperAdminRepository _repository = SuperAdminRepository();
+  final SessionService _sessionService = SessionService();
+
   bool isLoading = false;
   String searchQuery = '';
   String categoryFilter = 'All';
 
-  final List<Map<String, dynamic>> _allProducts = [
-    {'id': 'PRD-001', 'name': 'Engine Oil 5W-40', 'sku': 'OIL-5W40-01', 'category': 'Oils & Fluids', 'price': 150.0, 'stock': 120, 'minStock': 20},
-    {'id': 'PRD-002', 'name': 'Premium Air Filter XT', 'sku': 'FLT-AIR-02', 'category': 'Filters', 'price': 85.0, 'stock': 5, 'minStock': 10},
-    {'id': 'PRD-003', 'name': 'Ceramic Brake Pads', 'sku': 'BRK-PAD-03', 'category': 'Brakes', 'price': 220.0, 'stock': 0, 'minStock': 15},
-    {'id': 'PRD-004', 'name': 'Spark Plugs Set (4)', 'sku': 'SPK-PLG-04', 'category': 'Ignition', 'price': 120.0, 'stock': 45, 'minStock': 20},
-    {'id': 'PRD-005', 'name': 'Windshield Wipers 24"', 'sku': 'WIP-24-05', 'category': 'Accessories', 'price': 65.0, 'stock': 8, 'minStock': 10},
-    {'id': 'PRD-006', 'name': 'Battery 12V 70Ah', 'sku': 'BAT-70A-06', 'category': 'Electrical', 'price': 450.0, 'stock': 32, 'minStock': 5},
-  ];
+  // Form Controllers
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController skuController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  final TextEditingController minStockController = TextEditingController();
+  final TextEditingController unitController = TextEditingController();
+  final TextEditingController purchasePriceController = TextEditingController();
+  final TextEditingController sellingPriceController = TextEditingController();
+  final TextEditingController minCorporatePriceController = TextEditingController();
+  final TextEditingController maxCorporatePriceController = TextEditingController();
+  final TextEditingController criticalStockPointController = TextEditingController();
+  final TextEditingController kmTypeValueController = TextEditingController();
+  
+  bool allowDecimalQty = false;
+  bool isActive = true;
 
-  List<Map<String, dynamic>> get filteredProducts {
+  void clearForm() {
+    nameController.clear();
+    skuController.clear();
+    priceController.clear();
+    minStockController.clear();
+    unitController.text = 'Pcs';
+    purchasePriceController.clear();
+    sellingPriceController.clear();
+    minCorporatePriceController.clear();
+    maxCorporatePriceController.clear();
+    criticalStockPointController.clear();
+    kmTypeValueController.clear();
+    allowDecimalQty = false;
+    isActive = true;
+    notifyListeners();
+  }
+
+  void toggleAllowDecimal(bool value) {
+    allowDecimalQty = value;
+    notifyListeners();
+  }
+
+  void toggleIsActive(bool value) {
+    isActive = value;
+    notifyListeners();
+  }
+
+  Future<void> submitProductForm(BuildContext context) async {
+    // Currently just a mockup action
+    Navigator.pop(context);
+    clearForm();
+  }
+
+  List<SuperAdminProduct> _allProducts = [];
+
+  List<SuperAdminProduct> get filteredProducts {
     return _allProducts.where((product) {
-      final matchesSearch = product['name'].toLowerCase().contains(searchQuery.toLowerCase()) || 
-                            product['sku'].toLowerCase().contains(searchQuery.toLowerCase());
+      final matchesSearch = product.name.toLowerCase().contains(searchQuery.toLowerCase()) || 
+                            product.id.toLowerCase().contains(searchQuery.toLowerCase());
       final matchesCategory = categoryFilter == 'All' || 
-                              product['category'].toString().toLowerCase() == categoryFilter.toLowerCase();
+                              product.categoryName?.toLowerCase() == categoryFilter.toLowerCase();
       return matchesSearch && matchesCategory;
     }).toList();
   }
@@ -27,9 +75,21 @@ class SuperAdminInventoryViewModel extends ChangeNotifier {
   Future<void> refresh() async {
     isLoading = true;
     notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 600));
-    isLoading = false;
-    notifyListeners();
+    
+    try {
+      final token = await _sessionService.getToken(role: 'super_admin');
+      if (token != null) {
+        final response = await _repository.getProducts(token);
+        if (response.success) {
+          _allProducts = response.products;
+        }
+      }
+    } catch (e) {
+      debugPrint('[VM] Error refreshing products: $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   void setSearchQuery(String query) {
@@ -44,7 +104,7 @@ class SuperAdminInventoryViewModel extends ChangeNotifier {
   }
 
   void deleteProduct(String id) {
-    _allProducts.removeWhere((p) => p['id'] == id);
+    _allProducts.removeWhere((p) => p.id == id);
     notifyListeners();
   }
 }

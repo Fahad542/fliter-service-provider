@@ -11,8 +11,11 @@ class BaseApiService {
       print('GET Request URL: $url');
       final response = await http.get(Uri.parse(url), headers: headers);
       return _returnResponse(response);
-    } on SocketException {
-      throw FetchDataException('No Internet connection');
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
     }
   }
 
@@ -28,8 +31,11 @@ class BaseApiService {
         },
       );
       return _returnResponse(response);
-    } on SocketException {
-      throw FetchDataException('No Internet connection');
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
     }
   }
 
@@ -50,8 +56,11 @@ class BaseApiService {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       return _returnResponse(response);
-    } on SocketException {
-      throw FetchDataException('No Internet connection');
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
     }
   }
 
@@ -66,8 +75,47 @@ class BaseApiService {
         headers: headers ?? {'Content-Type': 'application/json'},
       );
       return _returnResponse(response);
-    } on SocketException {
-      throw FetchDataException('No Internet connection');
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
+    }
+  }
+
+  Future<dynamic> patch(String endpoint, dynamic data, {Map<String, String>? headers}) async {
+    try {
+      final url = '${ApiConstants.baseUrl}$endpoint';
+      print('PATCH Request URL: $url');
+      print('PATCH Request Body: ${jsonEncode(data)}');
+      final response = await http.patch(
+        Uri.parse(url),
+        body: jsonEncode(data),
+        headers: headers ?? {'Content-Type': 'application/json'},
+      );
+      return _returnResponse(response);
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
+    }
+  }
+
+  Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
+    try {
+      final url = '${ApiConstants.baseUrl}$endpoint';
+      print('DELETE Request URL: $url');
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: headers ?? {'Content-Type': 'application/json'},
+      );
+      return _returnResponse(response);
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
     }
   }
 
@@ -96,8 +144,7 @@ class BaseApiService {
         throw UnauthorisedException(errorMessage);
       case 500:
       default:
-        throw FetchDataException(
-            'Error occurred while Communication with Server with StatusCode : ${response.statusCode}');
+        throw FetchDataException(errorMessage);
     }
   }
 }

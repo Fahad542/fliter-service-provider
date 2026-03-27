@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../../models/workshop_owner_models.dart';
 import '../../../services/session_service.dart';
 import '../../../data/repositories/owner_repository.dart';
+import '../../../services/owner_data_service.dart';
 
 class OwnerDashboardViewModel extends ChangeNotifier {
-  final OwnerRepository _repo = OwnerRepository();
+  final OwnerRepository ownerRepository;
+  final SessionService sessionService;
+  final OwnerDataService ownerDataService;
 
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  bool get isLoading => _isLoading || ownerDataService.isLoadingBranches;
 
-  List<Branch> _branches = [];
-  List<Branch> get branches => _branches;
+  List<Branch> get branches => ownerDataService.branches;
 
   Branch? _selectedBranch;
   Branch? get selectedBranch => _selectedBranch;
@@ -24,33 +27,29 @@ class OwnerDashboardViewModel extends ChangeNotifier {
   OwnerDashboardResponse? _dashboardData;
   OwnerDashboardResponse? get dashboardData => _dashboardData;
 
-  OwnerDashboardViewModel() {
-    init();
+  OwnerDashboardViewModel({
+    required this.ownerRepository,
+    required this.sessionService,
+    required this.ownerDataService,
+  }) {
+    ownerDataService.addListener(notifyListeners);
+    Future.microtask(() => init());
   }
 
   Future<void> init() async {
     _isLoading = true;
     notifyListeners();
     
-    final user = await SessionService().getUser(role: 'owner');
+    final user = await sessionService.getUser(role: 'owner');
     if (user != null && user.name != null) {
       _ownerName = user.name ?? 'Admin';
     }
 
-    String? token = await SessionService().getToken(role: 'owner');
+    String? token = await sessionService.getToken(role: 'owner');
     if (token != null) {
-      try {
-        final branchesResponse = await _repo.getBranches(token);
-        if (branchesResponse != null && branchesResponse['success'] == true) {
-          final branchesData = branchesResponse['branches'] as List?;
-          if (branchesData != null) {
-            _branches = branchesData.map((e) => Branch.fromJson(e)).toList();
-          }
-        }
-      } catch (e) {
-        debugPrint('Error fetching branches: $e');
+      if (branches.isEmpty) {
+        await ownerDataService.fetchBranches();
       }
-      
       await _fetchDashboardData(token);
     }
 
@@ -67,7 +66,7 @@ class OwnerDashboardViewModel extends ChangeNotifier {
 
   Future<void> _fetchDashboardData(String token) async {
     try {
-      final response = await _repo.getDashboardData(token, branchId: _selectedBranch?.id);
+      final response = await ownerRepository.getDashboardData(token, branchId: _selectedBranch?.id);
       if (response != null && response['success'] == true) {
         _dashboardData = OwnerDashboardResponse.fromJson(response);
       }
@@ -81,7 +80,7 @@ class OwnerDashboardViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     
-    String? token = await SessionService().getToken(role: 'owner');
+    String? token = await sessionService.getToken(role: 'owner');
     if (token != null) {
       await _fetchDashboardData(token);
     }
@@ -105,4 +104,10 @@ class OwnerDashboardViewModel extends ChangeNotifier {
   // Per-branch details (not in dashboard API yet, mocked)
   int get activeOrders => _selectedBranch != null ? 14 : 0;
   double get technicianWorkload => _selectedBranch != null ? 0.85 : 0.0;
+
+  @override
+  void dispose() {
+    ownerDataService.removeListener(notifyListeners);
+    super.dispose();
+  }
 }

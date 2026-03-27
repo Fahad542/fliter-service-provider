@@ -24,46 +24,48 @@ class TechDashboardView extends StatelessWidget {
                 elevation: 0,
                 toolbarHeight: 90,
                 automaticallyImplyLeading: false,
+                leadingWidth: 70,
+                leading: Center(
+                  child: GestureDetector(
+                    onTap: () => Scaffold.of(context).openDrawer(),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryLight,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.secondaryLight.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.menu_rounded, color: Colors.white, size: 22),
+                      ),
+                    ),
+                  ),
+                ),
                 centerTitle: false,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
                 ),
-                title: const Padding(
-                  padding: EdgeInsets.only(left: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome Back,',
-                        style: TextStyle(color: Colors.black54, fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        'Ahmad Abdullah',
-                        style: TextStyle(color: AppColors.secondaryLight, fontSize: 22, fontWeight: FontWeight.w900),
-                      ),
-                    ],
-                  ),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Welcome Back,',
+                      style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      vm.technicianName,
+                      style: const TextStyle(color: AppColors.secondaryLight, fontSize: 20, fontWeight: FontWeight.w900),
+                    ),
+                  ],
                 ),
                 actions: [
-                  // Global icon — same style as login header
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/images/global.png',
-                        width: 22,
-                        height: 22,
-                        color: Colors.black,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.language, size: 22, color: Colors.black),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   // Notification icon — same style as login header
                   GestureDetector(
                     onTap: () => Navigator.push(
@@ -92,22 +94,32 @@ class TechDashboardView extends StatelessWidget {
                 ],
               ),
               body: SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildDutyToggles(vm),
-                      const SizedBox(height: 24),
-                      _buildQuickAction(context),
-                      const SizedBox(height: 32),
-                      _buildSectionTitle('TODAY\'S PERFORMANCE'),
-                      const SizedBox(height: 16),
-                      _buildKPIGrid(vm),
-                    ],
-                  ),
-                ),
+                child: vm.isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
+                    : RefreshIndicator(
+                        color: AppColors.secondaryLight,
+                        backgroundColor: Colors.white,
+                        onRefresh: () async {
+                          await vm.init();
+                        },
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                          child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+                            _buildDutyToggles(vm),
+                            const SizedBox(height: 24),
+                            _buildQuickAction(context),
+                            const SizedBox(height: 32),
+                            _buildSectionTitle('TODAY\'S PERFORMANCE'),
+                            const SizedBox(height: 16),
+                            _buildKPIGrid(vm),
+                          ],
+                        ),
+                      ),
+                    ),
               ),
             ),
             const BroadcastOverlay(),
@@ -323,7 +335,7 @@ class TechDashboardView extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AssignedOrdersView()),
+          MaterialPageRoute(builder: (_) => const AssignedOrdersView(isFromDashboard: true)),
         );
       },
       child: Container(

@@ -4,11 +4,17 @@ import '../../../../utils/app_colors.dart';
 import '../../../../utils/app_text_styles.dart';
 import '../widgets/owner_app_bar.dart';
 import 'owner_promo_view_model.dart';
+import '../../../../models/workshop_owner_models.dart';
 import 'package:intl/intl.dart';
 
-class OwnerPromoView extends StatelessWidget {
+class OwnerPromoView extends StatefulWidget {
   const OwnerPromoView({super.key});
 
+  @override
+  State<OwnerPromoView> createState() => _OwnerPromoViewState();
+}
+
+class _OwnerPromoViewState extends State<OwnerPromoView> {
   @override
   Widget build(BuildContext context) {
     return Consumer<OwnerPromoViewModel>(
@@ -20,7 +26,10 @@ class OwnerPromoView extends StatelessWidget {
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showAddPromoSheet(context),
+            onPressed: () {
+              vm.setEditPromoCode(null);
+              _showAddPromoSheet(context);
+            },
             backgroundColor: AppColors.secondaryLight,
             icon: const Icon(Icons.add_rounded, color: Colors.white),
             label: const Text('New Promo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -96,10 +105,38 @@ class OwnerPromoView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: activeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                    child: Text(isExpired ? 'EXPIRED' : p.isActive ? 'ACTIVE' : 'INACTIVE', style: TextStyle(color: activeColor, fontWeight: FontWeight.w900, fontSize: 10)),
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        vm.setEditPromoCode(p);
+                        _showAddPromoSheet(context);
+                      } else if (value == 'delete') {
+                        _showDeleteConfirmation(context, vm, p);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_rounded, size: 20, color: Colors.blue),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_rounded, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400),
                   ),
                 ],
               ),
@@ -139,6 +176,26 @@ class OwnerPromoView extends StatelessWidget {
     );
   }
 
+  void _showDeleteConfirmation(BuildContext context, OwnerPromoViewModel vm, PromoCode p) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Promo Code'),
+        content: Text('Are you sure you want to delete "${p.code}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              vm.deletePromoCode(context, p.id);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddPromoSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -166,12 +223,12 @@ class _AddPromoSheetState extends State<_AddPromoSheet> {
     final vm = context.watch<OwnerPromoViewModel>();
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.65,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Center(
             child: Container(
@@ -181,15 +238,18 @@ class _AddPromoSheetState extends State<_AddPromoSheet> {
               decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
             ),
           ),
-          Expanded(
+          Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Create Promo Code', style: AppTextStyles.h2.copyWith(fontSize: 22)),
+                  Text(vm.isEditing ? 'Update Promo Code' : 'Create Promo Code', style: AppTextStyles.h2.copyWith(fontSize: 18)),
                   const SizedBox(height: 8),
-                  const Text('Configure a new discount code for customers.', style: TextStyle(color: Colors.grey)),
+                  Text(
+                    vm.isEditing ? 'Modify existing promo code details.' : 'Configure a new discount code for customers.',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                   const SizedBox(height: 30),
                   
                   _buildTextField('Promo Code (e.g., SUMMER20)', Icons.title_rounded, vm.codeController),
@@ -253,26 +313,34 @@ class _AddPromoSheetState extends State<_AddPromoSheet> {
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 40),
-                  ElevatedButton(
-                    onPressed: vm.isLoading ? null : () => vm.submitPromoCode(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryLight,
-                      minimumSize: const Size.fromHeight(56),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: vm.isLoading
-                        ? const CircularProgressIndicator(color: AppColors.secondaryLight)
-                        : const Text(
-                            'Create Promo',
-                            style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
-                          ),
-                  ),
-                  const SizedBox(height: 20),
                 ],
               ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            child: ElevatedButton(
+              onPressed: vm.isLoading ? null : () => vm.submitPromoCode(context),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  disabledBackgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
+                  disabledForegroundColor: AppColors.secondaryLight,
+                  minimumSize: const Size.fromHeight(56),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: vm.isLoading
+                  ? const CircularProgressIndicator(color: AppColors.primaryLight)
+                  : Text(
+                      vm.isEditing ? 'Update Promo' : 'Create Promo',
+                      style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
+                    ),
             ),
           ),
         ],

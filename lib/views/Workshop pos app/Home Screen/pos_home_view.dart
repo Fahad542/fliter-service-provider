@@ -12,8 +12,9 @@ import 'package:flutter/services.dart';
 import '../../../utils/app_formatters.dart';
 import '../Product Grid/pos_product_grid_view.dart';
 import '../Sales Return/sales_return_view_model.dart';
+import '../Sales Return/pos_sales_return_view.dart';
+import '../Department/pos_department_view.dart';
 import 'pos_view_model.dart';
-import '../Promo/pos_promo_view.dart';
 import 'pos_customer_history_view.dart';
 import '../Corporate Bookings/pos_corporate_bookings_view.dart';
 
@@ -206,7 +207,7 @@ class PosHomeView extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const PosAddCustomerView(initialTab: 0),
+                            builder: (_) => const PosDepartmentView(),
                           ),
                         );
                       },
@@ -222,12 +223,10 @@ class PosHomeView extends StatelessWidget {
                         );
                       },
                       onSalesReturn: () {
-                        if (latestOrder?.id != null) {
-                          final returnVm = context.read<SalesReturnViewModel>();
-                          returnVm.searchController.text = latestOrder!.id;
-                          returnVm.searchInvoice();
-                        }
-                        context.read<PosViewModel>().setShellSelectedIndex(7);
+                        final returnVm = context.read<SalesReturnViewModel>();
+                        returnVm.searchController.text = customer.id.toString();
+                        returnVm.searchInvoice();
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const PosSalesReturnView()));
                       },
                     ),
                   );

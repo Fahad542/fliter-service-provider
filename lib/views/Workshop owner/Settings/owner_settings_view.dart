@@ -5,6 +5,7 @@ import '../widgets/owner_app_bar.dart';
 import '../owner_shell.dart';
 import '../../../services/session_service.dart';
 import '../../Menu/menu_view.dart';
+import '../../../utils/restart_widget.dart';
 
 class OwnerSettingsView extends StatefulWidget {
   const OwnerSettingsView({super.key});
@@ -255,19 +256,19 @@ class _OwnerSettingsViewState extends State<OwnerSettingsView> {
                         await session.clearSession(role: 'owner');
                         await session.saveLastPortal('');
                         if (mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const MenuView()),
-                            (route) => false,
-                          );
+                          RestartWidget.restartApp(context);
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryLight,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text('Log out', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w800)),
+                  backgroundColor: AppColors.primaryLight,
+                  disabledBackgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
+                  disabledForegroundColor: AppColors.secondaryLight,
+                  minimumSize: const Size.fromHeight(56),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text('Log out', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w800)),
                     ),
                   ),
                 ],

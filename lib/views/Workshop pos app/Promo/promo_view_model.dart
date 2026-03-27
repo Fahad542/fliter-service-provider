@@ -43,42 +43,41 @@ class PromoViewModel extends ChangeNotifier {
   Map<String, dynamic>? _validResult;
   Map<String, dynamic>? get validResult => _validResult;
 
-  final List<AvailablePromotion> _availablePromotions = [
-    AvailablePromotion(
-      code: 'SAVE10',
-      title: 'Welcome Discount',
-      description: 'Get 10% off on your first order.',
-      discount: 10.0,
-      isPercent: true,
-      applicableStore: 'All Branches',
-      applicableProducts: 'All Products',
-      validityPeriod: 'Until 31 Dec 2026',
-    ),
-    AvailablePromotion(
-      code: 'FILTER50',
-      title: 'Oil Service Special',
-      description: 'SAR 50 off on all oil change services.',
-      discount: 50.0,
-      isPercent: false,
-      applicableStore: 'Riyadh Main Branch',
-      applicableProducts: 'Oil Change Services',
-      validityPeriod: 'Until 30 Jun 2026',
-    ),
-    AvailablePromotion(
-      code: 'REFER15',
-      title: 'Referral Bonus',
-      description: 'Get 15% off when you refer a friend.',
-      discount: 15.0,
-      isPercent: true,
-      applicableStore: 'All Branches',
-      applicableProducts: 'Services Only',
-      validityPeriod: 'Until 31 Dec 2026',
-    ),
-  ];
+  List<AvailablePromotion> _availablePromotions = [];
+  bool _isLoadingPromos = false;
 
   bool get isLoading => _isLoading;
+  bool get isLoadingPromos => _isLoadingPromos;
   String? get promoErrorMessage => _promoErrorMessage;
   List<AvailablePromotion> get availablePromotions => _availablePromotions;
+
+  Future<void> fetchAvailablePromos() async {
+    _isLoadingPromos = true;
+    notifyListeners();
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) throw Exception('Token not found');
+
+      final response = await posRepository.getPromoCodes(token);
+      if (response.success && response.promoCodes != null) {
+        _availablePromotions = response.promoCodes!.map((code) => AvailablePromotion(
+          code: code.code,
+          title: code.discountLabel ?? (code.isPercent ? '${code.discount}% Discount' : 'SAR ${code.discount} Discount'),
+          description: code.description ?? 'Promotional discount',
+          discount: code.discount,
+          isPercent: code.isPercent,
+          applicableStore: code.applicableStore ?? 'All Branches',
+          applicableProducts: code.applicableProducts ?? 'All Products',
+          validityPeriod: code.validityPeriod ?? 'No Expiry',
+        )).toList();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch promos: $e');
+    } finally {
+      _isLoadingPromos = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> validatePromo(String code, PosViewModel posVm, BuildContext context) async {
     final cleanCode = code.trim().toUpperCase();

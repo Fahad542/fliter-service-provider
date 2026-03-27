@@ -34,6 +34,21 @@ class AuthRepository {
     }
   }
 
+  Future<AuthResponse> superAdminLogin(String email, String password) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.superAdminLoginEndpoint,
+        {
+          'email': email,
+          'password': password,
+        },
+      );
+      return AuthResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<AuthResponse> registerWorkshopOwner({
     required String name,
     required String email,

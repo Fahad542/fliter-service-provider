@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import '../../models/workshop_owner_models.dart';
 import '../network/api_constants.dart';
 import '../network/base_api_service.dart';
 
@@ -163,6 +165,38 @@ class OwnerRepository {
     }
   }
 
+  Future<dynamic> getProductsCategories(String token, String type) async {
+    try {
+      final response = await _apiService.get(
+        '${ApiConstants.getProductsCategoriesEndpoint}?type=$type',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> createSubCategory(Map<String, dynamic> data, String token) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.createSubCategoryEndpoint, // Use the proper endpoint
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+
   Future<dynamic> getBranches(String token) async {
     try {
       final response = await _apiService.get(
@@ -182,6 +216,21 @@ class OwnerRepository {
     try {
       final response = await _apiService.get(
         ApiConstants.techniciansEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getEmployees(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.employeesEndpoint,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -257,6 +306,7 @@ class OwnerRepository {
         data,
         headers: {
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
       );
       return response;
@@ -280,10 +330,27 @@ class OwnerRepository {
     }
   }
 
-  Future<dynamic> getProducts(String token, String workshopId) async {
+  Future<dynamic> getSubCategories(String token, String categoryId) async {
     try {
+      final response = await _apiService.getWithQueryParams(
+        ApiConstants.getSubCategoriesEndpoint,
+        {'categoryId': categoryId},
+        token,
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getProducts(String token, String workshopId, {String? departmentId}) async {
+    try {
+      String endpoint = '${ApiConstants.productsEndpoint}?workshopId=$workshopId';
+      if (departmentId != null && departmentId.isNotEmpty) {
+        endpoint += '&departmentId=$departmentId';
+      }
       final response = await _apiService.get(
-        '${ApiConstants.productsEndpoint}?workshopId=$workshopId',
+        endpoint,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -295,6 +362,39 @@ class OwnerRepository {
     }
   }
 
+  Future<dynamic> getWorkshopServices(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.workshopServicesEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> createWorkshopService(Map<String, dynamic> data, String token) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.workshopServicesEndpoint,
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+
+
   Future<dynamic> getDashboardData(String token, {String? branchId}) async {
     try {
       String endpoint = ApiConstants.dashboardEndpoint;
@@ -303,6 +403,385 @@ class OwnerRepository {
       }
       final response = await _apiService.get(
         endpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getSupplierStats(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.suppliersStatsEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Supplier>> getSuppliers(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.suppliersEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      
+      if (response != null && response is Map<String, dynamic> && response['success'] == true) {
+        final List<dynamic> suppliersData = response['suppliers'] ?? [];
+        return suppliersData.map((json) => Supplier.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching suppliers: $e');
+      return [];
+    }
+  }
+
+  Future<dynamic> getAccountingSummary(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.accountingSummaryEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> createPurchaseOrder(Map<String, dynamic> data, String token) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.purchaseOrdersEndpoint,
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getAccountingTransactions(String token, String type) async {
+    try {
+      final response = await _apiService.get(
+        '${ApiConstants.accountingTransactionsEndpoint}?type=$type',
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getPosMonitoring(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.posMonitoringEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Promo Codes
+  Future<dynamic> updatePromoCode(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '${ApiConstants.promoCodesEndpoint}/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deletePromoCode(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '${ApiConstants.promoCodesEndpoint}/$id',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Products
+  Future<dynamic> updateProduct(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '${ApiConstants.productsEndpoint}/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deleteProduct(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '${ApiConstants.productsEndpoint}/$id',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Services
+  Future<dynamic> updateService(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '${ApiConstants.workshopServicesEndpoint}/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deleteService(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '${ApiConstants.workshopServicesEndpoint}/$id',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Categories
+  Future<dynamic> updateCategory(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '${ApiConstants.categoriesEndpoint}/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deleteCategory(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '${ApiConstants.categoriesEndpoint}/$id',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Sub-Categories
+  Future<dynamic> updateSubCategory(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '${ApiConstants.createSubCategoryEndpoint}/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deleteSubCategory(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '${ApiConstants.createSubCategoryEndpoint}/$id',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Employees
+  Future<dynamic> updateTechnician(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '/workshop-staff/technician/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deleteTechnician(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '/workshop-staff/technician/$id',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> updateCashier(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '/workshop-staff/cashier/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deleteCashier(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '/workshop-staff/cashier/$id',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Branches
+  Future<dynamic> updateBranch(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '/workshop-staff/branch/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deleteBranch(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '/workshop-staff/branch/$id',
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Departments
+  Future<dynamic> updateDepartment(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        '/workshop-staff/department/$id',
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> deleteDepartment(String token, String id) async {
+    try {
+      final response = await _apiService.delete(
+        '/workshop-staff/department/$id',
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

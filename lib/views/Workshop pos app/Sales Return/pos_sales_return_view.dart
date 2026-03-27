@@ -17,9 +17,13 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SalesReturnViewModel>().clearSelection();
-      context.read<SalesReturnViewModel>().searchController.clear();
-      context.read<SalesReturnViewModel>().searchInvoice(); // clears results
+      final vm = context.read<SalesReturnViewModel>();
+      // Only clear state if navigated via root tabs/drawer, not when pushed with pre-filled state
+      if (!Navigator.canPop(context)) {
+        vm.clearSelection();
+        vm.searchController.clear();
+        vm.searchInvoice(); // clears results
+      }
     });
   }
 
@@ -34,11 +38,16 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
         title: (!isTablet && vm.selectedInvoice != null)
             ? 'Return - ${vm.selectedInvoice!.invoiceNo.isNotEmpty ? vm.selectedInvoice!.invoiceNo : vm.selectedInvoice!.id}'
             : 'Sales Return',
-        showBackButton: (!isTablet && vm.selectedInvoice != null),
-        showHamburger: !(!isTablet && vm.selectedInvoice != null),
+        showBackButton: Navigator.canPop(context) || (!isTablet && vm.selectedInvoice != null),
+        showHamburger: !Navigator.canPop(context) && !(!isTablet && vm.selectedInvoice != null),
         onMenuPressed: () => Scaffold.of(context).openDrawer(),
         onBack: () {
-          vm.clearSelection();
+          if (!isTablet && vm.selectedInvoice != null) {
+            vm.clearSelection();
+          } else if (Navigator.canPop(context)) {
+            vm.clearSelection();
+            Navigator.pop(context);
+          }
         },
       ),
       body: Row(
@@ -105,8 +114,9 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200, width: 1.5),
                     boxShadow: [
-                      BoxShadow(color: AppColors.secondaryLight.withValues(alpha: 0.06), blurRadius: 15, offset: const Offset(0, 5))
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, 8))
                     ]
                   ),
                   child: TextField(
@@ -201,22 +211,24 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
         
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
               gradient: isSelected 
-                  ? LinearGradient(colors: [Colors.white, AppColors.primaryLight.withValues(alpha: 0.15)], begin: Alignment.topLeft, end: Alignment.bottomRight)
+                  ? LinearGradient(colors: [Colors.white, AppColors.primaryLight.withValues(alpha: 0.12)], begin: Alignment.topLeft, end: Alignment.bottomRight)
                   : const LinearGradient(colors: [Colors.white, Colors.white]),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.6) : Colors.transparent, width: 1.5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.8) : Colors.grey.shade200, width: isSelected ? 2.0 : 1.5),
               boxShadow: [
-                BoxShadow(color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.04), blurRadius: isSelected ? 20 : 10, offset: const Offset(0, 4))
+                BoxShadow(color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.03), blurRadius: isSelected ? 24 : 12, offset: isSelected ? const Offset(0, 8) : const Offset(0, 4), spreadRadius: isSelected ? -2 : 0)
               ],
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => vm.selectInvoice(inv),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -228,25 +240,26 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.2) : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(10),
+                                  color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.15) : Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.3) : Colors.grey.shade200),
                                 ),
-                                child: Icon(Icons.receipt_long_rounded, size: 18, color: isSelected ? AppColors.primaryLight : Colors.grey.shade600),
+                                child: Icon(Icons.receipt_long_rounded, size: 18, color: isSelected ? AppColors.primaryLight : AppColors.secondaryLight),
                               ),
                               const SizedBox(width: 12),
                               Text(inv.invoiceNo.isNotEmpty ? inv.invoiceNo : inv.id, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1E2124), letterSpacing: -0.3)),
                             ],
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+                              color: Colors.green.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(color: Colors.green.withValues(alpha: 0.3), width: 1.5),
                             ),
-                            child: Text('SAR ${inv.totalAmount.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.w800, color: Colors.green.shade700, fontSize: 13)),
+                            child: Text('SAR ${inv.totalAmount.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.w800, color: Colors.green.shade700, fontSize: 13, letterSpacing: -0.2)),
                           ),
                         ],
                       ),
@@ -403,10 +416,10 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isSelected ? Colors.white : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isSelected ? AppColors.primaryLight : Colors.transparent, width: 1.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isSelected ? AppColors.primaryLight : Colors.grey.shade200, width: isSelected ? 2.0 : 1.5),
         boxShadow: [
-          BoxShadow(color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.04), blurRadius: isSelected ? 20 : 10, offset: const Offset(0, 4))
+          BoxShadow(color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.02), blurRadius: isSelected ? 20 : 10, offset: isSelected ? const Offset(0, 6) : const Offset(0, 4))
         ]
       ),
       child: Material(
@@ -415,21 +428,22 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
           children: [
             InkWell(
               onTap: () => vm.toggleItemSelection(item.id, !isSelected, item.qty),
-              borderRadius: isSelected ? const BorderRadius.vertical(top: Radius.circular(16)) : BorderRadius.circular(16),
+              borderRadius: isSelected ? const BorderRadius.vertical(top: Radius.circular(20)) : BorderRadius.circular(20),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    Container(
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
                         color: isSelected ? AppColors.primaryLight : Colors.white,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: isSelected ? AppColors.primaryLight : Colors.grey.shade400, width: 2),
-                        boxShadow: isSelected ? [BoxShadow(color: AppColors.primaryLight.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 2))] : [],
+                        border: Border.all(color: isSelected ? AppColors.primaryLight : Colors.grey.shade300, width: 2),
+                        boxShadow: isSelected ? [BoxShadow(color: AppColors.primaryLight.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))] : [],
                       ),
-                      width: 24,
-                      height: 24,
-                      child: isSelected ? const Icon(Icons.check_rounded, color: Colors.white, size: 16) : null,
+                      width: 26,
+                      height: 26,
+                      child: isSelected ? const Icon(Icons.check_rounded, color: Colors.white, size: 18) : null,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -460,9 +474,9 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
           if (isSelected)
             Container(
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
-                color: Colors.grey.shade50.withValues(alpha: 0.5),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1.5)),
+                color: Colors.grey.shade50,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
               ),
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -646,13 +660,12 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
     return GestureDetector(
       onTap: vm.pickProofImage,
       child: Container(
-        height: 110,
+        height: 120,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200, width: 1.5),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
+          color: Colors.grey.shade50.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.3), width: 1.5),
         ),
         child: vm.proofImage != null
             ? Stack(

@@ -65,7 +65,7 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (showGlobalLeft) _buildGlobalButton()
-                  else if (showDrawer) _buildDrawerButton(context),
+                  else if (showDrawer || showBackButton) _buildDrawerButton(context),
                   
                   if (title is Widget) const SizedBox(width: 16),
                   if (title is Widget) Expanded(child: title as Widget),

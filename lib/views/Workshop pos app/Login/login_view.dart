@@ -163,123 +163,124 @@ class _LoginViewState extends State<LoginView> {
       ),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: CustomAuthHeader(
-              title: widget.appName,
-              subtitle: 'Sign in to continue',
-              showBackButton: true,
-              height: MediaQuery.of(context).size.height * (isTablet ? 0.37 : 0.42),
-            ),
-          ),
-
-          Positioned(
-            top: MediaQuery.of(context).size.height * (isTablet ? 0.26 : 0.27),
-            left: horizontalPadding,
-            right: horizontalPadding,
-            bottom: 0,
-            child: SingleChildScrollView(
-              child: Container(
-                padding: EdgeInsets.all(isTablet ? 60 : 24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        label: 'Email',
-                        hint: 'Enter your email',
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        prefixIcon: const Icon(Icons.email_outlined),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      CustomTextField(
-                        label: 'Password',
-                        hint: 'Enter your password',
-                        controller: _passwordController,
-                        obscureText: context.watch<LoginViewModel>().obscurePassword,
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            context.watch<LoginViewModel>().obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                          ),
-                          onPressed: _togglePasswordVisibility,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter password';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: _handleForgotPassword,
-                          child: Text(
-                            'Forgot Password?',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.primaryLight,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-
-                      const SizedBox(height: 24),
-
-                      Consumer<LoginViewModel>(
-                        builder: (context, viewModel, child) {
-                          return SizedBox(
-                            width: double.infinity,
-                            child: CustomButton(
-                              text: 'Sign In',
-                              isLoading: viewModel.isLoading,
-                              onPressed: _handleLogin,
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+        body: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CustomAuthHeader(
+                    title: widget.appName,
+                    subtitle: 'Sign in to continue',
+                    showBackButton: true,
+                    height: MediaQuery.of(context).size.height *
+                        (isTablet ? 0.37 : 0.42),
                   ),
-                ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).size.height *
+                          (isTablet ? 0.26 : 0.27),
+                      left: horizontalPadding,
+                      right: horizontalPadding,
+                    ),
+                    child: Container(
+                      padding: EdgeInsets.all(isTablet ? 60 : 24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              label: 'Email',
+                              hint: 'Enter your email',
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              prefixIcon: const Icon(Icons.email_outlined),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter email';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            CustomTextField(
+                              label: 'Password',
+                              hint: 'Enter your password',
+                              controller: _passwordController,
+                              obscureText:
+                                  context.watch<LoginViewModel>().obscurePassword,
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  context.watch<LoginViewModel>().obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                                onPressed: _togglePasswordVisibility,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter password';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _handleForgotPassword,
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.primaryLight,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const SizedBox(height: 24),
+                            Consumer<LoginViewModel>(
+                              builder: (context, viewModel, child) {
+                                return SizedBox(
+                                  width: double.infinity,
+                                  child: CustomButton(
+                                    text: 'Sign In',
+                                    isLoading: viewModel.isLoading,
+                                    onPressed: _handleLogin,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 24),
+            ],
           ),
-        ],
+        ),
       ),
-    ));
+    );
   }
 
 

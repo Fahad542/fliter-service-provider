@@ -28,6 +28,8 @@ class PromoData {
   final String? applicableStore;
   final String? applicableProducts;
   final String? validityPeriod;
+  final String? description;
+  final String? discountLabel;
 
   PromoData({
     required this.discount,
@@ -36,16 +38,50 @@ class PromoData {
     this.applicableStore,
     this.applicableProducts,
     this.validityPeriod,
+    this.description,
+    this.discountLabel,
   });
 
   factory PromoData.fromJson(Map<String, dynamic> json) {
+    bool isPercentValue = false;
+    if (json['discountType'] != null) {
+      isPercentValue = json['discountType'].toString().toLowerCase() == 'percent';
+    } else {
+      isPercentValue = json['isPercent'] ?? false;
+    }
+
+    String? validity;
+    if (json['validTo'] != null) {
+      validity = 'Until ${json['validTo']}';
+    } else {
+      validity = json['period'];
+    }
+
     return PromoData(
-      discount: (json['discount'] ?? 0).toDouble(),
-      isPercent: json['isPercent'] ?? false,
+      discount: double.tryParse(json['discountValue']?.toString() ?? json['discount']?.toString() ?? '0') ?? 0.0,
+      isPercent: isPercentValue,
       code: json['code'] ?? '',
-      applicableStore: json['store'] ?? 'All Branches', // Default value or null
-      applicableProducts: json['products'] ?? 'All Products', // Default value or null
-      validityPeriod: json['period'],
+      applicableStore: json['store'] ?? 'All Branches',
+      applicableProducts: json['products'] ?? 'All Products',
+      validityPeriod: validity,
+      description: json['description'],
+      discountLabel: json['discountLabel'],
+    );
+  }
+}
+
+class PromoCodeListResponse {
+  final bool success;
+  final List<PromoData>? promoCodes;
+
+  PromoCodeListResponse({required this.success, this.promoCodes});
+
+  factory PromoCodeListResponse.fromJson(Map<String, dynamic> json) {
+    return PromoCodeListResponse(
+      success: json['success'] ?? false,
+      promoCodes: json['promoCodes'] != null
+          ? (json['promoCodes'] as List).map((i) => PromoData.fromJson(i)).toList()
+          : null,
     );
   }
 }

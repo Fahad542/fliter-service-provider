@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth_response_model.dart';
 
 class SessionService {
+
   Future<void> saveSession(AuthResponse authResponse, {String role = 'cashier'}) async {
     final prefs = await SharedPreferences.getInstance();
     if (authResponse.token != null) {
@@ -23,6 +24,7 @@ class SessionService {
     return token;
   }
 
+
   Future<User?> getUser({String role = 'cashier'}) async {
     final prefs = await SharedPreferences.getInstance();
     final userData = prefs.getString('${role}_user_data');
@@ -33,32 +35,38 @@ class SessionService {
     return null;
   }
 
+
   Future<void> clearSession({String role = 'cashier'}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('${role}_auth_token');
     await prefs.remove('${role}_user_data');
   }
 
+
   Future<bool> isLoggedIn({String role = 'cashier'}) async {
     final token = await getToken(role: role);
     return token != null;
   }
+
 
   Future<void> saveLastPortal(String portal) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('last_portal', portal);
   }
 
+
   Future<String?> getLastPortal() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('last_portal');
   }
+
 
   Future<void> saveCredentials(String email, String password) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pos_user_email', email);
     await prefs.setString('pos_user_password', password);
   }
+
 
   Future<Map<String, String>?> getCredentials() async {
     final prefs = await SharedPreferences.getInstance();
@@ -69,4 +77,5 @@ class SessionService {
     }
     return null;
   }
+
 }

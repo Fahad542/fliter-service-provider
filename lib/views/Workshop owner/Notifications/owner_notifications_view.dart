@@ -35,7 +35,7 @@ class _OwnerNotificationsViewState extends State<OwnerNotificationsView> {
       ),
       body: Column(
         children: [
-          if (unread > 0) _buildUnreadBanner(unread),
+
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(20),
@@ -51,44 +51,7 @@ class _OwnerNotificationsViewState extends State<OwnerNotificationsView> {
     );
   }
 
-  Widget _buildUnreadBanner(int count) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: GestureDetector(
-        onTap: () => setState(() { for (final n in _notifications) { n.isRead = true; } }),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.1)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              )
-            ],
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.mark_email_unread_rounded, color: AppColors.primaryLight, size: 18),
-              const SizedBox(width: 10),
-              Text(
-                '$count unread notifications',
-                style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.secondaryLight, fontSize: 13),
-              ),
-              const Spacer(),
-              const Text(
-                'Mark all read',
-                style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildNotifCard(OwnerNotification n) {
     final data = _getTypeData(n.type);
@@ -103,27 +66,32 @@ class _OwnerNotificationsViewState extends State<OwnerNotificationsView> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
           boxShadow: [
-            if (!n.isRead)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              )
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
           ],
+          border: n.isRead 
+              ? null 
+              : Border.all(color: AppColors.primaryLight.withOpacity(0.3), width: 1),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Icon with Secondary Background and Primary Color (like POS App)
             Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.withOpacity(0.1)),
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: AppColors.secondaryLight,
+                shape: BoxShape.circle,
               ),
-              child: Icon(data['icon'], color: data['color'], size: 20),
+              child: Icon(
+                data['icon'], 
+                color: AppColors.primaryLight, 
+                size: 20,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -131,44 +99,50 @@ class _OwnerNotificationsViewState extends State<OwnerNotificationsView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           n.title,
-                          style: AppTextStyles.h2.copyWith(
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: AppColors.secondaryLight,
-                            fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (!n.isRead)
-                        Container(
-                          width: 8, height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primaryLight,
-                            shape: BoxShape.circle,
+                      Row(
+                        children: [
+                          Text(
+                            timeAgo,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.grey.shade400,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
+                          if (!n.isRead) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primaryLight,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     n.message,
-                    style: TextStyle(
-                      color: n.isRead ? Colors.grey.shade500 : Colors.grey.shade700,
-                      fontSize: 12,
-                      height: 1.4,
-                      fontWeight: n.isRead ? FontWeight.normal : FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    timeAgo,
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                      height: 1.3,
                     ),
                   ),
                 ],

@@ -9,8 +9,9 @@ import '../Home Screen/pos_home_view.dart';
 import '../Order Screen/pos_orders_view.dart';
 import '../Petty Cash/petty_cash_view_model.dart';
 import '../Petty Cash/pos_petty_cash_view.dart';
-import '../Product Screen/pos_products_view.dart';
+import '../Product Grid/pos_product_grid_view.dart';
 import '../Promo/pos_promo_view.dart';
+import '../Promo/promo_view_model.dart';
 import '../Sales Return/pos_sales_return_view.dart';
 import '../Store Closing/pos_store_closing_view.dart';
 import '../Store Closing/store_closing_view_model.dart';
@@ -55,12 +56,15 @@ class _PosShellState extends State<PosShell> {
 
   List<Widget> get _screens => const [
     PosHomeView(),
-    PosProductsView(),
+    PosProductGridView(
+      isReadOnly: true,
+      showBackButton: false,
+    ),
     PosOrdersView(),
-    PosTechnicianView(),
+    PosStoreClosingView(),
     PosPettyCashView(),
     PosPromoView(),
-    PosStoreClosingView(),
+    PosTechnicianView(),
     PosSalesReturnView(),
     PosCurrentShiftView(),
   ];
@@ -74,7 +78,8 @@ class _PosShellState extends State<PosShell> {
 
     // Safety check: Ensure index is within bounds of children
     final validIndex = currentIndex < _screens.length ? currentIndex : 0;
-    final isLockedInStoreClosing = validIndex == 6 && isReconciled;
+    final isStoreClosingTab = validIndex == 3;
+    final isLockedInStoreClosing = isStoreClosingTab && isReconciled;
 
     return PopScope(
       canPop: !isLockedInStoreClosing,
@@ -84,7 +89,7 @@ class _PosShellState extends State<PosShell> {
         }
       },
       child: Scaffold(
-        drawer: isLockedInStoreClosing ? null : _buildDrawer(),
+        drawer: isStoreClosingTab ? null : _buildDrawer(),
         body: MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0),
@@ -94,7 +99,7 @@ class _PosShellState extends State<PosShell> {
             children: _screens,
           ),
         ),
-        bottomNavigationBar: [4, 5, 6, 7, 8].contains(validIndex)
+        bottomNavigationBar: [4, 5, 6, 7, 8].contains(validIndex) || isLockedInStoreClosing
             ? const SizedBox.shrink()
             : PosBottomBar(
                 currentIndex: currentIndex,
@@ -110,7 +115,7 @@ class _PosShellState extends State<PosShell> {
   void _triggerVisitFetch(BuildContext context, int index) {
     if (index == 1) {
       final vm = context.read<PosViewModel>();
-      if (vm.products.isEmpty) {
+      if (vm.products.isEmpty || vm.lastFetchedDepartmentId != null) {
         vm.fetchProducts();
       }
     } else if (index == 2) {
@@ -118,7 +123,7 @@ class _PosShellState extends State<PosShell> {
       if (vm.orders.isEmpty) {
         vm.fetchOrders();
       }
-    } else if (index == 3) {
+    } else if (index == 6) {
       final vm = context.read<TechnicianViewModel>();
       if (vm.technicians.isEmpty) {
         vm.fetchTechnicians();
@@ -126,6 +131,11 @@ class _PosShellState extends State<PosShell> {
     } else if (index == 4) {
       // Always fetch for Petty Cash as per user request
       context.read<PettyCashViewModel>().initPettyCash();
+    } else if (index == 5) {
+      final vm = context.read<PromoViewModel>();
+      if (vm.availablePromotions.isEmpty) {
+        vm.fetchAvailablePromos();
+      }
     } else if (index == 8) {
       context.read<CurrentShiftViewModel>().fetchCurrentSession();
     }
@@ -154,7 +164,7 @@ class _PosShellState extends State<PosShell> {
                 const SizedBox(height: 4),
                 _buildDrawerItem(8, 'Current Shift', Icons.access_time_filled_rounded),
                 const SizedBox(height: 4),
-                _buildDrawerItem(6, 'Store Closing', Icons.store_rounded),
+                _buildDrawerItem(6, 'Technicians', Icons.engineering_rounded),
                 const SizedBox(height: 4),
               ],
             ),

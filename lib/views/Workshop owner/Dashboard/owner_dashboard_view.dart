@@ -6,9 +6,14 @@ import '../../../widgets/widgets.dart'; // Using global shared widgets
 import '../widgets/owner_app_bar.dart';
 import 'owner_dashboard_view_model.dart';
 
-class OwnerDashboardView extends StatelessWidget {
+class OwnerDashboardView extends StatefulWidget {
   const OwnerDashboardView({super.key});
 
+  @override
+  State<OwnerDashboardView> createState() => _OwnerDashboardViewState();
+}
+
+class _OwnerDashboardViewState extends State<OwnerDashboardView> {
   @override
   Widget build(BuildContext context) {
     return Consumer<OwnerDashboardViewModel>(
@@ -30,7 +35,7 @@ class OwnerDashboardView extends StatelessWidget {
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
           ),
           body: vm.isLoading 
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
             : RefreshIndicator(
                 onRefresh: vm.init,
                 child: SingleChildScrollView(

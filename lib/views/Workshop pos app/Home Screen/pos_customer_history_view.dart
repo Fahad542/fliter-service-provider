@@ -43,69 +43,93 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F6),
       appBar: PosScreenAppBar(title: 'Customer History'),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-            horizontal: isTablet ? 32 : 16, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCustomerProfile(isTablet, customer),
-            _buildFocusedOrderCard(),
-            const SizedBox(height: 32),
-            Text(
-              'Past Orders',
-              style: AppTextStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                color: const Color(0xFF1E2124),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (customer.orders.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Text('No order history found for this customer.'),
-                ),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: customer.orders.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final searchedOrder = customer.orders[index];
-                  
-                  // Convert SearchedCustomerOrder to PosOrder for UI compatibility
-                  final posOrder = PosOrder(
-                    id: searchedOrder.id,
-                    status: searchedOrder.status,
-                    source: searchedOrder.source,
-                    odometerReading: searchedOrder.odometerReading,
-                    createdAt: searchedOrder.createdAt,
-                    customer: OrderCustomer(
-                      id: customer.id,
-                      name: customer.name,
-                      mobile: customer.mobile,
-                    ),
-                    vehicle: searchedOrder.vehicle != null 
-                        ? OrderVehicle(
-                            id: searchedOrder.vehicle!.id,
-                            plateNo: searchedOrder.vehicle!.plateNo,
-                            make: searchedOrder.vehicle!.make,
-                            model: searchedOrder.vehicle!.model,
-                          )
-                        : null,
-                    jobsCount: 0, // Not provided in search details
-                  );
+      body: FutureBuilder<CreateInvoiceResponse?>(
+        future: _invoiceFuture,
+        builder: (context, snapshot) {
+          final isLoading = widget.focusOrderId != null && snapshot.connectionState == ConnectionState.waiting;
+          final invoice = snapshot.data?.invoice;
 
-                  // Using the shared OrderItemCard for consistency
-                  return OrderItemCard(order: posOrder, isTablet: isTablet);
-                },
+          return Stack(
+            children: [
+              SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 32 : 16, vertical: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCustomerProfile(isTablet, customer),
+                    if (invoice != null && invoice.items.isNotEmpty)
+                      _buildFocusedOrderCard(invoice),
+                    const SizedBox(height: 32),
+                    Text(
+                      'Past Orders',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                        color: const Color(0xFF1E2124),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (customer.orders.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: Text('No order history found for this customer.'),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: customer.orders.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          final searchedOrder = customer.orders[index];
+                          
+                          final posOrder = PosOrder(
+                            id: searchedOrder.id,
+                            status: searchedOrder.status,
+                            source: searchedOrder.source,
+                            odometerReading: searchedOrder.odometerReading,
+                            createdAt: searchedOrder.createdAt,
+                            customer: OrderCustomer(
+                              id: customer.id,
+                              name: customer.name,
+                              mobile: customer.mobile,
+                            ),
+                            vehicle: searchedOrder.vehicle != null 
+                                ? OrderVehicle(
+                                    id: searchedOrder.vehicle!.id,
+                                    plateNo: searchedOrder.vehicle!.plateNo,
+                                    make: searchedOrder.vehicle!.make,
+                                    model: searchedOrder.vehicle!.model,
+                                  )
+                                : null,
+                            jobsCount: 0, 
+                          );
+
+                          return OrderItemCard(order: posOrder, isTablet: isTablet);
+                        },
+                      ),
+                  ],
+                ),
               ),
-          ],
-        ),
+              if (isLoading)
+                Positioned.fill(
+                  child: Container(
+                    color: const Color(0xFFFBF9F6).withValues(alpha: 0.8),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryLight,
+                        strokeWidth: 3,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }
       ),
     );
   }
@@ -115,24 +139,31 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+            spreadRadius: -2,
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primaryLight.withOpacity(0.1),
-              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [AppColors.primaryLight.withValues(alpha: 0.2), AppColors.primaryLight.withValues(alpha: 0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2), width: 1.5),
             ),
-            child: Icon(Icons.person, color: AppColors.primaryLight, size: 32),
+            child: Icon(Icons.person_rounded, color: AppColors.primaryLight, size: 36),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -200,26 +231,11 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     );
   }
 
-  Widget _buildFocusedOrderCard() {
-    if (_invoiceFuture == null || widget.focusOrderId == null) return const SizedBox.shrink();
+  Widget _buildFocusedOrderCard(Invoice invoice) {
+    if (widget.focusOrderId == null) return const SizedBox.shrink();
 
-    return FutureBuilder<CreateInvoiceResponse?>(
-      future: _invoiceFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 40),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        
-        final invoice = snapshot.data?.invoice;
-        if (invoice == null || invoice.items.isEmpty) {
-          return const SizedBox.shrink(); 
-        }
-
-        // Find the matching searched order for extra details like visit date, status
-        final searchedOrder = widget.customer.orders.firstWhere(
+    // Find the matching searched order for extra details like visit date, status
+    final searchedOrder = widget.customer.orders.firstWhere(
           (o) => o.id == widget.focusOrderId,
           orElse: () => widget.customer.orders.first,
         );
@@ -237,13 +253,14 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
           margin: const EdgeInsets.only(top: 24),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.3), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryLight.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: AppColors.primaryLight.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+                spreadRadius: -2,
               ),
             ],
           ),
@@ -382,8 +399,6 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
             ],
           ),
         );
-      },
-    );
   }
 
   Widget _buildDetailRow(String label, String value) {

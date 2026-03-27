@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../models/workshop_owner_models.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
+import '../../../../utils/toast_service.dart';
 
 class OwnerPromoViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
@@ -23,6 +24,9 @@ class OwnerPromoViewModel extends ChangeNotifier {
   final descriptionController = TextEditingController();
   String _discountType = 'fixed'; // 'fixed' or 'percent'
   String get discountType => _discountType;
+
+  String? _editingPromoId;
+  bool get isEditing => _editingPromoId != null;
 
   OwnerPromoViewModel({
     required this.ownerRepository,
@@ -57,11 +61,38 @@ class OwnerPromoViewModel extends ChangeNotifier {
     }
   }
 
+  void setEditPromoCode(PromoCode? p) {
+    if (p == null) {
+      _editingPromoId = null;
+      clearControllers();
+    } else {
+      _editingPromoId = p.id;
+      codeController.text = p.code;
+      _discountType = p.discountType;
+      discountValueController.text = p.discountValue.toString();
+      validFromController.text = p.validFrom.split('T').first;
+      validToController.text = p.validTo.split('T').first;
+      usageLimitController.text = p.usageLimit.toString();
+      minOrderAmountController.text = p.minOrderAmount.toString();
+      descriptionController.text = p.description ?? '';
+    }
+    notifyListeners();
+  }
+
+  void clearControllers() {
+    codeController.clear();
+    discountValueController.clear();
+    validFromController.clear();
+    validToController.clear();
+    usageLimitController.clear();
+    minOrderAmountController.clear();
+    descriptionController.clear();
+    _discountType = 'fixed';
+  }
+
   Future<void> submitPromoCode(BuildContext context) async {
     if (codeController.text.trim().isEmpty || discountValueController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill required fields (Code, Value)')),
-      );
+      ToastService.showInfo(context, 'Please fill required fields (Code, Value)');
       return;
     }
 
@@ -83,32 +114,50 @@ class OwnerPromoViewModel extends ChangeNotifier {
         "description": descriptionController.text.trim()
       };
 
-      final response = await ownerRepository.createPromoCode(token, data);
+      final response = _editingPromoId == null
+          ? await ownerRepository.createPromoCode(token, data)
+          : await ownerRepository.updatePromoCode(token, _editingPromoId!, data);
       
       if (response != null && response['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Promo Code created successfully!'), backgroundColor: Colors.green),
+        ToastService.showSuccess(
+          context, 
+          _editingPromoId == null ? 'Promo Code created successfully!' : 'Promo Code updated successfully!'
         );
         Navigator.pop(context); // Close sheet
         
         // Clear fields
-        codeController.clear();
-        discountValueController.clear();
-        validFromController.clear();
-        validToController.clear();
-        usageLimitController.clear();
-        minOrderAmountController.clear();
-        descriptionController.clear();
+        setEditPromoCode(null);
         
         // Refresh list
         fetchPromoCodes();
       } else {
-        throw Exception(response?['message'] ?? 'Failed to create promo code');
+        throw Exception(response?['message'] ?? 'Failed to process promo code');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
-      );
+      ToastService.showError(context, e.toString());
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deletePromoCode(BuildContext context, String id) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token == null) throw Exception('No token found');
+
+      final response = await ownerRepository.deletePromoCode(token, id);
+      if (response != null && response['success'] == true) {
+        ToastService.showSuccess(context, 'Promo Code deleted successfully!');
+        fetchPromoCodes();
+      } else {
+        throw Exception(response?['message'] ?? 'Failed to delete promo code');
+      }
+    } catch (e) {
+      ToastService.showError(context, e.toString());
     } finally {
       _isLoading = false;
       notifyListeners();

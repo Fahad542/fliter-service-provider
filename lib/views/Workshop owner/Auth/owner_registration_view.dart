@@ -39,6 +39,7 @@ class _OwnerRegistrationViewContentState extends State<_OwnerRegistrationViewCon
 
   Future<void> _handleRegistration() async {
     final viewModel = context.read<OwnerRegistrationViewModel>();
+    if (!viewModel.formKey.currentState!.validate()) return;
     final success = await viewModel.register();
     if (success) {
       if (mounted) {
@@ -61,144 +62,167 @@ class _OwnerRegistrationViewContentState extends State<_OwnerRegistrationViewCon
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // Yellow header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: CustomAuthHeader(
-              title: 'Create Account',
-              subtitle: 'Register your workshop',
-              showBackButton: true,
-              height: MediaQuery.of(context).size.height * (isTablet ? 0.32 : 0.35),
-            ),
-          ),
-
-          // Floating white card
-          Positioned(
-            top: MediaQuery.of(context).size.height * (isTablet ? 0.28 : 0.29),
-            left: horizontalPadding,
-            right: horizontalPadding,
-            bottom: 0,
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 24),
-                padding: EdgeInsets.all(isTablet ? 48 : 24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+      body: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Yellow header
+                CustomAuthHeader(
+                  title: 'Create Account',
+                  subtitle: 'Register your workshop',
+                  showBackButton: true,
+                  height: MediaQuery.of(context).size.height *
+                      (isTablet ? 0.32 : 0.35),
                 ),
-                child: Form(
-                  key: viewModel.formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        label: 'Workshop Name',
-                        hint: 'Enter workshop name',
-                        controller: viewModel.workshopNameController,
-                        prefixIcon: const Icon(Icons.store_rounded),
-                        validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        label: 'Owner Name',
-                        hint: 'Enter full name',
-                        controller: viewModel.ownerNameController,
-                        prefixIcon: const Icon(Icons.person_rounded),
-                        validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        label: 'Email Address',
-                        hint: 'Enter email address',
-                        controller: viewModel.emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        prefixIcon: const Icon(Icons.email_rounded),
-                        validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        label: 'Mobile Number',
-                        hint: '+966...',
-                        controller: viewModel.mobileController,
-                        keyboardType: TextInputType.phone,
-                        prefixIcon: const Icon(Icons.phone_rounded),
-                        validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        label: 'Tax ID',
-                        hint: 'Enter Tax ID',
-                        controller: viewModel.taxIdController,
-                        prefixIcon: const Icon(Icons.assignment_rounded),
-                        validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        label: 'Address',
-                        hint: 'Enter full address',
-                        controller: viewModel.addressController,
-                        prefixIcon: const Icon(Icons.location_on_rounded),
-                        validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        label: 'Password',
-                        hint: 'Create a password',
-                        controller: viewModel.passwordController,
-                        obscureText: viewModel.obscurePassword,
-                        prefixIcon: const Icon(Icons.lock_rounded),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            viewModel.obscurePassword
-                                ? Icons.visibility_off_rounded
-                                : Icons.visibility_rounded,
+                // Floating white card
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).size.height *
+                        (isTablet ? 0.25 : 0.26),
+                    left: horizontalPadding,
+                    right: horizontalPadding,
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.all(isTablet ? 48 : 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: viewModel.formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            label: 'Workshop Name',
+                            hint: 'Enter workshop name',
+                            controller: viewModel.workshopNameController,
+                            prefixIcon: const Icon(Icons.store_rounded),
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Required'
+                                    : null,
                           ),
-                          onPressed: viewModel.togglePasswordVisibility,
-                        ),
-                        validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
-                      ),
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        width: double.infinity,
-                        child: CustomButton(
-                          text: 'Register',
-                          isLoading: viewModel.isLoading,
-                          onPressed: _handleRegistration,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Center(
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Text(
-                            "Already have an account? Sign in",
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.backgroundDark,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Owner Name',
+                            hint: 'Enter full name',
+                            controller: viewModel.ownerNameController,
+                            prefixIcon: const Icon(Icons.person_rounded),
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Required'
+                                    : null,
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Email Address',
+                            hint: 'Enter email address',
+                            controller: viewModel.emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            prefixIcon: const Icon(Icons.email_rounded),
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Required'
+                                    : null,
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Mobile Number',
+                            hint: '+966...',
+                            controller: viewModel.mobileController,
+                            keyboardType: TextInputType.phone,
+                            prefixIcon: const Icon(Icons.phone_rounded),
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Required'
+                                    : null,
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Tax ID',
+                            hint: 'Enter Tax ID',
+                            controller: viewModel.taxIdController,
+                            prefixIcon: const Icon(Icons.assignment_rounded),
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Required'
+                                    : null,
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Address',
+                            hint: 'Enter full address',
+                            controller: viewModel.addressController,
+                            prefixIcon: const Icon(Icons.location_on_rounded),
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Required'
+                                    : null,
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Password',
+                            hint: 'Create a password',
+                            controller: viewModel.passwordController,
+                            obscureText: viewModel.obscurePassword,
+                            prefixIcon: const Icon(Icons.lock_rounded),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                viewModel.obscurePassword
+                                    ? Icons.visibility_off_rounded
+                                    : Icons.visibility_rounded,
+                              ),
+                              onPressed: viewModel.togglePasswordVisibility,
+                            ),
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Required'
+                                    : null,
+                          ),
+                          const SizedBox(height: 32),
+                          SizedBox(
+                            width: double.infinity,
+                            child: CustomButton(
+                              text: 'Register',
+                              isLoading: viewModel.isLoading,
+                              onPressed: _handleRegistration,
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 24),
+                          Center(
+                            child: GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Text(
+                                "Already have an account? Sign in",
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.backgroundDark,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }

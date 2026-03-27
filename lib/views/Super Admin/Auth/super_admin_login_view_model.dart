@@ -47,17 +47,35 @@ class SuperAdminLoginViewModel extends ChangeNotifier {
     _setErrorMessage(null);
 
     try {
-      // Mock login since API doesn't exist yet
-      await Future.delayed(const Duration(seconds: 1));
+      final response = await _authRepository.superAdminLogin(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+      debugPrint('Super Admin Login Response: token=${response.token}, user=${response.user?.toJson()}');
       
-      // Simulate success and let the view handle navigation
+      if (response.success != true) {
+        _setErrorMessage(response.message ?? 'Login failed');
+        _setLoading(false);
+        return false;
+      }
+
+      await _sessionService.saveSession(response, role: 'super_admin');
+      
+      // Verify session was saved
+      final savedToken = await _sessionService.getToken(role: 'super_admin');
+      debugPrint('Super Admin Saved Token: $savedToken');
+      
       _setLoading(false);
-      return true;
+      return savedToken != null;
     } catch (e) {
       _setErrorMessage(e.toString());
       _setLoading(false);
       return false;
     }
+  }
+
+  Future<bool> checkSession() async {
+    return await _sessionService.isLoggedIn(role: 'super_admin');
   }
 
   void clear() {

@@ -33,6 +33,11 @@ class _SuppliersViewState extends State<SuppliersView> with SingleTickerProvider
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<SuppliersViewModel>(context, listen: false).initData();
+      }
+    });
   }
 
   @override
@@ -64,35 +69,55 @@ class _SuppliersViewState extends State<SuppliersView> with SingleTickerProvider
               label: const Text('New Purchase', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-      body: Column(
-        children: [
-          _buildSummaryRow(),
-          _buildTabBar(),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [_buildSupplierList(), _buildInvoiceList()],
-            ),
-          ),
-        ],
+      body: Consumer<SuppliersViewModel>(
+        builder: (context, vm, child) {
+          if (vm.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryLight),
+            );
+          }
+          return Column(
+            children: [
+              _buildSummaryRow(vm),
+              _buildTabBar(),
+              const SizedBox(height: 12),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [_buildSupplierList(), _buildInvoiceList()],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSummaryRow() {
-    final totalOutstanding = _suppliers.fold(0.0, (s, sup) => s + sup.outstanding);
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          _buildStatCard('Suppliers', '${_suppliers.length}', Icons.store_rounded, AppColors.primaryLight),
-          const SizedBox(width: 12),
-          _buildStatCard('Outstanding', 'SAR ${totalOutstanding.toInt()}', Icons.account_balance_wallet_rounded, Colors.orange),
-          const SizedBox(width: 12),
-          _buildStatCard('Pending POs', '${_invoices.where((i) => i.status == 'pending').length}', Icons.pending_rounded, Colors.red),
-        ],
-      ),
-    );
+  Widget _buildSummaryRow(SuppliersViewModel vm) {
+    final stats = vm.stats;
+        // Fallback to local mock calculate if API fails or hasn't loaded yet,
+        // though normally it would show 0 or a skeleton loader.
+        final totalSuppliers = stats?.totalSuppliers ?? vm.suppliersList.length;
+        final totalOutstanding = stats?.totalOutstanding ?? vm.suppliersList.fold<double>(0.0, (s, sup) => s + sup.outstanding);
+        final pendingPOs = stats?.pendingPurchaseOrders ?? _invoices.where((i) => i.status == 'pending').length;
+        final currency = stats?.currencyCode ?? 'SAR';
+
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildStatCard('Suppliers', '$totalSuppliers', Icons.store_rounded, AppColors.primaryLight),
+                const SizedBox(width: 12),
+                _buildStatCard('Outstanding', '$currency ${totalOutstanding.toInt()}', Icons.account_balance_wallet_rounded, Colors.orange),
+                const SizedBox(width: 12),
+                _buildStatCard('Pending POs', '$pendingPOs', Icons.pending_rounded, Colors.red),
+              ],
+            ),
+          ),
+        );
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
@@ -144,65 +169,78 @@ class _SuppliersViewState extends State<SuppliersView> with SingleTickerProvider
   }
 
   Widget _buildSupplierList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _suppliers.length,
-      itemBuilder: (context, index) {
-        final s = _suppliers[index];
-        final isInternal = s.category == 'Internal';
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.grey.withOpacity(0.08)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isInternal ? AppColors.primaryLight.withOpacity(0.15) : AppColors.secondaryLight.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(isInternal ? Icons.warehouse_rounded : Icons.store_rounded, color: isInternal ? AppColors.primaryLight : AppColors.secondaryLight, size: 22),
+    return Consumer<SuppliersViewModel>(
+      builder: (context, vm, child) {
+        if (vm.suppliersList.isEmpty) {
+          return const Center(child: Text('No suppliers found', style: TextStyle(color: Colors.grey)));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: vm.suppliersList.length,
+          itemBuilder: (context, index) {
+            final s = vm.suppliersList[index];
+            final isInternal = s.category == 'Internal';
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.grey.withOpacity(0.08)),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isInternal ? AppColors.primaryLight.withOpacity(0.15) : AppColors.secondaryLight.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(isInternal ? Icons.warehouse_rounded : Icons.store_rounded, color: isInternal ? AppColors.primaryLight : AppColors.secondaryLight, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(s.name, style: AppTextStyles.h2.copyWith(fontSize: 14, color: AppColors.secondaryLight)),
-                        if (isInternal) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: AppColors.primaryLight.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
-                            child: const Text('INTERNAL', style: TextStyle(color: AppColors.primaryLight, fontSize: 8, fontWeight: FontWeight.w900)),
-                          ),
-                        ],
+                        Row(
+                          children: [
+                            Text(s.name.isNotEmpty ? s.name : 'Unknown', style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight)),
+                            if (isInternal) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: AppColors.primaryLight.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                                child: const Text('INTERNAL', style: TextStyle(color: AppColors.primaryLight, fontSize: 8, fontWeight: FontWeight.w900)),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          (s.address != null && s.address!.isNotEmpty) ? s.address! : s.category,
+                          style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(s.category, style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
-                  ],
-                ),
+                  ),
+                  if (s.outstanding > 0)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('SAR ${s.outstanding.toInt()}', style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w900, fontSize: 15)),
+                        const Text('Outstanding', style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                ],
               ),
-              if (s.outstanding > 0)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('SAR ${s.outstanding.toInt()}', style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w900, fontSize: 13)),
-                    const Text('Outstanding', style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -238,16 +276,16 @@ class _SuppliersViewState extends State<SuppliersView> with SingleTickerProvider
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(inv.id, style: AppTextStyles.h2.copyWith(fontSize: 14, color: AppColors.secondaryLight)),
+                    Text(inv.id, style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight)),
                     const SizedBox(height: 2),
-                    Text(inv.supplierName, style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
+                    Text(inv.supplierName, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('SAR ${inv.totalAmount.toInt()}', style: AppTextStyles.h2.copyWith(fontSize: 14, color: AppColors.secondaryLight)),
+                  Text('SAR ${inv.totalAmount.toInt()}', style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight)),
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -268,7 +306,10 @@ class _SuppliersViewState extends State<SuppliersView> with SingleTickerProvider
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const _NewPurchaseSheet(),
+      builder: (sheetContext) => ChangeNotifierProvider.value(
+        value: context.read<SuppliersViewModel>(),
+        child: const _NewPurchaseSheet(),
+      ),
     );
   }
 
@@ -303,13 +344,13 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.55,
       decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _buildHandle(),
           _buildStepIndicator(),
-          Expanded(child: _buildStepContent()),
+          Flexible(child: _buildStepContent()),
           _buildNavButtons(),
         ],
       ),
@@ -331,30 +372,47 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Row(
-        children: List.generate(steps.length, (i) {
+        children: List.generate(steps.length * 2 - 1, (index) {
+          if (index.isOdd) {
+            final stepIndex = index ~/ 2;
+            return Expanded(
+              child: Container(
+                height: 1,
+                color: stepIndex < _step ? Colors.green : Colors.grey.shade200,
+                margin: const EdgeInsets.only(bottom: 16),
+              ),
+            );
+          }
+          final i = index ~/ 2;
           final isActive = i == _step;
           final isDone = i < _step;
-          return Expanded(
-            child: Row(
-              children: [
-                Column(
-                  children: [
-                    Container(
-                      width: 28, height: 28,
-                      decoration: BoxDecoration(
-                        color: isDone ? Colors.green : isActive ? AppColors.primaryLight : Colors.grey.shade200,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(child: isDone ? const Icon(Icons.check, color: Colors.white, size: 14) : Text('${i + 1}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: isActive ? AppColors.secondaryLight : Colors.grey))),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(steps[i], style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isActive ? AppColors.secondaryLight : Colors.grey)),
-                  ],
+          return Column(
+            children: [
+              Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  color: isDone ? Colors.green : isActive ? AppColors.primaryLight : Colors.grey.shade200,
+                  shape: BoxShape.circle,
                 ),
-                if (i < steps.length - 1)
-                  Expanded(child: Container(height: 1, color: i < _step ? Colors.green : Colors.grey.shade200, margin: const EdgeInsets.only(bottom: 16))),
-              ],
-            ),
+                child: Center(
+                  child: isDone
+                      ? const Icon(Icons.check, color: Colors.white, size: 14)
+                      : Text('${i + 1}',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              color: isActive ? AppColors.secondaryLight : Colors.grey)),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                steps[i],
+                style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: isActive ? AppColors.secondaryLight : Colors.grey),
+              ),
+            ],
           );
         }),
       ),
@@ -362,13 +420,14 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
   }
 
   Widget _buildStepContent() {
+    final vm = Provider.of<SuppliersViewModel>(context, listen: false);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: _step == 0 ? _buildStep1() : _step == 1 ? _buildStep2() : _buildStep3(),
+      child: _step == 0 ? _buildStep1(vm) : _step == 1 ? _buildStep2() : _buildStep3(),
     );
   }
 
-  Widget _buildStep1() {
+  Widget _buildStep1(SuppliersViewModel vm) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -376,11 +435,14 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
         const SizedBox(height: 6),
         const Text('Choose from your registered suppliers.', style: TextStyle(color: Colors.grey, fontSize: 13)),
         const SizedBox(height: 24),
-        ..._suppliers.map((s) {
-          final isInternal = s == 'Internal Warehouse';
-          final isSelected = _selectedSupplier == s;
+        if (vm.suppliersList.isEmpty)
+          const Center(child: Text('No suppliers found', style: TextStyle(color: Colors.grey))),
+        ...vm.suppliersList.map((supplier) {
+          final sName = supplier.name;
+          final isInternal = sName.toLowerCase().contains('internal');
+          final isSelected = _selectedSupplier == sName;
           return GestureDetector(
-            onTap: () => setState(() => _selectedSupplier = s),
+            onTap: () => setState(() => _selectedSupplier = sName),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.only(bottom: 12),
@@ -394,7 +456,7 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
                 children: [
                   Icon(isInternal ? Icons.warehouse_rounded : Icons.store_rounded, color: isSelected ? AppColors.primaryLight : Colors.grey, size: 22),
                   const SizedBox(width: 14),
-                  Text(s, style: TextStyle(fontWeight: FontWeight.w700, color: isSelected ? AppColors.secondaryLight : Colors.grey.shade700)),
+                  Text(sName, style: TextStyle(fontWeight: FontWeight.w700, color: isSelected ? AppColors.secondaryLight : Colors.grey.shade700)),
                   if (isInternal) ...[
                     const SizedBox(width: 8),
                     Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.primaryLight.withOpacity(0.15), borderRadius: BorderRadius.circular(6)), child: const Text('INTERNAL', style: TextStyle(color: AppColors.primaryLight, fontSize: 8, fontWeight: FontWeight.w900))),
@@ -431,20 +493,74 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
 
   Widget _buildItemRow(int index, Map<String, dynamic> item) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: const Color(0xFFF8F9FD), borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
       child: Column(
         children: [
-          TextField(
-            decoration: const InputDecoration(labelText: 'Product Name', border: InputBorder.none, isDense: true),
-            style: const TextStyle(fontWeight: FontWeight.w700),
-            onChanged: (v) => setState(() => _items[index]['name'] = v),
-          ),
           Row(
             children: [
-              Expanded(child: TextField(decoration: const InputDecoration(labelText: 'Qty', border: InputBorder.none, isDense: true), keyboardType: TextInputType.number, onChanged: (v) => setState(() => _items[index]['qty'] = v))),
-              Expanded(child: TextField(decoration: const InputDecoration(labelText: 'Unit Price', border: InputBorder.none, isDense: true), keyboardType: TextInputType.number, onChanged: (v) => setState(() => _items[index]['price'] = v))),
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    labelText: 'Product Name',
+                    hintText: 'e.g. Engine Oil',
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FD),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  onChanged: (v) => setState(() => _items[index]['name'] = v),
+                ),
+              ),
+              if (_items.length > 1) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => setState(() => _items.removeAt(index)),
+                  icon: const Icon(Icons.remove_circle, color: Colors.redAccent),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    labelText: 'Qty',
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FD),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) => setState(() => _items[index]['qty'] = v),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    labelText: 'Unit Price',
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FD),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    prefixText: 'SAR ',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) => setState(() => _items[index]['price'] = v),
+                ),
+              ),
             ],
           ),
         ],
@@ -491,35 +607,32 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
   }
 
   Widget _buildNavButtons() {
+    final vm = Provider.of<SuppliersViewModel>(context, listen: false);
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
       child: Row(
         children: [
           if (_step > 0)
             Expanded(
-              child: OutlinedButton(
+              child: ElevatedButton(
                 onPressed: () => setState(() => _step--),
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                child: const Text('Back'),
-              ),
-            ),
-          if (_step > 0) const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                if (_step < 2) {
-                  setState(() => _step++);
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _step == 2 ? Colors.green : AppColors.secondaryLight,
-                minimumSize: const Size.fromHeight(52),
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: Text(_step == 2 ? 'Submit for Approval' : 'Next', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  disabledBackgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
+                  disabledForegroundColor: AppColors.secondaryLight,
+                  minimumSize: const Size.fromHeight(56),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: vm.isLoading && _step == 2
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Text(_step == 2 ? 'Submit' : 'Next', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15)),
             ),
           ),
         ],
@@ -528,8 +641,15 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
   }
 }
 
-class _AddSupplierSheet extends StatelessWidget {
+class _AddSupplierSheet extends StatefulWidget {
   const _AddSupplierSheet();
+
+  @override
+  State<_AddSupplierSheet> createState() => _AddSupplierSheetState();
+}
+
+class _AddSupplierSheetState extends State<_AddSupplierSheet> {
+  bool _isPasswordVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -537,56 +657,86 @@ class _AddSupplierSheet extends StatelessWidget {
 
     return FocusScope(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.55,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 5,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
+            _buildHandle(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Register New Supplier', style: AppTextStyles.h2.copyWith(fontSize: 22)),
+                    Text('Register New Supplier', style: AppTextStyles.h2.copyWith(fontSize: 18)),
                     const SizedBox(height: 8),
                     const Text('Provide details to add a new supplier.', style: TextStyle(color: Colors.grey)),
                     const SizedBox(height: 30),
+
                     _buildTextField('Supplier Name', Icons.business_rounded, vm.nameController),
                     _buildTextField('Email Address', Icons.email_rounded, vm.emailController),
                     _buildTextField('Mobile Number', Icons.phone_android_rounded, vm.mobileController),
                     _buildTextField('Address', Icons.map_rounded, vm.addressController),
                     _buildTextField('Opening Balance', Icons.account_balance_wallet_rounded, vm.openingBalanceController, isNumber: true),
-                    _buildTextField('Password', Icons.lock_rounded, vm.passwordController, obscureText: true),
-                    const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: vm.isLoading ? null : () => vm.submitSupplierForm(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryLight,
-                        minimumSize: const Size.fromHeight(56),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: vm.isLoading
-                          ? const CircularProgressIndicator(color: AppColors.secondaryLight)
-                          : const Text(
-                              'Save Supplier',
-                              style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
+                    
+                    // Password field with visibility toggle
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: TextField(
+                        controller: vm.passwordController,
+                        obscureText: !_isPasswordVisible,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: const Icon(Icons.lock_rounded, color: AppColors.secondaryLight, size: 20),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                              color: Colors.grey,
+                              size: 20,
                             ),
+                            onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.withOpacity(0.05),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 20),
                   ],
                 ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: ElevatedButton(
+                onPressed: vm.isActionLoading ? null : () => vm.submitSupplierForm(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  disabledBackgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
+                  disabledForegroundColor: AppColors.secondaryLight,
+                  minimumSize: const Size.fromHeight(56),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: vm.isActionLoading
+                    ? const CircularProgressIndicator(color: AppColors.secondaryLight)
+                    : const Text(
+                        'Save Supplier',
+                        style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
               ),
             ),
           ],
@@ -595,12 +745,22 @@ class _AddSupplierSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String label, IconData icon, TextEditingController controller, {bool isNumber = false, bool obscureText = false}) {
+  Widget _buildHandle() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        width: 40,
+        height: 5,
+        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, IconData icon, TextEditingController controller, {bool isNumber = false}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
-        obscureText: obscureText,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
@@ -611,7 +771,7 @@ class _AddSupplierSheet extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
-          labelStyle: const TextStyle(color: Colors.grey),
+          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ),
     );

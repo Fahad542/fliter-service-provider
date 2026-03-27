@@ -6,9 +6,14 @@ import 'reports_management_view_model.dart';
 import '../widgets/owner_app_bar.dart';
 import '../owner_shell.dart';
 
-class ReportsManagementView extends StatelessWidget {
+class ReportsManagementView extends StatefulWidget {
   const ReportsManagementView({super.key});
 
+  @override
+  State<ReportsManagementView> createState() => _ReportsManagementViewState();
+}
+
+class _ReportsManagementViewState extends State<ReportsManagementView> {
   @override
   Widget build(BuildContext context) {
     return Consumer<ReportsManagementViewModel>(
@@ -99,7 +104,7 @@ class ReportsManagementView extends StatelessWidget {
           const SizedBox(height: 24),
           // Dynamic Bar Chart from dailyRev
           SizedBox(
-            height: 120, // Increased height to accommodate the value text
+            height: 135, // Increased height to prevent bottom overflow
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,

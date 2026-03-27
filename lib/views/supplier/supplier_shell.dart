@@ -21,6 +21,7 @@ import 'StaffRoles/supplier_staff_roles_view.dart';
 import 'Login/supplier_login_view.dart';
 import '../../services/session_service.dart';
 import '../Menu/menu_view.dart';
+import '../../utils/restart_widget.dart';
 
 class SupplierShell extends StatefulWidget {
   const SupplierShell({super.key});
@@ -404,10 +405,7 @@ class _SupplierShellState extends State<SupplierShell> {
                         await session.clearSession(role: 'supplier');
                         await session.saveLastPortal('');
                         if (mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const MenuView()),
-                            (route) => false,
-                          );
+                          RestartWidget.restartApp(context);
                         }
                       },
                       style: ElevatedButton.styleFrom(

@@ -14,10 +14,13 @@ class AuthResponse {
       if (json['branch'] != null) userJson['branch'] = json['branch'];
     }
 
+    // Support both 'token' and 'accessToken' field names
+    final token = json['token'] ?? json['accessToken'];
+
     return AuthResponse(
       success: json['success'],
       message: json['message'],
-      token: json['token'],
+      token: token?.toString(),
       user: userJson != null ? User.fromJson(userJson) : null,
     );
   }
@@ -42,6 +45,8 @@ class User {
   final String? workshopName;
   final String? branchName;
   final Cashier? cashier;
+  final TechnicianData? technician;
+  final Workshop? workshop;
 
   User({
     this.id,
@@ -53,6 +58,8 @@ class User {
     this.workshopName,
     this.branchName,
     this.cashier,
+    this.technician,
+    this.workshop,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -61,7 +68,7 @@ class User {
     final branchObj = json['branch'] is Map ? json['branch'] : null;
 
     return User(
-      id: json['id'],
+      id: json['id']?.toString(),
       name: json['name'],
       email: json['email'],
       userType: json['userType'],
@@ -70,6 +77,8 @@ class User {
       workshopName: json['workshopName'] ?? json['workshop_name'] ?? workshopObj?['name'],
       branchName: json['branchName'] ?? json['branch_name'] ?? branchObj?['name'],
       cashier: json['cashier'] != null ? Cashier.fromJson(json['cashier']) : null,
+      technician: json['technician'] != null ? TechnicianData.fromJson(json['technician']) : null,
+      workshop: json['workshop'] != null ? Workshop.fromJson(json['workshop'] is Map<String, dynamic> ? json['workshop'] : {}) : null,
     );
   }
 
@@ -84,6 +93,8 @@ class User {
       'workshopName': workshopName,
       'branchName': branchName,
       'cashier': cashier?.toJson(),
+      'technician': technician?.toJson(),
+      'workshop': workshop?.toJson(),
     };
   }
 }
@@ -108,6 +119,82 @@ class Cashier {
       'cashierId': cashierId,
       'cashierName': cashierName,
       'branchId': branchId,
+    };
+  }
+}
+
+class TechnicianData {
+  final String? employeeId;
+  final String? technicianType;
+  final int? commissionPercent;
+  final List<Department>? departments;
+
+  TechnicianData({
+    this.employeeId,
+    this.technicianType,
+    this.commissionPercent,
+    this.departments,
+  });
+
+  factory TechnicianData.fromJson(Map<String, dynamic> json) {
+    return TechnicianData(
+      employeeId: json['employeeId']?.toString(),
+      technicianType: json['technicianType'],
+      commissionPercent: json['commissionPercent'] is int ? json['commissionPercent'] : int.tryParse(json['commissionPercent']?.toString() ?? ''),
+      departments: json['departments'] != null
+          ? (json['departments'] as List).map((i) => Department.fromJson(i)).toList()
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'employeeId': employeeId,
+      'technicianType': technicianType,
+      'commissionPercent': commissionPercent,
+      'departments': departments?.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+class Department {
+  final String? id;
+  final String? name;
+
+  Department({this.id, this.name});
+
+  factory Department.fromJson(Map<String, dynamic> json) {
+    return Department(
+      id: json['id']?.toString(),
+      name: json['name'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
+}
+
+class Workshop {
+  final String? id;
+  final String? name;
+
+  Workshop({this.id, this.name});
+
+  factory Workshop.fromJson(Map<String, dynamic> json) {
+    return Workshop(
+      id: json['id']?.toString(),
+      name: json['name'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
     };
   }
 }

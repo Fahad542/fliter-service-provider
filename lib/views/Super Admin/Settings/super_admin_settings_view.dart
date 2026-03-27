@@ -4,6 +4,7 @@ import '../../../utils/app_colors.dart';
 import 'super_admin_settings_view_model.dart';
 import '../../../services/session_service.dart';
 import '../../Menu/menu_view.dart';
+import '../../../utils/restart_widget.dart';
 
 class SuperAdminSettingsView extends StatelessWidget {
   const SuperAdminSettingsView({super.key});
@@ -253,10 +254,7 @@ class _SuperAdminSettingsContentState extends State<_SuperAdminSettingsContent> 
                         await session.clearSession(role: 'admin');
                         await session.saveLastPortal('');
                         if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const MenuView()),
-                            (route) => false,
-                          );
+                          RestartWidget.restartApp(context);
                         }
                       },
                       style: ElevatedButton.styleFrom(

@@ -27,6 +27,7 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
 
   Future<void> _handleLogin() async {
     final viewModel = context.read<OwnerLoginViewModel>();
+    if (!viewModel.formKey.currentState!.validate()) return;
     final success = await viewModel.login();
     if (success) {
       if (mounted) {
@@ -53,133 +54,138 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // Yellow header — same as POS Login
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: CustomAuthHeader(
-              title: 'Workshop Owner',
-              subtitle: 'Sign in to your dashboard',
-              showBackButton: true,
-              height: MediaQuery.of(context).size.height * (isTablet ? 0.37 : 0.42),
-            ),
-          ),
-
-          // Floating white card
-          Positioned(
-            top: MediaQuery.of(context).size.height * (isTablet ? 0.26 : 0.27),
-            left: horizontalPadding,
-            right: horizontalPadding,
-            bottom: 0,
-            child: SingleChildScrollView(
-              child: Container(
-                padding: EdgeInsets.all(isTablet ? 60 : 24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+      body: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Yellow header — same as POS Login
+                CustomAuthHeader(
+                  title: 'Workshop Owner',
+                  subtitle: 'Sign in to your dashboard',
+                  showBackButton: true,
+                  height: MediaQuery.of(context).size.height *
+                      (isTablet ? 0.37 : 0.42),
                 ),
-                child: Form(
-                  key: viewModel.formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        label: 'Email',
-                        hint: 'Enter your email',
-                        controller: viewModel.emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        prefixIcon: const Icon(Icons.email_outlined),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        label: 'Password',
-                        hint: 'Enter your password',
-                        controller: viewModel.passwordController,
-                        obscureText: viewModel.obscurePassword,
-                        prefixIcon: const Icon(Icons.lock_outline_rounded),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            viewModel.obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
+                // Floating white card
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).size.height *
+                        (isTablet ? 0.26 : 0.27),
+                    left: horizontalPadding,
+                    right: horizontalPadding,
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.all(isTablet ? 60 : 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: viewModel.formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            label: 'Email',
+                            hint: 'Enter your email',
+                            controller: viewModel.emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email';
+                              }
+                              return null;
+                            },
                           ),
-                          onPressed: viewModel.togglePasswordVisibility,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Forgot Password?',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.primaryLight,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: CustomButton(
-                          text: 'Sign In',
-                          isLoading: viewModel.isLoading,
-                          onPressed: _handleLogin,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const OwnerRegistrationView(),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            label: 'Password',
+                            hint: 'Enter your password',
+                            controller: viewModel.passwordController,
+                            obscureText: viewModel.obscurePassword,
+                            prefixIcon: const Icon(Icons.lock_outline_rounded),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                viewModel.obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
                               ),
-                            );
-                          },
-                          child: Text(
-                            "Don't have an account? Sign up",
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.backgroundDark,
-                              fontWeight: FontWeight.w600,
+                              onPressed: viewModel.togglePasswordVisibility,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your password';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {},
+                              child: Text(
+                                'Forgot Password?',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.primaryLight,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: CustomButton(
+                              text: 'Sign In',
+                              isLoading: viewModel.isLoading,
+                              onPressed: _handleLogin,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Center(
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const OwnerRegistrationView(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                "Don't have an account? Sign up",
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.backgroundDark,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }

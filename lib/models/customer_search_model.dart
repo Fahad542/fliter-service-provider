@@ -63,6 +63,7 @@ class SearchedCustomerOrder {
   final int odometerReading;
   final String createdAt;
   final SearchedCustomerVehicle? vehicle;
+  final String? invoiceNo;
 
   SearchedCustomerOrder({
     required this.id,
@@ -71,6 +72,7 @@ class SearchedCustomerOrder {
     required this.odometerReading,
     required this.createdAt,
     this.vehicle,
+    this.invoiceNo,
   });
 
   factory SearchedCustomerOrder.fromJson(Map<String, dynamic> json) {
@@ -83,6 +85,7 @@ class SearchedCustomerOrder {
       vehicle: json['vehicle'] != null
           ? SearchedCustomerVehicle.fromJson(json['vehicle'])
           : null,
+      invoiceNo: json['invoiceNo']?.toString() ?? json['invoice_no']?.toString() ?? json['invoiceId']?.toString() ?? json['invoice_id']?.toString(),
     );
   }
 }

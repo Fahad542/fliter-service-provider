@@ -209,8 +209,8 @@ class _SuperAdminCorporateContentState extends State<_SuperAdminCorporateContent
     );
   }
 
-  Widget _buildClientCard(BuildContext context, Map<String, dynamic> client) {
-    final isActive = client['status'] == 'Active';
+  Widget _buildClientCard(BuildContext context, dynamic client) {
+    final isActive = client.isActive;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -236,7 +236,7 @@ class _SuperAdminCorporateContentState extends State<_SuperAdminCorporateContent
                 ),
                 child: Center(
                   child: Text(
-                    client['logo'] ?? 'C',
+                    client.logo,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.primaryLight),
                   ),
                 ),
@@ -248,13 +248,13 @@ class _SuperAdminCorporateContentState extends State<_SuperAdminCorporateContent
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text(client['companyName'] ?? 'Unknown Client', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.secondaryLight), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                        Expanded(child: Text(client.companyName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.secondaryLight), maxLines: 1, overflow: TextOverflow.ellipsis)),
                         const SizedBox(width: 8),
-                        _buildStatusBadge(client['status'] ?? 'Active', isActive),
+                        _buildStatusBadge(client.isActive ? 'Active' : 'Inactive', isActive),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(client['id'] ?? 'N/A', style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w700)),
+                    Text(client.id, style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
@@ -270,7 +270,7 @@ class _SuperAdminCorporateContentState extends State<_SuperAdminCorporateContent
                   Text('OUTSTANDING BALANCE', style: TextStyle(fontSize: 9, color: Colors.grey.shade400, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                   const SizedBox(height: 4),
                   Text(
-                    'SAR ${(client['balance'] ?? 0).toStringAsFixed(0)}',
+                    'SAR ${(client.balance).toStringAsFixed(0)}',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.secondaryLight),
                   ),
                 ],
@@ -281,7 +281,7 @@ class _SuperAdminCorporateContentState extends State<_SuperAdminCorporateContent
                   Text('CONTACT PERSON', style: TextStyle(fontSize: 9, color: Colors.grey.shade400, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                   const SizedBox(height: 4),
                   Text(
-                    client['contactPerson'] ?? 'N/A',
+                    client.contactPerson,
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.secondaryLight),
                   ),
                 ],

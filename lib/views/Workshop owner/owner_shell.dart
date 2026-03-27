@@ -20,6 +20,10 @@ import 'Departments/department_management_view.dart';
 import '../../services/session_service.dart';
 import 'package:provider/provider.dart';
 import '../Menu/menu_view.dart';
+import 'Suppliers/suppliers_view_model.dart';
+import 'Accounting/accounting_view_model.dart';
+import '../../data/repositories/owner_repository.dart';
+import '../../utils/restart_widget.dart';
 
 class OwnerShell extends StatefulWidget {
   const OwnerShell({super.key});
@@ -86,8 +90,20 @@ class OwnerShellState extends State<OwnerShell> {
     const ReportsManagementView(),   // 5
     const BillingManagementView(),   // 6
     const PosMonitoringView(),       // 7
-    const SuppliersView(),           // 8
-    const AccountingView(),          // 9
+    ChangeNotifierProvider(          // 8
+      create: (context) => SuppliersViewModel(
+        ownerRepository: context.read<OwnerRepository>(),
+        sessionService: context.read<SessionService>(),
+      ),
+      child: const SuppliersView(),
+    ),
+    ChangeNotifierProvider(          // 9
+      create: (context) => AccountingViewModel(
+        ownerRepository: context.read<OwnerRepository>(),
+        sessionService: context.read<SessionService>(),
+      ),
+      child: const AccountingView(),
+    ),
     const ApprovalsView(),           // 10
     const SizedBox(),                // 11 — overridden by _currentView (Notifications)
     const OwnerSettingsView(),       // 12
@@ -263,19 +279,19 @@ class OwnerShellState extends State<OwnerShell> {
                         await session.clearSession(role: 'owner');
                         await session.saveLastPortal('');
                         if (mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const MenuView()),
-                            (route) => false,
-                          );
+                          RestartWidget.restartApp(context);
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryLight,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text('Log out', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w800)),
+                  backgroundColor: AppColors.primaryLight,
+                  disabledBackgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
+                  disabledForegroundColor: AppColors.secondaryLight,
+                  minimumSize: const Size.fromHeight(56),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text('Log out', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w800)),
                     ),
                   ),
                 ],

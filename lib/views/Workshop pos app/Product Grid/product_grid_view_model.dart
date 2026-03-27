@@ -3,14 +3,22 @@ import '../../../../models/pos_product_model.dart';
 
 class ProductGridViewModel extends ChangeNotifier {
   String _selectedCategory = 'All';
+  String _selectedSubCategory = 'All';
   String _searchQuery = '';
   final TextEditingController searchController = TextEditingController();
 
   String get selectedCategory => _selectedCategory;
+  String get selectedSubCategory => _selectedSubCategory;
   String get searchQuery => _searchQuery;
 
   void setCategory(String category) {
     _selectedCategory = category;
+    _selectedSubCategory = 'All'; // Reset subcategory when category changes
+    notifyListeners();
+  }
+
+  void setSubCategory(String subCategory) {
+    _selectedSubCategory = subCategory;
     notifyListeners();
   }
 

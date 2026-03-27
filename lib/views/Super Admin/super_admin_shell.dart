@@ -11,10 +11,12 @@ import 'Orders/super_admin_orders_view.dart';
 import 'Finance/super_admin_finance_view.dart';
 import 'Settings/super_admin_settings_view.dart';
 import 'Reports/super_admin_reports_view.dart';
+import 'Departments/super_admin_departments_view.dart'; // newly added import
 import '../Menu/menu_view.dart';
 import '../../services/session_service.dart';
 
 import 'widgets/super_admin_bottom_bar.dart';
+import '../../utils/restart_widget.dart';
 
 class SuperAdminShell extends StatefulWidget {
   const SuperAdminShell({super.key});
@@ -75,6 +77,7 @@ class SuperAdminShellState extends State<SuperAdminShell> {
     SuperAdminFinanceView(),    // 7
     SuperAdminSettingsView(),   // 8
     SuperAdminReportsView(),    // 9
+    const SuperAdminDepartmentsView(), // 10
   ];
 
   @override
@@ -382,6 +385,7 @@ class SuperAdminShellState extends State<SuperAdminShell> {
               _buildMenuItem(2, 'Users Management', Icons.people_alt_rounded),
               _buildMenuItem(3, 'Corporate Clients', Icons.business_center_rounded),
               _buildMenuItem(4, 'Inventory / Warehouse', Icons.inventory_2_rounded),
+              _buildMenuItem(10, 'Departments', Icons.domain_rounded), // newly added tab
               _buildMenuItem(5, 'Lockers System', Icons.lock_rounded),
               _buildMenuItem(7, 'Finance & Accounts', Icons.account_balance_wallet_rounded),
               _buildMenuItem(9, 'Report & Analytics', Icons.bar_chart_rounded),
@@ -515,10 +519,7 @@ class SuperAdminShellState extends State<SuperAdminShell> {
                         await session.clearSession(role: 'admin');
                         await session.saveLastPortal('');
                         if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const MenuView()),
-                            (route) => false,
-                          );
+                          RestartWidget.restartApp(context);
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -551,6 +552,7 @@ class SuperAdminShellState extends State<SuperAdminShell> {
       case 7: return 'Finance & Accounts';
       case 8: return 'Profile';
       case 9: return 'Report & Analytics';
+      case 10: return 'Departments'; // Add the appbar title
       default: return 'Super Admin';
     }
   }

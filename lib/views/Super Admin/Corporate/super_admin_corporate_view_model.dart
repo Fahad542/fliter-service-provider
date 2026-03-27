@@ -1,73 +1,60 @@
 import 'package:flutter/material.dart';
+import '../../../models/super_admin_corporate_customers_api_model.dart';
+import '../../../data/repositories/super_admin_repository.dart';
+import '../../../services/session_service.dart';
 
 class SuperAdminCorporateViewModel extends ChangeNotifier {
+  final SuperAdminRepository _repository = SuperAdminRepository();
+  final SessionService _sessionService = SessionService();
+
   bool isLoading = false;
   String searchQuery = '';
   String statusFilter = 'All';
+  String? errorMessage;
 
-  final List<Map<String, dynamic>> _allClients = [
-    {
-      'id': 'CORP-01',
-      'companyName': 'Aramco Logistics',
-      'contactPerson': 'Faisal N.',
-      'email': 'procurement@aramco.com',
-      'phone': '+966 50 123 4567',
-      'balance': 45500.0,
-      'pendingInvoices': 3,
-      'status': 'Active',
-      'logo': 'A',
-    },
-    {
-      'id': 'CORP-02',
-      'companyName': 'STC Fleet',
-      'contactPerson': 'Saud M.',
-      'email': 'fleet@stc.com.sa',
-      'phone': '+966 55 987 6543',
-      'balance': 12000.0,
-      'pendingInvoices': 1,
-      'status': 'Active',
-      'logo': 'S',
-    },
-    {
-      'id': 'CORP-03',
-      'companyName': 'AlBaik Operations',
-      'contactPerson': 'Omar H.',
-      'email': 'ops@albaik.com',
-      'phone': '+966 54 321 0987',
-      'balance': 0.0,
-      'pendingInvoices': 0,
-      'status': 'Inactive',
-      'logo': 'A',
-    },
-    {
-      'id': 'CORP-04',
-      'companyName': 'Saudi Airlines',
-      'contactPerson': 'Khalid A.',
-      'email': 'maintenance@saudia.com',
-      'phone': '+966 56 111 2222',
-      'balance': 85000.0,
-      'pendingInvoices': 5,
-      'status': 'Active',
-      'logo': 'S',
-    },
-  ];
+  List<SuperAdminCorporateClient> _allClients = [];
 
-  List<Map<String, dynamic>> get filteredClients {
+  List<SuperAdminCorporateClient> get filteredClients {
     return _allClients.where((client) {
-      final matchesSearch = client['companyName'].toString().toLowerCase().contains(searchQuery.toLowerCase()) || 
-                            client['id'].toString().toLowerCase().contains(searchQuery.toLowerCase());
+      final matchesSearch = client.companyName.toLowerCase().contains(searchQuery.toLowerCase()) || 
+                            client.id.toLowerCase().contains(searchQuery.toLowerCase());
+      
+      final String clientStatusString = client.isActive ? 'Active' : 'Inactive';
       final matchesStatus = statusFilter == 'All' || 
-                            client['status'].toString().toLowerCase() == statusFilter.toLowerCase();
+                            clientStatusString.toLowerCase() == statusFilter.toLowerCase();
+                            
       return matchesSearch && matchesStatus;
     }).toList();
   }
 
   Future<void> refresh() async {
     isLoading = true;
+    errorMessage = null;
     notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 600));
-    isLoading = false;
-    notifyListeners();
+
+    try {
+      final token = await _sessionService.getToken(role: 'admin');
+      if (token == null) throw Exception('Authentication token not found');
+
+      final response = await _repository.getCorporateClients(token);
+      if (response.success) {
+        _allClients = response.clients;
+      } else {
+        errorMessage = 'Failed to load corporate clients';
+      }
+    } catch (e) {
+      errorMessage = _extractErrorMessage(e.toString());
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  String _extractErrorMessage(String error) {
+    String clean = error;
+    if (clean.startsWith('Exception: ')) clean = clean.substring(11);
+    if (clean.startsWith('Error: ')) clean = clean.substring(7);
+    return clean;
   }
 
   void setSearchQuery(String query) {
@@ -82,7 +69,7 @@ class SuperAdminCorporateViewModel extends ChangeNotifier {
   }
 
   void deleteClient(String id) {
-    _allClients.removeWhere((c) => c['id'] == id);
+    _allClients.removeWhere((c) => c.id == id);
     notifyListeners();
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
 
 import 'super_admin_users_view_model.dart';
 
@@ -68,36 +67,6 @@ class _SuperAdminUsersContentState extends State<_SuperAdminUsersContent> {
           );
         },
       ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Users Management', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.secondaryLight)),
-            const SizedBox(height: 4),
-            Text('Manage staff accounts and system access roles.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-          ],
-          ),
-        ),
-        const SizedBox(width: 16),
-        ElevatedButton.icon(
-          onPressed: () => _showAddUserDialog(context),
-          icon: const Icon(Icons.person_add_rounded, size: 18, color: AppColors.secondaryLight),
-          label: const Text('Add User', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.bold)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryLight,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-      ],
     );
   }
 
@@ -221,7 +190,7 @@ class _SuperAdminUsersContentState extends State<_SuperAdminUsersContent> {
                         ),
                         child: Center(
                           child: Text(
-                            user['name'].substring(0, 1).toUpperCase(),
+                            user.name.isNotEmpty ? user.name.substring(0, 1).toUpperCase() : 'U',
                             style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.w900, fontSize: 20),
                           ),
                         ),
@@ -233,7 +202,7 @@ class _SuperAdminUsersContentState extends State<_SuperAdminUsersContent> {
                           width: 12,
                           height: 12,
                           decoration: BoxDecoration(
-                            color: user['status'] == 'Active' ? const Color(0xFF10B981) : Colors.grey,
+                            color: user.isActive ? const Color(0xFF10B981) : Colors.grey,
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 2),
                           ),
@@ -248,15 +217,15 @@ class _SuperAdminUsersContentState extends State<_SuperAdminUsersContent> {
                       children: [
                         Row(
                           children: [
-                            Text(user['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight)),
+                            Text(user.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight)),
                             const Spacer(),
                             _buildUserAction(Icons.edit_rounded, () => _showAddUserDialog(context)),
                             const SizedBox(width: 8),
-                            _buildUserAction(Icons.delete_rounded, () => vm.deleteUser(user['id'])),
+                            _buildUserAction(Icons.delete_rounded, () => vm.deleteUser(user.id)),
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Text(user['email'], style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600)),
+                        Text(user.email, style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -273,9 +242,9 @@ class _SuperAdminUsersContentState extends State<_SuperAdminUsersContent> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          _buildRoleBadge(user['role']),
+                          _buildRoleBadge(user.userType),
                           const SizedBox(width: 8),
-                          Text(user['branch'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.secondaryLight)),
+                          Text(user.branchId ?? 'All', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.secondaryLight)),
                         ],
                       ),
                     ],
@@ -285,7 +254,7 @@ class _SuperAdminUsersContentState extends State<_SuperAdminUsersContent> {
                     children: [
                       Text('JOINED DATE', style: TextStyle(color: Colors.grey.shade400, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
-                      Text(user['joined'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.secondaryLight)),
+                      Text(user.createdAt.split('T').first, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.secondaryLight)),
                     ],
                   ),
                 ],
@@ -324,34 +293,6 @@ class _SuperAdminUsersContentState extends State<_SuperAdminUsersContent> {
       child: Text(
         role.toUpperCase(),
         style: const TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 0.5),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(String status) {
-    bool isActive = status == 'Active';
-    Color color = isActive ? const Color(0xFF10B981) : AppColors.secondaryLight;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            status,
-            style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 12),
-          ),
-        ],
       ),
     );
   }

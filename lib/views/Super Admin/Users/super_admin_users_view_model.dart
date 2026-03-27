@@ -1,35 +1,68 @@
 import 'package:flutter/material.dart';
+import '../../../../data/repositories/super_admin_repository.dart';
+import '../../../../services/session_service.dart';
+import '../../../../models/super_admin_users_api_model.dart';
 
 class SuperAdminUsersViewModel extends ChangeNotifier {
+  final SuperAdminRepository _repository = SuperAdminRepository();
+  final SessionService _sessionService = SessionService();
+
   bool isLoading = false;
   String searchQuery = '';
   String roleFilter = 'All';
 
-  final List<Map<String, dynamic>> _allUsers = [
-    {'id': 'USR-101', 'name': 'Ahmed Salem', 'email': 'ahmed@filters.com', 'role': 'Manager', 'branch': 'Riyadh Main', 'status': 'Active', 'joined': 'Jan 12, 2024'},
-    {'id': 'USR-102', 'name': 'Sami Ali', 'email': 'sami@filters.com', 'role': 'Technician', 'branch': 'Riyadh Main', 'status': 'Active', 'joined': 'Feb 05, 2024'},
-    {'id': 'USR-103', 'name': 'Omar K.', 'email': 'omar@filters.com', 'role': 'Cashier', 'branch': 'Jeddah Central', 'status': 'Inactive', 'joined': 'Mar 15, 2024'},
-    {'id': 'USR-104', 'name': 'Sara M.', 'email': 'sara@filters.com', 'role': 'Manager', 'branch': 'Dammam East', 'status': 'Active', 'joined': 'Jan 22, 2024'},
-    {'id': 'USR-105', 'name': 'Fahad Y.', 'email': 'fahad@filters.com', 'role': 'Technician', 'branch': 'Mecca Branch', 'status': 'Active', 'joined': 'Apr 10, 2024'},
-    {'id': 'USR-106', 'name': 'Mona S.', 'email': 'mona@filters.com', 'role': 'Support', 'branch': 'HQ', 'status': 'Active', 'joined': 'May 02, 2024'},
-  ];
+  List<SuperAdminUser> _allUsers = [];
 
-  List<Map<String, dynamic>> get filteredUsers {
+  List<SuperAdminUser> get filteredUsers {
     return _allUsers.where((user) {
-      final matchesSearch = user['name'].toLowerCase().contains(searchQuery.toLowerCase()) || 
-                            user['email'].toLowerCase().contains(searchQuery.toLowerCase());
+      final matchesSearch = user.name.toLowerCase().contains(searchQuery.toLowerCase()) || 
+                            user.email.toLowerCase().contains(searchQuery.toLowerCase());
+      
+      final mappedRole = _mapRoleFilter(user.userType);
       final matchesRole = roleFilter == 'All' || 
-                          user['role'].toString().toLowerCase() == roleFilter.toLowerCase();
+                          mappedRole.toLowerCase() == roleFilter.toLowerCase();
+
       return matchesSearch && matchesRole;
     }).toList();
+  }
+
+  String _mapRoleFilter(String userType) {
+    switch (userType.toLowerCase()) {
+      case 'workshop_owner':
+      case 'manager':
+        return 'Manager';
+      case 'technician':
+      case 'workshop_technician':
+        return 'Technician';
+      case 'cashier':
+      case 'workshop_cashier':
+        return 'Cashier';
+      case 'support':
+      case 'corporate_user':
+        return 'Support';
+      default:
+        return 'Support';
+    }
   }
 
   Future<void> refresh() async {
     isLoading = true;
     notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 600));
-    isLoading = false;
-    notifyListeners();
+    
+    try {
+      final token = await _sessionService.getToken(role: 'super_admin');
+      if (token != null) {
+        final response = await _repository.getUsers(token);
+        if (response.success) {
+          _allUsers = response.users;
+        }
+      }
+    } catch (e) {
+      debugPrint('[VM] Error refreshing users: $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   void setSearchQuery(String query) {
@@ -44,7 +77,7 @@ class SuperAdminUsersViewModel extends ChangeNotifier {
   }
 
   void deleteUser(String id) {
-    _allUsers.removeWhere((u) => u['id'] == id);
+    _allUsers.removeWhere((u) => u.id == id);
     notifyListeners();
   }
 }

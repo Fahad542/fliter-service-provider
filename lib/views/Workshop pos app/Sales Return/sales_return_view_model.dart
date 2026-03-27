@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../services/session_service.dart';
 import '../../../../data/repositories/pos_repository.dart';
 import '../../../../models/create_invoice_model.dart';
+import '../../../../models/submit_sales_return_model.dart';
 import '../../../../utils/toast_service.dart';
 
 class SalesReturnViewModel extends ChangeNotifier {
@@ -60,40 +61,43 @@ class SalesReturnViewModel extends ChangeNotifier {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Token not found');
 
-      // Note: Backend might not support a global invoice search like this natively yet. 
-      // For demonstration and to adhere to the flow, we will simulate matching an order/invoice by querying the PosViewModel or mocking it.
-      // E.g. fetch single invoice if it matches
-      
-      // Mocking for now to emulate the search. A real API call `searchInvoices(query)` would go here.
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (query.toLowerCase() == 'inv-123') {
-        _searchResults = [
-          Invoice(
-            id: 'mock_inv_123',
-            invoiceNo: 'INV-123',
-            invoiceDate: DateTime.now().toIso8601String(),
-            subtotal: 500,
-            vatAmount: 75,
-            discountAmount: 0,
-            totalAmount: 575,
-            paymentStatus: 'PAID',
-            customerName: 'Mock Customer',
-            vehicleInfo: 'Toyota Camry',
-            plateNo: 'ABC-123',
-            items: [
-              InvoiceItem(id: 'item1', productName: 'Premium Oil Change', qty: 1, unitPrice: 300, lineTotal: 300),
-              InvoiceItem(id: 'item2', productName: 'Oil Filter', qty: 1, unitPrice: 100, lineTotal: 100),
-              InvoiceItem(id: 'item3', productName: 'Engine Flush', qty: 1, unitPrice: 100, lineTotal: 100),
-            ],
-          )
-        ];
+      final response = await posRepository.getInvoicedOrdersByCustomer(query, token);
+
+      if (response.success) {
+        _searchResults = response.orders.map((order) {
+          return Invoice(
+            id: order.invoiceId,
+            invoiceNo: order.invoiceNo.isNotEmpty ? order.invoiceNo : order.invoiceId,
+
+            invoiceDate: order.createdAt,
+            subtotal: order.totalAmount, // Assuming no other breakdown available
+            vatAmount: 0,
+            discountAmount: order.totalDiscountValue,
+            totalAmount: order.totalAmount,
+            paymentStatus: order.status,
+            customerName: 'Customer ID: $query', // Emulate customer info if not fetched
+            customerType: '',
+            vehicleInfo: '',
+            plateNo: '',
+            items: order.items.map((item) {
+              return InvoiceItem(
+                id: item.id,
+                productName: item.productName,
+                qty: item.qty,
+                unitPrice: item.unitPrice,
+                lineTotal: item.lineTotal,
+              );
+            }).toList(),
+            departments: [],
+            payments: [],
+          );
+        }).toList();
       } else {
         _searchResults = [];
       }
 
     } catch (e) {
-      _searchError = e.toString().replaceFirst('Exception: ', '');
+      _searchError = 'Error fetching invoices. Ensure customer ID is correct.';
       _searchResults = [];
     } finally {
       _isSearching = false;
@@ -163,20 +167,46 @@ class SalesReturnViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Mock network delay
-      await Future.delayed(const Duration(seconds: 2));
+      final token = await sessionService.getToken();
+      if (token == null) throw Exception('Authentication token not found');
 
-      // Real implementation would gather _selectedItems, _returnQuantities, _returnReasons, _proofImage, and _selectedInvoice.id
-      // and call posRepository.submitSalesReturn(data, token);
+      final List<SalesReturnItem> returnItems = [];
+      _selectedItems.forEach((itemId, isSelected) {
+        if (isSelected && _returnQuantities.containsKey(itemId)) {
+           returnItems.add(SalesReturnItem(
+             salesOrderItemId: itemId,
+             qty: _returnQuantities[itemId] ?? 1.0,
+           ));
+        }
+      });
 
-      if (context.mounted) {
-        ToastService.showSuccess(context, 'Return request submitted – pending approval');
+      // Just picking the first selected item's reason for the general reason string
+      String generalReason = 'Defective Product/Service';
+      if (_returnReasons.isNotEmpty) {
+        generalReason = _returnReasons.values.first;
       }
 
-      // Reset state on success
-      clearSelection();
-      searchController.clear();
-      _searchResults = [];
+      final request = SubmitSalesReturnRequest(
+        invoiceId: _selectedInvoice!.id,
+        reason: generalReason,
+        proofUrl: null, // Image upload requires a distinct mechanism, leaving null for now based on API definition
+        items: returnItems,
+      );
+
+      final response = await posRepository.submitSalesReturn(request, token);
+
+      if (response.success) {
+        if (context.mounted) {
+          ToastService.showSuccess(context, 'Return request submitted successfully');
+        }
+
+        // Reset state on success
+        clearSelection();
+        searchController.clear();
+        _searchResults = [];
+      } else {
+        throw Exception(response.message);
+      }
 
     } catch (e) {
       if (context.mounted) {
