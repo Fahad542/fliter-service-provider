@@ -496,7 +496,7 @@ class SupplierInvoicesIssuedView extends StatelessWidget {
 }
 
 class _InvoiceCard extends StatelessWidget {
-  final InvoiceRecord invoice;
+  final InvoiceIssuedItem invoice;
   final SupplierInvoicesIssuedViewModel vm;
   const _InvoiceCard({required this.invoice, required this.vm});
 
