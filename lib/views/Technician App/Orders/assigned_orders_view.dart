@@ -31,7 +31,11 @@ class AssignedOrdersView extends StatelessWidget {
                         width: 44,
                         height: 44,
                         child: Center(
-                          child: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.secondaryLight),
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 20,
+                            color: AppColors.secondaryLight,
+                          ),
                         ),
                       ),
                     ),
@@ -40,30 +44,68 @@ class AssignedOrdersView extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => Scaffold.of(context).openDrawer(),
                       child: Container(
-                        width: 44, height: 44,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           color: AppColors.secondaryLight,
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
-                            BoxShadow(color: AppColors.secondaryLight.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4)),
+                            BoxShadow(
+                              color: AppColors.secondaryLight.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
                           ],
                         ),
-                        child: const Center(child: Icon(Icons.menu_rounded, size: 22, color: Colors.white)),
+                        child: const Center(
+                          child: Icon(
+                            Icons.menu_rounded,
+                            size: 22,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
-            title: const Text('ASSIGNED ORDERS', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w600, fontSize: 16, letterSpacing: 1)),
+            title: const Text(
+              'ASSIGNED ORDERS',
+              style: TextStyle(
+                color: AppColors.secondaryLight,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                letterSpacing: 1,
+              ),
+            ),
             centerTitle: true,
             actions: [
               GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsView())),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationsView()),
+                ),
                 child: Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), shape: BoxShape.circle),
-                  child: Center(child: Image.asset('assets/images/notifications.png', width: 22, height: 22, color: Colors.black, errorBuilder: (_, __, ___) => const Icon(Icons.notifications_rounded, size: 22, color: Colors.black))),
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/notifications.png',
+                      width: 22,
+                      height: 22,
+                      color: Colors.black,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.notifications_rounded,
+                        size: 22,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -73,18 +115,25 @@ class AssignedOrdersView extends StatelessWidget {
             onRefresh: () => vm.fetchAssignedOrders(),
             color: AppColors.primaryLight,
             child: vm.isLoading && vm.assignedOrders.isEmpty
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryLight,
+                    ),
+                  )
                 : vm.assignedOrders.isEmpty
-                    ? SingleChildScrollView(physics: const AlwaysScrollableScrollPhysics(), child: _buildEmptyState(context))
-                    : ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(20),
-                        itemCount: vm.assignedOrders.length,
-                        itemBuilder: (context, index) {
-                          final order = vm.assignedOrders[index];
-                          return _buildOrderCard(context, order, vm);
-                        },
-                      ),
+                ? SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: _buildEmptyState(context),
+                  )
+                : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
+                    itemCount: vm.assignedOrders.length,
+                    itemBuilder: (context, index) {
+                      final order = vm.assignedOrders[index];
+                      return _buildOrderCard(context, order, vm);
+                    },
+                  ),
           ),
         );
       },
@@ -98,21 +147,51 @@ class AssignedOrdersView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.assignment_outlined, size: 80, color: Colors.black.withOpacity(0.05)),
+          Icon(
+            Icons.assignment_outlined,
+            size: 80,
+            color: Colors.black.withOpacity(0.05),
+          ),
           const SizedBox(height: 20),
-          const Text('No Active Jobs', style: TextStyle(color: Colors.black54, fontSize: 18, fontWeight: FontWeight.w600)),
+          const Text(
+            'No Active Jobs',
+            style: TextStyle(
+              color: Colors.black54,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('Assigned jobs will appear here', style: TextStyle(color: Colors.black26, fontSize: 14)),
+          const Text(
+            'Assigned jobs will appear here',
+            style: TextStyle(color: Colors.black26, fontSize: 14),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, TechOrder order, TechAppViewModel vm) {
+  Widget _buildOrderCard(
+    BuildContext context,
+    TechOrder order,
+    TechAppViewModel vm,
+  ) {
     final status = order.assignmentStatus.toLowerCase();
-    final bool isPending = status == 'pending';
+    final bool isPending = status == 'pending' || status == 'assigned';
     final bool isAccepted = status == 'accepted';
-    final bool isInProgress = status == 'in progress';
+    final bool isInProgress =
+        status == 'in progress' || status == 'in_progress';
+
+    // Normalize and decide which status to show
+    final orderStatus = order.status.toLowerCase();
+    final bool isOrderFinalized =
+        orderStatus == 'completed' ||
+        orderStatus == 'invoiced' ||
+        orderStatus == 'success';
+
+    final String displayStatus = isOrderFinalized
+        ? 'COMPLETED'
+        : order.assignmentStatus;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -120,7 +199,11 @@ class AssignedOrdersView extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
         ],
         border: Border.all(color: Colors.black.withOpacity(0.02)),
       ),
@@ -145,15 +228,23 @@ class AssignedOrdersView extends StatelessWidget {
                   children: [
                     Text(
                       order.id,
-                      style: TextStyle(color: Colors.orange.shade300, fontWeight: FontWeight.w400, fontSize: 15),
+                      style: TextStyle(
+                        color: Colors.orange.shade300,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 15,
+                      ),
                     ),
-                    _buildStatusBadge(order.assignmentStatus),
+                    _buildStatusBadge(displayStatus),
                   ],
                 ),
                 const SizedBox(height: 16),
                 Text(
                   order.customerName,
-                  style: const TextStyle(color: AppColors.secondaryLight, fontSize: 19, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: AppColors.secondaryLight,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -161,7 +252,11 @@ class AssignedOrdersView extends StatelessWidget {
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(top: 2),
-                      child: Icon(Icons.directions_car_rounded, color: Colors.black38, size: 16),
+                      child: Icon(
+                        Icons.directions_car_rounded,
+                        color: Colors.black38,
+                        size: 16,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -170,11 +265,19 @@ class AssignedOrdersView extends StatelessWidget {
                           children: [
                             TextSpan(
                               text: '${order.vehicleModel} • ',
-                              style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500),
+                              style: const TextStyle(
+                                color: Colors.black54,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             TextSpan(
                               text: order.plateNumber,
-                              style: TextStyle(color: Colors.orange.shade300, fontSize: 13, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                color: Colors.orange.shade300,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
@@ -186,14 +289,28 @@ class AssignedOrdersView extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoColumn('COMMISSION', 'SAR ${order.commission.toInt()}', isPrimary: true),
+                    _buildInfoColumn(
+                      'COMMISSION',
+                      'SAR ${order.commission.toStringAsFixed(2)}',
+                      isPrimary: true,
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildInfoColumn('DEPARTMENT', order.department.isEmpty ? 'General' : order.department),
-                        _buildInfoColumn('VALUE', 'SAR ${order.totalValue.toInt()}'),
-                        const SizedBox(width: 1), // Invisible spacer to balance the Row
+                        _buildInfoColumn(
+                          'DEPARTMENT',
+                          order.department.isEmpty
+                              ? 'General'
+                              : order.department,
+                        ),
+                        _buildInfoColumn(
+                          'VALUE',
+                          'SAR ${order.totalValue.toStringAsFixed(2)}',
+                        ),
+                        const SizedBox(
+                          width: 1,
+                        ), // Invisible spacer to balance the Row
                       ],
                     ),
                   ],
@@ -211,9 +328,15 @@ class AssignedOrdersView extends StatelessWidget {
                             final success = await vm.cancelOrder(order.jobId);
                             if (!context.mounted) return;
                             if (success) {
-                              ToastService.showSuccess(context, 'Order cancelled');
+                              ToastService.showSuccess(
+                                context,
+                                'Order cancelled',
+                              );
                             } else {
-                              ToastService.showError(context, vm.cancelMessage ?? 'Failed to cancel order');
+                              ToastService.showError(
+                                context,
+                                vm.cancelMessage ?? 'Failed to cancel order',
+                              );
                             }
                           },
                           isLoading: vm.cancellingJobId == order.jobId,
@@ -229,9 +352,15 @@ class AssignedOrdersView extends StatelessWidget {
                             final success = await vm.acceptOrder(order.jobId);
                             if (!context.mounted) return;
                             if (success) {
-                              ToastService.showSuccess(context, 'Order accepted successfully');
+                              ToastService.showSuccess(
+                                context,
+                                'Order accepted successfully',
+                              );
                             } else {
-                              ToastService.showError(context, vm.acceptMessage ?? 'Failed to accept order');
+                              ToastService.showError(
+                                context,
+                                vm.acceptMessage ?? 'Failed to accept order',
+                              );
                             }
                           },
                           isLoading: vm.acceptingJobId == order.jobId,
@@ -249,7 +378,12 @@ class AssignedOrdersView extends StatelessWidget {
                           Colors.white,
                           () {
                             vm.fetchOrderDetails(order.jobId);
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailsView(order: order)));
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => OrderDetailsView(order: order),
+                              ),
+                            );
                           },
                         ),
                       ),
@@ -263,11 +397,23 @@ class AssignedOrdersView extends StatelessWidget {
                             final success = await vm.startOrder(order.jobId);
                             if (!context.mounted) return;
                             if (success) {
-                              ToastService.showSuccess(context, 'Job started successfully');
+                              ToastService.showSuccess(
+                                context,
+                                'Job started successfully',
+                              );
                               vm.fetchOrderDetails(order.jobId);
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailsView(order: order)));
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      OrderDetailsView(order: order),
+                                ),
+                              );
                             } else {
-                              ToastService.showError(context, vm.startMessage ?? 'Failed to start job');
+                              ToastService.showError(
+                                context,
+                                vm.startMessage ?? 'Failed to start job',
+                              );
                             }
                           },
                           isLoading: vm.startingJobId == order.jobId,
@@ -285,7 +431,12 @@ class AssignedOrdersView extends StatelessWidget {
                           Colors.white,
                           () {
                             vm.fetchOrderDetails(order.jobId);
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailsView(order: order)));
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => OrderDetailsView(order: order),
+                              ),
+                            );
                           },
                         ),
                       ),
@@ -299,9 +450,15 @@ class AssignedOrdersView extends StatelessWidget {
                             final success = await vm.completeOrder(order.jobId);
                             if (!context.mounted) return;
                             if (success) {
-                              ToastService.showSuccess(context, 'Job completed successfully');
+                              ToastService.showSuccess(
+                                context,
+                                'Job completed successfully',
+                              );
                             } else {
-                              ToastService.showError(context, vm.completeMessage ?? 'Failed to complete job');
+                              ToastService.showError(
+                                context,
+                                vm.completeMessage ?? 'Failed to complete job',
+                              );
                             }
                           },
                           isLoading: vm.completingJobId == order.jobId,
@@ -319,7 +476,12 @@ class AssignedOrdersView extends StatelessWidget {
                           Colors.white,
                           () {
                             vm.fetchOrderDetails(order.jobId);
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailsView(order: order)));
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => OrderDetailsView(order: order),
+                              ),
+                            );
                           },
                         ),
                       ),
@@ -338,10 +500,19 @@ class AssignedOrdersView extends StatelessWidget {
     Color textColor = Colors.orange.shade600;
     Color bgColor = Colors.orange.shade50;
 
-    if (status == 'COMPLETED' || status == 'SUCCESS') {
+    if (status == 'COMPLETED' ||
+        status == 'SUCCESS' ||
+        status == 'INVOICED' ||
+        status == 'COMPLETED BY TECHNICIAN' ||
+        status == 'COMPLETED_BY_TECHNICIAN') {
       textColor = Colors.green.shade700;
       bgColor = Colors.green.shade50;
-    } else if (status == 'IN PROGRESS') {
+      // Overwrite display text to just "COMPLETED" for consistency
+      status = 'COMPLETED';
+    } else if (status == 'TASK COMPLETE') {
+      textColor = Colors.orange.shade700;
+      bgColor = Colors.orange.shade50;
+    } else if (status == 'IN PROGRESS' || status == 'IN_PROGRESS') {
       textColor = Colors.blue.shade600;
       bgColor = Colors.blue.shade50;
     } else if (status == 'ACCEPTED') {
@@ -357,18 +528,32 @@ class AssignedOrdersView extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+        style: TextStyle(
+          color: textColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
 
-  Widget _buildInfoColumn(String label, String value, {bool isPrimary = false}) {
+  Widget _buildInfoColumn(
+    String label,
+    String value, {
+    bool isPrimary = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.black26, fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+          style: const TextStyle(
+            color: Colors.black26,
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
         ),
         const SizedBox(height: 6),
         Text(
@@ -383,7 +568,14 @@ class AssignedOrdersView extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(String label, Color bg, Color text, VoidCallback onTap, {bool isLoading = false, Color? borderColor}) {
+  Widget _buildActionButton(
+    String label,
+    Color bg,
+    Color text,
+    VoidCallback onTap, {
+    bool isLoading = false,
+    Color? borderColor,
+  }) {
     return InkWell(
       onTap: isLoading ? null : onTap,
       borderRadius: BorderRadius.circular(12),
@@ -392,7 +584,9 @@ class AssignedOrdersView extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(12),
-          border: borderColor != null ? Border.all(color: borderColor, width: 1.2) : null,
+          border: borderColor != null
+              ? Border.all(color: borderColor, width: 1.2)
+              : null,
         ),
         child: Center(
           child: isLoading
@@ -403,7 +597,12 @@ class AssignedOrdersView extends StatelessWidget {
                 )
               : Text(
                   label,
-                  style: TextStyle(color: text, fontWeight: FontWeight.w500, fontSize: 12, letterSpacing: 0.3),
+                  style: TextStyle(
+                    color: text,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                    letterSpacing: 0.3,
+                  ),
                 ),
         ),
       ),

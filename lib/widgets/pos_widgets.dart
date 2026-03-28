@@ -27,6 +27,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showHamburger;
   final bool showGlobalLeft;
   final VoidCallback? onMenuPressed;
+  final List<Widget>? actions;
 
   const PosScreenAppBar({
     super.key,
@@ -36,6 +37,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showHamburger = false,
     this.showGlobalLeft = false,
     this.onMenuPressed,
+    this.actions,
   });
 
   @override
@@ -142,6 +144,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           centerTitle: true,
           actions: [
+            ...?actions,
             if (!showGlobalLeft)
               Consumer<SettingsViewModel>(
                 builder: (context, settings, _) {
@@ -1401,6 +1404,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                               jobId: widget.order.jobs.isNotEmpty
                                                   ? widget.order.latestJob!.id
                                                   : widget.order.id,
+                                              departmentName: widget
+                                                  .order.latestJob?.department,
                                             ),
                                           ),
                                         );

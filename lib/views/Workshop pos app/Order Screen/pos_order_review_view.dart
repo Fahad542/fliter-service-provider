@@ -628,12 +628,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                             // The true Total Amount Gross (pre-global-discount AND pre-item-discount)
                             final double jobSubtotalExclusive = preItemDiscountJobTotal;
 
-                            String? jobPromoLabel;
-                            if (job.promoCodeName != null && job.promoCodeName!.isNotEmpty) {
-                              jobPromoLabel = job.promoCodeName;
-                            } else {
-                              jobPromoLabel = widget.order.promoCodeName;
-                            }
+                            String? jobPromoLabel = (job.promoCodeName != null && job.promoCodeName!.isNotEmpty) 
+                                ? job.promoCodeName 
+                                : null;
 
                             return _VatBreakdownWidget(
                               subtotalExclusive: jobSubtotalExclusive,

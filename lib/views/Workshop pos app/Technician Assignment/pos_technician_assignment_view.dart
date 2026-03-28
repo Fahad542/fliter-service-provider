@@ -10,8 +10,13 @@ import '../../../utils/toast_service.dart';
 
 class PosTechnicianAssignmentView extends StatefulWidget {
   final String jobId;
+  final String? departmentName;
 
-  const PosTechnicianAssignmentView({super.key, required this.jobId});
+  const PosTechnicianAssignmentView({
+    super.key,
+    required this.jobId,
+    this.departmentName,
+  });
 
   @override
   State<PosTechnicianAssignmentView> createState() =>
@@ -69,13 +74,39 @@ class _PosTechnicianAssignmentViewState
         context,
       ).copyWith(textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0)),
       child: ChangeNotifierProvider(
-        create: (_) => TechnicianAssignmentViewModel(),
+        create: (_) =>
+            TechnicianAssignmentViewModel()
+              ..setDepartmentName(widget.departmentName),
         child: Builder(
           builder: (context) {
             final assignVm = context.watch<TechnicianAssignmentViewModel>();
             return Scaffold(
               backgroundColor: const Color(0xFFFBF9F6),
-              appBar: PosScreenAppBar(title: 'Technician Assignment '),
+              appBar: PosScreenAppBar(
+                title: 'Technician Assignment ',
+                actions: [
+                  // if (widget.departmentName != null &&
+                  //     widget.departmentName!.isNotEmpty)
+                  //   TextButton.icon(
+                  //     onPressed: () => assignVm.setShowAll(!assignVm.showAll),
+                  //     icon: Icon(
+                  //       assignVm.showAll
+                  //           ? Icons.filter_alt
+                  //           : Icons.all_inclusive,
+                  //       size: 18,
+                  //       color: AppColors.secondaryLight,
+                  //     ),
+                  //     label: Text(
+                  //       assignVm.showAll ? 'Show Dept' : 'Show All',
+                  //       style: const TextStyle(
+                  //         color: AppColors.secondaryLight,
+                  //         fontWeight: FontWeight.bold,
+                  //         fontSize: 12,
+                  //       ),
+                  //     ),
+                  //   ),
+                ],
+              ),
               body: Consumer<TechnicianViewModel>(
                 builder: (context, vm, child) {
                   if (vm.isLoading && vm.technicians.isEmpty) {
@@ -98,46 +129,93 @@ class _PosTechnicianAssignmentViewState
                     );
                   }
 
-                  // Filter by search query
+                  // Filter by search query and department
                   final technicians = vm.technicians.where((tech) {
+                    // Search Filter
                     final query = assignVm.searchQuery.toLowerCase();
-                    return tech.name.toLowerCase().contains(query) ||
+                    final matchesSearch =
+                        tech.name.toLowerCase().contains(query) ||
                         (tech.employeeType).toLowerCase().contains(query);
+
+                    if (!matchesSearch) return false;
+
+                    // Department Filter
+                    if (assignVm.showAll ||
+                        assignVm.departmentName == null ||
+                        assignVm.departmentName!.isEmpty) {
+                      return true;
+                    }
+
+                    return tech.departments.any(
+                      (d) =>
+                          d.name.toLowerCase() ==
+                          assignVm.departmentName!.toLowerCase(),
+                    );
                   }).toList();
 
                   return Column(
                     children: [
-                      Padding(
-                        padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            onChanged: assignVm.setSearchQuery,
-                            decoration: InputDecoration(
-                              hintText: 'Search technicians...',
-                              hintStyle: TextStyle(color: Colors.grey.shade400),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: Colors.grey.shade400,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: TextField(
+                                  onChanged: assignVm.setSearchQuery,
+                                  decoration: InputDecoration(
+                                    hintText: 'Search technicians...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.search,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                          if (widget.departmentName != null &&
+                              widget.departmentName!.isNotEmpty)
+                            GestureDetector(
+                              onTap: () =>
+                                  assignVm.setShowAll(!assignVm.showAll),
+
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  right: isTablet ? 24.0 : 16,
+                                ),
+                                child: Text(
+                                  assignVm.showAll ? 'Show Dept' : 'Show All',
+                                  style: const TextStyle(
+                                    color: AppColors.secondaryLight,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       Expanded(
                         child: technicians.isEmpty
@@ -261,17 +339,25 @@ class _PosTechnicianAssignmentViewState
                                                     overflow:
                                                         TextOverflow.ellipsis,
                                                   ),
-                                                  if (tech.departments.isNotEmpty) ...[
+                                                  if (tech
+                                                      .departments
+                                                      .isNotEmpty) ...[
                                                     const SizedBox(height: 2),
                                                     Text(
-                                                      tech.departments.map((d) => d.name).join(' • '),
+                                                      tech.departments
+                                                          .map((d) => d.name)
+                                                          .join(' • '),
                                                       style: TextStyle(
-                                                        fontSize: isTablet ? 12 : 11,
+                                                        fontSize: isTablet
+                                                            ? 12
+                                                            : 11,
                                                         color: Colors.blueGrey,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                       ),
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ],
                                                   const SizedBox(height: 2),

@@ -34,6 +34,7 @@ class _PosPromoViewState extends State<PosPromoView> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      resizeToAvoidBottomInset: false,
       appBar: PosScreenAppBar(
         title: 'Promo Code',
         showBackButton: false,
@@ -125,7 +126,10 @@ class _PosPromoViewState extends State<PosPromoView> {
           const SizedBox(height: 16),
           Text(
             'Check the validity of a customer provided code.',
-            style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: 13),
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: Colors.grey,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -141,12 +145,22 @@ class _PosPromoViewState extends State<PosPromoView> {
                     textCapitalization: TextCapitalization.characters,
                     textAlign: TextAlign.left,
                     textDirection: TextDirection.ltr,
-                    style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
                     inputFormatters: [EnglishNumberFormatter()],
                     decoration: InputDecoration(
                       hintText: 'e.g. SAVE10',
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                      prefixIcon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: AppColors.secondaryLight),
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 13,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.qr_code_scanner_rounded,
+                        size: 20,
+                        color: AppColors.secondaryLight,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade200),
@@ -157,10 +171,16 @@ class _PosPromoViewState extends State<PosPromoView> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
+                        borderSide: const BorderSide(
+                          color: AppColors.primaryLight,
+                          width: 2,
+                        ),
                       ),
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -169,18 +189,32 @@ class _PosPromoViewState extends State<PosPromoView> {
               SizedBox(
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: promoVm.isLoading ? null : () => promoVm.checkMockValidity(null, posVm, context),
+                  onPressed: promoVm.isLoading
+                      ? null
+                      : () => promoVm.checkMockValidity(null, posVm, context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.secondaryLight,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 4,
                     shadowColor: AppColors.secondaryLight.withOpacity(0.4),
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                   ),
                   child: promoVm.isLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Check Validity', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Check Validity',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                 ),
               ),
             ],
@@ -198,7 +232,14 @@ class _PosPromoViewState extends State<PosPromoView> {
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 20),
                   const SizedBox(width: 12),
-                  Text(promoVm.promoErrorMessage!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(
+                    promoVm.promoErrorMessage!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -229,16 +270,26 @@ class _PosPromoViewState extends State<PosPromoView> {
               const SizedBox(width: 12),
               Text(
                 validResult['message'],
-                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w800, fontSize: 17),
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 20),
           _buildResultDetail(Icons.store, 'Store: ${validResult['store']}'),
           const SizedBox(height: 8),
-          _buildResultDetail(Icons.inventory_2, 'Products: ${validResult['products']}'),
+          _buildResultDetail(
+            Icons.inventory_2,
+            'Products: ${validResult['products']}',
+          ),
           const SizedBox(height: 8),
-          _buildResultDetail(Icons.calendar_today, 'Period: ${validResult['period']}'),
+          _buildResultDetail(
+            Icons.calendar_today,
+            'Period: ${validResult['period']}',
+          ),
         ],
       ),
     );
@@ -251,13 +302,20 @@ class _PosPromoViewState extends State<PosPromoView> {
         const SizedBox(width: 12),
         Text(
           text,
-          style: TextStyle(color: Colors.grey.shade800, fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: Colors.grey.shade800,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildPromotionCatalog(List<AvailablePromotion> promos, bool isTablet) {
+  Widget _buildPromotionCatalog(
+    List<AvailablePromotion> promos,
+    bool isTablet,
+  ) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -291,25 +349,42 @@ class _PosPromoViewState extends State<PosPromoView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       promo.code,
-                      style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
+                      style: const TextStyle(
+                        color: AppColors.secondaryLight,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE8F5E9),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      promo.isPercent ? '${promo.discount.toStringAsFixed(0)}% OFF' : 'SAR ${promo.discount.toStringAsFixed(0)} OFF',
-                      style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.green, fontSize: 11),
+                      promo.isPercent
+                          ? '${promo.discount.toStringAsFixed(0)}% OFF'
+                          : 'SAR ${promo.discount.toStringAsFixed(0)} OFF',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Colors.green,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                 ],
@@ -317,14 +392,22 @@ class _PosPromoViewState extends State<PosPromoView> {
               const SizedBox(height: 16),
               Text(
                 promo.title,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF1E2124)),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: Color(0xFF1E2124),
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
                 promo.description,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 12, height: 1.3),
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 12,
+                  height: 1.3,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -333,16 +416,33 @@ class _PosPromoViewState extends State<PosPromoView> {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () {
-                    final posVm = Provider.of<PosViewModel>(context, listen: false);
-                    final promoVm = Provider.of<PromoViewModel>(context, listen: false);
+                    final posVm = Provider.of<PosViewModel>(
+                      context,
+                      listen: false,
+                    );
+                    final promoVm = Provider.of<PromoViewModel>(
+                      context,
+                      listen: false,
+                    );
                     promoVm.checkMockValidity(promo.code, posVm, context);
                   },
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.secondaryLight.withOpacity(0.1)),
+                    side: BorderSide(
+                      color: AppColors.secondaryLight.withOpacity(0.1),
+                    ),
                     backgroundColor: AppColors.secondaryLight.withOpacity(0.03),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  child: const Text('Check Conditions', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.secondaryLight, fontSize: 12)),
+                  child: const Text(
+                    'Check Conditions',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.secondaryLight,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ),
             ],

@@ -306,7 +306,7 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(left: 5),
-                          child: _buildInfoItem('BASIC SALARY', 'SAR ${(employee.basicSalary ?? 0.0).toStringAsFixed(0)}', Icons.payments_outlined),
+                          child: _buildInfoItem('SALARY / COMM', 'SAR ${(employee.basicSalary ?? 0.0).toStringAsFixed(0)} / ${employee.commissionPercent.toStringAsFixed(2)}%', Icons.payments_outlined),
                         ),
                       ),
                       Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
@@ -532,9 +532,18 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    vm.isEditing ? 'Update Employee' : 'Add New Employee',
-                    style: AppTextStyles.h2.copyWith(fontSize: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        vm.isEditing ? 'Update Employee' : 'Add New Employee',
+                        style: AppTextStyles.h2.copyWith(fontSize: 18),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -813,7 +822,7 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
       child: TextField(
         controller: controller,
         obscureText: obscureText,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: AppColors.secondaryLight, size: 20),

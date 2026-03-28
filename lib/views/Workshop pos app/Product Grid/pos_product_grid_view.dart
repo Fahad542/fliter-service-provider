@@ -879,7 +879,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                       if (orderId.isNotEmpty) {
                                                         Navigator.push(
                                                           context,
-                                                          MaterialPageRoute(builder: (_) => PosTechnicianAssignmentView(jobId: orderId)),
+                                                          MaterialPageRoute(
+                                                            builder: (_) =>
+                                                                PosTechnicianAssignmentView(
+                                                                  jobId: orderId,
+                                                                  departmentName:
+                                                                      widget.departmentName,
+                                                                ),
+                                                          ),
                                                         );
                                                       } else {
                                                         vm.setShellSelectedIndex(2); // Orders Tab

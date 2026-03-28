@@ -173,7 +173,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
           Padding(
             padding: const EdgeInsets.only(top: 1),
             child: Text(
-              'SAR ${item.price.toInt()}',
+              'SAR ${item.price.toStringAsFixed(2)}',
               style: const TextStyle(color: Colors.black54, fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
@@ -200,7 +200,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
             children: [
               const Text('YOUR COMMISSION', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
               const SizedBox(height: 4),
-              Text('SAR ${order.commission.toInt()}', style: const TextStyle(color: AppColors.primaryLight, fontSize: 24, fontWeight: FontWeight.w900)),
+              Text('SAR ${order.commission.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.primaryLight, fontSize: 24, fontWeight: FontWeight.w900)),
             ],
           ),
           const Icon(Icons.stars_rounded, color: AppColors.primaryLight, size: 40),

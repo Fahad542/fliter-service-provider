@@ -116,7 +116,8 @@ class EmployeeManagementViewModel extends ChangeNotifier {
       mobileController.text = e.mobile ?? '';
       emailController.text = e.email ?? '';
       passwordController.clear(); // Don't pre-fill password
-      commissionPercentController.text = e.techCommission?.toString() ?? '0';
+      commissionPercentController.text = e.techCommission.toString();
+      baseSalaryController.text = e.basicSalary?.toString() ?? '0';
       // Note: branch and department will be handled in the UI
     }
     notifyListeners();
@@ -174,6 +175,7 @@ class EmployeeManagementViewModel extends ChangeNotifier {
         "branchId": branchId,
         "technicianType": techType,
         "commissionPercent": double.tryParse(commissionPercentController.text.trim()) ?? 0,
+        "basicSalary": double.tryParse(baseSalaryController.text.trim()) ?? 0,
         "departmentIds": [departmentId],
       };
 

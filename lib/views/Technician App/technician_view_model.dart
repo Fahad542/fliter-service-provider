@@ -32,7 +32,8 @@ class TechAppViewModel extends ChangeNotifier {
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
-        final res = await _repository.updateDutyStatus(token, value ? 'workshop' : 'on_call');
+        // use 'offline' if turning off, otherwise 'workshop'
+        final res = await _repository.updateDutyStatus(token, value ? 'workshop' : 'offline');
         if (res != null) {
           _isWorkshopDuty = value;
           if (value) _isOnCallDuty = false;
@@ -53,7 +54,8 @@ class TechAppViewModel extends ChangeNotifier {
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
-        final res = await _repository.updateDutyStatus(token, value ? 'on_call' : 'workshop');
+        // use 'offline' if turning off, otherwise 'on_call'
+        final res = await _repository.updateDutyStatus(token, value ? 'on_call' : 'offline');
         if (res != null) {
           _isOnCallDuty = value;
           if (value) _isWorkshopDuty = false;
@@ -192,9 +194,18 @@ class TechAppViewModel extends ChangeNotifier {
           profile = response.profile;
           technicianName = profile?.name ?? technicianName;
           
-          // Sync duty status switches
-          _isWorkshopDuty = profile?.workshopDuty ?? false;
-          _isOnCallDuty = profile?.onCallDuty ?? false;
+          // Sync duty status switches - prioritize dutyMode if booleans are null
+          if (profile?.workshopDuty != null) {
+            _isWorkshopDuty = profile!.workshopDuty!;
+          } else {
+            _isWorkshopDuty = profile?.dutyMode == 'workshop';
+          }
+          
+          if (profile?.onCallDuty != null) {
+            _isOnCallDuty = profile!.onCallDuty!;
+          } else {
+            _isOnCallDuty = profile?.dutyMode == 'on_call';
+          }
           
           notifyListeners();
         }
@@ -388,7 +399,22 @@ class TechAppViewModel extends ChangeNotifier {
     final user = await _sessionService.getUser(role: 'tech');
     if (user != null) {
       technicianName = user.name ?? '';
+      
+      // Set initial duty status based on technician type
+      if (user.technician?.technicianType == 'workshop') {
+        _isWorkshopDuty = true;
+        _isOnCallDuty = false;
+      } else if (user.technician?.technicianType == 'on_call') {
+        _isOnCallDuty = true;
+        _isWorkshopDuty = false;
+      } else if (user.technician?.technicianType == 'both') {
+        _isWorkshopDuty = true;
+        _isOnCallDuty = false;
+      }
     }
+    
+    // Fetch latest profile to sync with database status
+    fetchProfile();
     fetchTodayPerformance();
     fetchAssignedOrders();
     fetchCommissionHistory();

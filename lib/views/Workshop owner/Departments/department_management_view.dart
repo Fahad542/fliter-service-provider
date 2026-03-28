@@ -11,7 +11,8 @@ class DepartmentManagementView extends StatefulWidget {
   const DepartmentManagementView({super.key});
 
   @override
-  State<DepartmentManagementView> createState() => _DepartmentManagementViewState();
+  State<DepartmentManagementView> createState() =>
+      _DepartmentManagementViewState();
 }
 
 class _DepartmentManagementViewState extends State<DepartmentManagementView> {
@@ -48,19 +49,30 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
             },
             backgroundColor: AppColors.secondaryLight,
             icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text('Add New Department', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            label: const Text(
+              'Add New Department',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         );
       },
     );
   }
 
-
-
-  Widget _buildDepartmentList(BuildContext context, DepartmentManagementViewModel vm) {
+  Widget _buildDepartmentList(
+    BuildContext context,
+    DepartmentManagementViewModel vm,
+  ) {
     if (vm.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryLight),
+      );
     }
 
     if (vm.departments.isEmpty) {
@@ -76,7 +88,11 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
     );
   }
 
-  Widget _buildDepartmentCard(BuildContext context, Department department, DepartmentManagementViewModel vm) {
+  Widget _buildDepartmentCard(
+    BuildContext context,
+    Department department,
+    DepartmentManagementViewModel vm,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -103,10 +119,16 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
+                  border: Border.all(
+                    color: AppColors.primaryLight.withOpacity(0.2),
+                  ),
                 ),
                 child: const Center(
-                  child: Icon(Icons.account_tree_rounded, color: AppColors.primaryLight, size: 26),
+                  child: Icon(
+                    Icons.account_tree_rounded,
+                    color: AppColors.primaryLight,
+                    size: 26,
+                  ),
                 ),
               ),
               if (department.isActive)
@@ -132,16 +154,30 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
               children: [
                 Text(
                   department.name,
-                  style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight),
+                  style: AppTextStyles.h2.copyWith(
+                    fontSize: 16,
+                    color: AppColors.secondaryLight,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.business_rounded, color: Colors.grey.shade400, size: 14),
+                    Icon(
+                      Icons.business_rounded,
+                      color: Colors.grey.shade400,
+                      size: 14,
+                    ),
                     const SizedBox(width: 4),
-                    const Text('Department', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Department',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -155,12 +191,20 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
     );
   }
 
-  Widget _buildActionMenu(BuildContext context, Department d, DepartmentManagementViewModel vm) {
+  Widget _buildActionMenu(
+    BuildContext context,
+    Department d,
+    DepartmentManagementViewModel vm,
+  ) {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 8,
       offset: const Offset(0, 40),
-      icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400, size: 20),
+      icon: Icon(
+        Icons.more_vert_rounded,
+        color: Colors.grey.shade400,
+        size: 20,
+      ),
       onSelected: (value) {
         if (value == 'edit') {
           vm.setEditDepartment(d);
@@ -180,10 +224,21 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
                   color: AppColors.primaryLight.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.edit_rounded, size: 16, color: AppColors.secondaryLight),
+                child: const Icon(
+                  Icons.edit_rounded,
+                  size: 16,
+                  color: AppColors.secondaryLight,
+                ),
               ),
               const SizedBox(width: 12),
-              const Text('Edit', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight)),
+              const Text(
+                'Edit',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
             ],
           ),
         ),
@@ -197,10 +252,21 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
                   color: AppColors.primaryLight.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.delete_rounded, size: 16, color: AppColors.secondaryLight),
+                child: const Icon(
+                  Icons.delete_rounded,
+                  size: 16,
+                  color: AppColors.secondaryLight,
+                ),
               ),
               const SizedBox(width: 12),
-              const Text('Delete', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight)),
+              const Text(
+                'Delete',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
             ],
           ),
         ),
@@ -208,14 +274,21 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, DepartmentManagementViewModel vm, Department d) {
+  void _showDeleteConfirmation(
+    BuildContext context,
+    DepartmentManagementViewModel vm,
+    Department d,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Department'),
         content: Text('Are you sure you want to delete "${d.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
@@ -232,7 +305,9 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isActive ? Colors.green.withOpacity(0.12) : Colors.orange.withOpacity(0.12),
+        color: isActive
+            ? Colors.green.withOpacity(0.12)
+            : Colors.orange.withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -288,31 +363,52 @@ class _AddDepartmentSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(vm.isEditing ? 'Update Department' : 'Add Department', style: AppTextStyles.h2.copyWith(fontSize: 18)),
+                    Text(
+                      vm.isEditing ? 'Update Department' : 'Add Department',
+                      style: AppTextStyles.h2.copyWith(fontSize: 18),
+                    ),
                     const SizedBox(height: 8),
                     Text(
-                      vm.isEditing ? 'Modify existing department details.' : 'Enter the name of the new department.',
+                      vm.isEditing
+                          ? 'Modify existing department details.'
+                          : 'Enter the name of the new department.',
                       style: const TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 30),
-                    _buildTextField('Department Name', Icons.category_rounded, controller: vm.departmentNameController),
+                    _buildTextField(
+                      'Department Name',
+                      Icons.category_rounded,
+                      controller: vm.departmentNameController,
+                    ),
                     const SizedBox(height: 40),
                     ElevatedButton(
-                      onPressed: vm.isActionLoading ? null : () => vm.submitDepartmentForm(context),
+                      onPressed: vm.isActionLoading
+                          ? null
+                          : () => vm.submitDepartmentForm(context),
                       style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryLight,
-                  disabledBackgroundColor: AppColors.primaryLight,
-                  foregroundColor: AppColors.secondaryLight,
-                  disabledForegroundColor: AppColors.secondaryLight,
-                  minimumSize: const Size.fromHeight(56),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: vm.isActionLoading
-                          ? const CircularProgressIndicator(color: AppColors.secondaryLight)
+                        backgroundColor: AppColors.primaryLight,
+                        disabledBackgroundColor: AppColors.primaryLight,
+                        foregroundColor: AppColors.secondaryLight,
+                        disabledForegroundColor: AppColors.secondaryLight,
+                        minimumSize: const Size.fromHeight(56),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: vm.isActionLoading
+                          ? const CircularProgressIndicator(
+                              color: AppColors.secondaryLight,
+                            )
                           : Text(
-                              vm.isEditing ? 'Update Department' : 'Add Department',
-                              style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
+                              vm.isEditing
+                                  ? 'Update Department'
+                                  : 'Add Department',
+                              style: const TextStyle(
+                                color: AppColors.secondaryLight,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
                             ),
                     ),
                   ],
@@ -331,12 +427,19 @@ class _AddDepartmentSheet extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 12),
         width: 40,
         height: 5,
-        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
     );
   }
 
-  Widget _buildTextField(String label, IconData icon, {TextEditingController? controller}) {
+  Widget _buildTextField(
+    String label,
+    IconData icon, {
+    TextEditingController? controller,
+  }) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(

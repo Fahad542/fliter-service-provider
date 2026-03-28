@@ -304,7 +304,12 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                       if (orderId.isNotEmpty) {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => PosTechnicianAssignmentView(jobId: orderId)),
+                          MaterialPageRoute(
+                            builder: (_) => PosTechnicianAssignmentView(
+                              jobId: orderId,
+                              departmentName: dept.name,
+                            ),
+                          ),
                         );
                       } else {
                         posViewModel.setShellSelectedIndex(2); // Orders Tab

@@ -20,7 +20,7 @@ class TechnicianProfile {
   String? dutyMode;
   bool? workshopDuty;
   bool? onCallDuty;
-  int? commissionPercent;
+  double? commissionPercent;
   List<Department>? departments;
   Workshop? workshop;
   Branch? branch;
@@ -51,7 +51,7 @@ class TechnicianProfile {
     dutyMode = json['dutyMode'];
     workshopDuty = json['workshopDuty'];
     onCallDuty = json['onCallDuty'];
-    commissionPercent = json['commissionPercent'];
+    commissionPercent = double.tryParse(json['commissionPercent']?.toString() ?? '0');
     if (json['departments'] != null) {
       departments = <Department>[];
       json['departments'].forEach((v) {

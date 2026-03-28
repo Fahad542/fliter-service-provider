@@ -246,18 +246,18 @@ class TechDashboardView extends StatelessWidget {
         ),
         _buildStatCard(
           'Daily Revenue',
-          'SAR ${vm.todayRevenue.toInt()}',
+          'SAR ${vm.todayRevenue.toStringAsFixed(2)}',
           Icons.payments_rounded,
         ),
         _buildStatCard(
           'Today\'s Earned',
-          'SAR ${vm.todayCommission.toInt()}',
+          'SAR ${vm.todayCommission.toStringAsFixed(2)}',
           Icons.star_rounded,
           isHighlight: true,
         ),
         _buildStatCard(
           'Weekly Earned',
-          'SAR ${vm.weekCommission.toInt()}',
+          'SAR ${vm.weekCommission.toStringAsFixed(2)}',
           Icons.trending_up_rounded,
         ),
       ],

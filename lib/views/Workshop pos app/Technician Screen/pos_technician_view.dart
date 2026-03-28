@@ -28,6 +28,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
     final posVm = context.watch<PosViewModel>();
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFFBF9F6),
       appBar: PosScreenAppBar(
         title: 'Technicians',
@@ -75,7 +76,9 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.symmetric(
-                        horizontal: isTablet ? 32 : 16, vertical: 24),
+                      horizontal: isTablet ? 32 : 16,
+                      vertical: 24,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -87,7 +90,10 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
                         if (technicians.isEmpty)
                           const Center(child: Text('No technicians found'))
                         else
-                          _buildTechnicianSections(vm.groupedTechnicians, isTablet),
+                          _buildTechnicianSections(
+                            vm.groupedTechnicians,
+                            isTablet,
+                          ),
                       ],
                     ),
                   ),
@@ -106,14 +112,18 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         Expanded(
           child: PosSearchBar(
             hintText: 'Search technicians...',
-            onChanged: (val) => context.read<TechnicianViewModel>().setSearchQuery(val),
+            onChanged: (val) =>
+                context.read<TechnicianViewModel>().setSearchQuery(val),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTechnicianSections(Map<String, List<PosTechnician>> grouped, bool isTablet) {
+  Widget _buildTechnicianSections(
+    Map<String, List<PosTechnician>> grouped,
+    bool isTablet,
+  ) {
     return Column(
       children: grouped.entries.map((entry) {
         return _buildCategoryBlock(entry.key, entry.value, isTablet);
@@ -121,7 +131,11 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
     );
   }
 
-  Widget _buildCategoryBlock(String category, List<PosTechnician> technicians, bool isTablet) {
+  Widget _buildCategoryBlock(
+    String category,
+    List<PosTechnician> technicians,
+    bool isTablet,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: GridView.builder(
@@ -130,7 +144,9 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         itemCount: technicians.length,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: isTablet ? 4 : 1,
-          childAspectRatio: isTablet ? 2.1 : 4, // Adjusted ratio to prevent overflow with scaling
+          childAspectRatio: isTablet
+              ? 2.1
+              : 4, // Adjusted ratio to prevent overflow with scaling
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
@@ -141,4 +157,3 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
     );
   }
 }
-

@@ -55,6 +55,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      resizeToAvoidBottomInset: false,
       appBar: PosScreenAppBar(
         title: 'Petty Cash',
         showBackButton: false,
