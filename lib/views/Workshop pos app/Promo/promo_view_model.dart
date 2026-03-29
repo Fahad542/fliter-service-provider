@@ -79,10 +79,10 @@ class PromoViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> validatePromo(String code, PosViewModel posVm, BuildContext context) async {
+  Future<void> validatePromo(String code, PosViewModel posVm, BuildContext context, {bool isMainTab = false}) async {
     final cleanCode = code.trim().toUpperCase();
     if (cleanCode.isEmpty) return;
-
+    
     _isLoading = true;
     _promoErrorMessage = null;
     _validResult = null;
@@ -94,7 +94,7 @@ class PromoViewModel extends ChangeNotifier {
 
       final response = await posRepository.applyPromoCode(
         cleanCode,
-        posVm.subtotalExclVat, // Use cart subtotal as order amount
+        posVm.getSubtotalExclVat(isMainTab), // Correct context-aware subtotal
         token,
       );
 
@@ -113,12 +113,12 @@ class PromoViewModel extends ChangeNotifier {
       } else {
         final msg = response.message.isNotEmpty ? response.message : 'Invalid Promo Code';
         _promoErrorMessage = msg;
-        posVm.clearPromoCode();
+        posVm.clearPromoCode(isMainTab: isMainTab);
         _validResult = null;
       }
     } catch (e) {
       _promoErrorMessage = e.toString().replaceFirst('Exception: ', '');
-      posVm.clearPromoCode();
+      posVm.clearPromoCode(isMainTab: isMainTab);
       if (context.mounted) {
         ToastService.showError(context, _promoErrorMessage!);
       }

@@ -911,7 +911,7 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                     ),
 
                     const SizedBox(height: 12),
-                    _buildToggleRow('Enable Stock Tracking', vm.isStockTracking, (val) => vm.toggleStockTracking(val)),
+                    _buildToggleRow('Allow Decimal Point', vm.allowDecimalQty, (val) => vm.toggleAllowDecimal(val)),
                     const SizedBox(height: 32),
                   ],
                 ),

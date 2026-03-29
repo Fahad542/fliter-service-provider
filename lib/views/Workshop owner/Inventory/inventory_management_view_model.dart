@@ -24,7 +24,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
   final TextEditingController minCorporatePriceController = TextEditingController();
   final TextEditingController maxCorporatePriceController = TextEditingController();
   bool allowDecimalQty = true;
-  bool isStockTracking = true;
   bool isActive = true;
   List<OwnerSubCategory> _productCategories = [];
   List<OwnerSubCategory> _serviceCategories = [];
@@ -329,11 +328,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleStockTracking(bool value) {
-    isStockTracking = value;
-    notifyListeners();
-  }
-
   void clearForm() {
     nameController.clear();
     unitController.text = 'Pcs';
@@ -347,7 +341,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
     criticalStockPointController.clear();
     kmTypeValueController.clear();
     allowDecimalQty = true;
-    isStockTracking = true;
     isActive = true;
     
     categoryNameController.clear();
@@ -370,7 +363,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
       minCorporatePriceController.text = p.minPriceCorporate?.toString() ?? '0.0';
       maxCorporatePriceController.text = p.maxPriceCorporate?.toString() ?? '0.0';
       allowDecimalQty = p.allowDecimalQty;
-      isStockTracking = p.stock > 0 || p.criticalStockPoint > 0;
       isActive = p.isActive;
       // Note: category and department will need to be selected in the UI
     }

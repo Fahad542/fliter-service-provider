@@ -6,7 +6,8 @@ import '../Home Screen/pos_view_model.dart';
 import 'promo_view_model.dart';
 
 class PromoCodeDialog extends StatefulWidget {
-  const PromoCodeDialog({super.key});
+  final bool isMainTab;
+  const PromoCodeDialog({super.key, this.isMainTab = false});
 
   @override
   State<PromoCodeDialog> createState() => _PromoCodeDialogState();
@@ -37,11 +38,11 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
     final code = _controller.text.trim();
     if (code.isEmpty) return;
 
-    await promoVm.validatePromo(code, posVm, context);
+    await promoVm.validatePromo(code, posVm, context, isMainTab: widget.isMainTab);
 
     if (!mounted) return;
 
-    if (posVm.activePromoCode.isNotEmpty) {
+    if (posVm.getActivePromoCode(widget.isMainTab).isNotEmpty) {
        Navigator.of(context).pop(); // Close dialog on success
     }
   }
@@ -161,11 +162,12 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                             ? _applyPromo
                             : () {
                                 final posVm = context.read<PosViewModel>();
-                                posVm.applyPromoCode(
-                                  _controller.text.trim().toUpperCase(),
-                                  promoVm.validResult!['discount'],
-                                  promoVm.validResult!['isPercent'],
-                                );
+                                  posVm.applyPromoCode(
+                                    _controller.text.trim().toUpperCase(),
+                                    promoVm.validResult!['discount'],
+                                    promoVm.validResult!['isPercent'],
+                                    isMainTab: widget.isMainTab,
+                                  );
                                 Navigator.pop(context);
                               }),
                     style: ElevatedButton.styleFrom(

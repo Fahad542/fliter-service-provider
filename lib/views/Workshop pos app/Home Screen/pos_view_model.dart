@@ -421,6 +421,14 @@ class PosViewModel extends ChangeNotifier {
   double _globalDiscount = 0.0;
   bool _isGlobalDiscountPercent = false;
 
+  // Secondary cart state for main navigation tab
+  final List<CartItem> _mainTabCartItems = [];
+  String _mainTabActivePromoCode = '';
+  double _mainTabPromoDiscount = 0.0;
+  bool _mainTabIsPromoPercent = false;
+  double _mainTabGlobalDiscount = 0.0;
+  bool _mainTabIsGlobalDiscountPercent = false;
+
   String _selectedProductType = 'All';
   String _selectedCategory = 'All';
   String _searchQuery = '';
@@ -430,6 +438,7 @@ class PosViewModel extends ChangeNotifier {
   List<PosProduct> get allProducts => _allProducts;
   List<ProductCategory> get apiCategories => _apiCategories;
   List<CartItem> get cartItems => _cartItems;
+  List<CartItem> get mainTabCartItems => _mainTabCartItems;
   String get selectedProductType => _selectedProductType;
   String get selectedCategory => _selectedCategory;
   String get searchQuery => _searchQuery;
@@ -442,12 +451,25 @@ class PosViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> initMainProductsTab() async {
+    _selectedProductType = 'All';
+    _selectedCategory = 'All';
+    _searchQuery = '';
+    notifyListeners();
+    await fetchProducts(departmentId: null);
+  }
+
   String get activePromoCode => _activePromoCode;
   double get promoDiscount => _promoDiscount;
   bool get isPromoPercent => _isPromoPercent;
 
   double get globalDiscount => _globalDiscount;
   bool get isGlobalDiscountPercent => _isGlobalDiscountPercent;
+
+  // Context-aware getters for discounts
+  double getActiveGlobalDiscount(bool isMainTab) => isMainTab ? _mainTabGlobalDiscount : _globalDiscount;
+  bool getActiveIsGlobalDiscountPercent(bool isMainTab) => isMainTab ? _mainTabIsGlobalDiscountPercent : _isGlobalDiscountPercent;
+  String getActivePromoCode(bool isMainTab) => isMainTab ? _mainTabActivePromoCode : _activePromoCode;
 
   List<String> get uniqueCategories {
     final cats = _allProducts
@@ -478,40 +500,60 @@ class PosViewModel extends ChangeNotifier {
     }).toList();
   }
 
-  double get subtotalExclVat => _cartItems.fold(
+  int get cartCount => getCartCount(false);
+
+  // --- Backward Compatibility Getters (defaults to primary cart) ---
+  double get subtotalExclVat => getSubtotalExclVat(false);
+  double get totalIndividualDiscount => getTotalIndividualDiscount(false);
+  double get totalGlobalDiscount => getTotalGlobalDiscountValue(false);
+  double get totalPromoDiscount => getTotalPromoDiscountValue(false);
+  double get totalTaxableAmount => getTotalTaxableAmountValue(false);
+  double get totalTax => getTotalTaxValue(false);
+  double get totalAmount => getTotalAmountValue(false);
+
+  double getSubtotalExclVat(bool isMainTab) => _getActiveCart(isMainTab).fold(
     0,
     (sum, item) => sum + (item.product.price * item.quantity),
   );
 
-  double get totalIndividualDiscount =>
-      _cartItems.fold(0, (sum, item) => sum + item.actualDiscountAmount);
+  double getTotalIndividualDiscount(bool isMainTab) =>
+      _getActiveCart(isMainTab).fold(0, (sum, item) => sum + item.actualDiscountAmount);
 
-  double get totalGlobalDiscount {
-    final baseForGlobal = subtotalExclVat - totalIndividualDiscount;
-    if (_isGlobalDiscountPercent) {
-      return baseForGlobal * (_globalDiscount / 100);
+  double getTotalGlobalDiscountValue(bool isMainTab) {
+    final baseForGlobal = getSubtotalExclVat(isMainTab) - getTotalIndividualDiscount(isMainTab);
+    if (isMainTab) {
+      if (_mainTabIsGlobalDiscountPercent) return baseForGlobal * (_mainTabGlobalDiscount / 100);
+      return _mainTabGlobalDiscount;
+    } else {
+      if (_isGlobalDiscountPercent) return baseForGlobal * (_globalDiscount / 100);
+      return _globalDiscount;
     }
-    return _globalDiscount;
   }
 
-  double get totalPromoDiscount {
-    final baseForPromo =
-        subtotalExclVat - totalIndividualDiscount - totalGlobalDiscount;
-    if (_isPromoPercent) {
-      return baseForPromo * (_promoDiscount / 100);
+  double getTotalPromoDiscountValue(bool isMainTab) {
+    final baseForPromo = getSubtotalExclVat(isMainTab) - 
+                        getTotalIndividualDiscount(isMainTab) - 
+                        getTotalGlobalDiscountValue(isMainTab);
+    if (isMainTab) {
+      if (_mainTabIsPromoPercent) return baseForPromo * (_mainTabPromoDiscount / 100);
+      return _mainTabPromoDiscount;
+    } else {
+      if (_isPromoPercent) return baseForPromo * (_promoDiscount / 100);
+      return _promoDiscount;
     }
-    return _promoDiscount;
   }
 
-  double get totalTaxableAmount =>
-      subtotalExclVat -
-      totalIndividualDiscount -
-      totalGlobalDiscount -
-      totalPromoDiscount;
-  double get totalTax => totalTaxableAmount * 0.15; // 15% VAT
-  double get totalAmount => totalTaxableAmount + totalTax;
+  double getTotalTaxableAmountValue(bool isMainTab) =>
+      getSubtotalExclVat(isMainTab) -
+      getTotalIndividualDiscount(isMainTab) -
+      getTotalGlobalDiscountValue(isMainTab) -
+      getTotalPromoDiscountValue(isMainTab);
 
-  int get cartCount => _cartItems.fold(
+  double getTotalTaxValue(bool isMainTab) => getTotalTaxableAmountValue(isMainTab) * 0.15; // 15% VAT
+  
+  double getTotalAmountValue(bool isMainTab) => getTotalTaxableAmountValue(isMainTab) + getTotalTaxValue(isMainTab);
+
+  int getCartCount(bool isMainTab) => _getActiveCart(isMainTab).fold(
     0,
     (sum, item) => sum + (item.quantity >= 1 ? item.quantity.toInt() : 1),
   );
@@ -526,11 +568,15 @@ class PosViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String? addToCart(PosProduct product, {double qty = 1.0}) {
+  // --- Cart Management Helpers ---
+  List<CartItem> _getActiveCart(bool isMainTab) => isMainTab ? _mainTabCartItems : _cartItems;
+
+  String? addToCart(PosProduct product, {double qty = 1.0, bool isMainTab = false}) {
     if (!product.allowDecimalQty && qty % 1 != 0) {
       qty = qty.floorToDouble();
     }
-    final existingIndex = _cartItems.indexWhere(
+    final activeCart = _getActiveCart(isMainTab);
+    final existingIndex = activeCart.indexWhere(
       (item) => item.product.id == product.id,
     );
     if (existingIndex != -1) {
@@ -538,15 +584,15 @@ class PosViewModel extends ChangeNotifier {
         return 'Services can only be booked once per order.';
       }
       if (!product.isService &&
-          _cartItems[existingIndex].quantity + qty > product.stock) {
+          activeCart[existingIndex].quantity + qty > product.stock) {
         return 'Cannot exceed available stock limit (${product.stock})';
       }
-      _cartItems[existingIndex].quantity += qty;
+      activeCart[existingIndex].quantity += qty;
     } else {
       if (!product.isService && qty > product.stock) {
         return 'Cannot exceed available stock limit (${product.stock})';
       }
-      _cartItems.add(
+      activeCart.add(
         CartItem(product: product, quantity: qty, isDiscountPercent: false),
       );
     }
@@ -554,16 +600,17 @@ class PosViewModel extends ChangeNotifier {
     return null;
   }
 
-  void removeFromCart(PosProduct product) {
-    _cartItems.removeWhere((item) => item.product.id == product.id);
+  void removeFromCart(PosProduct product, {bool isMainTab = false}) {
+    _getActiveCart(isMainTab).removeWhere((item) => item.product.id == product.id);
     notifyListeners();
   }
 
-  String? updateQuantity(PosProduct product, double delta) {
+  String? updateQuantity(PosProduct product, double delta, {bool isMainTab = false}) {
     if (!product.allowDecimalQty && delta % 1 != 0) {
       delta = delta.floorToDouble();
     }
-    final index = _cartItems.indexWhere(
+    final activeCart = _getActiveCart(isMainTab);
+    final index = activeCart.indexWhere(
       (item) => item.product.id == product.id,
     );
     if (index != -1) {
@@ -571,21 +618,21 @@ class PosViewModel extends ChangeNotifier {
         return 'Services can only be booked once per order.';
       }
       if (!product.isService &&
-          _cartItems[index].quantity + delta > product.stock) {
+          activeCart[index].quantity + delta > product.stock) {
         return 'Cannot exceed available stock limit (${product.stock})';
       }
-      _cartItems[index].quantity += delta;
-      if (_cartItems[index].quantity <= 0) {
-        _cartItems.removeAt(index);
+      activeCart[index].quantity += delta;
+      if (activeCart[index].quantity <= 0) {
+        activeCart.removeAt(index);
       }
       notifyListeners();
     }
     return null;
   }
 
-  String? setSpecificQuantity(PosProduct product, double qty) {
+  String? setSpecificQuantity(PosProduct product, double qty, {bool isMainTab = false}) {
     if (qty <= 0) {
-      removeFromCart(product);
+      removeFromCart(product, isMainTab: isMainTab);
       return null;
     }
     if (!product.allowDecimalQty && qty % 1 != 0) {
@@ -600,15 +647,16 @@ class PosViewModel extends ChangeNotifier {
       return 'Cannot exceed available stock limit (${product.stock})';
     }
 
-    final index = _cartItems.indexWhere(
+    final activeCart = _getActiveCart(isMainTab);
+    final index = activeCart.indexWhere(
       (item) => item.product.id == product.id,
     );
     if (index != -1) {
-      _cartItems[index].quantity = qty;
+      activeCart[index].quantity = qty;
       notifyListeners();
       return null;
     } else {
-      return addToCart(product, qty: qty);
+      return addToCart(product, qty: qty, isMainTab: isMainTab);
     }
   }
 
@@ -616,44 +664,72 @@ class PosViewModel extends ChangeNotifier {
     PosProduct product,
     double discount,
     bool isPercent,
+    {bool isMainTab = false}
   ) {
-    final index = _cartItems.indexWhere(
+    final activeCart = _getActiveCart(isMainTab);
+    final index = activeCart.indexWhere(
       (item) => item.product.id == product.id,
     );
     if (index != -1) {
-      _cartItems[index].discount = discount;
-      _cartItems[index].isDiscountPercent = isPercent;
+      activeCart[index].discount = discount;
+      activeCart[index].isDiscountPercent = isPercent;
       notifyListeners();
     }
   }
 
-  void setGlobalDiscount(double value, bool isPercent) {
-    _globalDiscount = value;
-    _isGlobalDiscountPercent = isPercent;
+  void setGlobalDiscount(double value, bool isPercent, {bool isMainTab = false}) {
+    if (isMainTab) {
+      _mainTabGlobalDiscount = value;
+      _mainTabIsGlobalDiscountPercent = isPercent;
+    } else {
+      _globalDiscount = value;
+      _isGlobalDiscountPercent = isPercent;
+    }
     notifyListeners();
   }
 
-  void clearCart() {
-    _cartItems.clear();
-    _activePromoCode = '';
-    _promoDiscount = 0.0;
-    _isPromoPercent = false;
-    _globalDiscount = 0.0;
-    _isGlobalDiscountPercent = false;
+  void clearCart({bool isMainTab = false}) {
+    _getActiveCart(isMainTab).clear();
+    if (isMainTab) {
+      _mainTabActivePromoCode = '';
+      _mainTabPromoDiscount = 0.0;
+      _mainTabIsPromoPercent = false;
+      _mainTabGlobalDiscount = 0.0;
+      _mainTabIsGlobalDiscountPercent = false;
+    } else {
+      _activePromoCode = '';
+      _promoDiscount = 0.0;
+      _isPromoPercent = false;
+      _globalDiscount = 0.0;
+      _isGlobalDiscountPercent = false;
+    }
     notifyListeners();
   }
 
-  void applyPromoCode(String code, double discount, bool isPercent) {
-    _activePromoCode = code;
-    _promoDiscount = discount;
-    _isPromoPercent = isPercent;
+  void applyPromoCode(String code, double discount, bool isPercent, {bool isMainTab = false}) {
+    if (isMainTab) {
+      _mainTabActivePromoCode = code;
+      _mainTabPromoDiscount = discount;
+      _mainTabIsPromoPercent = isPercent;
+    } else {
+      _activePromoCode = code;
+      _promoDiscount = discount;
+      _isPromoPercent = isPercent;
+    }
     notifyListeners();
   }
 
-  void clearPromoCode() {
-    _activePromoCode = '';
-    _promoDiscount = 0.0;
-    _isPromoPercent = false;
+  void clearPromoCode({bool isMainTab = false}) {
+    if (isMainTab) {
+      _mainTabActivePromoCode = '';
+      _mainTabPromoDiscount = 0.0;
+      _mainTabIsPromoPercent = false;
+    } else {
+      _activePromoCode = '';
+      _promoDiscount = 0.0;
+      _isPromoPercent = false;
+    }
+    notifyListeners();
   }
 
   String _orderSearchQuery = '';

@@ -10,6 +10,7 @@ import '../Order Screen/pos_orders_view.dart';
 import '../Petty Cash/petty_cash_view_model.dart';
 import '../Petty Cash/pos_petty_cash_view.dart';
 import '../Product Grid/pos_product_grid_view.dart';
+import '../Product Grid/product_grid_view_model.dart';
 import '../Promo/pos_promo_view.dart';
 import '../Promo/promo_view_model.dart';
 import '../Sales Return/pos_sales_return_view.dart';
@@ -57,8 +58,9 @@ class _PosShellState extends State<PosShell> {
   List<Widget> get _screens => const [
     PosHomeView(),
     PosProductGridView(
-      isReadOnly: true,
+      isReadOnly: false,
       showBackButton: false,
+      isMainTab: true,
     ),
     PosOrdersView(),
     PosStoreClosingView(),
@@ -104,8 +106,8 @@ class _PosShellState extends State<PosShell> {
             : PosBottomBar(
                 currentIndex: currentIndex,
                 onTap: (index) {
-                  posVm.setShellSelectedIndex(index);
                   _triggerVisitFetch(context, index);
+                  posVm.setShellSelectedIndex(index);
                 },
               ),
       ),
@@ -114,10 +116,15 @@ class _PosShellState extends State<PosShell> {
 
   void _triggerVisitFetch(BuildContext context, int index) {
     if (index == 1) {
-      final vm = context.read<PosViewModel>();
-      if (vm.products.isEmpty || vm.lastFetchedDepartmentId != null) {
-        vm.fetchProducts();
-      }
+      final posVm = context.read<PosViewModel>();
+      final gridVm = context.read<ProductGridViewModel>();
+      
+      // Reset all filters
+      posVm.initMainProductsTab();
+      gridVm.setDepartment('All');
+      gridVm.setCategory('All');
+      gridVm.setSubCategory('All');
+      gridVm.clearSearch();
     } else if (index == 2) {
       final vm = context.read<PosViewModel>();
       if (vm.orders.isEmpty) {

@@ -2,14 +2,23 @@ import 'package:flutter/material.dart';
 import '../../../../models/pos_product_model.dart';
 
 class ProductGridViewModel extends ChangeNotifier {
+  String _selectedDepartment = 'All';
   String _selectedCategory = 'All';
   String _selectedSubCategory = 'All';
   String _searchQuery = '';
   final TextEditingController searchController = TextEditingController();
 
+  String get selectedDepartment => _selectedDepartment;
   String get selectedCategory => _selectedCategory;
   String get selectedSubCategory => _selectedSubCategory;
   String get searchQuery => _searchQuery;
+
+  void setDepartment(String department) {
+    _selectedDepartment = department;
+    _selectedCategory = 'All';
+    _selectedSubCategory = 'All';
+    notifyListeners();
+  }
 
   void setCategory(String category) {
     _selectedCategory = category;
