@@ -91,7 +91,7 @@ class _PosShellState extends State<PosShell> {
         }
       },
       child: Scaffold(
-        drawer: isStoreClosingTab ? null : _buildDrawer(),
+        drawer: isStoreClosingTab ? null : _buildDrawer(isTablet),
         body: MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0),
@@ -150,60 +150,67 @@ class _PosShellState extends State<PosShell> {
 
   // --- DRAWER IMPLEMENTATION ---
 
-  Widget _buildDrawer() {
+  Widget _buildDrawer(bool isTablet) {
     return Drawer(
-      width: 280,
+      width: isTablet ? 360 : 280,
       backgroundColor: AppColors.secondaryLight,
       child: Column(
         children: [
-          _buildDrawerHeader(),
+          _buildDrawerHeader(isTablet),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 20 : 16, vertical: 20),
               children: [
-                _buildDrawerItem(0, 'Dashboard', Icons.dashboard_rounded),
-                const SizedBox(height: 4),
-                _buildDrawerItem(7, 'Sales Return', Icons.assignment_return_rounded),
-                const SizedBox(height: 4),
-                _buildDrawerItem(4, 'Petty Cash', Icons.payments_rounded),
-                const SizedBox(height: 4),
-                _buildDrawerItem(5, 'Promo Codes', Icons.local_offer_rounded),
-                const SizedBox(height: 4),
-                _buildDrawerItem(8, 'Current Shift', Icons.access_time_filled_rounded),
-                const SizedBox(height: 4),
-                _buildDrawerItem(6, 'Technicians', Icons.engineering_rounded),
-                const SizedBox(height: 4),
+                _buildDrawerItem(
+                    0, 'Dashboard', Icons.dashboard_rounded, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    7, 'Sales Return', Icons.assignment_return_rounded, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    4, 'Petty Cash', Icons.payments_rounded, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    5, 'Promo Codes', Icons.local_offer_rounded, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    8, 'Current Shift', Icons.access_time_filled_rounded, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    6, 'Technicians', Icons.engineering_rounded, isTablet),
+                const SizedBox(height: 8),
               ],
             ),
           ),
-          _buildDrawerFooter(),
+          _buildDrawerFooter(isTablet),
         ],
       ),
     );
   }
 
-  Widget _buildDrawerHeader() {
+  Widget _buildDrawerHeader(bool isTablet) {
     final posVm = context.watch<PosViewModel>();
     final userName = posVm.cashierName;
     final workshopName = posVm.workshopName;
     final branchName = posVm.branchName;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 30),
+      padding: EdgeInsets.fromLTRB(24, isTablet ? 80 : 60, 24, 30),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(isTablet ? 14 : 10),
               child: Image.network(
                 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}&background=FCC247&color=23262D',
-                width: 48,
-                height: 48,
+                width: isTablet ? 64 : 48,
+                height: isTablet ? 64 : 48,
               ),
             ),
           ),
@@ -214,28 +221,28 @@ class _PosShellState extends State<PosShell> {
               children: [
                 Text(
                   userName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 16,
+                    fontSize: isTablet ? 22 : 16,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   workshopName,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 13,
+                    fontSize: isTablet ? 15 : 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 if (branchName.isNotEmpty)
                   Text(
                     'Branch: $branchName',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
+                      fontSize: isTablet ? 14 : 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -247,10 +254,11 @@ class _PosShellState extends State<PosShell> {
     );
   }
 
-  Widget _buildDrawerItem(int index, String title, IconData icon, {bool isLogout = false}) {
+  Widget _buildDrawerItem(int index, String title, IconData icon, bool isTablet,
+      {bool isLogout = false}) {
     final posVm = context.watch<PosViewModel>();
     final isSelected = posVm.shellSelectedIndex == index;
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -261,19 +269,29 @@ class _PosShellState extends State<PosShell> {
             Navigator.pop(context); // Close drawer
           }
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+              horizontal: 16, vertical: isTablet ? 16 : 12),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryLight : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+            boxShadow: isSelected && isTablet
+                ? [
+                    BoxShadow(
+                      color: AppColors.primaryLight.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : null,
           ),
           child: Row(
             children: [
               Icon(
                 icon,
-                size: 20,
+                size: isTablet ? 26 : 20,
                 color: isSelected ? Colors.black : Colors.white70,
               ),
               const SizedBox(width: 16),
@@ -282,7 +300,8 @@ class _PosShellState extends State<PosShell> {
                 style: TextStyle(
                   color: isSelected ? Colors.black : Colors.white70,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                  fontSize: 14,
+                  fontSize: isTablet ? 17 : 14,
+                  letterSpacing: isTablet ? 0.3 : 0,
                 ),
               ),
             ],
@@ -292,18 +311,19 @@ class _PosShellState extends State<PosShell> {
     );
   }
 
-  Widget _buildDrawerFooter() {
+  Widget _buildDrawerFooter(bool isTablet) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isTablet ? 32 : 24),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: Colors.white24, size: 16),
+          Icon(Icons.info_outline,
+              color: Colors.white24, size: isTablet ? 20 : 16),
           const SizedBox(width: 8),
           Text(
             'Version 1.0.0',
             style: TextStyle(
               color: Colors.white.withOpacity(0.2),
-              fontSize: 11,
+              fontSize: isTablet ? 14 : 11,
               fontWeight: FontWeight.w600,
             ),
           ),

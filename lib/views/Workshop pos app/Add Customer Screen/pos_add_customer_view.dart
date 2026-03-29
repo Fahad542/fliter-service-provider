@@ -86,13 +86,13 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               child: TabBar(
                 controller: _tabController,
                 indicator: BoxDecoration(
-                  color: AppColors.primaryLight,
+                  color: AppColors.secondaryLight,
                   borderRadius: BorderRadius.circular(isTablet ? 12 : 10),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
-                labelColor: AppColors.secondaryLight,
-                unselectedLabelColor: Colors.grey,
+                labelColor: Colors.white,
+                unselectedLabelColor: AppColors.secondaryLight.withOpacity(0.5),
                 labelStyle: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w700,
                   fontSize: isTablet ? 15 : 13,
@@ -100,6 +100,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 unselectedLabelStyle: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w500,
                   fontSize: isTablet ? 15 : 13,
+                  color: AppColors.secondaryLight.withOpacity(0.5),
                 ),
                 labelPadding: EdgeInsets.symmetric(vertical: isTablet ? 4 : 0),
                 tabs: const [
@@ -245,7 +246,6 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       },
                     ),
                   ),
-                  const SizedBox(width: 16),
                   Expanded(
                     child: _buildTextField(
                       'Odometer',
@@ -720,7 +720,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   Widget _buildSaveButton({bool isTablet = false, required AddCustomerViewModel vm}) {
     return SizedBox(
       width: double.infinity,
-      height: isTablet ? 58 : 52,
+      height: isTablet ? 64 : 52,
       child: ElevatedButton(
         onPressed: () {
           final isNormal = _tabController.index == 0;

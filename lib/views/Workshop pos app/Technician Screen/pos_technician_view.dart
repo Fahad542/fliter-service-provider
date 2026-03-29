@@ -90,10 +90,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
                         if (technicians.isEmpty)
                           const Center(child: Text('No technicians found'))
                         else
-                          _buildTechnicianSections(
-                            vm.groupedTechnicians,
-                            isTablet,
-                          ),
+                          _buildTechnicianGrid(technicians, isTablet),
                       ],
                     ),
                   ),
@@ -120,40 +117,23 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
     );
   }
 
-  Widget _buildTechnicianSections(
-    Map<String, List<PosTechnician>> grouped,
-    bool isTablet,
-  ) {
-    return Column(
-      children: grouped.entries.map((entry) {
-        return _buildCategoryBlock(entry.key, entry.value, isTablet);
-      }).toList(),
-    );
-  }
-
-  Widget _buildCategoryBlock(
-    String category,
+  Widget _buildTechnicianGrid(
     List<PosTechnician> technicians,
     bool isTablet,
   ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: technicians.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: isTablet ? 4 : 1,
-          childAspectRatio: isTablet
-              ? 2.1
-              : 4, // Adjusted ratio to prevent overflow with scaling
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemBuilder: (context, index) {
-          return TechnicianCard(tech: technicians[index]);
-        },
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: technicians.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isTablet ? 4 : 1,
+        childAspectRatio: isTablet ? 1.8 : 4,
+        crossAxisSpacing: 18,
+        mainAxisSpacing: 18,
       ),
+      itemBuilder: (context, index) {
+        return TechnicianCard(tech: technicians[index]);
+      },
     );
   }
 }

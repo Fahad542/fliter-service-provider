@@ -57,6 +57,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
               title: 'Store Closing',
               showBackButton: false,
               showGlobalLeft: true,
+              showHamburger: false,
             ),
       body: Consumer2<StoreClosingViewModel, PosViewModel>(
         builder: (context, closingVm, posVm, _) {

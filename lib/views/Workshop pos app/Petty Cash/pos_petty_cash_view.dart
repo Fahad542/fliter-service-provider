@@ -82,6 +82,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
 
               // Modern Segmented Control for Tabs (Matching Add Customer Page)
               Container(
+                height: isTablet ? 60 : 44, // Increased height for tablet
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(12),
@@ -97,13 +98,13 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                   dividerColor: Colors.transparent,
                   labelColor: AppColors.secondaryLight,
                   unselectedLabelColor: Colors.grey,
-                  labelStyle: const TextStyle(
+                  labelStyle: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: isTablet ? 16 : 13, // Scaled for tablet
                   ),
-                  unselectedLabelStyle: const TextStyle(
+                  unselectedLabelStyle: TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: 13,
+                    fontSize: isTablet ? 16 : 13, // Scaled for tablet
                   ),
                   tabs: const [
                     Tab(text: 'Submit Expense'),
@@ -308,7 +309,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
 
         SizedBox(
           width: double.infinity,
-          height: 48,
+          height: isTablet ? 64 : 48,
           child: ElevatedButton(
             onPressed: vm.isExpenseSubmitting ? null : () {
               vm.submitExpenseAction((error) {
@@ -339,13 +340,13 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle_outline, size: 18),
+                      const Icon(Icons.check_circle_outline, size: 20),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Submit Expense',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
-                          fontSize: 15,
+                          fontSize: isTablet ? 18 : 15,
                         ),
                       ),
                     ],
@@ -387,7 +388,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
 
         SizedBox(
           width: double.infinity,
-          height: 48,
+          height: isTablet ? 64 : 48,
           child: ElevatedButton(
             onPressed: () {
               vm.submitRequestAction(
@@ -405,13 +406,13 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.send_rounded, size: 18),
+                Icon(Icons.send_rounded, size: isTablet ? 22 : 18),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Submit Request',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                    fontSize: isTablet ? 18 : 15,
                   ),
                 ),
               ],

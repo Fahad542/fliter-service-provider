@@ -262,73 +262,10 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         title: widget.isReadOnly ? 'Products' : 'Add Products',
         showBackButton: widget.showBackButton,
         showGlobalLeft: !widget.showBackButton,
+        showHamburger: false,
       ),
       body: vm.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : isTablet
-          // ─── TABLET: Left sidebar + product grid ───
-          ? Row(
-              children: [
-                // Left Department Sidebar (tablet only)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 110,
-                    margin: const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryLight,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: Consumer<PosViewModel>(
-                            builder: (context, vm, child) {
-                              final categories = _categories.where((c) => c != 'All').toList();
-                              return ListView.builder(
-                                itemCount: categories.length,
-                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                                itemBuilder: (context, index) {
-                                  final cat = categories[index];
-                                  final isSelected = vm.selectedCategory == cat;
-                                  return GestureDetector(
-                                    onTap: () => _onCategorySelected(vm, cat),
-                                    child: Container(
-                                      margin: const EdgeInsets.symmetric(vertical: 3),
-                                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                                      decoration: BoxDecoration(
-                                        color: isSelected ? AppColors.primaryLight : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Text(
-                                            cat,
-                                            style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: isSelected ? AppColors.secondaryLight : Colors.grey.shade400),
-                                            textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Product grid (tablet)
-                Expanded(
-                  flex: 5,
-                  child: _buildProductSection(isTablet),
-                ),
-              ],
-            )
-          // ─── MOBILE: Departments horizontal + product grid ───
           : _buildProductSection(isTablet),
       // ─── Bottom Bar (Cart Summary) ───
       bottomNavigationBar: (vm.getCartCount(widget.isMainTab) == 0 || widget.isReadOnly)
@@ -419,567 +356,682 @@ class _PosProductGridViewState extends State<PosProductGridView> {
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
               child: Container(
-              height: MediaQuery.of(context).size.height * (isTablet ? 0.85 : 0.80),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFBF9F6),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                children: [
-                  // Handle bar
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(top: 10, bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
+                height: MediaQuery.of(context).size.height * (isTablet ? 0.96 : 0.80),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFBF9F6),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: const TextScaler.linear(1.0),
+                  ),
+                  child: Column(
+                    children: [
+                      // Handle bar
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(top: 10, bottom: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
 
-                  // ── Customer & Vehicle Card ──
-                  Builder(
-                    builder: (context) {
-                      final vm = context.read<PosViewModel>();
-                      String orderIdText = '#NEW-ORDER';
-                      if (widget.completingOrder?.id != null && widget.completingOrder!.id.isNotEmpty) {
-                        orderIdText = '#${widget.completingOrder!.id.length > 8 ? widget.completingOrder!.id.substring(0, 8) : widget.completingOrder!.id}';
-                      }
-                      
-                      String custName = widget.completingOrder?.customerName ?? vm.customerName;
-                      if (custName.isEmpty) custName = 'Walk-in Customer';
-                      
-                      String make = widget.completingOrder?.vehicle?.make ?? vm.make;
-                      String model = widget.completingOrder?.vehicle?.model ?? vm.model;
-                      String plate = widget.completingOrder?.plateNumber ?? vm.vehicleNumber;
-                      String vehicleText = [make, model].where((s) => s.isNotEmpty).join(' ');
-                      if (plate.isNotEmpty) {
-                        vehicleText = vehicleText.isNotEmpty ? '$vehicleText • $plate' : plate;
-                      }
-                      if (vehicleText.trim().isEmpty || vehicleText == '•') vehicleText = 'No Vehicle Details';
+                      // ── Customer & Vehicle Card ──
+                      Builder(
+                        builder: (context) {
+                          final vm = context.read<PosViewModel>();
+                          String orderIdText = '#NEW-ORDER';
+                          if (widget.completingOrder?.id != null && widget.completingOrder!.id.isNotEmpty) {
+                            orderIdText = '#${widget.completingOrder!.id.length > 8 ? widget.completingOrder!.id.substring(0, 8) : widget.completingOrder!.id}';
+                          }
+                          
+                          String custName = widget.completingOrder?.customerName ?? vm.customerName;
+                          if (custName.isEmpty) custName = 'Walk-in Customer';
+                          
+                          String make = widget.completingOrder?.vehicle?.make ?? vm.make;
+                          String model = widget.completingOrder?.vehicle?.model ?? vm.model;
+                          String plate = widget.completingOrder?.plateNumber ?? vm.vehicleNumber;
+                          String vehicleText = [make, model].where((s) => s.isNotEmpty).join(' ');
+                          if (plate.isNotEmpty) {
+                            vehicleText = vehicleText.isNotEmpty ? '$vehicleText • $plate' : plate;
+                          }
+                          if (vehicleText.trim().isEmpty || vehicleText == '•') vehicleText = 'No Vehicle Details';
 
-                      String phoneText = widget.completingOrder?.customer?.mobile ?? vm.mobile;
-                      if (phoneText.isEmpty) phoneText = 'No Phone';
+                          String phoneText = widget.completingOrder?.customer?.mobile ?? vm.mobile;
+                          if (phoneText.isEmpty) phoneText = 'No Phone';
 
-                      String statusText = widget.completingOrder?.statusText ?? 'Draft';
-                      Color statusColor = widget.completingOrder?.statusColor ?? Colors.blue;
+                          String statusText = widget.completingOrder?.statusText ?? 'Draft';
+                          Color statusColor = widget.completingOrder?.statusColor ?? Colors.blue;
 
-                      return Container(
-                        margin: EdgeInsets.fromLTRB(isTablet ? 32 : 14, 6, isTablet ? 32 : 14, 0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade100),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 14, vertical: isTablet ? 14 : 12),
-                          child: Column(
-                            children: [
-                              // ID + Name + Status
-                              Row(
+                          return Container(
+                            margin: EdgeInsets.fromLTRB(isTablet ? 32 : 14, 6, isTablet ? 32 : 14, 0),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade100),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 14, vertical: isTablet ? 14 : 12),
+                              child: Column(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF3F4F6),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      orderIdText,
-                                      style: TextStyle(fontSize: isTablet ? 16 : 10, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
-                                    ),
+                                  // ID + Name + Status
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF3F4F6),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          orderIdText,
+                                          style: TextStyle(fontSize: isTablet ? 16 : 10, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
+                                        ),
+                                      ),
+                                      SizedBox(width: isTablet ? 8 : 6),
+                                      Expanded(
+                                        child: Text(
+                                          custName,
+                                          style: TextStyle(fontSize: isTablet ? 22 : 13, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: statusColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Text(statusText, style: TextStyle(color: statusColor, fontSize: isTablet ? 17 : 11, fontWeight: FontWeight.w700)),
+                                      ),
+                                    ],
                                   ),
-                                  SizedBox(width: isTablet ? 8 : 6),
-                                  Expanded(
-                                    child: Text(
-                                      custName,
-                                      style: TextStyle(fontSize: isTablet ? 22 : 13, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: statusColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(statusText, style: TextStyle(color: statusColor, fontSize: isTablet ? 17 : 11, fontWeight: FontWeight.w700)),
+                                  SizedBox(height: isTablet ? 12 : 10),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.directions_car_outlined, size: 22, color: Colors.grey),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(vehicleText,
+                                            style: TextStyle(color: Colors.grey, fontSize: isTablet ? 17 : 10, fontWeight: FontWeight.w500),
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Icon(Icons.phone_outlined, size: 22, color: Colors.grey),
+                                      const SizedBox(width: 8),
+                                      Text(phoneText, style: TextStyle(color: Colors.grey, fontSize: isTablet ? 19 : 12, fontWeight: FontWeight.w500)),
+                                    ],
                                   ),
                                 ],
                               ),
-                              SizedBox(height: isTablet ? 12 : 10),
-                              Row(
-                                children: [
-                                  const Icon(Icons.directions_car_outlined, size: 22, color: Colors.grey),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(vehicleText,
-                                        style: TextStyle(color: Colors.grey, fontSize: isTablet ? 17 : 10, fontWeight: FontWeight.w500),
-                                        overflow: TextOverflow.ellipsis),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Icon(Icons.phone_outlined, size: 22, color: Colors.grey),
-                                  const SizedBox(width: 8),
-                                  Text(phoneText, style: TextStyle(color: Colors.grey, fontSize: isTablet ? 19 : 12, fontWeight: FontWeight.w500)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                  ),
+                            ),
+                          );
+                        }
+                      ),
 
-                  // ── Order Items Header ──
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(isTablet ? 36 : 18, isTablet ? 24 : 12, isTablet ? 36 : 18, 10),
-                    child: Row(
-                      children: [
-                        Text('Order Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 20 : 14, color: const Color(0xFF1E2124))),
-                        const Spacer(),
-                        if (context.read<PosViewModel>().cartItems.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10)),
-                            child: Text('${context.read<PosViewModel>().cartItems.length}', style: TextStyle(fontSize: isTablet ? 16 : 11, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124))),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  // ── Cart Items ──
-                  Expanded(
-                    child: Consumer<PosViewModel>(
-                      builder: (context, vm, child) {
-                        final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
-                        return activeCart.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade300),
-                                    const SizedBox(height: 8),
-                                    Text('No items added', style: TextStyle(fontSize: 15, color: Colors.grey.shade400)),
-                                  ],
-                                ),
-                              )
-                            : ListView.builder(
-                                padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
-                                itemCount: activeCart.length,
-                                itemBuilder: (context, index) {
-                                  final item = activeCart[index];
-                                  return _buildCartItem(item, isTablet);
-                                },
-                              );
-                      },
-                    ),
-                  ),
-
-
-
-
-                  // ── Totals ──
-                  Consumer<PosViewModel>(
-                    builder: (context, vm, child) {
-                      return Container(
-                        margin: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
-                        padding: EdgeInsets.all(isTablet ? 24 : 14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade100),
-                        ),
-                        child: Column(
+                      // ── Order Items Header ──
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(isTablet ? 36 : 18, isTablet ? 24 : 12, isTablet ? 36 : 18, 10),
+                        child: Row(
                           children: [
-                            _buildTotalRow('Total Amount Gross', 'SAR ${vm.getSubtotalExclVat(widget.isMainTab).toStringAsFixed(2)}', isTablet),
-                            SizedBox(height: isTablet ? 8 : 6),
-                            
-                            if (vm.getTotalIndividualDiscount(widget.isMainTab) > 0) ...[
-                              _buildTotalRow('Item Discounts', '-SAR ${vm.getTotalIndividualDiscount(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.green),
-                              SizedBox(height: isTablet ? 8 : 6),
-                            ],
-                            
-                            // Interactive Global Discount
-                            Row(
-                              children: [
-                                Text('Discount', style: TextStyle(fontSize: isTablet ? 18 : 10, color: Colors.green)),
-                                const Spacer(),
-                                SizedBox(
-                                  width: isTablet ? 80 : 60,
-                                  height: isTablet ? 28 : 24,
-                                  child: TextFormField(
-                                    key: ValueKey('global_disc_${vm.getActiveIsGlobalDiscountPercent(widget.isMainTab)}_${vm.getActiveGlobalDiscount(widget.isMainTab)}'),
-                                    initialValue: vm.getActiveGlobalDiscount(widget.isMainTab) > 0
-                                        ? (vm.getActiveGlobalDiscount(widget.isMainTab) % 1 == 0
-                                            ? vm.getActiveGlobalDiscount(widget.isMainTab).toInt().toString()
-                                            : vm.getActiveGlobalDiscount(widget.isMainTab).toString())
-                                        : '',
-                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                    inputFormatters: [EnglishNumberFormatter()],
-                                    onChanged: (val) {
-                                      final discount = double.tryParse(val) ?? 0.0;
-                                      context.read<PosViewModel>().setGlobalDiscount(discount, vm.getActiveIsGlobalDiscountPercent(widget.isMainTab), isMainTab: widget.isMainTab);
-                                    },
-                                    style: TextStyle(fontSize: isTablet ? 14 : 11, color: Colors.green),
-                                    textAlign: TextAlign.center,
-                                    decoration: InputDecoration(
-                                      contentPadding: EdgeInsets.zero,
-                                      hintText: '0',
-                                      hintStyle: const TextStyle(color: Colors.green),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Colors.green)),
-                                      isDense: true,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                GestureDetector(
-                                  onTap: () {
-                                    context.read<PosViewModel>().setGlobalDiscount(vm.getActiveGlobalDiscount(widget.isMainTab), !vm.getActiveIsGlobalDiscountPercent(widget.isMainTab), isMainTab: widget.isMainTab);
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 6, vertical: isTablet ? 4 : 3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: Colors.green.withOpacity(0.3)),
-                                    ),
-                                    child: Text(
-                                      vm.getActiveIsGlobalDiscountPercent(widget.isMainTab) ? '%' : 'SAR',
-                                      style: TextStyle(fontSize: isTablet ? 12 : 9, fontWeight: FontWeight.w700, color: Colors.green),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: isTablet ? 8 : 6),
-                            
-                            _buildTotalRow('Price after discount', 'SAR ${(vm.getSubtotalExclVat(widget.isMainTab) - (vm.getTotalIndividualDiscount(widget.isMainTab) + vm.getTotalGlobalDiscountValue(widget.isMainTab))).toStringAsFixed(2)}', isTablet),
-                            SizedBox(height: isTablet ? 10 : 8),
-                            
-                            if (vm.getTotalPromoDiscountValue(widget.isMainTab) > 0) ...[
-                              _buildTotalRow('Promo Discount', '-SAR ${vm.getTotalPromoDiscountValue(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.green),
-                              SizedBox(height: isTablet ? 10 : 8),
-                              _buildTotalRow('Price after promo', 'SAR ${(vm.getSubtotalExclVat(widget.isMainTab) - (vm.getTotalIndividualDiscount(widget.isMainTab) + vm.getTotalGlobalDiscountValue(widget.isMainTab) + vm.getTotalPromoDiscountValue(widget.isMainTab))).toStringAsFixed(2)}', isTablet),
-                              SizedBox(height: isTablet ? 10 : 8),
-                            ],
-
-                            Divider(height: 1, color: Colors.grey.shade200),
-                            SizedBox(height: isTablet ? 10 : 8),
-                            
-                            _buildTotalRow('Tax (15%)', 'SAR ${vm.getTotalTaxValue(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.grey),
-                            SizedBox(height: isTablet ? 10 : 8),
-                            
-                            Row(
-                              children: [
-                                Text('Total amount', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isTablet ? 24 : 14, color: const Color(0xFF1E2124))),
-                                const Spacer(),
-                                Text('SAR ${vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isTablet ? 24 : 14, color: const Color(0xFF1E2124))),
-                              ],
-                            ),
+                            Text('Order Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 20 : 14, color: const Color(0xFF1E2124))),
+                            const Spacer(),
+                            if (context.read<PosViewModel>().cartItems.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10)),
+                                child: Text('${context.read<PosViewModel>().cartItems.length}', style: TextStyle(fontSize: isTablet ? 16 : 11, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124))),
+                              ),
                           ],
                         ),
-                      );
-                    }
-                  ),
+                      ),
 
-                  SizedBox(height: isTablet ? 10 : 8),
-
-                  // ── Promo Code ──
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
-                    child: GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => PromoCodeDialog(isMainTab: widget.isMainTab),
-                        );
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: isTablet ? 16 : 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade200),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                      // ── Cart Items ──
+                      Expanded(
                         child: Consumer<PosViewModel>(
                           builder: (context, vm, child) {
-                            final promoCode = vm.getActivePromoCode(widget.isMainTab);
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (promoCode.isNotEmpty)
-                                  SizedBox(width: isTablet ? 36 : 28), // Balance the row
-                                
-                                Icon(Icons.local_offer_outlined, size: isTablet ? 24 : 16, color: const Color(0xFFFFC145)),
-                                SizedBox(width: isTablet ? 10 : 8),
-                                Text(
-                                  promoCode.isEmpty ? 'Add Promo Code' : 'Promo: $promoCode',
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 17 : 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: promoCode.isEmpty ? const Color(0xFF1E2124) : Colors.green,
-                                  ),
-                                ),
-                                
-                                if (promoCode.isNotEmpty) ...[
-                                  SizedBox(width: isTablet ? 12 : 10),
-                                  GestureDetector(
-                                    onTap: () {
-                                      vm.clearPromoCode(isMainTab: widget.isMainTab);
-                                    },
-                                    behavior: HitTestBehavior.opaque,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Icon(Icons.close_rounded, size: isTablet ? 22 : 18, color: Colors.red),
+                            final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+                            return activeCart.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade300),
+                                        const SizedBox(height: 8),
+                                        Text('No items added', style: TextStyle(fontSize: 15, color: Colors.grey.shade400)),
+                                      ],
                                     ),
-                                  ),
-                                ],
-                              ],
-                            );
+                                  )
+                                : ListView.builder(
+                                    padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
+                                    itemCount: activeCart.length,
+                                    itemBuilder: (context, index) {
+                                      final item = activeCart[index];
+                                      return _buildCartItem(item, isTablet);
+                                    },
+                                  );
                           },
                         ),
                       ),
-                    ),
-                  ),
 
-                  SizedBox(height: isTablet ? 10 : 8),
+                      // ── Totals ──
+                      Consumer<PosViewModel>(
+                        builder: (context, vm, child) {
+                          return Container(
+                            margin: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
+                            padding: EdgeInsets.all(isTablet ? 24 : 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade100),
+                            ),
+                            child: Column(
+                              children: [
+                                _buildTotalRow('Total Amount Gross', 'SAR ${vm.getSubtotalExclVat(widget.isMainTab).toStringAsFixed(2)}', isTablet),
+                                SizedBox(height: isTablet ? 8 : 6),
+                                
+                                if (vm.getTotalIndividualDiscount(widget.isMainTab) > 0) ...[
+                                  _buildTotalRow('Item Discounts', '-SAR ${vm.getTotalIndividualDiscount(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.green),
+                                  SizedBox(height: isTablet ? 8 : 6),
+                                ],
+                                
+                                // Interactive Global Discount
+                                Row(
+                                  children: [
+                                    Text('Discount', style: TextStyle(fontSize: isTablet ? 18 : 10, color: Colors.green)),
+                                    const Spacer(),
+                                    SizedBox(
+                                      width: isTablet ? 80 : 60,
+                                      height: isTablet ? 28 : 24,
+                                      child: TextFormField(
+                                        key: ValueKey('global_disc_${vm.getActiveIsGlobalDiscountPercent(widget.isMainTab)}_${vm.getActiveGlobalDiscount(widget.isMainTab)}'),
+                                        initialValue: vm.getActiveGlobalDiscount(widget.isMainTab) > 0
+                                            ? (vm.getActiveGlobalDiscount(widget.isMainTab) % 1 == 0
+                                                ? vm.getActiveGlobalDiscount(widget.isMainTab).toInt().toString()
+                                                : vm.getActiveGlobalDiscount(widget.isMainTab).toString())
+                                            : '',
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        inputFormatters: [EnglishNumberFormatter()],
+                                        onChanged: (val) {
+                                          final discount = double.tryParse(val) ?? 0.0;
+                                          context.read<PosViewModel>().setGlobalDiscount(discount, vm.getActiveIsGlobalDiscountPercent(widget.isMainTab), isMainTab: widget.isMainTab);
+                                        },
+                                        style: TextStyle(fontSize: isTablet ? 14 : 11, color: Colors.green),
+                                        textAlign: TextAlign.center,
+                                        decoration: InputDecoration(
+                                          contentPadding: EdgeInsets.zero,
+                                          hintText: '0',
+                                          hintStyle: const TextStyle(color: Colors.green),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Colors.green)),
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    GestureDetector(
+                                      onTap: () {
+                                        context.read<PosViewModel>().setGlobalDiscount(vm.getActiveGlobalDiscount(widget.isMainTab), !vm.getActiveIsGlobalDiscountPercent(widget.isMainTab), isMainTab: widget.isMainTab);
+                                      },
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 6, vertical: isTablet ? 4 : 3),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                                        ),
+                                        child: Text(
+                                          vm.getActiveIsGlobalDiscountPercent(widget.isMainTab) ? '%' : 'SAR',
+                                          style: TextStyle(fontSize: isTablet ? 12 : 9, fontWeight: FontWeight.w700, color: Colors.green),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: isTablet ? 8 : 6),
+                                
+                                _buildTotalRow('Price after discount', 'SAR ${(vm.getSubtotalExclVat(widget.isMainTab) - (vm.getTotalIndividualDiscount(widget.isMainTab) + vm.getTotalGlobalDiscountValue(widget.isMainTab))).toStringAsFixed(2)}', isTablet),
+                                SizedBox(height: isTablet ? 10 : 8),
+                                
+                                if (vm.getTotalPromoDiscountValue(widget.isMainTab) > 0) ...[
+                                  _buildTotalRow('Promo Discount', '-SAR ${vm.getTotalPromoDiscountValue(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.green),
+                                  SizedBox(height: isTablet ? 10 : 8),
+                                  _buildTotalRow('Price after promo', 'SAR ${(vm.getSubtotalExclVat(widget.isMainTab) - (vm.getTotalIndividualDiscount(widget.isMainTab) + vm.getTotalGlobalDiscountValue(widget.isMainTab) + vm.getTotalPromoDiscountValue(widget.isMainTab))).toStringAsFixed(2)}', isTablet),
+                                  SizedBox(height: isTablet ? 10 : 8),
+                                ],
 
-                  // ── Action Buttons ──
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(isTablet ? 32 : 14, 0, isTablet ? 32 : 14, MediaQuery.of(context).padding.bottom + 20),
-                    child: widget.completingOrderId != null
-                        ? SizedBox(
-                            width: double.infinity,
-                            height: isTablet ? 60 : 48,
+                                Divider(height: 1, color: Colors.grey.shade200),
+                                SizedBox(height: isTablet ? 10 : 8),
+                                
+                                _buildTotalRow('Tax (15%)', 'SAR ${vm.getTotalTaxValue(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.grey),
+                                SizedBox(height: isTablet ? 10 : 8),
+                                
+                                Row(
+                                  children: [
+                                    Text('Total amount', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isTablet ? 24 : 14, color: const Color(0xFF1E2124))),
+                                    const Spacer(),
+                                    Text('SAR ${vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isTablet ? 24 : 14, color: const Color(0xFF1E2124))),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      ),
+
+                      SizedBox(height: isTablet ? 10 : 8),
+
+                      // ── Promo Code ──
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
+                        child: GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => PromoCodeDialog(isMainTab: widget.isMainTab),
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: isTablet ? 16 : 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: Colors.grey.shade200),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                             child: Consumer<PosViewModel>(
                               builder: (context, vm, child) {
-                                return ElevatedButton(
-                                  onPressed: vm.isLoading
-                                      ? null
-                                      : () async {
-                                          String jobId = widget.completingOrderId!;
-                                          if (widget.completingOrder != null && widget.completingOrder!.jobs.isNotEmpty) {
-                                            jobId = widget.completingOrder!.latestJob!.id;
-                                          }
-                                          final response = await vm.completeCashierJob(jobId);
-                                          if (response != null && response.success && context.mounted) {
-                                            vm.setShellSelectedIndex(2); // Orders Tab
-                                            vm.fetchOrders();
-                                            Navigator.pushAndRemoveUntil(
-                                              context,
-                                              MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
-                                              (route) => false,
-                                            );
-                                            ToastService.showSuccess(context, 'Order marked as completed successfully');
-                                          } else {
-                                            if (context.mounted) {
-                                              ToastService.showError(context, response?.message ?? 'Failed to complete job');
-                                            }
-                                          }
+                                final promoCode = vm.getActivePromoCode(widget.isMainTab);
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (promoCode.isNotEmpty)
+                                      SizedBox(width: isTablet ? 36 : 28), // Balance the row
+                                    
+                                    Icon(Icons.local_offer_outlined, size: isTablet ? 24 : 16, color: const Color(0xFFFFC145)),
+                                    SizedBox(width: isTablet ? 10 : 8),
+                                    Text(
+                                      promoCode.isEmpty ? 'Add Promo Code' : 'Promo: $promoCode',
+                                      style: TextStyle(
+                                        fontSize: isTablet ? 17 : 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: promoCode.isEmpty ? const Color(0xFF1E2124) : Colors.green,
+                                      ),
+                                    ),
+                                    
+                                    if (promoCode.isNotEmpty) ...[
+                                      SizedBox(width: isTablet ? 12 : 10),
+                                      GestureDetector(
+                                        onTap: () {
+                                          vm.clearPromoCode(isMainTab: widget.isMainTab);
                                         },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryLight,
-                                    foregroundColor: const Color(0xFF1E2124),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  child: vm.isLoading
-                                      ? const SizedBox(
-                                          height: 18,
-                                          width: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Color(0xFF1E2124),
-                                          ),
-                                        )
-                                      : Text(
-                                          'Mark as Complete',
-                                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 18 : 15),
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Icon(Icons.close_rounded, size: isTablet ? 22 : 18, color: Colors.red),
                                         ),
+                                      ),
+                                    ],
+                                  ],
                                 );
                               },
                             ),
-                          )
-                        : Column(
-                            children: [
-                              if (!widget.isMainTab) 
-                                Row(
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: isTablet ? 10 : 8),
+
+                      // ── Action Buttons ──
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(isTablet ? 32 : 14, 0, isTablet ? 32 : 14, MediaQuery.of(context).padding.bottom + 20),
+                        child: widget.completingOrderId != null
+                            ? SizedBox(
+                                width: double.infinity,
+                                height: isTablet ? 60 : 48,
+                                child: Consumer<PosViewModel>(
+                                  builder: (context, vm, child) {
+                                    return ElevatedButton(
+                                      onPressed: vm.isLoading
+                                          ? null
+                                          : () async {
+                                              String jobId = widget.completingOrderId!;
+                                              if (widget.completingOrder != null && widget.completingOrder!.jobs.isNotEmpty) {
+                                                jobId = widget.completingOrder!.latestJob!.id;
+                                              }
+                                              final response = await vm.completeCashierJob(jobId);
+                                              if (response != null && response.success && context.mounted) {
+                                                vm.setShellSelectedIndex(2); // Orders Tab
+                                                vm.fetchOrders();
+                                                Navigator.pushAndRemoveUntil(
+                                                  context,
+                                                  MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
+                                                  (route) => false,
+                                                );
+                                                ToastService.showSuccess(context, 'Order marked as completed successfully');
+                                              } else {
+                                                if (context.mounted) {
+                                                  ToastService.showError(context, response?.message ?? 'Failed to complete job');
+                                                }
+                                              }
+                                            },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primaryLight,
+                                        foregroundColor: const Color(0xFF1E2124),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                      child: vm.isLoading
+                                          ? const SizedBox(
+                                              height: 18,
+                                              width: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Color(0xFF1E2124),
+                                              ),
+                                            )
+                                          : Text(
+                                              'Mark as Complete',
+                                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 18 : 15),
+                                            ),
+                                    );
+                                  },
+                                ),
+                              )
+                            : Column(
                                 children: [
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: isTablet ? 60 : 44,
-                                      child: Consumer<PosViewModel>(
-                                        builder: (context, vm, child) {
-                                          return ElevatedButton(
-                                            onPressed: vm.isLoading || isForwarding || isSavingDraft
-                                                ? null
-                                                : () async {
-                                                    setSheetState(() => isSavingDraft = true);
-                                                    String finalDeptId = '1';
-                                                    if (widget.departmentId != null) {
-                                                      finalDeptId = widget.departmentId!;
-                                                    } else {
-                                                      if (_currentProducts.isNotEmpty) {
-                                                        finalDeptId = _currentProducts.first.departmentId ?? '1';
-                                                      } else if (vm.products.isNotEmpty) {
-                                                        finalDeptId = vm.products.first.departmentId ?? '1';
-                                                      }
-                                                    }
-                                                    final success = await vm.submitWalkInOrder([finalDeptId], context);
-                                                    if (success && context.mounted) {
-                                                      vm.setShellSelectedIndex(2);
-                                                      vm.fetchOrders();
-                                                      Navigator.pushAndRemoveUntil(
-                                                        context,
-                                                        MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
-                                                        (route) => false,
-                                                      );
-                                                    }
-                                                    if (mounted) {
-                                                      setSheetState(() => isSavingDraft = false);
-                                                    }
-                                                  },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.secondaryLight,
-                                              foregroundColor: Colors.white,
-                                              disabledBackgroundColor: AppColors.secondaryLight.withOpacity(0.7),
-                                              disabledForegroundColor: Colors.white,
-                                              elevation: 0,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                            ),
-                                            child: isSavingDraft
-                                                ? const SizedBox(
-                                                    height: 18,
-                                                    width: 18,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.white,
-                                                    ),
-                                                  )
-                                                : Text(
-                                                    'Save Draft',
-                                                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 16 : 11),
+                                  if (!widget.isMainTab) 
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: isTablet ? 60 : 44,
+                                            child: Consumer<PosViewModel>(
+                                              builder: (context, vm, child) {
+                                                return ElevatedButton(
+                                                  onPressed: vm.isLoading || isForwarding || isSavingDraft
+                                                      ? null
+                                                      : () async {
+                                                          setSheetState(() => isSavingDraft = true);
+                                                          String finalDeptId = '1';
+                                                          if (widget.departmentId != null) {
+                                                            finalDeptId = widget.departmentId!;
+                                                          } else {
+                                                            if (_currentProducts.isNotEmpty) {
+                                                              finalDeptId = _currentProducts.first.departmentId ?? '1';
+                                                            } else if (vm.products.isNotEmpty) {
+                                                              finalDeptId = vm.products.first.departmentId ?? '1';
+                                                            }
+                                                          }
+                                                          final success = await vm.submitWalkInOrder([finalDeptId], context);
+                                                          if (success && context.mounted) {
+                                                            vm.setShellSelectedIndex(2);
+                                                            vm.fetchOrders();
+                                                            Navigator.pushAndRemoveUntil(
+                                                              context,
+                                                              MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
+                                                              (route) => false,
+                                                            );
+                                                          }
+                                                          if (mounted) {
+                                                            setSheetState(() => isSavingDraft = false);
+                                                          }
+                                                        },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: AppColors.secondaryLight,
+                                                    foregroundColor: Colors.white,
+                                                    disabledBackgroundColor: AppColors.secondaryLight.withOpacity(0.7),
+                                                    disabledForegroundColor: Colors.white,
+                                                    elevation: 0,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                   ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: isTablet ? 8 : 6),
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: isTablet ? 60 : 44,
-                                      child: Consumer<PosViewModel>(
-                                        builder: (context, vm, child) {
-                                          return ElevatedButton(
-                                            onPressed: vm.isLoading || isForwarding || isSavingDraft
-                                                ? null
-                                                : () async {
-                                                    setSheetState(() => isForwarding = true);
-                                                    String finalDeptId = '1'; // Default fallback
-                                                    if (widget.departmentId != null) {
-                                                      finalDeptId = widget.departmentId!;
-                                                  } else {
-                                                      if (_currentProducts.isNotEmpty) {
-                                                        finalDeptId = _currentProducts.first.departmentId ?? '1';
-                                                      } else if (vm.products.isNotEmpty) {
-                                                        finalDeptId = vm.products.first.departmentId ?? '1';
-                                                      }
-                                                  }
-                                                    final success = await vm.submitWalkInOrder([finalDeptId], context);
-                                                    final orderId = vm.currentJobId ?? '';
-                                                    if (success && context.mounted) {
-                                                      if (orderId.isNotEmpty) {
-                                                        Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                            builder: (_) =>
-                                                                PosTechnicianAssignmentView(
-                                                                  jobId: orderId,
-                                                                  departmentName:
-                                                                      widget.departmentName,
-                                                                ),
+                                                  child: isSavingDraft
+                                                      ? const SizedBox(
+                                                          height: 18,
+                                                          width: 18,
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color: Colors.white,
                                                           ),
-                                                        );
-                                                      } else {
-                                                        vm.setShellSelectedIndex(2); // Orders Tab
-                                                        vm.fetchOrders();
-                                                        Navigator.pushAndRemoveUntil(
-                                                          context,
-                                                          MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
-                                                          (route) => false,
-                                                        );
-                                                      }
-                                                    }
-                                                    if (mounted) {
-                                                      setSheetState(() => isForwarding = false);
-                                                    }
-                                                  },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFFFFC145),
-                                              foregroundColor: const Color(0xFF1E2124),
-                                              disabledBackgroundColor: const Color(0xFFFFC145).withOpacity(0.7),
-                                              disabledForegroundColor: const Color(0xFF1E2124).withOpacity(0.7),
-                                              elevation: 0,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                        )
+                                                      : Text(
+                                                          'Save Draft',
+                                                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 16 : 11),
+                                                        ),
+                                                );
+                                              },
                                             ),
-                                            child: isForwarding
-                                                ? const SizedBox(
-                                                    height: 18,
-                                                    width: 18,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Color(0xFF1E2124),
-                                                    ),
-                                                  )
-                                                : const Text(
-                                                    'Forward to Technician',
-                                                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+                                          ),
+                                        ),
+                                        SizedBox(width: isTablet ? 8 : 6),
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: isTablet ? 60 : 44,
+                                            child: Consumer<PosViewModel>(
+                                              builder: (context, vm, child) {
+                                                return ElevatedButton(
+                                                  onPressed: vm.isLoading || isForwarding || isSavingDraft
+                                                      ? null
+                                                      : () async {
+                                                          setSheetState(() => isForwarding = true);
+                                                          String finalDeptId = '1'; // Default fallback
+                                                          if (widget.departmentId != null) {
+                                                            finalDeptId = widget.departmentId!;
+                                                          } else {
+                                                            if (_currentProducts.isNotEmpty) {
+                                                              finalDeptId = _currentProducts.first.departmentId ?? '1';
+                                                            } else if (vm.products.isNotEmpty) {
+                                                              finalDeptId = vm.products.first.departmentId ?? '1';
+                                                            }
+                                                          }
+                                                          final success = await vm.submitWalkInOrder([finalDeptId], context);
+                                                          final orderId = vm.currentJobId ?? '';
+                                                          if (success && context.mounted) {
+                                                            if (orderId.isNotEmpty) {
+                                                              Navigator.push(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                  builder: (_) =>
+                                                                      PosTechnicianAssignmentView(
+                                                                        jobId: orderId,
+                                                                        departmentName:
+                                                                            widget.departmentName,
+                                                                      ),
+                                                                ),
+                                                              );
+                                                            } else {
+                                                              vm.setShellSelectedIndex(2); // Orders Tab
+                                                              vm.fetchOrders();
+                                                              Navigator.pushAndRemoveUntil(
+                                                                context,
+                                                                MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
+                                                                (route) => false,
+                                                              );
+                                                            }
+                                                          }
+                                                          if (mounted) {
+                                                            setSheetState(() => isForwarding = false);
+                                                          }
+                                                        },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: const Color(0xFFFFC145),
+                                                    foregroundColor: const Color(0xFF1E2124),
+                                                    disabledBackgroundColor: const Color(0xFFFFC145).withOpacity(0.7),
+                                                    disabledForegroundColor: const Color(0xFF1E2124).withOpacity(0.7),
+                                                    elevation: 0,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                   ),
-                                          );
-                                        },
-                                      ),
+                                                  child: isForwarding
+                                                      ? const SizedBox(
+                                                          height: 18,
+                                                          width: 18,
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color: Color(0xFF1E2124),
+                                                          ),
+                                                        )
+                                                      : Text(
+                                                          'Forward to Technician',
+                                                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 16 : 11),
+                                                        ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
                                 ],
                               ),
-                            ],
-                          ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
             );
           },
         );
       },
     );
   }
+
   // ── Product Section (shared by tablet & mobile) ──
 
   Widget _buildProductSection(bool isTablet) {
     final gridVm = context.watch<ProductGridViewModel>();
     final vm = Provider.of<PosViewModel>(context);
-    
+
+    // Common Filtering Logic
+    final filteredProducts = vm.allProducts.where((product) {
+      if (vm.selectedProductType != 'All') {
+        final isService = vm.selectedProductType == 'Services';
+        if (product.isServiceType != isService) return false;
+      }
+      final matchesDept = gridVm.selectedDepartment == 'All' || product.departmentName == gridVm.selectedDepartment;
+      final matchesCategory = gridVm.selectedCategory == 'All' || (product.categoryName ?? '') == gridVm.selectedCategory;
+      final matchesSearch = gridVm.searchQuery.isEmpty || product.name.toLowerCase().contains(gridVm.searchQuery.toLowerCase());
+      return matchesDept && matchesCategory && matchesSearch;
+    }).toList();
+
+    filteredProducts.sort((a, b) {
+      final deptA = a.departmentName ?? 'ZZZ';
+      final deptB = b.departmentName ?? 'ZZZ';
+      if (deptA != deptB) return deptA.compareTo(deptB);
+      return a.name.compareTo(b.name);
+    });
+
+    if (isTablet) {
+      final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+      return Column(
+        children: [
+          if (vm.allProducts.isNotEmpty) ...[
+            // ─── FIXED HEADERS: Search, Tabs & Categories ───
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+              child: PosSearchBar(
+                controller: gridVm.searchController,
+                onChanged: (v) => gridVm.setSearchQuery(v),
+                hintText: 'Search products & services...',
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 20, 32, 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    _buildTabItem(vm, gridVm, 'All', true),
+                    _buildTabItem(vm, gridVm, 'Products', true),
+                    _buildTabItem(vm, gridVm, 'Services', true),
+                  ],
+                ),
+              ),
+            ),
+            // Category Chips (ALSO FIXED)
+            _buildSubCategoryChips(true, vm, gridVm),
+          ],
+
+          SizedBox(height: isTablet ? 24 : 12),
+          Expanded(
+            child: vm.allProducts.isEmpty
+                ? _buildEmptyState(vm, true)
+                : filteredProducts.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No products match your search.',
+                          style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
+                        ),
+                      )
+                    : Builder(
+                        builder: (context) {
+                          Widget grid = GridView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            clipBehavior: Clip.hardEdge,
+                            padding: const EdgeInsets.fromLTRB(32, 20, 32, 120),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: isPortrait ? 2 : 3,
+                              mainAxisExtent: 220,
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
+                            ),
+                            itemCount: filteredProducts.length,
+                            itemBuilder: (context, index) {
+                              final product = filteredProducts[index];
+                              return Consumer<PosViewModel>(
+                                builder: (context, vm, child) {
+                                  final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+                                  final cartItemIndex = activeCart.indexWhere((i) => i.product.id == product.id);
+                                  final qty = cartItemIndex != -1 ? activeCart[cartItemIndex].quantity : 0.0;
+                                  return _buildProductCard(product, qty, true);
+                                },
+                              );
+                            },
+                          );
+
+                          // Only apply 1.4x scaling to the grid if not already scaled by PosShell
+                          if (!widget.isMainTab && isTablet) {
+                            return MediaQuery(
+                              data: MediaQuery.of(context).copyWith(
+                                textScaler: const TextScaler.linear(1.4),
+                              ),
+                              child: grid,
+                            );
+                          }
+                          return grid;
+                        },
+                      ),
+          ),
+        ],
+      );
+    }
+
+    // ─── MOBILE: Standard Column with everything fixed ───
     return Column(
       children: [
-        // Top Controls: Search & Categories
         if (vm.allProducts.isNotEmpty) ...[
-          // Search Bar
           Padding(
-            padding: EdgeInsets.fromLTRB(isTablet ? 20 : 12, isTablet ? 16 : 12, isTablet ? 20 : 12, 0),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             child: PosSearchBar(
               controller: gridVm.searchController,
               onChanged: (v) => gridVm.setSearchQuery(v),
               hintText: 'Search products & services...',
             ),
           ),
-
-          // Product vs Services Tabs
           Padding(
-            padding: EdgeInsets.fromLTRB(isTablet ? 20 : 12, 16, isTablet ? 20 : 12, 8),
+            padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -988,311 +1040,165 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        vm.setProductType('All');
-                        gridVm.setSubCategory('All');
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: vm.selectedProductType == 'All' ? AppColors.primaryLight : Colors.transparent,
-                          borderRadius: BorderRadius.circular(11),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'All',
-                          style: TextStyle(
-                            color: vm.selectedProductType == 'All' ? AppColors.secondaryLight : Colors.grey.shade600,
-                            fontWeight: vm.selectedProductType == 'All' ? FontWeight.w800 : FontWeight.w600,
-                            fontSize: isTablet ? 15 : 13,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        vm.setProductType('Products');
-                        gridVm.setSubCategory('All');
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: vm.selectedProductType == 'Products' ? AppColors.primaryLight : Colors.transparent,
-                          borderRadius: BorderRadius.circular(11),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Products',
-                          style: TextStyle(
-                            color: vm.selectedProductType == 'Products' ? AppColors.secondaryLight : Colors.grey.shade600,
-                            fontWeight: vm.selectedProductType == 'Products' ? FontWeight.w800 : FontWeight.w600,
-                            fontSize: isTablet ? 15 : 13,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        vm.setProductType('Services');
-                        gridVm.setSubCategory('All');
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: vm.selectedProductType == 'Services' ? AppColors.primaryLight : Colors.transparent,
-                          borderRadius: BorderRadius.circular(11),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Services',
-                          style: TextStyle(
-                            color: vm.selectedProductType == 'Services' ? AppColors.secondaryLight : Colors.grey.shade600,
-                            fontWeight: vm.selectedProductType == 'Services' ? FontWeight.w800 : FontWeight.w600,
-                            fontSize: isTablet ? 15 : 13,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildTabItem(vm, gridVm, 'All', false),
+                  _buildTabItem(vm, gridVm, 'Products', false),
+                  _buildTabItem(vm, gridVm, 'Services', false),
                 ],
               ),
             ),
           ),
+          _buildSubCategoryChips(false, vm, gridVm),
+        ],
 
-          // Department Chips Row - Hidden as per user request ("department remove kardo")
-          /*
-          Consumer<PosViewModel>(
-            builder: (context, vm, child) {
-              final departments = vm.allProducts
-                  .map((p) => p.departmentName)
-                  .whereType<String>()
-                  .toSet()
-                  .toList();
-              departments.sort();
-              final displayDepts = ['All', ...departments];
+        const SizedBox(height: 12),
+        Expanded(
+          child: vm.allProducts.isEmpty
+              ? _buildEmptyState(vm, false)
+              : filteredProducts.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No products match your search.',
+                        style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      itemCount: filteredProducts.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final product = filteredProducts[index];
+                        return Consumer<PosViewModel>(
+                          builder: (context, vm, child) {
+                            final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+                            final cartItemIndex = activeCart.indexWhere((i) => i.product.id == product.id);
+                            final qty = cartItemIndex != -1 ? activeCart[cartItemIndex].quantity : 0.0;
+                            return _buildProductCard(product, qty, false);
+                          },
+                        );
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
 
-              return Container(
-                height: isTablet ? 44 : 32,
-                margin: const EdgeInsets.only(top: 8),
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 12),
-                  itemCount: displayDepts.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final dept = displayDepts[index];
-                    final isSelected = gridVm.selectedDepartment == dept;
-                    return GestureDetector(
-                      onTap: () => gridVm.setDepartment(dept),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 12, vertical: isTablet ? 8 : 6),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.secondaryLight : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: isSelected ? AppColors.secondaryLight : Colors.grey.shade300),
-                        ),
-                        child: Center(
+  // Refactored Helper Methods to avoid duplication
+  Widget _buildTabItem(PosViewModel vm, ProductGridViewModel gridVm, String type, bool isTablet) {
+    final isSelected = vm.selectedProductType == type;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          vm.setProductType(type);
+          gridVm.setCategory('All');
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primaryLight : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            type,
+            style: TextStyle(
+              color: isSelected ? AppColors.secondaryLight : AppColors.secondaryLight.withOpacity(0.6),
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              fontSize: isTablet ? 15 : 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubCategoryChips(bool isTablet, PosViewModel vm, ProductGridViewModel gridVm) {
+    return Consumer<PosViewModel>(
+      builder: (context, vm, child) {
+        List<PosProduct> sourceProducts;
+        if (vm.selectedProductType != 'All') {
+          final isService = vm.selectedProductType == 'Services';
+          sourceProducts = vm.allProducts.where((p) => p.isServiceType == isService).toList();
+        } else {
+          sourceProducts = vm.allProducts.toList();
+        }
+
+        Set<String> subCatsSet = {};
+        for (var p in sourceProducts) {
+          final catName = p.categoryName ?? '';
+          if (catName.isNotEmpty) subCatsSet.add(catName);
+        }
+
+        final subCats = subCatsSet.toList();
+        subCats.sort();
+        if (subCats.isEmpty && sourceProducts.isEmpty) return const SizedBox.shrink();
+
+        final displaySubCats = ['All', ...subCats];
+        return Column(
+          children: [
+            SizedBox(
+              height: isTablet ? 72 : 44,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 12, vertical: 8),
+                itemCount: displaySubCats.length,
+                itemBuilder: (context, index) {
+                  final subCat = displaySubCats[index];
+                  final isSelected = gridVm.selectedCategory == subCat;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () => gridVm.setCategory(subCat),
+                        child: Container(
+                          height: isTablet ? 48 : 34,
+                          padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.secondaryLight : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: isSelected ? AppColors.secondaryLight : Colors.grey.shade300),
+                            boxShadow: isSelected ? [
+                              BoxShadow(
+                                color: AppColors.secondaryLight.withOpacity(0.15),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ] : null,
+                          ),
                           child: Text(
-                            dept,
+                            subCat,
                             style: TextStyle(
-                              fontSize: isTablet ? 15 : 11,
+                              fontSize: isTablet ? 15 : 12,
                               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                               color: isSelected ? Colors.white : Colors.grey.shade600,
                             ),
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-          */
-
-          // SubCategory Chips (Filtered by Department)
-          Consumer<PosViewModel>(
-            builder: (context, vm, child) {
-              List<PosProduct> sourceProducts;
-              if (vm.selectedProductType != 'All') {
-                final isService = vm.selectedProductType == 'Services';
-                sourceProducts = vm.allProducts.where((p) => p.isServiceType == isService).toList();
-              } else {
-                sourceProducts = vm.allProducts.toList();
-              }
-              
-              Set<String> subCatsSet = {};
-              Map<String, String> catToDept = {};
-              
-              final productsForDepts = gridVm.selectedDepartment == 'All' 
-                  ? sourceProducts 
-                  : sourceProducts.where((p) => p.departmentName == gridVm.selectedDepartment).toList();
-
-              for (var p in productsForDepts) {
-                 // Use categoryName as the primary filter key
-                 final catName = p.categoryName ?? '';
-                 if (catName.isNotEmpty) {
-                    subCatsSet.add(catName);
-                    if (!catToDept.containsKey(catName)) {
-                      catToDept[catName] = p.departmentName ?? 'ZZZ';
-                    }
-                 }
-              }
-
-              final subCats = subCatsSet.toList();
-              subCats.sort((a, b) {
-                final deptA = catToDept[a] ?? 'ZZZ';
-                final deptB = catToDept[b] ?? 'ZZZ';
-                if (deptA != deptB) return deptA.compareTo(deptB);
-                return a.compareTo(b);
-              });
-              
-              if (subCats.isEmpty) {
-                return const SizedBox.shrink();
-              }
-
-              final displaySubCats = ['All', ...subCats];
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: isTablet ? 16 : 8),
-                  SizedBox(
-                    height: isTablet ? 44 : 32,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 12),
-                      itemCount: displaySubCats.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final subCat = displaySubCats[index];
-                        final isSelected = gridVm.selectedCategory == subCat;
-                        return GestureDetector(
-                          onTap: () => gridVm.setCategory(subCat),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 12, vertical: isTablet ? 8 : 6),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppColors.secondaryLight : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected ? AppColors.secondaryLight : Colors.grey.shade300,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                subCat,
-                                style: TextStyle(
-                                  fontSize: isTablet ? 15 : 11,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  color: isSelected ? Colors.white : Colors.grey.shade600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
                     ),
-                  ),
-                ],
-              );
-            }
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(PosViewModel vm, bool isTablet) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade300),
+          const SizedBox(height: 12),
+          Text(
+            vm.selectedProductType == 'Services' ? 'No services found' : 'No products found',
+            style: TextStyle(color: Colors.grey.shade400, fontSize: isTablet ? 16 : 14),
           ),
         ],
-
-        // Products Grid
-        const SizedBox(height: 12),
-        Expanded(
-          child: vm.allProducts.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade300),
-                      const SizedBox(height: 12),
-                      Text(vm.selectedProductType == 'Services' ? 'No services found' : 'No products found', style: TextStyle(color: Colors.grey.shade400, fontSize: isTablet ? 16 : 14)),
-                    ],
-                  ),
-                )
-              : Builder(
-                  builder: (context) {
-                    final filteredProducts = vm.allProducts.where((product) {
-                      if (vm.selectedProductType != 'All') {
-                        final isService = vm.selectedProductType == 'Services';
-                        if (product.isServiceType != isService) return false;
-                      }
-
-                      final matchesDept = gridVm.selectedDepartment == 'All' || product.departmentName == gridVm.selectedDepartment;
-                      // Filter by categoryName chip selection
-                      final matchesCategory = gridVm.selectedCategory == 'All' || (product.categoryName ?? '') == gridVm.selectedCategory;
-                      final matchesSearch = gridVm.searchQuery.isEmpty || product.name.toLowerCase().contains(gridVm.searchQuery.toLowerCase());
-                      
-                      return matchesDept && matchesCategory && matchesSearch;
-                    }).toList();
-
-                    filteredProducts.sort((a, b) {
-                      final deptA = a.departmentName ?? 'ZZZ';
-                      final deptB = b.departmentName ?? 'ZZZ';
-                      if (deptA != deptB) return deptA.compareTo(deptB);
-                      return a.name.compareTo(b.name);
-                    });
-
-                    if (filteredProducts.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'No products match your search.',
-                          style: TextStyle(color: Colors.grey.shade400, fontSize: isTablet ? 16 : 14),
-                        ),
-                      );
-                    }
-
-                    if (isTablet) {
-                      return GridView.builder(
-                        padding: EdgeInsets.fromLTRB(isTablet ? 20 : 12, 0, isTablet ? 20 : 12, 16),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: isTablet ? 3 : 2,
-                          childAspectRatio: isTablet ? 1.4 : 1.25,
-                          crossAxisSpacing: isTablet ? 14 : 10,
-                          mainAxisSpacing: isTablet ? 14 : 10,
-                        ),
-                        itemCount: filteredProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = filteredProducts[index];
-                          return Consumer<PosViewModel>(
-                            builder: (context, vm, child) {
-                              final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems; final cartItemIndex = activeCart.indexWhere((i) => i.product.id == product.id);
-                              final qty = cartItemIndex != -1 ? activeCart[cartItemIndex].quantity : 0.0;
-                              return _buildProductCard(product, qty, isTablet);
-                            },
-                          );
-                        },
-                      );
-                    } else {
-                      return ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        itemCount: filteredProducts.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final product = filteredProducts[index];
-                          return Consumer<PosViewModel>(
-                            builder: (context, vm, child) {
-                              final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems; final cartItemIndex = activeCart.indexWhere((i) => i.product.id == product.id);
-                              final qty = cartItemIndex != -1 ? activeCart[cartItemIndex].quantity : 0.0;
-                              return _buildProductCard(product, qty, isTablet);
-                            },
-                          );
-                        },
-                      );
-                    }
-                  },
-                ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -1497,7 +1403,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             product.name,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                              fontSize: 17,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -1512,7 +1418,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       Text(
                         'Unit: ${product.unit}',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 14,
                           color: Colors.grey.shade600,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1532,7 +1438,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       child: Text(
                         product.stockLabel,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: product.stockColor,
                         ),
@@ -1546,7 +1452,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       'SAR ${product.allowDecimalQty ? product.price.toStringAsFixed(2) : product.price.toInt()}',
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.w800,
-                        fontSize: 17,
+                        fontSize: 19,
                         color: AppColors.secondaryLight,
                       ),
                     ),

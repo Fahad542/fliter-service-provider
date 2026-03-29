@@ -34,7 +34,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     this.onBack,
     this.showBackButton = true,
-    this.showHamburger = false,
+    this.showHamburger = true,
     this.showGlobalLeft = false,
     this.onMenuPressed,
     this.actions,
@@ -43,97 +43,103 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final double iconContainerSize = isTablet ? 46 : 32;
-    final double iconSize = isTablet ? 24 : 16;
+    final double iconContainerSize = isTablet ? 54 : 32;
+    final double iconSize = isTablet ? 28 : 16;
+    final double currentToolbarHeight = isTablet ? 80 : kToolbarHeight;
 
     return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
+      preferredSize: Size.fromHeight(currentToolbarHeight),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.primaryLight,
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(isTablet ? 32 : 24),
+          ),
         ),
         child: AppBar(
+          toolbarHeight: currentToolbarHeight,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          automaticallyImplyLeading: showBackButton,
+          leadingWidth: isTablet ? 80 : 56,
           leading: showBackButton
               ? IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.black),
                   onPressed: onBack ?? () => Navigator.pop(context),
                 )
               : showGlobalLeft
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  child: Consumer<SettingsViewModel>(
-                    builder: (context, settings, _) {
-                      return InkWell(
-                        onTap: () {
-                          final newLocale = settings.locale.languageCode == 'en'
-                              ? const Locale('ar')
-                              : const Locale('en');
-                          settings.updateLocale(newLocale);
+                  ? Padding(
+                      padding: EdgeInsets.only(left: isTablet ? 14 : 10),
+                      child: Consumer<SettingsViewModel>(
+                        builder: (context, settings, _) {
+                          return InkWell(
+                            onTap: () {
+                              final newLocale =
+                                  settings.locale.languageCode == 'en'
+                                      ? const Locale('ar')
+                                      : const Locale('en');
+                              settings.updateLocale(newLocale);
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: isTablet ? 54 : 40,
+                              height: isTablet ? 54 : 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.35),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Image.asset(
+                                  'assets/images/global.png',
+                                  width: isTablet ? 30 : 22,
+                                  color: Colors.black,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(
+                                        Icons.language_rounded,
+                                        size: isTablet ? 30 : 22,
+                                        color: Colors.black,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          );
                         },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Image.asset(
-                              'assets/images/global.png',
-                              width: 20,
-                              color: Colors.black,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(
-                                    Icons.language_rounded,
-                                    size: 20,
-                                    color: Colors.black,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                )
-              : showHamburger
-              ? Padding(
-                  padding: EdgeInsets.only(left: isTablet ? 14 : 14),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap:
-                          onMenuPressed ??
-                          () => Scaffold.of(context).openDrawer(),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.secondaryLight,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.secondaryLight.withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.menu_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
                       ),
-                    ),
-                  ),
-                )
-              : null,
+                    )
+                  : (showHamburger || onMenuPressed != null)
+                      ? Padding(
+                          padding: EdgeInsets.only(left: isTablet ? 14 : 14),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: onMenuPressed ??
+                                  () => Scaffold.of(context).openDrawer(),
+                              child: Container(
+                                width: iconContainerSize,
+                                height: iconContainerSize,
+                                decoration: BoxDecoration(
+                                  color: AppColors.secondaryLight,
+                                  borderRadius:
+                                      BorderRadius.circular(isTablet ? 16 : 14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.secondaryLight
+                                          .withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.menu_rounded,
+                                  color: Colors.white,
+                                  size: iconSize,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : null,
           title: Text(
             title,
             style: TextStyle(
@@ -156,81 +162,79 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                       settings.updateLocale(newLocale);
                     },
                     child: Container(
-                      width: 40,
-                      height: 40,
+                      width: isTablet ? 54 : 40,
+                      height: isTablet ? 54 : 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withOpacity(0.35),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: Image.asset(
                           'assets/images/global.png',
-                          width: 20,
+                          width: isTablet ? 30 : 22,
                           color: Colors.black,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                Icons.language_rounded,
-                                size: 20,
-                                color: Colors.black,
-                              ),
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.language_rounded,
+                            size: isTablet ? 30 : 22,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
                     ),
                   );
                 },
               ),
-            if (showGlobalLeft)
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsView(),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
+            const SizedBox(width: 8),
+            Padding(
+              padding: EdgeInsets.only(right: isTablet ? 24 : 12),
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationsView(),
                     ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/images/notifications.png',
-                          width: 22,
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: isTablet ? 54 : 40,
+                  height: isTablet ? 54 : 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.35),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/notifications.png',
+                        width: isTablet ? 30 : 22,
+                        color: Colors.black,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.notifications_rounded,
+                          size: isTablet ? 30 : 22,
                           color: Colors.black,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                Icons.notifications_rounded,
-                                size: 22,
-                                color: Colors.black,
-                              ),
                         ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
+                      ),
+                      Positioned(
+                        top: isTablet ? 12 : 8,
+                        right: isTablet ? 12 : 8,
+                        child: Container(
+                          width: isTablet ? 10 : 8,
+                          height: isTablet ? 10 : 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            if (!showGlobalLeft) const SizedBox(width: 12),
+            ),
+            if (!showGlobalLeft) const SizedBox(width: 4),
           ],
         ),
       ),
@@ -238,7 +242,11 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize {
+    // This is called before build, so we use a basic check or just kToolbarHeight
+    // but the PreferredSize widget above handles the actual height used in layout.
+    return const Size.fromHeight(80); 
+  }
 }
 
 class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -270,19 +278,22 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final double iconContainerSize = isTablet ? 52 : 36;
-    final double iconSize = isTablet ? 32 : 18;
+    final double iconContainerSize = isTablet ? 56 : 36;
+    final double iconSize = isTablet ? 28 : 18;
     final bool hasInfo = infoTitle != null;
+    final double currentToolbarHeight = isTablet ? 110 : 70;
 
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: AppColors.primaryLight,
       elevation: 0,
       centerTitle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(isTablet ? 40 : 32),
+        ),
       ),
-      toolbarHeight: isTablet ? kToolbarHeight + 40 : 60,
+      toolbarHeight: currentToolbarHeight,
       leadingWidth: showGlobalLeft
           ? (isTablet ? 74 : 64)
           : (showDrawer ? (isTablet ? 74 : 64) : 0),
@@ -304,21 +315,21 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                     },
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      width: 40,
-                      height: 40,
+                      width: isTablet ? 54 : 40,
+                      height: isTablet ? 54 : 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withOpacity(0.35),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: Image.asset(
                           'assets/images/global.png',
-                          width: 20,
+                          width: isTablet ? 30 : 22,
                           color: Colors.black,
                           errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
+                              Icon(
                                 Icons.language_rounded,
-                                size: 20,
+                                size: isTablet ? 30 : 22,
                                 color: Colors.black,
                               ),
                         ),
@@ -338,11 +349,11 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onTap:
                       onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
                   child: Container(
-                    width: 44,
-                    height: 44,
+                    width: iconContainerSize,
+                    height: iconContainerSize,
                     decoration: BoxDecoration(
                       color: AppColors.secondaryLight,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.secondaryLight.withOpacity(0.2),
@@ -351,10 +362,10 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.menu_rounded,
                       color: Colors.white,
-                      size: 22,
+                      size: iconSize,
                     ),
                   ),
                 ),
@@ -403,21 +414,21 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                   },
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: isTablet ? 54 : 40,
+                    height: isTablet ? 54 : 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withOpacity(0.35),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Image.asset(
                         'assets/images/global.png',
-                        width: 20,
+                        width: isTablet ? 30 : 22,
                         color: Colors.black,
                         errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
+                            Icon(
                               Icons.language_rounded,
-                              size: 20,
+                              size: isTablet ? 30 : 22,
                               color: Colors.black,
                             ),
                       ),
@@ -446,10 +457,10 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(
-              width: 40,
-              height: 40,
+              width: isTablet ? 54 : 40,
+              height: isTablet ? 54 : 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withOpacity(0.35),
                 shape: BoxShape.circle,
               ),
               child: Stack(
@@ -457,20 +468,20 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                   Image.asset(
                     'assets/images/notifications.png',
-                    width: 22,
+                    width: isTablet ? 30 : 22,
                     color: Colors.black,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
+                    errorBuilder: (context, error, stackTrace) => Icon(
                       Icons.notifications_rounded,
-                      size: 22,
+                      size: isTablet ? 30 : 22,
                       color: Colors.black,
                     ),
                   ),
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: isTablet ? 12 : 8,
+                    right: isTablet ? 12 : 8,
                     child: Container(
-                      width: 8,
-                      height: 8,
+                      width: isTablet ? 10 : 8,
+                      height: isTablet ? 10 : 8,
                       decoration: const BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
@@ -490,7 +501,9 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize {
     if (customHeight != null) return Size.fromHeight(customHeight!);
-    return Size.fromHeight(kToolbarHeight + 10);
+    // Return a height that works for both mobile and tablet, or detect here if possible
+    // Using a dynamic value based on kToolbarHeight is usually safer
+    return const Size.fromHeight(110); 
   }
 }
 
@@ -684,11 +697,12 @@ class SearchHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Reverting to compact scaling for both mobile and tablet as per user request
     return Container(
-      padding: const EdgeInsets.all(16), // Reduced from 24
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20), // Increased radius from 16
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -703,7 +717,7 @@ class SearchHistoryItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(8), // Reduced from 12
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
@@ -713,9 +727,9 @@ class SearchHistoryItem extends StatelessWidget {
                   Icons.directions_car,
                   color: AppColors.primaryLight,
                   size: 24,
-                ), // Increased from 20
+                ),
               ),
-              const SizedBox(width: 16), // Increased from 12
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -726,7 +740,7 @@ class SearchHistoryItem extends StatelessWidget {
                           vehicle,
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w700,
-                            fontSize: 15, // Reduced from 17
+                            fontSize: 15,
                           ),
                         ),
                         if (isCorporate) ...[
@@ -741,10 +755,10 @@ class SearchHistoryItem extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: Colors.blue.shade100),
                             ),
-                            child: Text(
+                            child: const Text(
                               'CORP',
                               style: TextStyle(
-                                color: Colors.blue.shade700,
+                                color: Color(0xFF1E88E5), // Blue.shade700
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -753,20 +767,20 @@ class SearchHistoryItem extends StatelessWidget {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 6), // Increased from 4
+                    const SizedBox(height: 6),
                     Text(
                       'Plate: $plate  •  $customer',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Colors.grey.shade600,
-                        fontSize: 12, // Reduced from 14
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 8), // Reduced from 10
+                    const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 6,
-                      ), // Reduced from 12, 8
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(10),
@@ -778,7 +792,7 @@ class SearchHistoryItem extends StatelessWidget {
                             Icons.history,
                             size: 14,
                             color: Colors.amber.shade700,
-                          ), // Reduced from 16
+                          ),
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
@@ -788,7 +802,7 @@ class SearchHistoryItem extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.grey.shade800,
-                                fontSize: 11, // Reduced from 12
+                                fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -801,7 +815,7 @@ class SearchHistoryItem extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20), // Increased from 16
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
@@ -811,17 +825,18 @@ class SearchHistoryItem extends StatelessWidget {
                     backgroundColor: AppColors.primaryLight,
                     foregroundColor: AppColors.secondaryLight,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                    ), // Reduced from 14
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
                     'Continue Order',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                  ), // Reduced from 14
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -832,44 +847,44 @@ class SearchHistoryItem extends StatelessWidget {
                     backgroundColor: AppColors.secondaryLight,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                    ), // Reduced from 14
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
                     'Full History',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                  ), // Reduced from 14
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onSalesReturn ?? () {},
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red.shade400,
+                    side: BorderSide(color: Colors.red.shade200),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Sales Return / Credit Note',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          if (onSalesReturn != null) ...[
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onSalesReturn,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.red.shade700,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.red.shade200),
-                  ),
-                ),
-                child: const Text(
-                  'Sales Return / Credit Note',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -1097,7 +1112,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: widget.isTablet ? 24 : 16,
-              vertical: widget.isTablet ? 18 : 14,
+              vertical: widget.isTablet ? 16 : 14,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1113,7 +1128,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                           Text(
                             'Order #${widget.order.id.split('-').last.toUpperCase()}',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: widget.isTablet ? 14 : 11,
                               fontWeight: FontWeight.w500,
                               color: Colors.grey.shade500,
                             ),
@@ -1124,10 +1139,10 @@ class _OrderItemCardState extends State<OrderItemCard> {
                               Flexible(
                                 child: Text(
                                   widget.order.customerName,
-                                  style: const TextStyle(
-                                    fontSize: 16,
+                                  style: TextStyle(
+                                    fontSize: widget.isTablet ? 18 : 16,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1E2124),
+                                    color: const Color(0xFF1E2124),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -1146,18 +1161,18 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.layers_rounded,
-                                      size: 10,
-                                      color: Color(0xFF1E2124),
+                                      size: widget.isTablet ? 14 : 10,
+                                      color: const Color(0xFF1E2124),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${widget.order.jobsCount} JOBS',
-                                      style: const TextStyle(
-                                        fontSize: 9,
+                                      style: TextStyle(
+                                        fontSize: widget.isTablet ? 11 : 9,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF1E2124),
+                                        color: const Color(0xFF1E2124),
                                         letterSpacing: 0.2,
                                       ),
                                     ),
@@ -1182,6 +1197,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                         widget.order.carModel,
                         subtitle:
                             'Plate: ${widget.order.plateNumber.toUpperCase()}',
+                        isTablet: widget.isTablet,
                       ),
                     ),
                     Expanded(
@@ -1192,6 +1208,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                         ).format(DateTime.parse(widget.order.date)),
                         subtitle: 'Odo: ${widget.order.odometerReading} km',
                         crossAxisAlignment: CrossAxisAlignment.end,
+                        isTablet: widget.isTablet,
                       ),
                     ),
                   ],
@@ -2605,16 +2622,17 @@ Widget _buildPremiumDetailItem(
   String title, {
   String? subtitle,
   CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
+  bool isTablet = false,
 }) {
   return Column(
     crossAxisAlignment: crossAxisAlignment,
     children: [
       Text(
         title,
-        style: const TextStyle(
-          fontSize: 12,
+        style: TextStyle(
+          fontSize: isTablet ? 15 : 12,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF1E2124),
+          color: const Color(0xFF1E2124),
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -2624,7 +2642,7 @@ Widget _buildPremiumDetailItem(
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: isTablet ? 13 : 10,
             fontWeight: FontWeight.w400,
             color: Colors.grey.shade400,
           ),
@@ -3453,11 +3471,11 @@ class TechnicianCard extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: isTablet ? 20 : 24,
+            radius: isTablet ? 28 : 24,
             backgroundColor: AppColors.primaryLight.withOpacity(0.15),
             child: Icon(
               Icons.person,
-              size: isTablet ? 20 : 24,
+              size: isTablet ? 28 : 24,
               color: AppColors.secondaryLight,
             ),
           ),
@@ -3473,7 +3491,7 @@ class TechnicianCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: isTablet ? 13 : 15,
+                    fontSize: isTablet ? 19 : 15,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF1E2124),
                   ),
@@ -3482,14 +3500,14 @@ class TechnicianCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: 6,
-                      height: 6,
+                      width: isTablet ? 8 : 6,
+                      height: isTablet ? 8 : 6,
                       decoration: BoxDecoration(
                         color: statusColor,
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         tech.statusInfo,
@@ -3524,6 +3542,7 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Color accentColor;
   final double? width;
+  final double? height;
   final Color? backgroundColor;
   final Color? textColor;
 
@@ -3534,6 +3553,7 @@ class StatCard extends StatelessWidget {
     required this.icon,
     required this.accentColor,
     this.width,
+    this.height,
     this.backgroundColor,
     this.textColor,
   });
@@ -3542,7 +3562,7 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width ?? 95,
-      height: 85, // Scaled down height
+      height: height ?? 85, // Use provided height or fallback
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         color: backgroundColor ?? Colors.white,

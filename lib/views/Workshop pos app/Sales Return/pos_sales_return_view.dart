@@ -63,10 +63,10 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
             Expanded(
               flex: isTablet ? 4 : 10,
               child: Container(
-                color: Colors.white,
+                color: Theme.of(context).scaffoldBackgroundColor,
                 child: Column(
                   children: [
-                    _buildSearchHeader(vm),
+                    _buildSearchHeader(vm, isTablet),
                     const SizedBox(height: 12),
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -95,20 +95,22 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                         ],
                       ),
                     ),
-                    Expanded(child: _buildSearchResults(vm)),
+                    Expanded(child: _buildSearchResults(vm, isTablet)),
                   ],
                 ),
               ),
             ),
 
-          if (isTablet) const VerticalDivider(width: 1),
-
+          if (isTablet)
+            VerticalDivider(
+                width: 1,
+                color: Colors.grey.shade300.withValues(alpha: 0.5)),
           // Right side: Return Form (visible if invoice selected)
           if (isTablet || vm.selectedInvoice != null)
             Expanded(
               flex: isTablet ? 6 : (vm.selectedInvoice != null ? 10 : 0),
               child: vm.selectedInvoice == null
-                  ? _buildEmptyState()
+                  ? _buildEmptyState(isTablet)
                   : _buildReturnDetails(vm, isTablet),
             ),
         ],
@@ -116,7 +118,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
     );
   }
 
-  Widget _buildSearchHeader(SalesReturnViewModel vm) {
+  Widget _buildSearchHeader(SalesReturnViewModel vm, bool isTablet) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -124,10 +126,10 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
         children: [
           Text(
             'Find Invoice to Return',
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: isTablet ? 20 : 18,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF1E2124),
+              color: const Color(0xFF1E2124),
               letterSpacing: -0.3,
             ),
           ),
@@ -195,8 +197,8 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                   ],
                 ),
                 child: SizedBox(
-                  height: 52,
-                  width: 52,
+                  height: isTablet ? 60 : 52,
+                  width: isTablet ? 60 : 52,
                   child: ElevatedButton(
                     onPressed: vm.isSearching ? null : vm.searchInvoice,
                     style: ElevatedButton.styleFrom(
@@ -210,14 +212,14 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                     ),
                     child: vm.isSearching
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
+                            width: 24,
+                            height: 24,
                             child: CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 2,
                             ),
                           )
-                        : const Icon(Icons.send_rounded, size: 22),
+                        : Icon(Icons.send_rounded, size: isTablet ? 26 : 22),
                   ),
                 ),
               ),
@@ -259,7 +261,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
     );
   }
 
-  Widget _buildSearchResults(SalesReturnViewModel vm) {
+  Widget _buildSearchResults(SalesReturnViewModel vm, bool isTablet) {
     if (vm.isSearching) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -292,6 +294,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
       itemBuilder: (context, index) {
         final inv = vm.searchResults[index];
         final isSelected = vm.selectedInvoice?.id == inv.id;
+        final isTablet = MediaQuery.of(context).size.width > 600;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -399,7 +402,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 color: Colors.green.shade700,
-                                fontSize: 13,
+                                fontSize: isTablet ? 12.5 : 12,
                                 letterSpacing: -0.2,
                               ),
                             ),
@@ -417,7 +420,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                             ),
                             child: Icon(
                               Icons.person_outline_rounded,
-                              size: 14,
+                              size: isTablet ? 16 : 14,
                               color: Colors.grey.shade600,
                             ),
                           ),
@@ -427,7 +430,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                                 ? inv.customerName
                                 : 'Walk-in Customer',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: isTablet ? 14 : 13,
                               color: Colors.grey.shade700,
                               fontWeight: FontWeight.w600,
                             ),
@@ -435,7 +438,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                           const Spacer(),
                           Icon(
                             Icons.calendar_today_rounded,
-                            size: 14,
+                            size: isTablet ? 16 : 14,
                             color: Colors.grey.shade400,
                           ),
                           const SizedBox(width: 6),
@@ -444,7 +447,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                                 ? inv.invoiceDate.split('T')[0]
                                 : '',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: isTablet ? 13 : 12,
                               color: Colors.grey.shade500,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.5,
@@ -463,13 +466,13 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isTablet) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(isTablet ? 48 : 32),
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -483,17 +486,17 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
             ),
             child: Icon(
               Icons.assignment_return_rounded,
-              size: 64,
+              size: isTablet ? 100 : 64,
               color: AppColors.secondaryLight.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Select an Invoice',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: isTablet ? 26 : 24,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF1E2124),
+              color: const Color(0xFF1E2124),
               letterSpacing: -0.5,
             ),
           ),
@@ -502,7 +505,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
             'Search and select an invoice from the left\nto initiate its sales return process.',
             style: TextStyle(
               color: Colors.grey.shade500,
-              fontSize: 15,
+              fontSize: isTablet ? 15.5 : 15,
               height: 1.5,
               fontWeight: FontWeight.w500,
             ),
@@ -546,7 +549,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                   // Item List
                   Column(
                     children: inv.items
-                        .map((item) => _buildReturnItemRow(item, vm))
+                        .map((item) => _buildReturnItemRow(item, vm, isTablet))
                         .toList(),
                   ),
 
@@ -579,21 +582,24 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
             child: Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: vm.isSubmitting ? null : vm.clearSelection,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: isTablet ? 64 : 52,
+                    child: OutlinedButton(
+                      onPressed: vm.isSubmitting ? null : vm.clearSelection,
+                      style: OutlinedButton.styleFrom(
+                        side:
+                            BorderSide(color: Colors.grey.shade300, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: Color(0xFF1E2124),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: const Color(0xFF1E2124),
+                          fontWeight: FontWeight.w700,
+                          fontSize: isTablet ? 16 : 14,
+                        ),
                       ),
                     ),
                   ),
@@ -601,10 +607,8 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  child: SizedBox(
+                    height: isTablet ? 64 : 52,
                     child: ElevatedButton(
                       onPressed: vm.isSubmitting
                           ? null
@@ -612,7 +616,6 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryLight,
                         foregroundColor: AppColors.secondaryLight,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -620,19 +623,19 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                       ),
                       child: vm.isSubmitting
                           ? const SizedBox(
-                              width: 20,
-                              height: 20,
+                              width: 24,
+                              height: 24,
                               child: CircularProgressIndicator(
                                 color: AppColors.secondaryLight,
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Text(
+                          : Text(
                               'Submit Return',
                               style: TextStyle(
                                 color: AppColors.secondaryLight,
                                 fontWeight: FontWeight.w900,
-                                fontSize: 15,
+                                fontSize: isTablet ? 15.5 : 15,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -647,7 +650,8 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
     );
   }
 
-  Widget _buildReturnItemRow(InvoiceItem item, SalesReturnViewModel vm) {
+  Widget _buildReturnItemRow(
+      InvoiceItem item, SalesReturnViewModel vm, bool isTablet) {
     final isSelected = vm.selectedItems[item.id] ?? false;
     final double qty = vm.returnQuantities[item.id] ?? 1.0;
     final reason = vm.returnReasons[item.id];
@@ -710,13 +714,13 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                               ]
                             : [],
                       ),
-                      width: 26,
-                      height: 26,
+                      width: isTablet ? 32 : 26,
+                      height: isTablet ? 32 : 26,
                       child: isSelected
-                          ? const Icon(
+                          ? Icon(
                               Icons.check_rounded,
                               color: Colors.white,
-                              size: 18,
+                              size: isTablet ? 22 : 18,
                             )
                           : null,
                     ),
@@ -729,7 +733,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                             item.productName,
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              fontSize: 16,
+                              fontSize: isTablet ? 16.5 : 16,
                               color: isSelected
                                   ? AppColors.primaryLight
                                   : const Color(0xFF1E2124),
@@ -740,7 +744,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                             '${item.qty.toStringAsFixed(0)}x @ SAR ${item.unitPrice.toStringAsFixed(2)}',
                             style: TextStyle(
                               color: Colors.grey.shade600,
-                              fontSize: 13,
+                              fontSize: isTablet ? 13.5 : 13,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -767,7 +771,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                         'SAR ${(item.qty * item.unitPrice).toStringAsFixed(2)}',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
-                          fontSize: 14,
+                          fontSize: isTablet ? 14.5 : 14,
                           color: isSelected
                               ? AppColors.primaryLight
                               : const Color(0xFF1E2124),

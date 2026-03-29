@@ -100,9 +100,9 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                     itemCount: departments.length,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: isTablet ? 4 : 3,
-                      childAspectRatio: isTablet ? 0.85 : 0.9,
-                      crossAxisSpacing: isTablet ? 18 : 12,
-                      mainAxisSpacing: isTablet ? 18 : 12,
+                      childAspectRatio: isTablet ? 1.0 : 0.9,
+                      crossAxisSpacing: isTablet ? 24 : 12,
+                      mainAxisSpacing: isTablet ? 24 : 12,
                     ),
                     itemBuilder: (context, index) {
                       final dept = departments[index];
@@ -130,14 +130,14 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
-                                padding: EdgeInsets.all(isTablet ? 16 : 10),
+                                padding: EdgeInsets.all(isTablet ? 24 : 10),
                                 decoration: const BoxDecoration(
                                   color: AppColors.secondaryLight,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   _getIconForDepartment(dept.name),
-                                  size: isTablet ? 32 : 24,
+                                  size: isTablet ? 48 : 24,
                                   color: AppColors.primaryLight,
                                 ),
                               ),
@@ -146,7 +146,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                                 dept.name,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                  fontSize: isTablet ? 15 : 12,
+                                  fontSize: isTablet ? 18 : 12,
                                   color: isSelected
                                       ? AppColors.secondaryLight
                                       : Colors.grey.shade700,
@@ -197,7 +197,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                               departments[viewModel.selectedIndex!].name,
                               style: AppTextStyles.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w700,
-                                fontSize: isTablet ? 15 : 13,
+                                fontSize: isTablet ? 18 : 13,
                               ),
                             ),
                             const Spacer(),
@@ -212,14 +212,14 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                           children: [
                             Expanded(
                               child: SizedBox(
-                                height: 58,
+                                height: 64,
                                 child: _buildProductsButton(context, departments[viewModel.selectedIndex!], isTablet),
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: SizedBox(
-                                height: 58,
+                                height: 64,
                                 child: _buildTechnicianButton(context, departments[viewModel.selectedIndex!], isTablet),
                               ),
                             ),
@@ -281,7 +281,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
             'Continue to Products',
             style: AppTextStyles.button.copyWith(
               fontWeight: FontWeight.w700,
-              fontSize: isTablet ? 15 : 13,
+              fontSize: isTablet ? 18 : 13,
             ),
           ),
         );
@@ -340,7 +340,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                   'Continue to Technician',
                   style: AppTextStyles.button.copyWith(
                     fontWeight: FontWeight.w700,
-                    fontSize: isTablet ? 15 : 13,
+                    fontSize: isTablet ? 18 : 13,
                     color: Colors.white,
                   ),
                 ),
