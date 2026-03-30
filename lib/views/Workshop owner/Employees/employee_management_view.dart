@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import 'employee_management_view_model.dart';
@@ -161,24 +162,28 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
+
   Widget _buildEmployeeCard(
     OwnerEmployee employee,
     EmployeeManagementViewModel vm,
   ) {
-    final branchName = vm.branches
-        .firstWhere(
-          (b) => b.id == employee.branchId,
-          orElse: () => Branch(
-            id: '',
-            name: 'Unknown',
-            location: '',
-            vat: '',
-            cr: '',
-            salesMTD: 0,
-            status: '',
-          ),
-        )
-        .name;
+    
+    final branchName = (employee.branchName != null && employee.branchName!.isNotEmpty)
+        ? employee.branchName!
+        : vm.branches
+            .firstWhere(
+              (b) => b.id == employee.branchId,
+              orElse: () => Branch(
+                id: '',
+                name: 'Unknown',
+                location: '',
+                vat: '',
+                cr: '',
+                salesMTD: 0,
+                status: '',
+              ),
+            )
+            .name;
 
     final departmentNames = employee.departmentIds.map((id) {
        final matches = vm.departments.where((d) => d.id == id);
@@ -199,168 +204,231 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Stack(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            // All details are now shown by default
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.person_rounded, color: AppColors.primaryLight, size: 28),
-                      ),
-                    ),
-                    if (employee.isOnline)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 14,
-                          height: 14,
+                    Stack(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            color: AppColors.primaryLight.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.person_rounded, color: AppColors.primaryLight, size: 28),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        employee.name,
-                        style: AppTextStyles.h2.copyWith(
-                          fontSize: 15,
-                          color: AppColors.secondaryLight,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      _buildStatusBadge(employee),
-                    ],
-                  ),
-                ),
-                _buildActionMenu(employee, vm),
-              ],
-            ),
-          ),
-          Container(height: 1, color: Colors.grey.withOpacity(0.06)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: _buildInfoItem('MOBILE', employee.mobile.isNotEmpty ? employee.mobile : 'N/A', Icons.phone_android_rounded)),
-                    Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
-                    if (employee.role.toLowerCase() != 'cashier')
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 5),
-                          child: _buildInfoItem('DEPARTMENTS', departmentNames.isNotEmpty ? departmentNames : 'None', Icons.category_rounded, isPrimary: true),
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 5),
-                          child: _buildInfoItem(
-                            'STATUS', 
-                            employee.status.toUpperCase(), 
-                            employee.status.toLowerCase() == 'active' ? Icons.verified_user_rounded : Icons.do_not_disturb_on_rounded, 
-                            isPrimary: employee.status.toLowerCase() == 'active',
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: employee.isActive ? Colors.green : Colors.grey.shade400,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
                           ),
                         ),
-                      ),
-                    Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
+                      ],
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 5),
-                        child: _buildInfoItem('BRANCH', branchName.toUpperCase(), Icons.location_on_rounded),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (employee.role.toLowerCase() == 'technician' && employee.formattedLastSeen.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                'Last seen: ${employee.formattedLastSeen}',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  employee.name,
+                                  style: AppTextStyles.h2.copyWith(
+                                    fontSize: 15,
+                                    color: AppColors.secondaryLight,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (employee.role.toLowerCase() == 'technician' && employee.slots != null) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryLight.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: AppColors.primaryLight.withOpacity(0.1)),
+                                  ),
+                                  child: Text(
+                                    '${employee.slots!.active}/${employee.slots!.total}',
+                                    style: const TextStyle(
+                                      color: AppColors.primaryLight,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _buildStatusBadge(employee),
+                              if (employee.role.toLowerCase() == 'technician') ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (employee.isTechnicianAvailable ? Colors.green : Colors.grey)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          color: employee.isTechnicianAvailable
+                                              ? Colors.green
+                                              : Colors.grey,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        employee.technicianStatusLabel,
+                                        style: TextStyle(
+                                          color: employee.isTechnicianAvailable
+                                              ? Colors.green
+                                              : Colors.grey.shade600,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              if (employee.role.toLowerCase() != 'technician') ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  employee.mobile.isNotEmpty ? employee.mobile : 'N/A',
+                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    _buildActionMenu(employee, vm),
                   ],
                 ),
-                if (employee.role.toLowerCase() == 'technician') ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(child: _buildInfoItem('TECH TYPE', (employee.technicianType ?? 'Unknown').toUpperCase(), Icons.build_circle_outlined)),
-                      Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 5),
-                          child: _buildInfoItem('SALARY / COMM', 'SAR ${(employee.basicSalary ?? 0.0).toStringAsFixed(0)} / ${employee.commissionPercent.toStringAsFixed(2)}%', Icons.payments_outlined),
-                        ),
-                      ),
-                      Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 5),
-                          child: _buildInfoItem(
-                            'STATUS', 
-                            employee.status.toUpperCase(), 
-                            employee.status.toLowerCase() == 'active' ? Icons.verified_user_rounded : Icons.do_not_disturb_on_rounded, 
-                            isPrimary: employee.status.toLowerCase() == 'active',
+              ),
+              Container(height: 1, color: Colors.grey.withOpacity(0.06)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: _buildInfoItem('BRANCH', branchName.toUpperCase(), Icons.location_on_rounded),
                           ),
                         ),
+                        Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
+                        if (employee.role.toLowerCase() != 'cashier')
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: _buildInfoItem('DEPT', departmentNames.isNotEmpty ? departmentNames : 'None', Icons.category_rounded, isPrimary: true),
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: _buildInfoItem(
+                                'ROLE TYPE', 
+                                employee.role.toUpperCase(), 
+                                Icons.verified_user_rounded, 
+                                isPrimary: true,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (employee.role.toLowerCase() == 'technician') ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: _buildInfoItem('TECH TYPE', (employee.technicianType ?? 'Unknown').toUpperCase(), Icons.build_circle_outlined)),
+                          Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: _buildInfoItem('SALARY', 'SAR ${(employee.basicSalary ?? 0.0).toStringAsFixed(0)}', Icons.payments_outlined),
+                            ),
+                          ),
+                          Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: _buildInfoItem(
+                                'COMMISSION', 
+                                '${employee.commissionPercent.toStringAsFixed(1)}%', 
+                                Icons.percent_rounded, 
+                                isPrimary: true,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              ],
-            ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildInfoItem(String label, String value, IconData icon, {bool isPrimary = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 12, color: Colors.grey.shade400),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 13,
-            color: isPrimary ? AppColors.primaryLight : AppColors.secondaryLight,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
 
   Widget _buildActionMenu(OwnerEmployee e, EmployeeManagementViewModel vm) {
     return PopupMenuButton<String>(
@@ -415,23 +483,51 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, EmployeeManagementViewModel vm, OwnerEmployee e) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Employee'),
-        content: Text('Are you sure you want to delete "${e.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              vm.deleteEmployee(context, e.id, e.role);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+  Widget _buildInfoItem(String label, String value, IconData icon, {bool isPrimary = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 12, color: Colors.grey.shade400),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 13,
+            color: isPrimary ? AppColors.primaryLight : AppColors.secondaryLight,
           ),
-        ],
-      ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSlotItem(String label, String value, IconData icon, {Color? color}) {
+    return Column(
+      children: [
+        Icon(icon, size: 14, color: color ?? Colors.grey.shade400),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(color: Colors.grey.shade400, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.3),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: color ?? AppColors.secondaryLight),
+        ),
+      ],
     );
   }
 
@@ -453,6 +549,27 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
       ),
     );
   }
+
+  void _showDeleteConfirmation(BuildContext context, EmployeeManagementViewModel vm, OwnerEmployee e) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Employee'),
+        content: Text('Are you sure you want to delete "${e.name}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              vm.deleteEmployee(context, e.id, e.role);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   void _showAddEmployeeSheet(
     BuildContext context,
@@ -526,9 +643,13 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildHandle(),
-          Flexible(
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              // Sheet ko compact rakhne ke liye scroll area ki height limit
+              maxHeight: MediaQuery.of(context).size.height * 0.72,
+            ),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -554,16 +675,15 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                   _buildDropdown(
                     'Role',
                     [
-                      'Manager',
                       'Cashier',
                       'Technician',
-                      'Sales Executive',
                       'Supplier',
                     ],
                     value: selectedRole,
                     onChanged: (val) {
                       setState(() => selectedRole = val!);
                     },
+                    enabled: !vm.isEditing,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -632,10 +752,31 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
 
                   if (selectedRole == 'Supplier') ...[
                     const SizedBox(height: 16),
-                    _buildTextField(
-                      'Address',
-                      Icons.map_rounded,
-                      vm.addressController,
+                    TypeAheadField<Map<String, dynamic>>(
+                      controller: vm.addressController,
+                      builder: (context, controller, focusNode) => _buildTextField(
+                        'Address',
+                        Icons.map_rounded,
+                        controller,
+                        focusNode: focusNode,
+                      ),
+                      suggestionsCallback: (pattern) async {
+                        if (pattern.length < 3) return [];
+                        return await vm.getAddressSuggestions(pattern);
+                      },
+                      itemBuilder: (context, suggestion) {
+                        return ListTile(
+                          leading: const Icon(Icons.location_on_rounded, color: AppColors.primaryLight),
+                          title: Text(suggestion['description'] ?? ''),
+                        );
+                      },
+                      onSelected: (suggestion) {
+                        vm.onAddressSelected(suggestion);
+                      },
+                      emptyBuilder: (context) => const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('No addresses found'),
+                      ),
                     ),
                     _buildTextField(
                       'Opening Balance',
@@ -704,18 +845,32 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                       ],
                     ),
                   ],
-
-                    const SizedBox(height: 16),
-                  ],
-                ),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('Availability'),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: _buildToggleRow(
+                      'Active Status',
+                      vm.isActive,
+                      (val) => vm.toggleStatus(val),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
             ),
+          ),
             Padding(
               padding: EdgeInsets.only(
                 left: 24,
                 right: 24,
                 top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 18,
               ),
               child: ElevatedButton(
                 onPressed: vm.isLoading
@@ -767,8 +922,13 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: vm.isActionLoading
-                    ? const CircularProgressIndicator(
-                        color: AppColors.secondaryLight,
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.secondaryLight,
+                          strokeWidth: 2,
+                        ),
                       )
                     : Text(
                         vm.isEditing ? 'Update Employee' : 'Save Employee',
@@ -816,11 +976,13 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
     TextEditingController controller, {
     bool isNumber = false,
     bool obscureText = false,
+    FocusNode? focusNode,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         obscureText: obscureText,
         keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
         decoration: InputDecoration(
@@ -879,13 +1041,17 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
     List<String> items, {
     String? value,
     Function(String?)? onChanged,
+    bool enabled = true,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
+        color: enabled ? Colors.grey.withOpacity(0.05) : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: enabled ? Colors.transparent : Colors.grey.withOpacity(0.1),
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButtonFormField<String>(
@@ -898,7 +1064,7 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
           items: items
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
-          onChanged: onChanged,
+          onChanged: enabled ? onChanged : null,
         ),
       ),
     );

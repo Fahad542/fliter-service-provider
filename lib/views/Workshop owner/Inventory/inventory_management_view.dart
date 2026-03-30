@@ -99,7 +99,10 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
           ),
           child: TabBar(
             controller: _tabController,
-            onTap: (index) => setState(() {}),
+            onTap: (index) {
+              context.read<InventoryManagementViewModel>().onTabChanged(index);
+              setState(() {});
+            },
             dividerColor: Colors.transparent,
             labelColor: AppColors.secondaryLight,
             unselectedLabelColor: Colors.grey,
@@ -180,6 +183,14 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
 
   Widget _buildProductCard(OwnerProduct product, InventoryManagementViewModel vm, {required bool isService}) {
     final isStockLow = product.stockQty <= product.criticalLevel;
+    final String departmentTag = product.departmentName ??
+        (product.departmentIds.isNotEmpty ? product.departmentIds.first : '');
+    final String categoryTag = (product.subCategoryName?.isNotEmpty == true)
+        ? product.subCategoryName!
+        : ((product.category?.isNotEmpty == true) ? product.category! : '');
+    final String displayTag = isService
+        ? departmentTag
+        : [departmentTag, categoryTag].where((e) => e.trim().isNotEmpty).join(' • ');
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -204,18 +215,35 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Icon or Image
-                Container(
-                  width: 52,
-                  height: 52,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
-                  ),
-                  child: product.imageUrl != null
-                      ? Image.network(product.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackIcon(isService ? 'service' : product.type))
-                      : _fallbackIcon(isService ? 'service' : product.type),
+                Stack(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      clipBehavior: Clip.hardEdge,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
+                      ),
+                      child: product.imageUrl != null
+                          ? Image.network(product.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackIcon(isService ? 'service' : product.type))
+                          : _fallbackIcon(isService ? 'service' : product.type),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: product.isActive ? Colors.green : Colors.grey.shade400,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 16),
                 // Titles
@@ -234,7 +262,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              product.departmentName ?? (product.departmentIds.isNotEmpty ? product.departmentIds.first : ''),
+                              displayTag,
                               style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -245,7 +273,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                     ],
                   ),
                 ),
-                _buildActionMenu(product, vm),
+                _buildActionMenu(product, vm, isService: isService),
               ],
             ),
           ),
@@ -271,20 +299,45 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.only(left: isService ? 0 : 12),
-                    child: _buildMetricItem(isService ? 'PRICE' : 'RETAIL', 'SAR ${product.salePrice.toInt()}', Colors.grey.shade600, centered: isService),
+                    child: _buildMetricItem(
+                      isService ? 'CATEGORY' : 'RETAIL',
+                      isService
+                          ? (product.subCategoryName?.isNotEmpty == true
+                              ? product.subCategoryName!
+                              : (product.category?.isNotEmpty == true ? product.category! : '-'))
+                          : 'SAR ${product.salePrice.toInt()}',
+                      isService ? AppColors.primaryLight : Colors.grey.shade600,
+                      centered: isService,
+                    ),
                   ),
                 ),
-                Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: _buildMetricItem('CORPORATE', 
-                      (product.corporateLowerLimit != null && product.corporateLowerLimit! > 0)
-                          ? 'SAR ${product.corporateLowerLimit!.toInt()} - ${product.corporateUpperLimit?.toInt() ?? ""}'
-                          : 'SAR ${product.corporateBasePrice?.toInt() ?? "0"}', 
-                      AppColors.primaryLight, centered: isService),
+                if (isService) ...[
+                  Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: _buildMetricItem(
+                        'PRICE',
+                        'SAR ${product.salePrice.toInt()}',
+                        Colors.grey.shade600,
+                        centered: true,
+                      ),
+                    ),
                   ),
-                ),
+                ],
+                if (!isService) ...[
+                  Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: _buildMetricItem('CORPORATE', 
+                        (product.corporateLowerLimit != null && product.corporateLowerLimit! > 0)
+                            ? 'SAR ${product.corporateLowerLimit!.toInt()} - ${product.corporateUpperLimit?.toInt() ?? ""}'
+                            : 'SAR ${product.corporateBasePrice?.toInt() ?? "0"}', 
+                        AppColors.primaryLight, centered: isService),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -471,55 +524,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
               maxLines: 1,
             ),
           ),
-          if (onEdit != null || onDelete != null)
-            PopupMenuButton<String>(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 8,
-              offset: const Offset(0, 40),
-              icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400, size: 20),
-              onSelected: (value) {
-                if (value == 'edit') onEdit?.call();
-                if (value == 'delete') onDelete?.call();
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.edit_rounded, size: 16, color: AppColors.secondaryLight),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text('Edit', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight)),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.delete_rounded, size: 16, color: AppColors.secondaryLight),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text('Delete', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight)),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          else
-            Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade300, size: 14),
+          const SizedBox.shrink(),
         ],
       ),
     );
@@ -565,7 +570,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
     }
   }
 
-  Widget _buildActionMenu(OwnerProduct product, InventoryManagementViewModel vm) {
+  Widget _buildActionMenu(OwnerProduct product, InventoryManagementViewModel vm, {bool isService = false}) {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 8,
@@ -573,7 +578,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
       icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400, size: 20),
       onSelected: (value) {
         if (value == 'edit') {
-          if (product.type == 'service') {
+          if (isService || product.type.toLowerCase() == 'service') {
             vm.setEditService(product);
             showModalBottomSheet(
               context: context,
@@ -600,7 +605,11 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
           }
         } else if (value == 'delete') {
           _showDeleteConfirmation(context, vm, product.name, () {
-            vm.deleteProduct(context, product.id);
+            if (isService || product.type.toLowerCase() == 'service') {
+              vm.deleteService(context, product.id);
+            } else {
+              vm.deleteProduct(context, product.id);
+            }
           });
         }
       },
@@ -651,14 +660,6 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 32),
-            ),
             const SizedBox(height: 16),
             const Text('Confirm Deletion', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
           ],
@@ -722,6 +723,53 @@ class _AddProductSheetState extends State<_AddProductSheet> {
   String? selectedCategoryId;
   String? selectedSubCategoryId;
 
+  void _applyInitialCategorySelection(InventoryManagementViewModel vm) {
+    if (vm.displayedSubCategories.isEmpty) return;
+
+    OwnerSubCategory? matchedSubCategory;
+    final editingSubName = vm.editingSubCategoryName?.trim().toLowerCase();
+    final editingCategoryName = vm.editingCategoryName?.trim().toLowerCase();
+
+    if (editingSubName != null && editingSubName.isNotEmpty) {
+      for (final sub in vm.displayedSubCategories) {
+        if (sub.name.trim().toLowerCase() == editingSubName) {
+          matchedSubCategory = sub;
+          break;
+        }
+      }
+    }
+
+    if (matchedSubCategory == null &&
+        editingCategoryName != null &&
+        editingCategoryName.isNotEmpty) {
+      for (final sub in vm.displayedSubCategories) {
+        if (sub.name.trim().toLowerCase() == editingCategoryName) {
+          matchedSubCategory = sub;
+          break;
+        }
+      }
+    }
+
+    final selected = matchedSubCategory ?? vm.displayedSubCategories.first;
+    OwnerCategory? parentCat;
+    for (final c in vm.categories) {
+      if (c.subCategories.any((sub) => sub.id == selected.id)) {
+        parentCat = c;
+        break;
+      }
+    }
+
+    setState(() {
+      if (parentCat != null) {
+        selectedCategoryId = parentCat.id;
+        selectedSubCategoryId = selected.id;
+      } else {
+        selectedCategoryId = selected.id;
+        selectedSubCategoryId = null;
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -737,23 +785,7 @@ class _AddProductSheetState extends State<_AddProductSheet> {
         });
       }
       if (vm.displayedSubCategories.isNotEmpty) {
-        setState(() {
-          final first = vm.displayedSubCategories.first;
-          OwnerCategory? parentCat;
-          for (var c in vm.categories) {
-            if (c.subCategories.any((sub) => sub.id == first.id)) {
-              parentCat = c;
-              break;
-            }
-          }
-          if (parentCat != null) {
-            selectedCategoryId = parentCat.id;
-            selectedSubCategoryId = first.id;
-          } else {
-            selectedCategoryId = first.id;
-            selectedSubCategoryId = null;
-          }
-        });
+        _applyInitialCategorySelection(vm);
       }
     });
   }
@@ -762,10 +794,16 @@ class _AddProductSheetState extends State<_AddProductSheet> {
   Widget build(BuildContext context) {
     final vm = context.watch<InventoryManagementViewModel>();
     final deptVm = context.watch<DepartmentManagementViewModel>();
+    if (selectedCategoryId == null && vm.displayedSubCategories.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || selectedCategoryId != null) return;
+        _applyInitialCategorySelection(vm);
+      });
+    }
 
     return FocusScope(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: MediaQuery.of(context).size.height * 0.70,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -795,7 +833,7 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                     const SizedBox(height: 30),
 
                     // Branch dropdown
-                    if (vm.branches.isNotEmpty)
+                    if (!vm.isEditingProduct && vm.branches.isNotEmpty)
                       _buildDropdown(
                         'Branch',
                         vm.branches.map((b) => b.name).toSet().toList(),
@@ -810,7 +848,7 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                       ),
 
                     // Department dropdown
-                    if (deptVm.departments.isNotEmpty)
+                    if (!vm.isEditingProduct && deptVm.departments.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: DropdownButtonFormField<String>(
@@ -891,7 +929,51 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                       children: [
                         Expanded(child: _buildTextField('Stock Quantity', Icons.numbers_rounded, isNumber: true, controller: vm.openingQtyController)),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildTextField('Unit (e.g. pcs)', Icons.straighten_rounded, controller: vm.unitController)),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: DropdownButtonFormField<String>(
+                              value: (vm.productUnits.isNotEmpty &&
+                                      vm.productUnits.any(
+                                        (u) => u.toLowerCase() == vm.unitController.text.trim().toLowerCase(),
+                                      ))
+                                  ? vm.productUnits.firstWhere(
+                                      (u) => u.toLowerCase() == vm.unitController.text.trim().toLowerCase(),
+                                    )
+                                  : (vm.productUnits.isNotEmpty ? vm.productUnits.first : 'pcs'),
+                              decoration: InputDecoration(
+                                labelText: 'Unit',
+                                labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                                filled: true,
+                                fillColor: Colors.grey.withOpacity(0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.straighten_rounded,
+                                  color: AppColors.secondaryLight,
+                                  size: 20,
+                                ),
+                              ),
+                              items: (vm.productUnits.isNotEmpty ? vm.productUnits : ['pcs'])
+                                  .map((unit) => DropdownMenuItem(
+                                        value: unit,
+                                        child: Text(unit),
+                                      ))
+                                  .toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  vm.unitController.text = value;
+                                }
+                              },
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: AppColors.secondaryLight,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     _buildTextField('Critical Stock Point', Icons.warning_amber_rounded, isNumber: true, controller: vm.criticalStockPointController),
@@ -912,6 +994,8 @@ class _AddProductSheetState extends State<_AddProductSheet> {
 
                     const SizedBox(height: 12),
                     _buildToggleRow('Allow Decimal Point', vm.allowDecimalQty, (val) => vm.toggleAllowDecimal(val)),
+                    const SizedBox(height: 12),
+                    _buildToggleRow('Active Status', vm.isActive, (val) => vm.toggleIsActive(val)),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -942,7 +1026,14 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: vm.isActionLoading
-                    ? const CircularProgressIndicator(color: AppColors.secondaryLight)
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.secondaryLight,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : Text(
                         vm.isEditingProduct ? 'Update Product' : 'Save Product',
                         style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
@@ -970,6 +1061,53 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
   String? selectedCategoryId;
   String? selectedSubCategoryId;
 
+  void _applyInitialCategorySelection(InventoryManagementViewModel vm) {
+    if (vm.displayedSubCategories.isEmpty) return;
+
+    OwnerSubCategory? matchedSubCategory;
+    final editingSubName = vm.editingSubCategoryName?.trim().toLowerCase();
+    final editingCategoryName = vm.editingCategoryName?.trim().toLowerCase();
+
+    if (editingSubName != null && editingSubName.isNotEmpty) {
+      for (final sub in vm.displayedSubCategories) {
+        if (sub.name.trim().toLowerCase() == editingSubName) {
+          matchedSubCategory = sub;
+          break;
+        }
+      }
+    }
+
+    if (matchedSubCategory == null &&
+        editingCategoryName != null &&
+        editingCategoryName.isNotEmpty) {
+      for (final sub in vm.displayedSubCategories) {
+        if (sub.name.trim().toLowerCase() == editingCategoryName) {
+          matchedSubCategory = sub;
+          break;
+        }
+      }
+    }
+
+    final selected = matchedSubCategory ?? vm.displayedSubCategories.first;
+    OwnerCategory? parentCat;
+    for (final c in vm.categories) {
+      if (c.subCategories.any((sub) => sub.id == selected.id)) {
+        parentCat = c;
+        break;
+      }
+    }
+
+    setState(() {
+      if (parentCat != null) {
+        selectedCategoryId = parentCat.id;
+        selectedSubCategoryId = selected.id;
+      } else {
+        selectedCategoryId = selected.id;
+        selectedSubCategoryId = null;
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -985,23 +1123,7 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
         });
       }
       if (vm.displayedSubCategories.isNotEmpty) {
-        setState(() {
-          final first = vm.displayedSubCategories.first;
-          OwnerCategory? parentCat;
-          for (var c in vm.categories) {
-            if (c.subCategories.any((sub) => sub.id == first.id)) {
-              parentCat = c;
-              break;
-            }
-          }
-          if (parentCat != null) {
-            selectedCategoryId = parentCat.id;
-            selectedSubCategoryId = first.id;
-          } else {
-            selectedCategoryId = first.id;
-            selectedSubCategoryId = null;
-          }
-        });
+        _applyInitialCategorySelection(vm);
       }
     });
   }
@@ -1010,10 +1132,16 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
   Widget build(BuildContext context) {
     final vm = context.watch<InventoryManagementViewModel>();
     final deptVm = context.watch<DepartmentManagementViewModel>();
+    if (selectedCategoryId == null && vm.displayedSubCategories.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || selectedCategoryId != null) return;
+        _applyInitialCategorySelection(vm);
+      });
+    }
 
     return FocusScope(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: MediaQuery.of(context).size.height * 0.60,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -1031,7 +1159,7 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1047,10 +1175,10 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
                     ),
                     const SizedBox(height: 8),
                     Text(vm.isEditingService ? 'Modify existing service details.' : 'Enter service details.', style: const TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 18),
 
                     // Branch dropdown
-                    if (vm.branches.isNotEmpty)
+                    if (!vm.isEditingService && vm.branches.isNotEmpty)
                       _buildDropdown(
                         'Branch',
                         vm.branches.map((b) => b.name).toSet().toList(),
@@ -1065,7 +1193,7 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
                       ),
 
                     // Department dropdown
-                    if (deptVm.departments.isNotEmpty)
+                    if (!vm.isEditingService && deptVm.departments.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: DropdownButtonFormField<String>(
@@ -1170,38 +1298,9 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
                         ),
                       ),
                     ),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: TextField(
-                        controller: vm.minCorporatePriceController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Min Corporate Price',
-                          prefixIcon: const Icon(Icons.attach_money_rounded, color: AppColors.secondaryLight, size: 20),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.05),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: TextField(
-                        controller: vm.maxCorporatePriceController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Max Corporate Price',
-                          prefixIcon: const Icon(Icons.attach_money_rounded, color: AppColors.secondaryLight, size: 20),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.05),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 16),
+                    _buildToggleRow('Active Status', vm.isActive, (val) => vm.toggleIsActive(val)),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -1210,8 +1309,8 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
               padding: EdgeInsets.only(
                 left: 24,
                 right: 24,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                top: 10,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
               ),
               child: ElevatedButton(
                 onPressed: vm.isActionLoading ? null : () => vm.submitServiceForm(
@@ -1231,7 +1330,14 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: vm.isActionLoading
-                    ? const CircularProgressIndicator(color: AppColors.secondaryLight)
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.secondaryLight,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : Text(
                         vm.isEditingService ? 'Update Service' : 'Save Service',
                         style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
@@ -1260,13 +1366,12 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
 
     return FocusScope(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Center(
               child: Container(
@@ -1333,7 +1438,14 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: vm.isActionLoading
-                  ? const CircularProgressIndicator(color: AppColors.secondaryLight)
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: AppColors.secondaryLight,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : Text(
                       vm.isEditingCategory ? 'Update Category' : 'Save Category',
                       style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
@@ -1362,13 +1474,12 @@ class _AddSubCategorySheetState extends State<_AddSubCategorySheet> {
 
     return FocusScope(
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Center(
               child: Container(
@@ -1435,7 +1546,14 @@ class _AddSubCategorySheetState extends State<_AddSubCategorySheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: vm.isActionLoading
-                    ? const CircularProgressIndicator(color: AppColors.secondaryLight)
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.secondaryLight,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : const Text(
                         'Save Sub Category',
                         style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),

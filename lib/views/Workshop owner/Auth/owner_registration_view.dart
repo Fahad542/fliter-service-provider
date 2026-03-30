@@ -8,6 +8,8 @@ import 'owner_registration_view_model.dart';
 import '../../../services/session_service.dart';
 
 import '../../../data/repositories/auth_repository.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
+import '../../../utils/app_colors.dart';
 
 class OwnerRegistrationView extends StatelessWidget {
   const OwnerRegistrationView({super.key});
@@ -161,15 +163,49 @@ class _OwnerRegistrationViewContentState extends State<_OwnerRegistrationViewCon
                                     : null,
                           ),
                           const SizedBox(height: 16),
-                          CustomTextField(
-                            label: 'Address',
-                            hint: 'Enter full address',
+                          TypeAheadField<Map<String, dynamic>>(
                             controller: viewModel.addressController,
-                            prefixIcon: const Icon(Icons.location_on_rounded),
-                            validator: (value) =>
-                                (value == null || value.isEmpty)
-                                    ? 'Required'
-                                    : null,
+                            builder: (context, controller, focusNode) {
+                              return CustomTextField(
+                                label: 'Address',
+                                hint: 'Search and select full address',
+                                controller: controller,
+                                focusNode: focusNode,
+                                prefixIcon: const Icon(Icons.location_on_rounded),
+                                validator: (value) =>
+                                    (value == null || value.isEmpty)
+                                        ? 'Required'
+                                        : null,
+                              );
+                            },
+                            suggestionsCallback: (pattern) async {
+                              if (pattern.length < 3) return [];
+                              return await viewModel.getAddressSuggestions(pattern);
+                            },
+                            itemBuilder: (context, suggestion) {
+                              return ListTile(
+                                leading: const Icon(Icons.location_on_rounded, size: 20, color: AppColors.primaryLight),
+                                title: Text(
+                                  suggestion['description'] ?? '',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              );
+                            },
+                            onSelected: (suggestion) {
+                              viewModel.onAddressSelected(suggestion);
+                            },
+                            emptyBuilder: (context) => const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text('No addresses found.', style: TextStyle(color: Colors.grey)),
+                            ),
+                            decorationBuilder: (context, child) {
+                              return Material(
+                                type: MaterialType.card,
+                                elevation: 8,
+                                borderRadius: BorderRadius.circular(16),
+                                child: child,
+                              );
+                            },
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../data/repositories/auth_repository.dart';
 import '../../../../services/session_service.dart';
+import '../../../../services/google_places_service.dart';
 
 class OwnerRegistrationViewModel extends ChangeNotifier {
   final AuthRepository authRepository;
@@ -10,6 +11,8 @@ class OwnerRegistrationViewModel extends ChangeNotifier {
     required this.authRepository,
     required this.sessionService,
   });
+
+  final GooglePlacesService googlePlacesService = GooglePlacesService('AIzaSyDfxcDdlq5IDIHjpRQKeAHepYIFaSYvVMQ');
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
@@ -24,6 +27,8 @@ class OwnerRegistrationViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
+  double _gpsLat = 24.7136;
+  double _gpsLng = 46.6753;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -32,6 +37,24 @@ class OwnerRegistrationViewModel extends ChangeNotifier {
   void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
     notifyListeners();
+  }
+
+  Future<List<Map<String, dynamic>>> getAddressSuggestions(String input) async {
+    return await googlePlacesService.getSuggestions(input);
+  }
+
+  Future<void> onAddressSelected(Map<String, dynamic> selection) async {
+    final description = selection['description'] as String;
+    addressController.text = description;
+    
+    final placeId = selection['place_id'] as String;
+    final details = await googlePlacesService.getPlaceDetails(placeId);
+    
+    if (details != null) {
+      _gpsLat = details['lat'];
+      _gpsLng = details['lng'];
+      notifyListeners();
+    }
   }
 
   void clearError() {
@@ -68,8 +91,8 @@ class OwnerRegistrationViewModel extends ChangeNotifier {
         mobile: mobileController.text.trim(),
         taxId: taxIdController.text.trim(),
         address: addressController.text.trim(),
-        gpsLat: 24.7136, // Default Riyadh coords for now
-        gpsLng: 46.6753,
+        gpsLat: _gpsLat,
+        gpsLng: _gpsLng,
       );
 
       // Successfully registered.

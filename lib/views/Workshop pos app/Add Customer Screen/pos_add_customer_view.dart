@@ -734,6 +734,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           vm.saveAndProceed(
             isNormal: isNormal,
             onSuccess: () {
+              vm.clearAllFields(); // Clear all fields after successful order
               Navigator.push(
                 context,
                 MaterialPageRoute(

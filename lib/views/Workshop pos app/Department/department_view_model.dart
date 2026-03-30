@@ -45,6 +45,7 @@ class DepartmentViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchDepartments() async {
+    _selectedIndex = null; // Reset selection every time screen loads fresh
     _setLoading(true);
     _setErrorMessage(null);
 

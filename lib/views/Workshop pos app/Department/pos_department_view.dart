@@ -3,19 +3,11 @@ import 'package:provider/provider.dart';
 import '../../../models/department_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
+import '../../../utils/toast_service.dart';
 import '../../../widgets/pos_widgets.dart';
-// import '../../Product Grid/pos_product_grid_view.dart';
-// import '../../utils/app_colors.dart';
-// import '../../utils/app_text_styles.dart';
-// import '../../utils/toast_service.dart';
-// import '../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Product Grid/pos_product_grid_view.dart';
 import '../Technician Assignment/pos_technician_assignment_view.dart';
-// import '../Workshop pos app/Home Screen/pos_view_model.dart';
-// import '../Workshop pos app/Technician Assignment/pos_technician_assignment_view.dart';
-// import '../Product Grid/pos_product_grid_view.dart';
-// import '../../models/department_model.dart';
 import 'department_view_model.dart';
 
 class PosDepartmentView extends StatefulWidget {
@@ -258,6 +250,15 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
           onPressed: posViewModel.isLoading
               ? null
               : () {
+                  // Customer details validation
+                  if (posViewModel.customerName.trim().isEmpty ||
+                      posViewModel.vehicleNumber.trim().isEmpty) {
+                    ToastService.showError(
+                      context,
+                      'Please add customer details first (name & vehicle number)',
+                    );
+                    return;
+                  }
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -292,33 +293,30 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
   Widget _buildTechnicianButton(BuildContext context, Department dept, bool isTablet) {
     return Consumer<PosViewModel>(
       builder: (context, posViewModel, child) {
-        final isLoadingHere = posViewModel.isLoading;
         return ElevatedButton(
-          onPressed: posViewModel.isLoading
-              ? null
-              : () async {
-                  final success = await posViewModel.submitWalkInOrder([dept.id], context);
-                  final orderId = posViewModel.currentJobId ?? '';
-                  if (success) {
-                    if (context.mounted) {
-                      if (orderId.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PosTechnicianAssignmentView(
-                              jobId: orderId,
-                              departmentName: dept.name,
-                            ),
-                          ),
-                        );
-                      } else {
-                        posViewModel.setShellSelectedIndex(2); // Orders Tab
-                        posViewModel.fetchOrders();
-                        Navigator.popUntil(context, (route) => route.isFirst);
-                      }
-                    }
-                  }
-                },
+          onPressed: () {
+            // Customer details validation
+            if (posViewModel.customerName.trim().isEmpty ||
+                posViewModel.vehicleNumber.trim().isEmpty) {
+              ToastService.showError(
+                context,
+                'Please add customer details first (name & vehicle number)',
+              );
+              return;
+            }
+            // Navigate directly — walk-in API will be called on "Assign to Technician"
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PosTechnicianAssignmentView(
+                  jobId: '', // empty = walk-in mode (API not called yet)
+                  departmentName: dept.name,
+                  departmentId: dept.id,
+                  isWalkIn: true,
+                ),
+              ),
+            );
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.secondaryLight,
             foregroundColor: Colors.white,
@@ -327,25 +325,17 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
               borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
             ),
           ),
-          child: isLoadingHere
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(
-                  'Continue to Technician',
-                  style: AppTextStyles.button.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: isTablet ? 18 : 13,
-                    color: Colors.white,
-                  ),
-                ),
+          child: Text(
+            'Continue to Technician',
+            style: AppTextStyles.button.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: isTablet ? 18 : 13,
+              color: Colors.white,
+            ),
+          ),
         );
       },
     );
   }
 }
+

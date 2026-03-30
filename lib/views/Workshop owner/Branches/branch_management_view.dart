@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../models/workshop_owner_models.dart';
@@ -115,20 +116,19 @@ class _BranchManagementViewState extends State<BranchManagementView> {
                         child: Icon(Icons.store_mall_directory_rounded, color: AppColors.primaryLight, size: 26),
                       ),
                     ),
-                    if (branch.status.toLowerCase() == 'active')
-                      Positioned(
-                        right: 2,
-                        top: 2,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: branch.status.toLowerCase() == 'active' ? Colors.green : Colors.grey.shade400,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
                       ),
+                    ),
                   ],
                 ),
                 const SizedBox(width: 16),
@@ -226,19 +226,55 @@ class _BranchManagementViewState extends State<BranchManagementView> {
   }
 
   void _showDeleteConfirmation(BuildContext context, BranchManagementViewModel vm, Branch b) {
+    final parentContext = context;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Branch'),
-        content: Text('Are you sure you want to delete "${b.name}"?'),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Column(
+          children: [
+            const SizedBox(height: 16),
+            const Text('Confirm Deletion', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete "${b.name}"? This action cannot be undone.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              vm.deleteBranch(context, b.id);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    vm.deleteBranch(parentContext, b.id);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryLight,
+                    foregroundColor: AppColors.secondaryLight,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -308,9 +344,64 @@ class _AddBranchSheet extends StatelessWidget {
                         style: const TextStyle(color: Colors.grey),
                       ),
                      const SizedBox(height: 30),
-                     _buildTextField('Branch Name / Area', Icons.location_on_rounded, controller: vm.branchNameController),
-                      _buildTextField('Address', Icons.map_rounded, controller: vm.addressController),
-                   ],
+                      _buildTextField('Branch Name / Area', Icons.location_on_rounded, controller: vm.branchNameController),
+                      
+                      // Address with Google Places Autocomplete
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: TypeAheadField<Map<String, dynamic>>(
+                          controller: vm.addressController,
+                          builder: (context, controller, focusNode) {
+                            return TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              decoration: InputDecoration(
+                                labelText: 'Address',
+                                prefixIcon: const Icon(Icons.map_rounded, color: AppColors.secondaryLight, size: 20),
+                                filled: true,
+                                fillColor: Colors.grey.withOpacity(0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                labelStyle: const TextStyle(color: Colors.grey),
+                              ),
+                            );
+                          },
+                          suggestionsCallback: (search) async {
+                            if (search.length < 3) return [];
+                            return await vm.getAddressSuggestions(search);
+                          },
+                          itemBuilder: (context, suggestion) {
+                            return ListTile(
+                              leading: const Icon(Icons.location_on_rounded, color: AppColors.primaryLight, size: 20),
+                              title: Text(
+                                suggestion['description'] ?? '',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            );
+                          },
+                          onSelected: (suggestion) {
+                            vm.setSelectedAddress(
+                              suggestion['description'] ?? '',
+                              suggestion['place_id'] ?? '',
+                            );
+                          },
+                          emptyBuilder: (context) => const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text('No addresses found', style: TextStyle(color: Colors.grey)),
+                          ),
+                          decorationBuilder: (context, child) => Material(
+                            type: MaterialType.card,
+                            elevation: 8,
+                            borderRadius: BorderRadius.circular(16),
+                            child: child,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildSwitchTile('Active Status', vm.isActive, (val) => vm.toggleStatus(val)),
+                    ],
                  ),
                ),
              ),
@@ -321,24 +412,31 @@ class _AddBranchSheet extends StatelessWidget {
                  top: 16,
                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                ),
-               child: ElevatedButton(
-                 onPressed: vm.isActionLoading ? null : () => vm.submitBranchForm(context),
-                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryLight,
-                  disabledBackgroundColor: AppColors.primaryLight,
-                  foregroundColor: AppColors.secondaryLight,
-                  disabledForegroundColor: AppColors.secondaryLight,
-                  minimumSize: const Size.fromHeight(56),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: ElevatedButton(
+                  onPressed: vm.isActionLoading ? null : () => vm.submitBranchForm(context),
+                  style: ElevatedButton.styleFrom(
+                   backgroundColor: AppColors.primaryLight,
+                   disabledBackgroundColor: AppColors.primaryLight,
+                   foregroundColor: AppColors.secondaryLight,
+                   disabledForegroundColor: AppColors.secondaryLight,
+                   minimumSize: const Size.fromHeight(56),
+                   elevation: 0,
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                 ),
+                 child: vm.isActionLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: AppColors.secondaryLight,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          vm.isEditing ? 'Update Branch' : 'Submit for Approval',
+                          style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
+                        ),
                 ),
-                child: vm.isActionLoading
-                     ? const CircularProgressIndicator(color: AppColors.secondaryLight)
-                     : Text(
-                         vm.isEditing ? 'Update Branch' : 'Submit for Approval',
-                         style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
-                       ),
-               ),
              ),
           ],
         ),
@@ -353,6 +451,28 @@ class _AddBranchSheet extends StatelessWidget {
         width: 40,
         height: 5,
         decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: AppColors.primaryLight,
+          ),
+        ],
       ),
     );
   }

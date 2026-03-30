@@ -12,6 +12,14 @@ class DepartmentManagementViewModel extends ChangeNotifier {
   
   final TextEditingController departmentNameController = TextEditingController();
   
+  bool _isActive = true;
+  bool get isActive => _isActive;
+
+  void toggleStatus(bool value) {
+    _isActive = value;
+    notifyListeners();
+  }
+  
   String? _editingDepartmentId;
   bool get isEditing => _editingDepartmentId != null;
 
@@ -60,6 +68,7 @@ class DepartmentManagementViewModel extends ChangeNotifier {
 
   void clearForm() {
     departmentNameController.clear();
+    _isActive = true;
     _editingDepartmentId = null;
     notifyListeners();
   }
@@ -70,6 +79,7 @@ class DepartmentManagementViewModel extends ChangeNotifier {
     } else {
       _editingDepartmentId = d.id;
       departmentNameController.text = d.name;
+      _isActive = d.isActive;
     }
     notifyListeners();
   }
@@ -89,6 +99,7 @@ class DepartmentManagementViewModel extends ChangeNotifier {
 
       final data = {
         "name": departmentNameController.text.trim(),
+        "isActive": _isActive,
       };
 
       if (_editingDepartmentId == null) {
@@ -122,11 +133,17 @@ class DepartmentManagementViewModel extends ChangeNotifier {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
 
-      await ownerRepository.deleteDepartment(token, id);
+      final response = await ownerRepository.deleteDepartment(token, id);
+      final successMessage = (response is Map<String, dynamic> &&
+              response['message'] != null &&
+              response['message'].toString().trim().isNotEmpty)
+          ? response['message'].toString()
+          : 'Department Deleted Successfully';
 
+      // Force a fresh departments API call so list updates immediately.
+      await fetchDepartments(silent: false);
       if (context.mounted) {
-        ToastService.showSuccess(context, 'Department Deleted Successfully');
-        await fetchDepartments(silent: true);
+        ToastService.showSuccess(context, successMessage);
       }
     } catch (e) {
       if (context.mounted) ToastService.showError(context, 'Failed to delete department');

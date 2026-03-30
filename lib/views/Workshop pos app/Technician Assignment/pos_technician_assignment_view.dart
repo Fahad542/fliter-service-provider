@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
 import 'package:filter_service_providers/views/Workshop pos app/Navbar/pos_shell.dart';
+import '../Home Screen/pos_view_model.dart';
 import '../Technician Screen/technician_view_model.dart';
 import 'technician_assignment_view_model.dart';
 import '../../../utils/toast_service.dart';
@@ -11,11 +12,15 @@ import '../../../utils/toast_service.dart';
 class PosTechnicianAssignmentView extends StatefulWidget {
   final String jobId;
   final String? departmentName;
+  final String? departmentId; // needed for walk-in order API
+  final bool isWalkIn; // true = walk-in flow, call walk-in API on assign
 
   const PosTechnicianAssignmentView({
     super.key,
     required this.jobId,
     this.departmentName,
+    this.departmentId,
+    this.isWalkIn = false,
   });
 
   @override
@@ -40,11 +45,29 @@ class _PosTechnicianAssignmentViewState
     if (assignVm.selectedTechnicianIds.isEmpty) return;
 
     final vm = context.read<TechnicianViewModel>();
-    final messenger = ScaffoldMessenger.of(context);
+    final posVm = context.read<PosViewModel>();
     final navigator = Navigator.of(context);
 
+    String jobIdToUse = widget.jobId;
+
+    // Walk-in flow: call walk-in order API first
+    if (widget.isWalkIn) {
+      final deptId = widget.departmentId ?? '';
+      final success = await posVm.submitWalkInOrder(
+        deptId.isNotEmpty ? [deptId] : [],
+        context,
+      );
+      if (!mounted) return;
+      if (!success) return; // Error toast already shown by submitWalkInOrder
+      jobIdToUse = posVm.currentJobId ?? '';
+      if (jobIdToUse.isEmpty) {
+        ToastService.showError(context, 'Failed to get order ID');
+        return;
+      }
+    }
+
     final success = await vm.assignMultipleTechnicians(
-      widget.jobId,
+      jobIdToUse,
       assignVm.selectedTechnicianIds.toList(),
     );
 

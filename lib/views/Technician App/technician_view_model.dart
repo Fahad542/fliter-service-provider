@@ -7,6 +7,7 @@ import '../../models/technician_performance_model.dart';
 import '../../models/technician_today_performance_model.dart';
 import '../../models/technician_profile_model.dart';
 import '../../models/technician_commission_history_model.dart';
+import '../../utils/toast_service.dart';
 
 class TechAppViewModel extends ChangeNotifier {
   final TechnicianRepository _repository;
@@ -21,11 +22,91 @@ class TechAppViewModel extends ChangeNotifier {
   // --- Toggles ---
   bool _isWorkshopDuty = false;
   bool _isOnCallDuty = false;
+  bool _isOnline = true;
+  bool _isOnlineUpdating = false;
+  bool _cachedWorkshopDutyBeforeOffline = false;
+  bool _cachedOnCallDutyBeforeOffline = false;
 
   bool get isWorkshopDuty => _isWorkshopDuty;
   bool get isOnCallDuty => _isOnCallDuty;
+  bool get isOnline => _isOnline;
+  bool get isOnlineUpdating => _isOnlineUpdating;
 
-  Future<void> toggleWorkshopDuty(bool value) async {
+  Future<void> fetchOnlineStatus() async {
+    try {
+      final token = await _sessionService.getToken(role: 'tech');
+      if (token == null) return;
+      final response = await _repository.getOnlineStatus(token);
+      if (response is! Map<String, dynamic>) return;
+
+      final rawStatus =
+          response['status'] ??
+          response['onlineStatus'] ??
+          response['technicianStatus']?['status'] ??
+          response['data']?['status'] ??
+          response['data']?['technicianStatus']?['status'];
+      final status = rawStatus?.toString().toLowerCase();
+      if (status == 'online' || status == 'available') {
+        _isOnline = true;
+      } else if (status == 'offline') {
+        _isOnline = false;
+        _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
+        _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
+        _isWorkshopDuty = false;
+        _isOnCallDuty = false;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching online status: $e');
+    }
+  }
+
+  Future<void> updateOnlineStatus(bool value) async {
+    if (value == _isOnline || _isOnlineUpdating) return;
+    _isOnlineUpdating = true;
+    notifyListeners();
+    try {
+      final token = await _sessionService.getToken(role: 'tech');
+      if (token != null) {
+        final res = await _repository.updateOnlineStatus(
+          token,
+          value ? 'online' : 'offline',
+        );
+        if (res != null) {
+          final wasOnline = _isOnline;
+          _isOnline = value;
+          if (!value) {
+            // Cache duty state before going offline, so we can restore it later.
+            _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
+            _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
+            _isWorkshopDuty = false;
+            _isOnCallDuty = false;
+          } else if (!wasOnline) {
+            // Restore last known duty state when coming back online.
+            _isWorkshopDuty = _cachedWorkshopDutyBeforeOffline;
+            _isOnCallDuty = _cachedOnCallDutyBeforeOffline;
+
+            // Keep backend duty-mode in sync with restored local state.
+            if (_isWorkshopDuty && !_isOnCallDuty) {
+              await _repository.updateDutyStatus(token, 'workshop');
+            } else if (_isOnCallDuty && !_isWorkshopDuty) {
+              await _repository.updateDutyStatus(token, 'on_call');
+            } else {
+              await _repository.updateDutyStatus(token, 'offline');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error updating online status: $e');
+    } finally {
+      _isOnlineUpdating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleWorkshopDuty(BuildContext context, bool value) async {
+    if (!_isOnline) return;
     if (value == _isWorkshopDuty) return;
     
     _setLoading(true);
@@ -37,17 +118,24 @@ class TechAppViewModel extends ChangeNotifier {
         if (res != null) {
           _isWorkshopDuty = value;
           if (value) _isOnCallDuty = false;
+          _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
+          _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
         }
       }
     } catch (e) {
       debugPrint('Error updating duty status: $e');
+      if (context.mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        ToastService.showError(context, msg);
+      }
     } finally {
       _setLoading(false);
       notifyListeners();
     }
   }
 
-  Future<void> toggleOnCallDuty(bool value) async {
+  Future<void> toggleOnCallDuty(BuildContext context, bool value) async {
+    if (!_isOnline) return;
     if (value == _isOnCallDuty) return;
 
     _setLoading(true);
@@ -59,10 +147,16 @@ class TechAppViewModel extends ChangeNotifier {
         if (res != null) {
           _isOnCallDuty = value;
           if (value) _isWorkshopDuty = false;
+          _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
+          _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
         }
       }
     } catch (e) {
       debugPrint('Error updating duty status: $e');
+      if (context.mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        ToastService.showError(context, msg);
+      }
     } finally {
       _setLoading(false);
       notifyListeners();
@@ -129,6 +223,8 @@ class TechAppViewModel extends ChangeNotifier {
   // --- Loading State ---
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  bool _isBootstrapped = false;
+  bool get isBootstrapped => _isBootstrapped;
 
   void _setLoading(bool value) {
     _isLoading = value;
@@ -164,8 +260,8 @@ class TechAppViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchTodayPerformance() async {
-    _setLoading(true);
+  Future<void> fetchTodayPerformance({bool affectLoading = true}) async {
+    if (affectLoading) _setLoading(true);
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
@@ -180,12 +276,12 @@ class TechAppViewModel extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error fetching today performance: $e');
     } finally {
-      _setLoading(false);
+      if (affectLoading) _setLoading(false);
     }
   }
 
-  Future<void> fetchProfile() async {
-    _setLoading(true);
+  Future<void> fetchProfile({bool affectLoading = true}) async {
+    if (affectLoading) _setLoading(true);
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
@@ -206,6 +302,17 @@ class TechAppViewModel extends ChangeNotifier {
           } else {
             _isOnCallDuty = profile?.dutyMode == 'on_call';
           }
+
+          final status = profile?.onlineStatus?.toLowerCase();
+          if (status == 'online') {
+            _isOnline = true;
+          } else if (status == 'offline') {
+            _isOnline = false;
+            _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
+            _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
+            _isWorkshopDuty = false;
+            _isOnCallDuty = false;
+          }
           
           notifyListeners();
         }
@@ -213,12 +320,12 @@ class TechAppViewModel extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error fetching profile: $e');
     } finally {
-      _setLoading(false);
+      if (affectLoading) _setLoading(false);
     }
   }
 
-  Future<void> fetchDailyPerformance() async {
-    _setLoading(true);
+  Future<void> fetchDailyPerformance({bool affectLoading = true}) async {
+    if (affectLoading) _setLoading(true);
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
@@ -237,12 +344,12 @@ class TechAppViewModel extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error fetching performance: $e');
     } finally {
-      _setLoading(false);
+      if (affectLoading) _setLoading(false);
     }
   }
 
-  Future<void> fetchAssignedOrders() async {
-    _setLoading(true);
+  Future<void> fetchAssignedOrders({bool affectLoading = true}) async {
+    if (affectLoading) _setLoading(true);
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
@@ -254,7 +361,7 @@ class TechAppViewModel extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error fetching assigned orders: $e');
     } finally {
-      _setLoading(false);
+      if (affectLoading) _setLoading(false);
       notifyListeners();
     }
   }
@@ -396,6 +503,8 @@ class TechAppViewModel extends ChangeNotifier {
 
   // --- Initialize Logged In User ---
   Future<void> init() async {
+    _isBootstrapped = false;
+    _setLoading(true);
     final user = await _sessionService.getUser(role: 'tech');
     if (user != null) {
       technicianName = user.name ?? '';
@@ -412,12 +521,20 @@ class TechAppViewModel extends ChangeNotifier {
         _isOnCallDuty = false;
       }
     }
-    
-    // Fetch latest profile to sync with database status
-    fetchProfile();
-    fetchTodayPerformance();
-    fetchAssignedOrders();
-    fetchCommissionHistory();
+
+    // 1) Critical APIs first (faster first paint)
+    await Future.wait([
+      fetchProfile(affectLoading: false),
+      fetchOnlineStatus(),
+      fetchTodayPerformance(affectLoading: false),
+    ]);
+
+    _isBootstrapped = true;
+    _setLoading(false);
+
+    // 2) Secondary APIs in background (don't block dashboard UI)
+    unawaited(fetchAssignedOrders(affectLoading: false));
+    unawaited(fetchCommissionHistory());
     
     // Notifications remain mock for now as per image focus
     _notifications = [
@@ -435,6 +552,11 @@ class TechAppViewModel extends ChangeNotifier {
   void clearSession() {
     _isWorkshopDuty = false;
     _isOnCallDuty = false;
+    _isOnline = true;
+    _isOnlineUpdating = false;
+    _isBootstrapped = false;
+    _cachedWorkshopDutyBeforeOffline = false;
+    _cachedOnCallDutyBeforeOffline = false;
     technicianName = '';
     todayCompletedJobs = 0;
     todayRevenue = 0.0;

@@ -106,6 +106,10 @@ class _OwnerPromoViewState extends State<OwnerPromoView> {
                     ],
                   ),
                   PopupMenuButton<String>(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 8,
+                    offset: const Offset(0, 40),
+                    icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400, size: 20),
                     onSelected: (value) {
                       if (value == 'edit') {
                         vm.setEditPromoCode(p);
@@ -115,28 +119,47 @@ class _OwnerPromoViewState extends State<OwnerPromoView> {
                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit_rounded, size: 20, color: Colors.blue),
-                            SizedBox(width: 8),
-                            Text('Edit'),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.edit_rounded, size: 16, color: AppColors.secondaryLight),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Edit',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight),
+                            ),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_rounded, size: 20, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Delete'),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.delete_rounded, size: 16, color: AppColors.secondaryLight),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Delete',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight),
+                            ),
                           ],
                         ),
                       ),
                     ],
-                    icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400),
                   ),
                 ],
               ),
@@ -177,19 +200,55 @@ class _OwnerPromoViewState extends State<OwnerPromoView> {
   }
 
   void _showDeleteConfirmation(BuildContext context, OwnerPromoViewModel vm, PromoCode p) {
+    final parentContext = context;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Promo Code'),
-        content: Text('Are you sure you want to delete "${p.code}"?'),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Column(
+          children: [
+            const SizedBox(height: 16),
+            const Text('Confirm Deletion', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete "${p.code}"? This action cannot be undone.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              vm.deletePromoCode(context, p.id);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    vm.deletePromoCode(parentContext, p.id);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryLight,
+                    foregroundColor: AppColors.secondaryLight,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -325,7 +384,7 @@ class _AddPromoSheetState extends State<_AddPromoSheet> {
               bottom: MediaQuery.of(context).viewInsets.bottom + 24,
             ),
             child: ElevatedButton(
-              onPressed: vm.isLoading ? null : () => vm.submitPromoCode(context),
+              onPressed: vm.isActionLoading ? null : () => vm.submitPromoCode(context),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
                   disabledBackgroundColor: AppColors.primaryLight,
@@ -335,12 +394,19 @@ class _AddPromoSheetState extends State<_AddPromoSheet> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: vm.isLoading
-                  ? const CircularProgressIndicator(color: AppColors.primaryLight)
-                  : Text(
-                      vm.isEditing ? 'Update Promo' : 'Create Promo',
-                      style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
-                    ),
+                child: vm.isActionLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.secondaryLight,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        vm.isEditing ? 'Update Promo' : 'Create Promo',
+                        style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
             ),
           ),
         ],

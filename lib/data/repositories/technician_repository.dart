@@ -71,6 +71,37 @@ class TechnicianRepository {
     }
   }
 
+  Future<dynamic> updateOnlineStatus(String token, String status) async {
+    try {
+      final response = await _apiService.patch(
+        ApiConstants.technicianOnlineStatusEndpoint,
+        {'status': status},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getOnlineStatus(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.technicianOnlineStatusEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<TechnicianAssignedOrdersResponse> getAssignedOrders(String token) async {
     try {
       final response = await _apiService.get(

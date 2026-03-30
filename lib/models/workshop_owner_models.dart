@@ -40,6 +40,8 @@ class Branch {
   final String location;
   final String vat;
   final String cr;
+  final double? gpsLat;
+  final double? gpsLng;
   final String status;
   final double salesMTD;
 
@@ -49,6 +51,8 @@ class Branch {
     required this.location,
     required this.vat,
     required this.cr,
+    this.gpsLat,
+    this.gpsLng,
     required this.status,
     required this.salesMTD,
   });
@@ -60,8 +64,30 @@ class Branch {
       location: json['address'] ?? json['location'] ?? '',
       vat: json['vat'] ?? '',
       cr: json['cr'] ?? '',
-      status: (json['isActive'] == true) ? 'active' : (json['status'] ?? 'active'),
+      gpsLat: double.tryParse(json['gpsLat']?.toString() ?? ''),
+      gpsLng: double.tryParse(json['gpsLng']?.toString() ?? ''),
+      status: (json['isActive'] == true || (json['isActive'] == null && json['status'] == 'active')) ? 'active' : 'inactive',
       salesMTD: (json['salesMTD'] ?? 0.0).toDouble(),
+    );
+  }
+}
+
+class EmployeeSlots {
+  final int total;
+  final int active;
+  final int available;
+
+  EmployeeSlots({
+    required this.total,
+    required this.active,
+    required this.available,
+  });
+
+  factory EmployeeSlots.fromJson(Map<String, dynamic> json) {
+    return EmployeeSlots(
+      total: int.tryParse(json['total']?.toString() ?? '0') ?? 0,
+      active: int.tryParse(json['active']?.toString() ?? '0') ?? 0,
+      available: int.tryParse(json['available']?.toString() ?? '0') ?? 0,
     );
   }
 }
@@ -80,10 +106,28 @@ class OwnerEmployee {
   final bool workshopDuty;
   final bool onCallAvailable;
   final bool? isAvailable;
+  final String technicianStatus;
+  /// Account / employment active flag from API (`isActive` / `active`).
+  final bool isActive;
   final String status;
   final String lastSeenAt;
+  final String? userId; // Added userId
+  final EmployeeSlots? slots;
+  final String? branchName;
 
   bool get isOnline => isAvailable == true;
+  bool get isTechnicianAvailable =>
+      technicianStatus.toLowerCase() == 'available' ||
+      technicianStatus.toLowerCase() == 'online';
+
+  String get technicianStatusLabel {
+    final s = technicianStatus.trim().toLowerCase();
+    if (s == 'available') return 'AVAILABLE';
+    if (s == 'online') return 'ONLINE';
+    if (s == 'busy') return 'BUSY';
+    if (s == 'offline') return 'OFFLINE';
+    return isTechnicianAvailable ? 'AVAILABLE' : 'OFFLINE';
+  }
 
   String get formattedLastSeen {
     if (lastSeenAt.isEmpty) return 'Never';
@@ -117,8 +161,13 @@ class OwnerEmployee {
     this.workshopDuty = false,
     this.onCallAvailable = false,
     this.isAvailable,
+    this.technicianStatus = '',
+    this.isActive = true,
     this.status = 'active',
     this.lastSeenAt = '',
+    this.userId,
+    this.slots,
+    this.branchName,
   });
 
   // Alias for commissionPercent used in some views
@@ -138,9 +187,30 @@ class OwnerEmployee {
       technicianType: json['technicianType'] ?? json['technician_type'],
       workshopDuty: json['workshop_duty'] ?? false,
       onCallAvailable: json['oncall_available'] ?? false,
-      isAvailable: json['technicianStatus']?['status'] == 'online' || json['status']?['status'] == 'online' || json['is_available'] == true,
+      isAvailable: json['technicianStatus']?['status'] == 'online' ||
+          json['technicianStatus']?['status'] == 'available' ||
+          json['status']?['status'] == 'online' ||
+          json['status']?['status'] == 'available' ||
+          json['is_available'] == true,
+      technicianStatus: (json['technicianStatus']?['status'] ??
+              json['status']?['status'] ??
+              '')
+          .toString(),
       lastSeenAt: json['technicianStatus']?['lastSeenAt'] ?? json['status']?['lastSeenAt'] ?? '',
-      status: (json['isActive'] == true) ? 'active' : (json['status'] is String ? json['status'] : 'active'),
+      isActive: () {
+        if (json['isActive'] == false || json['active'] == false) return false;
+        final st = json['status']?.toString().toLowerCase();
+        if (st == 'inactive' || st == 'disabled') return false;
+        return true;
+      }(),
+      status: (json['isActive'] == false || json['active'] == false)
+          ? 'inactive'
+          : (json['status'] is String ? json['status'] as String : 'active'),
+      userId: json['userId']?.toString() ??
+          json['user_id']?.toString() ??
+          json['cashierUserId']?.toString(),
+      branchName: json['branch']?['name'],
+      slots: json['slots'] != null ? EmployeeSlots.fromJson(json['slots']) : null,
     );
   }
 }

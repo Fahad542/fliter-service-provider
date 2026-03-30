@@ -810,10 +810,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                             child: Consumer<PosViewModel>(
                                               builder: (context, vm, child) {
                                                 return ElevatedButton(
-                                                  onPressed: vm.isLoading || isForwarding || isSavingDraft
+                                                  onPressed: vm.isLoading || isSavingDraft
                                                       ? null
-                                                      : () async {
-                                                          setSheetState(() => isForwarding = true);
+                                                      : () {
                                                           String finalDeptId = '1'; // Default fallback
                                                           if (widget.departmentId != null) {
                                                             finalDeptId = widget.departmentId!;
@@ -824,34 +823,18 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                               finalDeptId = vm.products.first.departmentId ?? '1';
                                                             }
                                                           }
-                                                          final success = await vm.submitWalkInOrder([finalDeptId], context);
-                                                          final orderId = vm.currentJobId ?? '';
-                                                          if (success && context.mounted) {
-                                                            if (orderId.isNotEmpty) {
-                                                              Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder: (_) =>
-                                                                      PosTechnicianAssignmentView(
-                                                                        jobId: orderId,
-                                                                        departmentName:
-                                                                            widget.departmentName,
-                                                                      ),
-                                                                ),
-                                                              );
-                                                            } else {
-                                                              vm.setShellSelectedIndex(2); // Orders Tab
-                                                              vm.fetchOrders();
-                                                              Navigator.pushAndRemoveUntil(
-                                                                context,
-                                                                MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
-                                                                (route) => false,
-                                                              );
-                                                            }
-                                                          }
-                                                          if (mounted) {
-                                                            setSheetState(() => isForwarding = false);
-                                                          }
+                                                          // Navigate directly — walk-in API called on "Assign to Technician"
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (_) => PosTechnicianAssignmentView(
+                                                                jobId: '',
+                                                                departmentName: widget.departmentName,
+                                                                departmentId: finalDeptId,
+                                                                isWalkIn: true,
+                                                              ),
+                                                            ),
+                                                          );
                                                         },
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: const Color(0xFFFFC145),

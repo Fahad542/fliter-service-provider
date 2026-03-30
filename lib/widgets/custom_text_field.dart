@@ -11,6 +11,7 @@ class CustomTextField extends StatelessWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
+  final FocusNode? focusNode;
   final bool showBorder;
 
   const CustomTextField({
@@ -18,6 +19,7 @@ class CustomTextField extends StatelessWidget {
     required this.label,
     this.hint,
     this.controller,
+    this.focusNode,
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.prefixIcon,
@@ -30,6 +32,7 @@ class CustomTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,

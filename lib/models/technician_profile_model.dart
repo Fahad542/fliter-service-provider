@@ -18,6 +18,7 @@ class TechnicianProfile {
   String? employeeId;
   String? technicianType;
   String? dutyMode;
+  String? onlineStatus;
   bool? workshopDuty;
   bool? onCallDuty;
   double? commissionPercent;
@@ -33,6 +34,7 @@ class TechnicianProfile {
     this.employeeId,
     this.technicianType,
     this.dutyMode,
+    this.onlineStatus,
     this.workshopDuty,
     this.onCallDuty,
     this.commissionPercent,
@@ -49,6 +51,8 @@ class TechnicianProfile {
     employeeId = json['employeeId'].toString();
     technicianType = json['technicianType'];
     dutyMode = json['dutyMode'];
+    onlineStatus = json['technicianStatus']?['status']?.toString() ??
+        json['status']?.toString();
     workshopDuty = json['workshopDuty'];
     onCallDuty = json['onCallDuty'];
     commissionPercent = double.tryParse(json['commissionPercent']?.toString() ?? '0');

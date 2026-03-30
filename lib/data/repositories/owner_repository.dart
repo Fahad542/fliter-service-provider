@@ -41,7 +41,7 @@ class OwnerRepository {
   Future<dynamic> createCorporateAccount(Map<String, dynamic> data, String token) async {
     try {
       final response = await _apiService.post(
-        ApiConstants.createCorporateAccountEndpoint,
+        ApiConstants.corporateRegisterEndpoint,
         data,
         headers: {
           'Authorization': 'Bearer $token',
@@ -257,6 +257,25 @@ class OwnerRepository {
     }
   }
 
+  Future<dynamic> getReferrers(String token, {String? search}) async {
+    try {
+      String endpoint = ApiConstants.referrersEndpoint;
+      if (search != null && search.trim().isNotEmpty) {
+        endpoint += '?search=${Uri.encodeQueryComponent(search.trim())}';
+      }
+      final response = await _apiService.get(
+        endpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<dynamic> getBillingDashboard(String token) async {
     try {
       final response = await _apiService.get(
@@ -351,6 +370,21 @@ class OwnerRepository {
       }
       final response = await _apiService.get(
         endpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getProductUnits(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.productUnitsEndpoint,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -510,7 +544,7 @@ class OwnerRepository {
   Future<dynamic> updatePromoCode(String token, String id, Map<String, dynamic> data) async {
     try {
       final response = await _apiService.patch(
-        '${ApiConstants.promoCodesEndpoint}/$id',
+        ApiConstants.workshopPromoCodeByIdEndpoint(id),
         data,
         headers: {
           'Authorization': 'Bearer $token',
@@ -526,7 +560,7 @@ class OwnerRepository {
   Future<dynamic> deletePromoCode(String token, String id) async {
     try {
       final response = await _apiService.delete(
-        '${ApiConstants.promoCodesEndpoint}/$id',
+        ApiConstants.workshopPromoCodeByIdEndpoint(id),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -542,7 +576,7 @@ class OwnerRepository {
   Future<dynamic> updateProduct(String token, String id, Map<String, dynamic> data) async {
     try {
       final response = await _apiService.patch(
-        '${ApiConstants.productsEndpoint}/$id',
+        '/workshop-staff/product/$id',
         data,
         headers: {
           'Authorization': 'Bearer $token',
@@ -558,7 +592,7 @@ class OwnerRepository {
   Future<dynamic> deleteProduct(String token, String id) async {
     try {
       final response = await _apiService.delete(
-        '${ApiConstants.productsEndpoint}/$id',
+        '/workshop-staff/product/$id',
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -569,12 +603,11 @@ class OwnerRepository {
       rethrow;
     }
   }
-
   // Services
   Future<dynamic> updateService(String token, String id, Map<String, dynamic> data) async {
     try {
       final response = await _apiService.patch(
-        '${ApiConstants.workshopServicesEndpoint}/$id',
+        '/workshop-staff/service/$id',
         data,
         headers: {
           'Authorization': 'Bearer $token',
@@ -590,7 +623,7 @@ class OwnerRepository {
   Future<dynamic> deleteService(String token, String id) async {
     try {
       final response = await _apiService.delete(
-        '${ApiConstants.workshopServicesEndpoint}/$id',
+        '/workshop-staff/service/$id',
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -749,7 +782,7 @@ class OwnerRepository {
   Future<dynamic> deleteBranch(String token, String id) async {
     try {
       final response = await _apiService.delete(
-        '/workshop-staff/branch/$id',
+        '${ApiConstants.deleteBranchEndpoint}/$id',
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -765,7 +798,7 @@ class OwnerRepository {
   Future<dynamic> updateDepartment(String token, String id, Map<String, dynamic> data) async {
     try {
       final response = await _apiService.patch(
-        '/workshop-staff/department/$id',
+        '${ApiConstants.deleteDepartmentEndpoint}/$id',
         data,
         headers: {
           'Authorization': 'Bearer $token',
@@ -781,7 +814,7 @@ class OwnerRepository {
   Future<dynamic> deleteDepartment(String token, String id) async {
     try {
       final response = await _apiService.delete(
-        '/workshop-staff/department/$id',
+        '${ApiConstants.deleteDepartmentEndpoint}/$id',
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

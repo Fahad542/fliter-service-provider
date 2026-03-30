@@ -131,20 +131,19 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
                   ),
                 ),
               ),
-              if (department.isActive)
-                Positioned(
-                  right: 2,
-                  top: 2,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: department.isActive ? Colors.green : Colors.grey.shade400,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                 ),
+              ),
             ],
           ),
           const SizedBox(width: 16),
@@ -279,22 +278,62 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
     DepartmentManagementViewModel vm,
     Department d,
   ) {
+    final parentContext = context;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Department'),
-        content: Text('Are you sure you want to delete "${d.name}"?'),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Column(
+          children: [
+            const SizedBox(height: 16),
+            const Text('Confirm Deletion',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete "${d.name}"? This action cannot be undone.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              vm.deleteDepartment(context, d.id);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Cancel',
+                      style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    vm.deleteDepartment(parentContext, d.id);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryLight,
+                    foregroundColor: AppColors.secondaryLight,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Delete',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -380,7 +419,9 @@ class _AddDepartmentSheet extends StatelessWidget {
                       Icons.category_rounded,
                       controller: vm.departmentNameController,
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 16),
+                    _buildSwitchTile('Active Status', vm.isActive, (val) => vm.toggleStatus(val)),
+                    const SizedBox(height: 30),
                     ElevatedButton(
                       onPressed: vm.isActionLoading
                           ? null
@@ -397,8 +438,13 @@ class _AddDepartmentSheet extends StatelessWidget {
                         ),
                       ),
                       child: vm.isActionLoading
-                          ? const CircularProgressIndicator(
-                              color: AppColors.secondaryLight,
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: AppColors.secondaryLight,
+                                strokeWidth: 2,
+                              ),
                             )
                           : Text(
                               vm.isEditing
@@ -431,6 +477,29 @@ class _AddDepartmentSheet extends StatelessWidget {
           color: Colors.grey.shade300,
           borderRadius: BorderRadius.circular(10),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title,
+              style: const TextStyle(
+                  color: Colors.grey, fontWeight: FontWeight.w600)),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: AppColors.primaryLight,
+          ),
+        ],
       ),
     );
   }

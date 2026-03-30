@@ -11,6 +11,9 @@ class OwnerPromoViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  bool _isActionLoading = false;
+  bool get isActionLoading => _isActionLoading;
+
   List<PromoCode> _promoCodes = [];
   List<PromoCode> get promoCodes => _promoCodes;
 
@@ -96,7 +99,7 @@ class OwnerPromoViewModel extends ChangeNotifier {
       return;
     }
 
-    _isLoading = true;
+    _isActionLoading = true;
     notifyListeners();
 
     try {
@@ -136,13 +139,13 @@ class OwnerPromoViewModel extends ChangeNotifier {
     } catch (e) {
       ToastService.showError(context, e.toString());
     } finally {
-      _isLoading = false;
+      _isActionLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> deletePromoCode(BuildContext context, String id) async {
-    _isLoading = true;
+    _isActionLoading = true;
     notifyListeners();
 
     try {
@@ -159,7 +162,7 @@ class OwnerPromoViewModel extends ChangeNotifier {
     } catch (e) {
       ToastService.showError(context, e.toString());
     } finally {
-      _isLoading = false;
+      _isActionLoading = false;
       notifyListeners();
     }
   }

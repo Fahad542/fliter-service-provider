@@ -25,18 +25,26 @@ class InventoryManagementViewModel extends ChangeNotifier {
   final TextEditingController maxCorporatePriceController = TextEditingController();
   bool allowDecimalQty = true;
   bool isActive = true;
+  bool isPriceEditable = false;
+  String vatMode = 'inclusive';
   List<OwnerSubCategory> _productCategories = [];
   List<OwnerSubCategory> _serviceCategories = [];
+  List<String> _productUnits = [];
+  List<String> get productUnits => _productUnits;
 
   String? _editingProductId;
   String? _editingServiceId;
   String? _editingCategoryId;
   String? _editingSubCategoryId;
+  String? _editingCategoryName;
+  String? _editingSubCategoryName;
 
   bool get isEditingProduct => _editingProductId != null;
   bool get isEditingService => _editingServiceId != null;
   bool get isEditingCategory => _editingCategoryId != null;
   bool get isEditingSubCategory => _editingSubCategoryId != null;
+  String? get editingCategoryName => _editingCategoryName;
+  String? get editingSubCategoryName => _editingSubCategoryName;
 
   // Category controllers
   final TextEditingController categoryNameController = TextEditingController();
@@ -119,28 +127,42 @@ class InventoryManagementViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
+      // Initial screen is Products tab; fetch only essentials first for faster first paint.
       await Future.wait([
-        fetchCategories(silent: true),
-        fetchProductCategoriesForTab(typeOverride: 'product', silent: true),
-        fetchProductCategoriesForTab(typeOverride: 'service', silent: true),
         fetchProducts(silent: true),
-        fetchServices(silent: true),
+        fetchProductUnits(silent: true),
       ]);
-      
-      // Ensure the displayed categories match the current inner tab
-      _displayedSubCategories = _selectedInnerTab == 0 ? _productCategories : _serviceCategories;
 
       if (ownerDataService.departments.isEmpty) {
-        await ownerDataService.fetchDepartments();
+        await ownerDataService.fetchDepartments(silent: true);
       }
       if (ownerDataService.branches.isEmpty) {
-        await ownerDataService.fetchBranches();
+        await ownerDataService.fetchBranches(silent: true);
       }
+
+      // Prefetch secondary data in background (do not block UI).
+      unawaited(fetchServices(silent: true));
+      unawaited(fetchCategories(silent: true));
     } catch (e) {
       debugPrint('Error initializing inventory: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> onTabChanged(int index) async {
+    // 0 = Products, 1 = Services, 2 = Category
+    if (index == 1 && _services.isEmpty) {
+      await fetchServices();
+      return;
+    }
+
+    if (index == 2) {
+      if (_categories.isEmpty) {
+        await fetchCategories();
+      }
+      await fetchProductCategoriesForTab(silent: false);
     }
   }
 
@@ -291,6 +313,33 @@ class InventoryManagementViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchProductUnits({bool silent = false}) async {
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token == null) return;
+
+      final response = await ownerRepository.getProductUnits(token);
+      if (response != null && response['success'] == true && response['units'] is List) {
+        _productUnits = (response['units'] as List)
+            .map((e) => e.toString())
+            .where((e) => e.trim().isNotEmpty)
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching product units: $e');
+    } finally {
+      if (_productUnits.isEmpty) {
+        _productUnits = ['pcs'];
+      }
+      if (unitController.text.trim().isEmpty) {
+        unitController.text = _productUnits.first;
+      }
+      if (!silent) {
+        notifyListeners();
+      }
+    }
+  }
+
   Future<void> fetchServices({bool silent = false}) async {
     if (!silent) {
       _isLoading = true;
@@ -330,7 +379,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
 
   void clearForm() {
     nameController.clear();
-    unitController.text = 'Pcs';
+    unitController.text = _productUnits.isNotEmpty ? _productUnits.first : 'pcs';
     categoryIdController.clear();
     subCategoryIdController.clear();
     purchasePriceController.clear();
@@ -342,9 +391,13 @@ class InventoryManagementViewModel extends ChangeNotifier {
     kmTypeValueController.clear();
     allowDecimalQty = true;
     isActive = true;
+    _editingCategoryName = null;
+    _editingSubCategoryName = null;
     
     categoryNameController.clear();
     categoryTypeController.text = 'product';
+    isPriceEditable = false;
+    vatMode = 'inclusive';
   }
 
   void setEditProduct(OwnerProduct? p) {
@@ -353,6 +406,8 @@ class InventoryManagementViewModel extends ChangeNotifier {
       clearForm();
     } else {
       _editingProductId = p.id;
+      _editingCategoryName = p.category;
+      _editingSubCategoryName = p.subCategoryName;
       nameController.text = p.name;
       unitController.text = p.unit ?? 'pcs';
       purchasePriceController.text = p.purchasePrice.toString();
@@ -364,6 +419,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
       maxCorporatePriceController.text = p.maxPriceCorporate?.toString() ?? '0.0';
       allowDecimalQty = p.allowDecimalQty;
       isActive = p.isActive;
+      isPriceEditable = p.isPriceEditable;
       // Note: category and department will need to be selected in the UI
     }
     fetchProductCategoriesForTab(typeOverride: 'product');
@@ -376,10 +432,15 @@ class InventoryManagementViewModel extends ChangeNotifier {
       clearForm();
     } else {
       _editingServiceId = s.id;
+      _editingCategoryName = s.category;
+      _editingSubCategoryName = s.subCategoryName;
       nameController.text = s.name;
+      purchasePriceController.text = s.purchasePrice.toString();
       salePriceController.text = s.salePrice.toString();
       minCorporatePriceController.text = s.minPriceCorporate?.toString() ?? '0.0';
       maxCorporatePriceController.text = s.maxPriceCorporate?.toString() ?? '0.0';
+      isPriceEditable = s.isPriceEditable;
+      isActive = s.isActive;
     }
     fetchProductCategoriesForTab(typeOverride: 'service');
     notifyListeners();
@@ -449,26 +510,47 @@ class InventoryManagementViewModel extends ChangeNotifier {
       final workshopId = user?.workshopId ?? '3';
 
       String finalSubCategoryId = subCategoryIdController.text.trim().isEmpty ? (subCategoryId ?? '') : subCategoryIdController.text.trim();
-      final data = {
-        "workshopId": workshopId,
-        "branchId": branchId,
-        "name": nameController.text.trim(),
-        "departmentId": departmentId,
-        "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
-        if (finalSubCategoryId.isNotEmpty)
-          "subCategoryId": finalSubCategoryId,
-        "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
-        "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0.0,
-        "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
-        "openingQty": double.tryParse(openingQtyController.text.trim()) ?? 0,
-        "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
-        "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
-        "criticalStockPoint": double.tryParse(criticalStockPointController.text.trim()) ?? 5,
-        "kmTypeValue": int.tryParse(kmTypeValueController.text.trim()) ?? 5000,
-        "allowDecimalQty": allowDecimalQty,
-        "type": "product",
-        "isActive": true,
-      };
+
+      final Map<String, dynamic> data;
+
+      if (_editingProductId == null) {
+        // Create: full body including workshopId, branchId, departmentId, type
+        data = {
+          "workshopId": workshopId,
+          "branchId": branchId,
+          "name": nameController.text.trim(),
+          "departmentId": departmentId,
+          "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
+          if (finalSubCategoryId.isNotEmpty)
+            "subCategoryId": finalSubCategoryId,
+          "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
+          "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0.0,
+          "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
+          "openingQty": double.tryParse(openingQtyController.text.trim()) ?? 0,
+          "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
+          "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
+          "criticalStockPoint": double.tryParse(criticalStockPointController.text.trim()) ?? 5,
+          "kmTypeValue": int.tryParse(kmTypeValueController.text.trim()) ?? 5000,
+          "allowDecimalQty": allowDecimalQty,
+          "type": "product",
+          "isActive": isActive,
+        };
+      } else {
+        // Update: only product-specific fields per PATCH /workshop-staff/product/{id}
+        data = {
+          "name": nameController.text.trim(),
+          "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
+          "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0.0,
+          "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
+          "openingQty": double.tryParse(openingQtyController.text.trim()) ?? 0,
+          "criticalStockPoint": double.tryParse(criticalStockPointController.text.trim()) ?? 5,
+          "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
+          "allowDecimalQty": allowDecimalQty,
+          "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
+          "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
+          "isActive": isActive,
+        };
+      }
 
       final response = _editingProductId == null
           ? await ownerRepository.createProduct(data, token)
@@ -529,20 +611,39 @@ class InventoryManagementViewModel extends ChangeNotifier {
       final workshopId = user?.workshopId ?? '3';
 
       String finalSubCategoryId = subCategoryIdController.text.trim().isEmpty ? (subCategoryId ?? '') : subCategoryIdController.text.trim();
-      final data = {
-        "workshopId": workshopId,
-        "departmentId": departmentId,
-        "branchId": branchId,
-        "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
-        if (finalSubCategoryId.isNotEmpty)
-          "subCategoryId": finalSubCategoryId,
-        "name": nameController.text.trim(),
-        "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
-        "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
-        "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
-        "type": "service",
-        "isActive": true,
-      };
+      
+      final Map<String, dynamic> data;
+      if (_editingServiceId == null) {
+        data = {
+          "workshopId": workshopId,
+          "departmentId": departmentId,
+          "branchId": branchId,
+          "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
+          if (finalSubCategoryId.isNotEmpty)
+            "subCategoryId": finalSubCategoryId,
+          "name": nameController.text.trim(),
+          "sellingPrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
+          "isPriceEditable": isPriceEditable,
+          "vatMode": vatMode,
+          "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
+          "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
+          "type": "service",
+          "isActive": isActive,
+        };
+      } else {
+        data = {
+          "name": nameController.text.trim(),
+          "sellingPrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
+          "categoryId": categoryIdController.text.trim().isEmpty
+              ? categoryId
+              : categoryIdController.text.trim(),
+          "isPriceEditable": isPriceEditable,
+          "vatMode": vatMode,
+          "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
+          "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
+          "isActive": isActive,
+        };
+      }
 
       final response = _editingServiceId == null
           ? await ownerRepository.createWorkshopService(data, token)
@@ -562,6 +663,16 @@ class InventoryManagementViewModel extends ChangeNotifier {
       _isActionLoading = false;
       notifyListeners();
     }
+  }
+
+  void toggleIsPriceEditable(bool val) {
+    isPriceEditable = val;
+    notifyListeners();
+  }
+
+  void setVatMode(String val) {
+    vatMode = val;
+    notifyListeners();
   }
 
   Future<void> submitCategoryForm(BuildContext context) async {
@@ -665,7 +776,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteService(BuildContext context, String id) async {
-    _isLoading = true;
+    _isActionLoading = true;
     notifyListeners();
     try {
       final token = await sessionService.getToken(role: 'owner');
@@ -698,6 +809,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
     } catch (e) {
       if (context.mounted) ToastService.showError(context, 'Failed to delete category');
     } finally {
+      _isLoading = false;
       _isActionLoading = false;
       notifyListeners();
     }

@@ -1,7 +1,7 @@
 class ApiConstants {
   // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
   // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
-  static const String baseUrl = 'http://localhost:3000';
+  static const String baseUrl = 'https://filterbackend-production.up.railway.app';
 
   //// workshop pos ////
   static const String loginEndpoint = '/auth/cashier/login';
@@ -38,9 +38,13 @@ class ApiConstants {
   ///// workshop-owner //////
   static const String adminLoginEndpoint = '/auth/workshop/login';
   static const String adminRegisterEndpoint = '/auth/workshop/register';
+  static const String corporateRegisterEndpoint = '/auth/corporate/register';
   static const String createBranchEndpoint = '/workshop-staff/branch/create';
   static const String getBranchesEndpoint = '/workshop-staff/branches';
+  static const String deleteBranchEndpoint = '/workshop-staff/branch';
+  static const String deleteDepartmentEndpoint = '/workshop-staff/department';
   static const String createProductEndpoint = '/workshop-staff/product/create';
+  static const String updateProductEndpoint = '/workshop-staff/product';
   static const String createCategoryEndpoint =
       '/workshop-staff/category/create';
   static const String createSubCategoryEndpoint =
@@ -51,8 +55,6 @@ class ApiConstants {
       '/workshop-staff/billing-dashboard';
   static const String reportsAnalyticsEndpoint =
       '/workshop-staff/reports-analytics';
-  static const String createCorporateAccountEndpoint =
-      '/workshop-staff/corporate-account/create';
   static const String createCorporateUserEndpoint =
       '/workshop-staff/corporate-user/create';
   static const String corporateCustomersEndpoint =
@@ -70,7 +72,9 @@ class ApiConstants {
       '/workshop-staff/sub-categories';
   static const String techniciansEndpoint = '/workshop-staff/technicians';
   static const String employeesEndpoint = '/workshop-staff/employees';
+  static const String referrersEndpoint = '/workshop-staff/referrers';
   static const String productsEndpoint = '/workshop-staff/products';
+  static const String productUnitsEndpoint = '/workshop-staff/product-units';
   static const String workshopServicesEndpoint = '/workshop-products/services';
   static String branchCatalogEndpoint(String branchId) =>
       '/workshop-staff/branches/$branchId/catalog';
@@ -78,6 +82,9 @@ class ApiConstants {
   static const String promoCodesEndpoint = '/workshop-staff/promo-codes';
   static const String createPromoCodeEndpoint =
       '/workshop-staff/promo-code/create';
+  /// PATCH / DELETE single promo code by id
+  static String workshopPromoCodeByIdEndpoint(String id) =>
+      '/workshop-staff/promo-code/$id';
   static const String suppliersStatsEndpoint =
       '/workshop-staff/suppliers-purchases/stats';
   static const String suppliersEndpoint = '/workshop-staff/suppliers';
@@ -96,6 +103,8 @@ class ApiConstants {
   static const String technicianTodayPerformanceEndpoint =
       '/technician/today-performance';
   static const String technicianProfileEndpoint = '/technician/profile';
+  static const String technicianOnlineStatusEndpoint =
+      '/technician/online-status';
   static const String technicianDutyStatusEndpoint = '/technician/duty-status';
   static const String technicianAssignedOrdersEndpoint =
       '/technician/assigned-orders';

@@ -5,6 +5,7 @@ import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../utils/toast_service.dart';
 import '../../../../services/owner_data_service.dart';
+import '../../../../services/google_places_service.dart';
 
 class EmployeeManagementViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
@@ -20,9 +21,16 @@ class EmployeeManagementViewModel extends ChangeNotifier {
   final TextEditingController commissionPercentController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController openingBalanceController = TextEditingController();
+  final GooglePlacesService googlePlacesService = GooglePlacesService('AIzaSyDfxcDdlq5IDIHjpRQKeAHepYIFaSYvVMQ');
+
+  double _gpsLat = 24.7136;
+  double _gpsLng = 46.6753;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading; // Separated from ownerDataService loading for cleaner UI
+
+  bool _isActive = true;
+  bool get isActive => _isActive;
 
   bool _isActionLoading = false;
   bool get isActionLoading => _isActionLoading;
@@ -47,6 +55,11 @@ class EmployeeManagementViewModel extends ChangeNotifier {
 
   void updateSearchQuery(String query) {
     _searchQuery = query;
+    notifyListeners();
+  }
+
+  void toggleStatus(bool value) {
+    _isActive = value;
     notifyListeners();
   }
 
@@ -104,7 +117,28 @@ class EmployeeManagementViewModel extends ChangeNotifier {
     addressController.clear();
     openingBalanceController.clear();
     _editingEmployeeId = null;
+    _gpsLat = 24.7136;
+    _gpsLng = 46.6753;
+    _isActive = true;
     notifyListeners();
+  }
+
+  Future<List<Map<String, dynamic>>> getAddressSuggestions(String input) async {
+    return await googlePlacesService.getSuggestions(input);
+  }
+
+  Future<void> onAddressSelected(Map<String, dynamic> selection) async {
+    final description = selection['description'] as String;
+    addressController.text = description;
+    
+    final placeId = selection['place_id'] as String;
+    final details = await googlePlacesService.getPlaceDetails(placeId);
+    
+    if (details != null) {
+      _gpsLat = details['lat'];
+      _gpsLng = details['lng'];
+      notifyListeners();
+    }
   }
 
   void setEditEmployee(OwnerEmployee? e) {
@@ -118,6 +152,7 @@ class EmployeeManagementViewModel extends ChangeNotifier {
       passwordController.clear(); // Don't pre-fill password
       commissionPercentController.text = e.techCommission.toString();
       baseSalaryController.text = e.basicSalary?.toString() ?? '0';
+      _isActive = e.status == 'active';
       // Note: branch and department will be handled in the UI
     }
     notifyListeners();
@@ -177,6 +212,7 @@ class EmployeeManagementViewModel extends ChangeNotifier {
         "commissionPercent": double.tryParse(commissionPercentController.text.trim()) ?? 0,
         "basicSalary": double.tryParse(baseSalaryController.text.trim()) ?? 0,
         "departmentIds": [departmentId],
+        "isActive": _isActive,
       };
 
       if (passwordController.text.trim().isNotEmpty) {
@@ -235,6 +271,7 @@ class EmployeeManagementViewModel extends ChangeNotifier {
         "mobile": mobileController.text.trim(),
         "email": emailController.text.trim(),
         "branchId": branchId,
+        "isActive": _isActive,
       };
 
       if (passwordController.text.trim().isNotEmpty) {
@@ -264,7 +301,11 @@ class EmployeeManagementViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteEmployee(BuildContext context, String id, String role) async {
+  Future<void> deleteEmployee(
+    BuildContext context,
+    String id,
+    String role,
+  ) async {
     _isActionLoading = true;
     notifyListeners();
 
@@ -314,6 +355,9 @@ class EmployeeManagementViewModel extends ChangeNotifier {
         "address": addressController.text.trim(),
         "openingBalance": double.tryParse(openingBalanceController.text.trim()) ?? 0,
         "password": passwordController.text.trim(),
+        "gpsLat": _gpsLat,
+        "gpsLng": _gpsLng,
+        "isActive": _isActive,
       };
 
       await ownerRepository.createSupplier(data, token);

@@ -66,6 +66,23 @@ class AddCustomerViewModel extends ChangeNotifier {
     );
   }
 
+  void clearAllFields() {
+    nameController.clear();
+    vatController.clear();
+    mobileController.clear();
+    vehicleNumberController.clear();
+    makeController.clear();
+    modelController.clear();
+    odoMeterController.clear();
+    corpVehicleNumberController.clear();
+    corpMakeController.clear();
+    corpModelController.clear();
+    corpOdoMeterController.clear();
+    _selectedCorporate = null;
+    _selectedCorporateData = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     nameController.dispose();

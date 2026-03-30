@@ -4,14 +4,26 @@ import '../../../../models/workshop_owner_models.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../services/owner_data_service.dart';
+import '../../../../services/google_places_service.dart';
 
 class BranchManagementViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
+  final GooglePlacesService googlePlacesService = GooglePlacesService('AIzaSyDfxcDdlq5IDIHjpRQKeAHepYIFaSYvVMQ');
   
   final TextEditingController branchNameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
+  final TextEditingController gpsLatController = TextEditingController();
+  final TextEditingController gpsLngController = TextEditingController();
+  
+  bool _isActive = true;
+  bool get isActive => _isActive;
+
+  void toggleStatus(bool value) {
+    _isActive = value;
+    notifyListeners();
+  }
   
   String? _editingBranchId;
   bool get isEditing => _editingBranchId != null;
@@ -40,6 +52,20 @@ class BranchManagementViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<List<Map<String, dynamic>>> getAddressSuggestions(String input) async {
+    return await googlePlacesService.getSuggestions(input);
+  }
+
+  Future<void> setSelectedAddress(String description, String placeId) async {
+    addressController.text = description;
+    final location = await googlePlacesService.getPlaceDetails(placeId);
+    if (location != null) {
+      gpsLatController.text = location['lat'].toString();
+      gpsLngController.text = location['lng'].toString();
+    }
+    notifyListeners();
+  }
+
   BranchManagementViewModel({
     required this.ownerRepository,
     required this.sessionService,
@@ -63,6 +89,9 @@ class BranchManagementViewModel extends ChangeNotifier {
   void clearForm() {
     branchNameController.clear();
     addressController.clear();
+    gpsLatController.clear();
+    gpsLngController.clear();
+    _isActive = true;
     _editingBranchId = null;
     notifyListeners();
   }
@@ -74,6 +103,9 @@ class BranchManagementViewModel extends ChangeNotifier {
       _editingBranchId = b.id;
       branchNameController.text = b.name;
       addressController.text = b.location;
+      gpsLatController.text = b.gpsLat?.toString() ?? '';
+      gpsLngController.text = b.gpsLng?.toString() ?? '';
+      _isActive = b.status.toLowerCase() == 'active';
     }
     notifyListeners();
   }
@@ -94,6 +126,9 @@ class BranchManagementViewModel extends ChangeNotifier {
       final data = {
         "name": branchNameController.text.trim(),
         "address": addressController.text.trim(),
+        "gpsLat": double.tryParse(gpsLatController.text.trim()),
+        "gpsLng": double.tryParse(gpsLngController.text.trim()),
+        "isActive": _isActive,
       };
 
       if (_editingBranchId == null) {
@@ -127,11 +162,17 @@ class BranchManagementViewModel extends ChangeNotifier {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
 
-      await ownerRepository.deleteBranch(token, id);
+      final response = await ownerRepository.deleteBranch(token, id);
+      final successMessage = (response is Map<String, dynamic> &&
+              response['message'] != null &&
+              response['message'].toString().trim().isNotEmpty)
+          ? response['message'].toString()
+          : 'Branch Deleted Successfully';
 
+      // Force a fresh branches API call so list updates immediately.
+      await fetchBranches(silent: false);
       if (context.mounted) {
-        ToastService.showSuccess(context, 'Branch Deleted Successfully');
-        await fetchBranches(silent: true);
+        ToastService.showSuccess(context, successMessage);
       }
     } catch (e) {
       if (context.mounted) ToastService.showError(context, 'Failed to delete branch');
@@ -146,6 +187,8 @@ class BranchManagementViewModel extends ChangeNotifier {
     ownerDataService.removeListener(notifyListeners);
     branchNameController.dispose();
     addressController.dispose();
+    gpsLatController.dispose();
+    gpsLngController.dispose();
     super.dispose();
   }
 }
