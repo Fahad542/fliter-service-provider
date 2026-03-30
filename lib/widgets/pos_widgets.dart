@@ -2184,9 +2184,7 @@ void _showCompletionBottomSheet(
   if (order.items.isNotEmpty) {
     for (var item in order.items) {
       final priceDynamic = item['price'] ?? item['unitPrice'] ?? 0.0;
-      final double price = priceDynamic is int
-          ? priceDynamic.toDouble()
-          : (priceDynamic as double? ?? 0.0);
+      final double price = (priceDynamic as num?)?.toDouble() ?? 0.0;
       parsedItems.add({
         'name': item['productName'] ?? item['name'] ?? 'Item',
         'price': price,

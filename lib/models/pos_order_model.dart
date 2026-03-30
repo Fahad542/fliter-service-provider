@@ -242,6 +242,10 @@ class PosOrder {
   final double? promoDiscountAmount;
   final String? promoDiscountType;
   final double? promoDiscountValue;
+  
+  // Aggregate fields from backend
+  final double totalAmount;
+  final double subtotal;
 
   PosOrder({
     required this.id,
@@ -262,6 +266,8 @@ class PosOrder {
     this.promoDiscountAmount,
     this.promoDiscountType,
     this.promoDiscountValue,
+    this.totalAmount = 0.0,
+    this.subtotal = 0.0,
   });
 
   factory PosOrder.fromJson(Map<String, dynamic> json) {
@@ -292,6 +298,8 @@ class PosOrder {
       promoDiscountAmount: double.tryParse(json['promoDiscountAmount']?.toString() ?? '0') ?? 0.0,
       promoDiscountType: json['promoDiscountType']?.toString(),
       promoDiscountValue: double.tryParse(json['promoDiscountValue']?.toString() ?? '0') ?? 0.0,
+      totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0.0,
+      subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0.0,
     );
   }
 
@@ -314,6 +322,8 @@ class PosOrder {
     double? promoDiscountAmount,
     String? promoDiscountType,
     double? promoDiscountValue,
+    double? totalAmount,
+    double? subtotal,
   }) {
     return PosOrder(
       id: id ?? this.id,
@@ -334,6 +344,8 @@ class PosOrder {
       promoDiscountAmount: promoDiscountAmount ?? this.promoDiscountAmount,
       promoDiscountType: promoDiscountType ?? this.promoDiscountType,
       promoDiscountValue: promoDiscountValue ?? this.promoDiscountValue,
+      totalAmount: totalAmount ?? this.totalAmount,
+      subtotal: subtotal ?? this.subtotal,
     );
   }
 
@@ -342,7 +354,6 @@ class PosOrder {
   String get plateNumber => vehicle?.plateNo ?? '';
   String get date => createdAt.isNotEmpty ? createdAt.split('T')[0] : '';
 
-  double get totalAmount => 0.0; // API doesn't provide total in this list
   List<String> get services => []; // API doesn't provide services in this list
 
   String get activeDepartmentName {

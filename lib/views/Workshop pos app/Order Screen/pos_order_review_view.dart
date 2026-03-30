@@ -40,6 +40,7 @@ class ReviewLineItem {
     }
     return 0.0;
   }
+
   double get lineTotal => baseTotal - discountAmount;
   double get commission => lineTotal * commissionRate;
 }
@@ -179,61 +180,121 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     }
   }
 
+  // Subtotal AFTER item-level discounts (This is the "Gross Subtotal" for job/promo discounts)
   double get _grossSubtotal =>
-      _currentInvoice?.subtotal ?? _items.fold(0.0, (s, i) => s + i.baseTotal);
-      
-  double get _discountAmount {
-    if (_currentInvoice != null && _currentInvoice!.discountAmount > 0) return _currentInvoice!.discountAmount;
-    double itemDiscounts = _items.fold(0.0, (s, i) => s + i.discountAmount);
-    double globalDiscount = 0.0;
-    if (widget.order.totalDiscountType == 'percent') {
-      double baseForGlobal = _grossSubtotal - itemDiscounts;
-      globalDiscount = baseForGlobal * ((widget.order.totalDiscountValue ?? 0.0) / 100.0);
+      _currentInvoice?.subtotal ?? _items.fold(0.0, (s, i) => s + i.lineTotal);
+
+  // Total amount of ALL discounts (including Items, Job, and Promo)
+  double get _totalDiscountAmount {
+    // 1. Initial subtotal for job-level discounts (Items are already accounted for in _items.lineTotal)
+    double currentSubtotal = _grossSubtotal;
+
+    // 2. Job-level discount (Overall Discount)
+    double jobDiscount = 0.0;
+    if (widget.order.totalDiscountType == 'percent' ||
+        widget.order.totalDiscountType == 'percentage') {
+      jobDiscount =
+          currentSubtotal * ((widget.order.totalDiscountValue ?? 0.0) / 100.0);
     } else {
-      globalDiscount = widget.order.totalDiscountValue ?? 0.0;
+      jobDiscount = widget.order.totalDiscountValue ?? 0.0;
     }
-    
+    double afterJobDiscount = max(0, currentSubtotal - jobDiscount);
+
+    // 3. Promo-level discount
     double promoDiscount = 0.0;
-    final isPromoPercent = widget.order.promoDiscountType?.toLowerCase() == 'percent' || 
-                           widget.order.promoDiscountType?.toLowerCase() == 'percentage';
-    
+    final isPromoPercent =
+        widget.order.promoDiscountType?.toLowerCase() == 'percent' ||
+        widget.order.promoDiscountType?.toLowerCase() == 'percentage';
+
     if (isPromoPercent) {
-      double baseForPromo = _grossSubtotal - itemDiscounts - globalDiscount;
-      promoDiscount = baseForPromo * ((widget.order.promoDiscountValue ?? 0.0) / 100.0);
+      promoDiscount =
+          afterJobDiscount * ((widget.order.promoDiscountValue ?? 0.0) / 100.0);
     } else {
-      promoDiscount = widget.order.promoDiscountAmount != null && widget.order.promoDiscountAmount! > 0 
-          ? widget.order.promoDiscountAmount! 
-          : widget.order.promoDiscountValue ?? 0.0;
+      // Prioritize the amount if provided by backend, else use the value field as amount
+      promoDiscount =
+          widget.order.promoDiscountAmount != null &&
+              widget.order.promoDiscountAmount! > 0
+          ? widget.order.promoDiscountAmount!
+          : (widget.order.promoDiscountValue ?? 0.0);
     }
-    
-    return itemDiscounts + globalDiscount + promoDiscount;
+
+    // Total discount sum displayed in the UI breakdown
+    double totalItemDiscounts = _items.fold(
+      0.0,
+      (s, i) => s + i.discountAmount,
+    );
+    return totalItemDiscounts + jobDiscount + promoDiscount;
   }
 
-  double get _netSubtotal => _grossSubtotal - _discountAmount;
-  double get _vatExclusive => _grossSubtotal;
-  double get _vatAmount => _currentInvoice?.vatAmount ?? _netSubtotal * _vatRate;
-  double get _total => _currentInvoice?.totalAmount ?? (_netSubtotal + _vatAmount);
+  // The final base for VAT (Price after all discounts)
+  double get _netSubtotal {
+    double currentSubtotal = _grossSubtotal;
 
-  String? get _promoCode => _currentInvoice?.promoCodeName ?? widget.order.promoCodeName;
-
-  // Commission per technician
-  Map<String, double> get _commissions {
-    if (_currentInvoice != null) {
-      final map = <String, double>{};
-      for (var dept in _currentInvoice!.departments) {
-        for (var comm in dept.commissions) {
-          map[comm.technicianName] =
-              (map[comm.technicianName] ?? 0) + comm.commissionAmount;
-        }
-      }
-      return map;
+    // 1. Calculate Job Discount
+    double jobDiscount = 0;
+    if (widget.order.totalDiscountType == 'percent' ||
+        widget.order.totalDiscountType == 'percentage') {
+      jobDiscount =
+          currentSubtotal * ((widget.order.totalDiscountValue ?? 0.0) / 100.0);
+    } else {
+      jobDiscount = widget.order.totalDiscountValue ?? 0.0;
     }
+
+    double baseForPromo = max(0, currentSubtotal - jobDiscount);
+
+    // 2. Calculate Promo Discount
+    double promoDiscount = 0;
+    final isPromoPercent =
+        widget.order.promoDiscountType?.toLowerCase() == 'percent' ||
+        widget.order.promoDiscountType?.toLowerCase() == 'percentage';
+
+    if (isPromoPercent) {
+      promoDiscount =
+          baseForPromo * ((widget.order.promoDiscountValue ?? 0.0) / 100.0);
+    } else {
+      promoDiscount =
+          widget.order.promoDiscountAmount != null &&
+              widget.order.promoDiscountAmount! > 0
+          ? widget.order.promoDiscountAmount!
+          : (widget.order.promoDiscountValue ?? 0.0);
+    }
+
+    return max(0, baseForPromo - promoDiscount);
+  }
+
+  // Total amount of VAT (15% on the net subtotal)
+  double get _vatAmount {
+    return _netSubtotal * 0.15;
+  }
+
+  // Final Total to be paid (Net + VAT)
+  double get _totalAmount {
+    return _netSubtotal + _vatAmount;
+  }
+
+  double get _vatExclusive => _grossSubtotal;
+
+  String? get _promoCode =>
+      _currentInvoice?.promoCodeName ?? widget.order.promoCodeName;
+
+  // Commission per technician: Derived from the final TOTAL amount to ensure consistency
+  Map<String, double> get _commissions {
+    // Collect unique technician names involved in the order
+    final uniqueTechs = _items.map((i) => i.technicianName).toSet().toList();
+    if (uniqueTechs.isEmpty) return {};
 
     final map = <String, double>{};
-    for (final item in _items) {
-      map[item.technicianName] =
-          (map[item.technicianName] ?? 0) + item.commission;
+
+    // Total commission is 10% of the final post-tax total
+    final totalOrderCommission = _totalAmount * 0.10;
+
+    // Split the total commission evenly among all technicians
+    final commissionPerTech = totalOrderCommission / uniqueTechs.length;
+
+    for (final tech in uniqueTechs) {
+      map[tech] = commissionPerTech;
     }
+
     return map;
   }
 
@@ -459,7 +520,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  if (item.discountValue != null && item.discountValue! > 0)
+                                  if (item.discountValue != null &&
+                                      item.discountValue! > 0)
                                     Text(
                                       'SAR ${(item.qty * item.unitPrice).toStringAsFixed(2)}',
                                       style: AppTextStyles.bodySmall.copyWith(
@@ -474,9 +536,11 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                                       color: AppColors.secondaryLight,
                                     ),
                                   ),
-                                  if (item.discountValue != null && item.discountValue! > 0)
+                                  if (item.discountValue != null &&
+                                      item.discountValue! > 0)
                                     Text(
-                                      item.discountType == 'percentage' || item.discountType == 'percent'
+                                      item.discountType == 'percentage' ||
+                                              item.discountType == 'percent'
                                           ? '(-${item.discountValue}%)'
                                           : '(-SAR ${item.discountValue})',
                                       style: AppTextStyles.bodySmall.copyWith(
@@ -492,167 +556,185 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                         );
                       }),
 
-                      // Render Technicians if any
-                      if (job.technicians.isNotEmpty) ...[
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Divider(height: 1, color: Color(0xFFEEEBE6)),
-                        ),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.handyman_rounded,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Assigned Technicians',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        ...job.technicians.map(
-                          (tech) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryLight.withOpacity(
-                                      0.15,
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 14,
-                                    color: AppColors.primaryLight,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        tech.name,
-                                        style: AppTextStyles.bodyMedium.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.secondaryLight,
-                                        ),
-                                      ),
-                                      Text(
-                                        tech.commissionAmount > 0 || tech.commissionPercent == 0
-                                          ? 'Commission: SAR ${tech.commissionAmount.toStringAsFixed(2)}'
-                                          : 'Commission: ${tech.commissionPercent.toStringAsFixed(0)}%',
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          color: Colors.green.shade600,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Builder(
-                                  builder: (context) {
-                                    final s = tech.status?.toLowerCase() ?? '';
-                                    Color bgColor = Colors.orange.withOpacity(0.1);
-                                    Color textColor = Colors.orange.shade700;
-                                    String displayText = s.isEmpty ? 'PENDING' : tech.status!.toUpperCase();
-
-                                    if (displayText == 'ACCEPTED_BY_TECHNICIAN') {
-                                      displayText = 'ACCEPTED';
-                                    } else if (displayText == 'IN_PROGRESS' || displayText == 'IN PROGRESS') {
-                                      displayText = 'IN PROGRESS';
-                                    }
-
-                                    if (s.contains('completed') || s.contains('accepted')) {
-                                      bgColor = Colors.green.withOpacity(0.1);
-                                      textColor = Colors.green.shade700;
-                                    } else if (s.contains('progress')) {
-                                      bgColor = Colors.purple.withOpacity(0.1);
-                                      textColor = Colors.purple.shade700;
-                                    }
-
-                                    return Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: bgColor,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        displayText,
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                          color: textColor,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+                    // Render Technicians if any
+                    if (job.technicians.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(height: 1, color: Color(0xFFEEEBE6)),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.handyman_rounded,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Assigned Technicians',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: Colors.grey.shade600,
                             ),
                           ),
-                        ),
-                      ],
-                      // Render Job Breakdown
-                      if (job.items.isNotEmpty) ...[
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Divider(height: 1, color: Color(0xFFEEEBE6)),
-                        ),
-                        Builder(
-                          builder: (context) {
-                            final double preItemDiscountJobTotal = job.items.fold(0.0, (sum, i) => sum + (i.qty * i.unitPrice));
-                            final double postItemDiscountJobTotal = job.items.fold(0.0, (sum, i) => sum + i.lineTotal);
-                            final double calculatedItemDiscountAmount = preItemDiscountJobTotal - postItemDiscountJobTotal;
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...job.technicians.map(
+                        (tech) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryLight.withOpacity(
+                                    0.15,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 14,
+                                  color: AppColors.primaryLight,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      tech.name,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.secondaryLight,
+                                      ),
+                                    ),
+                                    Text(
+                                      tech.commissionAmount > 0 ||
+                                              tech.commissionPercent == 0
+                                          ? 'Commission: SAR ${tech.commissionAmount.toStringAsFixed(2)}'
+                                          : 'Commission: ${tech.commissionPercent.toStringAsFixed(0)}%',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: Colors.green.shade600,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Builder(
+                                builder: (context) {
+                                  final s = tech.status?.toLowerCase() ?? '';
+                                  Color bgColor = Colors.orange.withOpacity(
+                                    0.1,
+                                  );
+                                  Color textColor = Colors.orange.shade700;
+                                  String displayText = s.isEmpty
+                                      ? 'PENDING'
+                                      : tech.status!.toUpperCase();
 
-                            final double jobTotal = job.totalAmount > 0 ? job.totalAmount : postItemDiscountJobTotal;
-                            
-                            final double jobVatAmount = job.vatAmount > 0 
-                                ? job.vatAmount 
-                                : jobTotal - (jobTotal / (1 + _vatRate));
-                                
-                            // The true Total Amount Gross (pre-global-discount AND pre-item-discount)
-                            final double jobSubtotalExclusive = preItemDiscountJobTotal;
+                                  if (displayText == 'ACCEPTED_BY_TECHNICIAN') {
+                                    displayText = 'ACCEPTED';
+                                  } else if (displayText == 'IN_PROGRESS' ||
+                                      displayText == 'IN PROGRESS') {
+                                    displayText = 'IN PROGRESS';
+                                  }
 
-                            String? jobPromoLabel = (job.promoCodeName != null && job.promoCodeName!.isNotEmpty) 
-                                ? job.promoCodeName 
-                                : null;
+                                  if (s.contains('completed') ||
+                                      s.contains('accepted')) {
+                                    bgColor = Colors.green.withOpacity(0.1);
+                                    textColor = Colors.green.shade700;
+                                  } else if (s.contains('progress')) {
+                                    bgColor = Colors.purple.withOpacity(0.1);
+                                    textColor = Colors.purple.shade700;
+                                  }
 
-                            return _VatBreakdownWidget(
-                              subtotalExclusive: jobSubtotalExclusive,
-                              itemDiscountAmount: calculatedItemDiscountAmount,
-                              vatAmount: jobVatAmount,
-                              vatRate: _vatRate,
-                              globalDiscountValue: job.totalDiscountValue,
-                              globalDiscountType: job.totalDiscountType,
-                              promoDiscountAmount: job.promoDiscountAmount,
-                              promoDiscountValue: job.promoDiscountValue,
-                              promoDiscountType: job.promoDiscountType,
-                              promoCode: jobPromoLabel,
-                              total: jobTotal,
-                              currencyFormat: NumberFormat('#,##0.00'),
-                              isTablet: isTablet,
-                            );
-                          },
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: bgColor,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      displayText,
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: textColor,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ]
-                    ], // Children of the Items Body Column
-                  ),
+                      ),
+                    ],
+                    // Render Job Breakdown
+                    if (job.items.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(height: 1, color: Color(0xFFEEEBE6)),
+                      ),
+                      Builder(
+                        builder: (context) {
+                          final double preItemDiscountJobTotal = job.items.fold(
+                            0.0,
+                            (sum, i) => sum + (i.qty * i.unitPrice),
+                          );
+                          final double postItemDiscountJobTotal = job.items
+                              .fold(0.0, (sum, i) => sum + i.lineTotal);
+                          final double calculatedItemDiscountAmount =
+                              preItemDiscountJobTotal -
+                              postItemDiscountJobTotal;
+
+                          final double jobTotal = job.totalAmount > 0
+                              ? job.totalAmount
+                              : postItemDiscountJobTotal;
+
+                          final double jobVatAmount = job.vatAmount > 0
+                              ? job.vatAmount
+                              : jobTotal - (jobTotal / (1 + _vatRate));
+
+                          // The true Total Amount Gross (pre-global-discount AND pre-item-discount)
+                          final double jobSubtotalExclusive =
+                              preItemDiscountJobTotal;
+
+                          String? jobPromoLabel =
+                              (job.promoCodeName != null &&
+                                  job.promoCodeName!.isNotEmpty)
+                              ? job.promoCodeName
+                              : null;
+
+                          return _VatBreakdownWidget(
+                            subtotalExclusive: jobSubtotalExclusive,
+                            itemDiscountAmount: calculatedItemDiscountAmount,
+                            vatAmount: jobVatAmount,
+                            vatRate: _vatRate,
+                            globalDiscountValue: job.totalDiscountValue,
+                            globalDiscountType: job.totalDiscountType,
+                            promoDiscountAmount: job.promoDiscountAmount,
+                            promoDiscountValue: job.promoDiscountValue,
+                            promoDiscountType: job.promoDiscountType,
+                            promoCode: jobPromoLabel,
+                            total: jobTotal,
+                            currencyFormat: NumberFormat('#,##0.00'),
+                            isTablet: isTablet,
+                          );
+                        },
+                      ),
+                    ],
+                  ], // Children of the Items Body Column
                 ),
+              ),
             ],
           ),
         );
@@ -743,64 +825,55 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 _SectionCard(
                   title: 'Order Grand Total',
                   icon: Icons.receipt_long_rounded,
-                  child: Builder(
-                    builder: (context) {
-                      double absoluteGrandTotal = 0.0;
-                      
-                      if (widget.order.jobs.isEmpty) {
-                        absoluteGrandTotal = _total - _discountAmount;
-                      } else {
-                        for (final job in widget.order.jobs) {
-                          final double preItemDiscountJobTotal = job.items.fold(0.0, (sum, i) => sum + (i.qty * i.unitPrice));
-                          final double postItemDiscountJobTotal = job.items.fold(0.0, (sum, i) => sum + i.lineTotal);
-                          final double itemDiscountAmount = preItemDiscountJobTotal - postItemDiscountJobTotal;
-                          
-                          final double netSubtotal = preItemDiscountJobTotal - itemDiscountAmount;
-                          
-                          final double computedGlobalAmount = (job.totalDiscountType == 'percent') 
-                              ? (netSubtotal * job.totalDiscountValue / 100) 
-                              : job.totalDiscountValue;
-                              
-                          final double priceAfterGlobal = netSubtotal - computedGlobalAmount;
-                          
-                          final bool isJobPromoPercent = job.promoDiscountType?.toLowerCase() == 'percent' || 
-                                                         job.promoDiscountType?.toLowerCase() == 'percentage';
-                          final double computedPromoAmount = isJobPromoPercent
-                              ? (priceAfterGlobal * job.promoDiscountValue / 100)
-                              : (job.promoDiscountAmount > 0 ? job.promoDiscountAmount : job.promoDiscountValue);
-                                  
-                          final double priceAfterPromo = priceAfterGlobal - computedPromoAmount;
-                          final double tax = priceAfterPromo * _vatRate;
-                          
-                          absoluteGrandTotal += (priceAfterPromo + tax);
-                        }
-                      }
-                      
-                      return Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Row(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Column(
+                      children: [
+                        _buildTotalRow(
+                          'Gross Amount',
+                          _grossSubtotal.toStringAsFixed(2),
+                        ),
+                        _buildTotalRow(
+                          'Total Discounts',
+                          '- ${_totalDiscountAmount.toStringAsFixed(2)}',
+                          isNegative: true,
+                        ),
+                        _buildTotalRow(
+                          'Net Amount',
+                          _netSubtotal.toStringAsFixed(2),
+                        ),
+                        _buildTotalRow(
+                          'VAT (15%)',
+                          _vatAmount.toStringAsFixed(2),
+                        ),
+                        const Divider(height: 24, thickness: 1),
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Total amount',
+                              'Total Amount',
                               style: TextStyle(
-                                fontSize: isTablet ? 16 : 14,
-                                fontWeight: FontWeight.w800,
+                                fontSize: isTablet ? 17 : 15,
+                                fontWeight: FontWeight.w900,
                                 color: const Color(0xFF1E2124),
+                                letterSpacing: 0.5,
                               ),
                             ),
                             Text(
-                              'SAR ${currencyFormat.format(absoluteGrandTotal)}',
+                              'SAR ${currencyFormat.format(_totalAmount)}',
                               style: TextStyle(
-                                fontSize: isTablet ? 18 : 16,
+                                fontSize: isTablet ? 20 : 18,
                                 fontWeight: FontWeight.w900,
-                                color: const Color(0xFF1E2124),
+                                color: AppColors.secondaryLight,
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -876,6 +949,42 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             if (context.mounted) Navigator.pop(context); // Exit the view
           });
         },
+      ),
+    );
+  }
+
+  Widget _buildTotalRow(
+    String label,
+    String value, {
+    bool isNegative = false,
+    bool isBold = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isBold ? 15 : 13,
+              fontWeight: isBold ? FontWeight.w900 : FontWeight.w500,
+              color: isBold ? const Color(0xFF1E2124) : Colors.grey.shade600,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isBold ? 16 : 14,
+              fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
+              color: isNegative
+                  ? Colors.red.shade700
+                  : (isBold
+                        ? AppColors.secondaryLight
+                        : const Color(0xFF1E2124)),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1113,21 +1222,23 @@ class _VatBreakdownWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     // Math checks
     final double netSubtotal = subtotalExclusive - itemDiscountAmount;
-    
-    final double computedGlobalDiscountAmount = (globalDiscountType == 'percent') 
-        ? (netSubtotal * globalDiscountValue / 100) 
+
+    final double computedGlobalDiscountAmount =
+        (globalDiscountType == 'percent')
+        ? (netSubtotal * globalDiscountValue / 100)
         : globalDiscountValue;
-        
+
     final double priceAfterGlobal = netSubtotal - computedGlobalDiscountAmount;
-    
-    final bool isPromoPercent = promoDiscountType?.toLowerCase() == 'percent' || 
-                                promoDiscountType?.toLowerCase() == 'percentage';
+
+    final bool isPromoPercent =
+        promoDiscountType?.toLowerCase() == 'percent' ||
+        promoDiscountType?.toLowerCase() == 'percentage';
     final double computedPromoAmount = isPromoPercent
         ? (priceAfterGlobal * promoDiscountValue / 100)
         : (promoDiscountAmount > 0 ? promoDiscountAmount : promoDiscountValue);
-            
+
     final double priceAfterPromo = priceAfterGlobal - computedPromoAmount;
-    
+
     // Calculate Native Tax and Total
     final double computedTaxAmount = priceAfterPromo * vatRate;
     final double computedTotalAmount = priceAfterPromo + computedTaxAmount;
@@ -1141,7 +1252,7 @@ class _VatBreakdownWidget extends StatelessWidget {
             valueColor: const Color(0xFF1E2124),
           ),
           const SizedBox(height: 8),
-          
+
           if (itemDiscountAmount > 0) ...[
             _PriceRow(
               label: 'Item Discounts',
@@ -1151,28 +1262,47 @@ class _VatBreakdownWidget extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
-          
+
           if (computedGlobalDiscountAmount > 0) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Discount', style: TextStyle(fontSize: 13, color: Colors.green.shade600, fontWeight: FontWeight.w500)),
+                Text(
+                  'Discount',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.green.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: const Color(0xFF1E2124)),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        globalDiscountValue % 1 == 0 ? globalDiscountValue.toInt().toString() : globalDiscountValue.toStringAsFixed(2),
-                        style: TextStyle(fontSize: 13, color: Colors.green.shade600, fontWeight: FontWeight.w600),
+                        globalDiscountValue % 1 == 0
+                            ? globalDiscountValue.toInt().toString()
+                            : globalDiscountValue.toStringAsFixed(2),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.green.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.shade50,
                         border: Border.all(color: Colors.green.shade200),
@@ -1180,7 +1310,11 @@ class _VatBreakdownWidget extends StatelessWidget {
                       ),
                       child: Text(
                         globalDiscountType == 'percent' ? '%' : 'SAR',
-                        style: TextStyle(fontSize: 13, color: Colors.green.shade700, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -1197,7 +1331,9 @@ class _VatBreakdownWidget extends StatelessWidget {
 
           if (computedPromoAmount > 0) ...[
             _PriceRow(
-              label: promoCode != null && promoCode!.isNotEmpty ? 'Promo Discount ($promoCode)' : 'Promo Discount',
+              label: promoCode != null && promoCode!.isNotEmpty
+                  ? 'Promo Discount ($promoCode)'
+                  : 'Promo Discount',
               value: '-SAR ${currencyFormat.format(computedPromoAmount)}',
               valueColor: Colors.green.shade600,
               labelColor: Colors.green.shade600,
@@ -1209,7 +1345,7 @@ class _VatBreakdownWidget extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
-          
+
           const Divider(height: 1, color: Color(0xFFF0F0F5)),
           const SizedBox(height: 10),
           _PriceRow(
@@ -1259,8 +1395,8 @@ class _PriceRow extends StatelessWidget {
   final Color? valueColor;
   final Color? labelColor;
   const _PriceRow({
-    required this.label, 
-    required this.value, 
+    required this.label,
+    required this.value,
     this.valueColor,
     this.labelColor,
   });

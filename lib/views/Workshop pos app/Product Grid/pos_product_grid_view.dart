@@ -136,9 +136,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               ? targetJob.promoDiscountValue 
               : (widget.completingOrder!.promoDiscountValue ?? 0.0);
               
-          final pVal = promoValueAmount > 0 
-              ? promoValueAmount 
-              : (promoValue > 0 ? promoValue : globalValue);
+          final pVal = promoValue;
           
           vm.applyPromoCode(finalPromoCodeName, pVal, promoType == 'percent');
         }
@@ -531,7 +529,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             ),
                             child: Column(
                               children: [
-                                _buildTotalRow('Total Amount Gross', 'SAR ${vm.getSubtotalExclVat(widget.isMainTab).toStringAsFixed(2)}', isTablet),
+                                _buildTotalRow('Total Amount Gross', 'SAR ${vm.getSubtotalGross(widget.isMainTab).toStringAsFixed(2)}', isTablet),
                                 SizedBox(height: isTablet ? 8 : 6),
                                 
                                 if (vm.getTotalIndividualDiscount(widget.isMainTab) > 0) ...[
@@ -593,13 +591,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 ),
                                 SizedBox(height: isTablet ? 8 : 6),
                                 
-                                _buildTotalRow('Price after discount', 'SAR ${(vm.getSubtotalExclVat(widget.isMainTab) - (vm.getTotalIndividualDiscount(widget.isMainTab) + vm.getTotalGlobalDiscountValue(widget.isMainTab))).toStringAsFixed(2)}', isTablet),
+                                _buildTotalRow('Price after discount', 'SAR ${vm.getPriceAfterJobDiscount(widget.isMainTab).toStringAsFixed(2)}', isTablet),
                                 SizedBox(height: isTablet ? 10 : 8),
                                 
                                 if (vm.getTotalPromoDiscountValue(widget.isMainTab) > 0) ...[
                                   _buildTotalRow('Promo Discount', '-SAR ${vm.getTotalPromoDiscountValue(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.green),
                                   SizedBox(height: isTablet ? 10 : 8),
-                                  _buildTotalRow('Price after promo', 'SAR ${(vm.getSubtotalExclVat(widget.isMainTab) - (vm.getTotalIndividualDiscount(widget.isMainTab) + vm.getTotalGlobalDiscountValue(widget.isMainTab) + vm.getTotalPromoDiscountValue(widget.isMainTab))).toStringAsFixed(2)}', isTablet),
+                                  _buildTotalRow('Price after promo', 'SAR ${vm.getTotalTaxableAmountValue(widget.isMainTab).toStringAsFixed(2)}', isTablet),
                                   SizedBox(height: isTablet ? 10 : 8),
                                 ],
 
@@ -701,7 +699,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                               if (widget.completingOrder != null && widget.completingOrder!.jobs.isNotEmpty) {
                                                 jobId = widget.completingOrder!.latestJob!.id;
                                               }
-                                              final response = await vm.completeCashierJob(jobId);
+                                              final response = await vm.completeCashierJob(jobId, isMainTab: widget.isMainTab);
                                               if (response != null && response.success && context.mounted) {
                                                 vm.setShellSelectedIndex(2); // Orders Tab
                                                 vm.fetchOrders();

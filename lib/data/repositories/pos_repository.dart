@@ -68,11 +68,11 @@ class PosRepository {
     }
   }
 
-  Future<CashierCompleteJobResponse> completeCashierJob(String jobId, String token) async {
+  Future<CashierCompleteJobResponse> completeCashierJob(String jobId, String token, {Map<String, dynamic>? body}) async {
     try {
       final response = await _apiService.post(
         ApiConstants.cashierCompleteJobEndpoint(jobId),
-        {}, // No payload explicitly mapping per docs, just the URL parameter
+        body ?? {},
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

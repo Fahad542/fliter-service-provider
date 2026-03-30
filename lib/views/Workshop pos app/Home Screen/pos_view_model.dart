@@ -511,16 +511,21 @@ class PosViewModel extends ChangeNotifier {
   double get totalTax => getTotalTaxValue(false);
   double get totalAmount => getTotalAmountValue(false);
 
-  double getSubtotalExclVat(bool isMainTab) => _getActiveCart(isMainTab).fold(
+  double getSubtotalGross(bool isMainTab) => _getActiveCart(isMainTab).fold(
     0,
     (sum, item) => sum + (item.product.price * item.quantity),
   );
 
+  double getSubtotalExclVat(bool isMainTab) => getSubtotalGross(isMainTab);
+
   double getTotalIndividualDiscount(bool isMainTab) =>
       _getActiveCart(isMainTab).fold(0, (sum, item) => sum + item.actualDiscountAmount);
 
+  double getPriceAfterItemDiscounts(bool isMainTab) => 
+      getSubtotalGross(isMainTab) - getTotalIndividualDiscount(isMainTab);
+
   double getTotalGlobalDiscountValue(bool isMainTab) {
-    final baseForGlobal = getSubtotalExclVat(isMainTab) - getTotalIndividualDiscount(isMainTab);
+    final baseForGlobal = getPriceAfterItemDiscounts(isMainTab);
     if (isMainTab) {
       if (_mainTabIsGlobalDiscountPercent) return baseForGlobal * (_mainTabGlobalDiscount / 100);
       return _mainTabGlobalDiscount;
@@ -530,10 +535,11 @@ class PosViewModel extends ChangeNotifier {
     }
   }
 
+  double getPriceAfterJobDiscount(bool isMainTab) => 
+      getPriceAfterItemDiscounts(isMainTab) - getTotalGlobalDiscountValue(isMainTab);
+
   double getTotalPromoDiscountValue(bool isMainTab) {
-    final baseForPromo = getSubtotalExclVat(isMainTab) - 
-                        getTotalIndividualDiscount(isMainTab) - 
-                        getTotalGlobalDiscountValue(isMainTab);
+    final baseForPromo = getPriceAfterJobDiscount(isMainTab);
     if (isMainTab) {
       if (_mainTabIsPromoPercent) return baseForPromo * (_mainTabPromoDiscount / 100);
       return _mainTabPromoDiscount;
@@ -544,10 +550,7 @@ class PosViewModel extends ChangeNotifier {
   }
 
   double getTotalTaxableAmountValue(bool isMainTab) =>
-      getSubtotalExclVat(isMainTab) -
-      getTotalIndividualDiscount(isMainTab) -
-      getTotalGlobalDiscountValue(isMainTab) -
-      getTotalPromoDiscountValue(isMainTab);
+      getPriceAfterJobDiscount(isMainTab) - getTotalPromoDiscountValue(isMainTab);
 
   double getTotalTaxValue(bool isMainTab) => getTotalTaxableAmountValue(isMainTab) * 0.15; // 15% VAT
   
@@ -1015,7 +1018,7 @@ class PosViewModel extends ChangeNotifier {
     }
   }
 
-  Future<CashierCompleteJobResponse?> completeCashierJob(String jobId) async {
+  Future<CashierCompleteJobResponse?> completeCashierJob(String jobId, {bool isMainTab = false}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -1024,7 +1027,28 @@ class PosViewModel extends ChangeNotifier {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Token not found');
 
-      final response = await posRepository.completeCashierJob(jobId, token);
+      // 1. Prepare items for completion payload
+      final activeCart = isMainTab ? _mainTabCartItems : _cartItems;
+      final List<Map<String, dynamic>> items = [];
+
+      for (var item in activeCart) {
+        items.add({
+          item.product.isService ? 'serviceId' : 'productId': item.product.id,
+          'qty': item.quantity,
+          'discount': item.discount > 0 ? item.discount : 0,
+          'discountType': item.discount > 0 ? (item.isDiscountPercent ? 'percentage' : 'amount') : 'amount',
+        });
+      }
+
+      // 2. Build Full Body
+      final body = {
+        'items': items,
+        'totalDiscountType': _globalDiscount > 0 ? (_isGlobalDiscountPercent ? 'percentage' : 'amount') : 'amount',
+        'totalDiscountValue': _globalDiscount > 0 ? _globalDiscount : 0,
+        'promoCode': _promoDiscount > 0 ? _activePromoCode : null,
+      };
+
+      final response = await posRepository.completeCashierJob(jobId, token, body: body);
       if (response.success) {
         // Refresh orders to reflect updated statuses implicitly
         await fetchOrders(silent: true);

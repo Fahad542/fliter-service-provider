@@ -29,6 +29,12 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
         final order = vm.currentOrderDetail ?? widget.order;
         final bool isLoading = vm.isLoading && vm.currentOrderDetail == null;
 
+        final orderStatus = order.status.toLowerCase();
+        final bool isOrderFinalized =
+            orderStatus == 'completed' ||
+            orderStatus == 'invoiced' ||
+            orderStatus == 'success';
+
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FD),
           appBar: AppBar(
@@ -63,7 +69,10 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                       const SizedBox(height: 16),
                       _buildOrderItemsCard(order),
                       const SizedBox(height: 16),
-                      _buildCommissionCard(order),
+                      if (isOrderFinalized) ...[
+                        _buildCommissionCard(order),
+                        const SizedBox(height: 16),
+                      ],
                       const SizedBox(height: 32),
                       _buildActionButtons(context, vm, order),
                     ],
@@ -173,7 +182,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
           Padding(
             padding: const EdgeInsets.only(top: 1),
             child: Text(
-              'SAR ${item.price.toStringAsFixed(2)}',
+              'SAR ${(item.price * item.qty).toStringAsFixed(2)}',
               style: const TextStyle(color: Colors.black54, fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),

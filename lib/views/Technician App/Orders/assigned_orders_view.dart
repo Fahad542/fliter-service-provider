@@ -289,12 +289,14 @@ class AssignedOrdersView extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoColumn(
-                      'COMMISSION',
-                      'SAR ${order.commission.toStringAsFixed(2)}',
-                      isPrimary: true,
-                    ),
-                    const SizedBox(height: 16),
+                    if (isOrderFinalized) ...[
+                      _buildInfoColumn(
+                        'COMMISSION',
+                        'SAR ${order.commission.toStringAsFixed(2)}',
+                        isPrimary: true,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -500,15 +502,16 @@ class AssignedOrdersView extends StatelessWidget {
     Color textColor = Colors.orange.shade600;
     Color bgColor = Colors.orange.shade50;
 
-    if (status == 'COMPLETED' ||
-        status == 'SUCCESS' ||
-        status == 'INVOICED' ||
-        status == 'COMPLETED BY TECHNICIAN' ||
-        status == 'COMPLETED_BY_TECHNICIAN') {
+    if (status == 'COMPLETED' || status == 'SUCCESS' || status == 'INVOICED') {
       textColor = Colors.green.shade700;
       bgColor = Colors.green.shade50;
       // Overwrite display text to just "COMPLETED" for consistency
       status = 'COMPLETED';
+    } else if (status == 'COMPLETED BY TECHNICIAN' ||
+        status == 'COMPLETED_BY_TECHNICIAN') {
+      textColor = Colors.orange.shade800;
+      bgColor = Colors.orange.shade50;
+      status = 'COMPLETED BY TECHNICIAN';
     } else if (status == 'TASK COMPLETE') {
       textColor = Colors.orange.shade700;
       bgColor = Colors.orange.shade50;

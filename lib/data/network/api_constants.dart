@@ -1,6 +1,7 @@
 class ApiConstants {
   // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
-  static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+  // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+  static const String baseUrl = 'http://localhost:3000';
 
   //// workshop pos ////
   static const String loginEndpoint = '/auth/cashier/login';

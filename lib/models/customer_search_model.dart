@@ -85,7 +85,11 @@ class SearchedCustomerOrder {
       vehicle: json['vehicle'] != null
           ? SearchedCustomerVehicle.fromJson(json['vehicle'])
           : null,
-      invoiceNo: json['invoiceNo']?.toString() ?? json['invoice_no']?.toString() ?? json['invoiceId']?.toString() ?? json['invoice_id']?.toString(),
+      invoiceNo:
+          json['invoiceNo']?.toString() ??
+          json['invoice_no']?.toString() ??
+          json['invoiceId']?.toString() ??
+          json['invoice_id']?.toString(),
     );
   }
 }
