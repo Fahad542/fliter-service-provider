@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../models/store_closing_model.dart';
-import '../../../../models/pos_order_model.dart';
-import '../../../../utils/toast_service.dart';
-import '../../../../data/repositories/pos_repository.dart';
-import '../../../../services/session_service.dart';
+import '../../../models/store_closing_model.dart';
+import '../../../utils/toast_service.dart';
+import '../../../data/repositories/pos_repository.dart';
+import '../../../services/session_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+
 class StoreClosingViewModel extends ChangeNotifier {
   final PosRepository posRepository = PosRepository();
   final SessionService sessionService = SessionService();
@@ -17,12 +17,22 @@ class StoreClosingViewModel extends ChangeNotifier {
   final corporateController = TextEditingController();
   final tamaraController = TextEditingController();
   final tabbyController = TextEditingController();
+  final notesController = TextEditingController();
 
   bool _isReconciled = false;
   bool get isReconciled => _isReconciled;
 
   StoreClosingReport? _report;
   StoreClosingReport? get report => _report;
+
+  StoreClosingSummary? _summary;
+  StoreClosingSummary? get summary => _summary;
+
+  String? _closingId;
+  String? get closingId => _closingId;
+
+  bool _isLoadingSummary = false;
+  bool get isLoadingSummary => _isLoadingSummary;
 
   bool _isGeneratingReport = false;
   bool get isGeneratingReport => _isGeneratingReport;
@@ -43,7 +53,33 @@ class StoreClosingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reconcile(List<PosOrder> orders, String branchName, String cashierName, BuildContext context) async {
+  /// Fetch system totals from GET endpoint so user can see expected amounts
+  Future<void> loadSummary() async {
+    _isLoadingSummary = true;
+    notifyListeners();
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) return;
+      final user = await sessionService.getUser();
+      final workshopId = user?.workshopId ?? '';
+      final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final response = await posRepository.getStoreClosing(token, todayDate, workshopId);
+      _summary = StoreClosingSummary.fromJson({
+        'cashAmount': response.cashAmount,
+        'bankAmount': response.bankAmount,
+        'corporateAmount': response.corporateAmount,
+        'totalAmount': response.totalAmount,
+        'totalInvoices': response.totalInvoices,
+      });
+    } catch (_) {
+      // summary is optional, silently ignore
+    } finally {
+      _isLoadingSummary = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> reconcile(String branchName, String cashierName, BuildContext context) async {
     _isReconciling = true;
     notifyListeners();
 
@@ -51,35 +87,40 @@ class StoreClosingViewModel extends ChangeNotifier {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Token not found');
 
-      final user = await sessionService.getUser();
-      final workshopId = user?.workshopId ?? '';
-      final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final body = <String, dynamic>{
+        'physicalCash': double.tryParse(cashController.text) ?? 0,
+        if (bankController.text.isNotEmpty)
+          'physicalBank': double.tryParse(bankController.text) ?? 0,
+        if (corporateController.text.isNotEmpty)
+          'physicalCorporate': double.tryParse(corporateController.text) ?? 0,
+        if (tamaraController.text.isNotEmpty)
+          'physicalTamara': double.tryParse(tamaraController.text) ?? 0,
+        if (tabbyController.text.isNotEmpty)
+          'physicalTabby': double.tryParse(tabbyController.text) ?? 0,
+        if (notesController.text.trim().isNotEmpty)
+          'notes': notesController.text.trim(),
+      };
 
-      final apiResponse = await posRepository.getStoreClosing(token, todayDate, workshopId);
+      final response = await posRepository.submitCounterClosing(token, body);
 
-      final sysReport = getStoreClosingSystemTotals(orders, branchName, cashierName);
-
-      _report = StoreClosingReport(
-        id: 'CLOSE-${DateTime.now().millisecondsSinceEpoch}',
-        timestamp: DateTime.now(),
-        branch: branchName,
-        cashierName: cashierName,
-        systemSales: apiResponse.totalAmount, // Using API data
-        systemCash: apiResponse.cashAmount > 0 ? apiResponse.cashAmount : sysReport.systemCash,
-        systemBank: apiResponse.bankAmount > 0 ? apiResponse.bankAmount : sysReport.systemBank,
-        systemCorporate: apiResponse.corporateAmount > 0 ? apiResponse.corporateAmount : sysReport.systemCorporate,
-        systemTamara: sysReport.systemTamara,
-        systemTabby: sysReport.systemTabby,
-        physicalCash: double.tryParse(cashController.text) ?? 0,
-        physicalBank: double.tryParse(bankController.text) ?? 0,
-        physicalCorporate: double.tryParse(corporateController.text) ?? 0,
-        physicalTamara: double.tryParse(tamaraController.text) ?? 0,
-        physicalTabby: double.tryParse(tabbyController.text) ?? 0,
-      );
-      _isReconciled = true;
+      if (response['success'] == true) {
+        _closingId = response['closingId']?.toString();
+        _report = StoreClosingReport.fromApiResponse(
+          closingId: _closingId ?? '',
+          branch: branchName,
+          cashierName: cashierName,
+          json: response,
+        );
+        _isReconciled = true;
+        if (context.mounted) {
+          ToastService.showSuccess(context, 'Shift closed successfully!');
+        }
+      } else {
+        throw Exception(response['message'] ?? 'Counter closing failed');
+      }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, 'Failed to fetch reconciliation data: $e');
+        ToastService.showError(context, 'Failed to close shift: $e');
       }
     } finally {
       _isReconciling = false;
@@ -89,13 +130,13 @@ class StoreClosingViewModel extends ChangeNotifier {
 
   Future<void> buildReport(BuildContext context) async {
     if (_report == null) return;
-    
+
     _isGeneratingReport = true;
     notifyListeners();
-    
+
     try {
       final pdf = pw.Document();
-      
+
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
@@ -103,21 +144,36 @@ class StoreClosingViewModel extends ChangeNotifier {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('Store Closing Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Store Closing Report',
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 20),
                 pw.Text('Branch: ${_report!.branch}'),
                 pw.Text('Cashier: ${_report!.cashierName}'),
                 pw.Text('Date: ${DateFormat('dd MMM, yyyy hh:mm a').format(_report!.timestamp)}'),
+                if (_closingId != null) pw.Text('Closing ID: $_closingId'),
                 pw.SizedBox(height: 20),
                 pw.Divider(),
                 pw.SizedBox(height: 10),
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Expanded(child: pw.Text('Category', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                    pw.SizedBox(width: 80, child: pw.Text('System', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                    pw.SizedBox(width: 80, child: pw.Text('Physical', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                    pw.SizedBox(width: 80, child: pw.Text('Difference', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.Expanded(child: pw.Text('Category',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.SizedBox(
+                        width: 80,
+                        child: pw.Text('System',
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.SizedBox(
+                        width: 80,
+                        child: pw.Text('Physical',
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.SizedBox(
+                        width: 80,
+                        child: pw.Text('Difference',
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
                   ],
                 ),
                 pw.SizedBox(height: 10),
@@ -134,8 +190,20 @@ class StoreClosingViewModel extends ChangeNotifier {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Net Difference to Posted:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
-                    pw.Text('SAR ${_report!.netDifference.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                    pw.Text('Total Difference:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                    pw.Text('SAR ${_report!.netDifference.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+                pw.SizedBox(height: 8),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('System Total Sales:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                    pw.Text('SAR ${_report!.systemSales.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               ],
@@ -148,7 +216,7 @@ class StoreClosingViewModel extends ChangeNotifier {
         onLayout: (PdfPageFormat format) async => pdf.save(),
         name: 'Store_Closing_Report_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
       );
-      
+
       if (context.mounted) {
         ToastService.showSuccess(context, 'Reconciliation Report PDF Generated!');
       }
@@ -180,11 +248,13 @@ class StoreClosingViewModel extends ChangeNotifier {
   void reset() {
     _isReconciled = false;
     _report = null;
+    _closingId = null;
     cashController.clear();
     bankController.clear();
     corporateController.clear();
     tamaraController.clear();
     tabbyController.clear();
+    notesController.clear();
     notifyListeners();
   }
 
@@ -195,50 +265,7 @@ class StoreClosingViewModel extends ChangeNotifier {
     corporateController.dispose();
     tamaraController.dispose();
     tabbyController.dispose();
+    notesController.dispose();
     super.dispose();
-  }
-
-  StoreClosingReport getStoreClosingSystemTotals(
-    List<PosOrder> orders,
-    String branchName,
-    String cashierName,
-  ) {
-    double cash = 0, bank = 0, corporate = 0, tamara = 0, tabby = 0;
-    
-    for (var order in orders) {
-      if (order.status.toLowerCase() == 'invoiced' || order.status.toLowerCase() == 'completed') {
-        // Mock distribution
-        if (order.id.endsWith('1')) {
-          cash += order.totalAmount;
-        } else if (order.id.endsWith('2')) {
-          bank += order.totalAmount;
-        } else {
-          corporate += order.totalAmount;
-        }
-      }
-    }
-
-    return StoreClosingReport(
-      id: 'CLOSE-${DateTime.now().millisecondsSinceEpoch}',
-      timestamp: DateTime.now(),
-      branch: branchName,
-      cashierName: cashierName,
-      systemSales: cash + bank + corporate + tamara + tabby,
-      systemCash: cash,
-      systemBank: bank,
-      systemCorporate: corporate,
-      systemTamara: tamara,
-      systemTabby: tabby,
-      physicalCash: 0,
-      physicalBank: 0,
-      physicalCorporate: 0,
-      physicalTamara: 0,
-      physicalTabby: 0,
-    );
-  }
-
-  void submitStoreClosing(StoreClosingReport report) {
-    // API logic for submitting store closing goes here
-    notifyListeners();
   }
 }

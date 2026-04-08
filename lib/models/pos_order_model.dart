@@ -40,6 +40,9 @@ class OrderStats {
   final int readyForInvoice;
   final int invoiced;
   final int cancelled;
+  final int waitingForCorporateApproval;
+  final int corporateApproved;
+  final int rejectedByCorporate;
 
   OrderStats({
     required this.total,
@@ -48,27 +51,46 @@ class OrderStats {
     required this.readyForInvoice,
     required this.invoiced,
     required this.cancelled,
+    this.waitingForCorporateApproval = 0,
+    this.corporateApproved = 0,
+    this.rejectedByCorporate = 0,
   });
+
+  static int _statInt(Map<String, dynamic> json, Object key) {
+    final v = json[key.toString()];
+    if (v is int) return v;
+    return int.tryParse(v?.toString() ?? '0') ?? 0;
+  }
 
   factory OrderStats.fromJson(Map<String, dynamic> json) {
     return OrderStats(
-      total: json['total'] ?? 0,
-      draft: json['draft'] ?? 0,
-      inProgress: json['in progress'] ?? json['in_progress'] ?? 0,
-      readyForInvoice: json['ready_for_invoice'] ?? 0,
-      invoiced: json['invoiced'] ?? json['completed'] ?? 0,
-      cancelled: json['cancelled'] ?? 0,
+      total: _statInt(json, 'total'),
+      draft: _statInt(json, 'draft'),
+      inProgress: _statInt(json, 'in progress') != 0
+          ? _statInt(json, 'in progress')
+          : _statInt(json, 'in_progress'),
+      readyForInvoice: _statInt(json, 'ready_for_invoice'),
+      invoiced: _statInt(json, 'invoiced') != 0
+          ? _statInt(json, 'invoiced')
+          : _statInt(json, 'completed'),
+      cancelled: _statInt(json, 'cancelled'),
+      waitingForCorporateApproval: _statInt(json, 'waiting for corporate approval'),
+      corporateApproved: _statInt(json, 'corporate approved'),
+      rejectedByCorporate: _statInt(json, 'rejected by corporate'),
     );
   }
 
   factory OrderStats.empty() => OrderStats(
-    total: 0,
-    draft: 0,
-    inProgress: 0,
-    readyForInvoice: 0,
-    invoiced: 0,
-    cancelled: 0,
-  );
+        total: 0,
+        draft: 0,
+        inProgress: 0,
+        readyForInvoice: 0,
+        invoiced: 0,
+        cancelled: 0,
+        waitingForCorporateApproval: 0,
+        corporateApproved: 0,
+        rejectedByCorporate: 0,
+      );
 }
 
 class PosOrderJob {
@@ -81,6 +103,7 @@ class PosOrderJob {
   // Job-level API pricing
   final double totalAmount;
   final double vatAmount;
+  final double vatPercent;
   final String? promoCodeId;
   final String? promoCodeName;
   final String? promoDiscountType;
@@ -97,6 +120,7 @@ class PosOrderJob {
     this.technicians = const [],
     this.totalAmount = 0.0,
     this.vatAmount = 0.0,
+    this.vatPercent = 15.0,
     this.promoCodeId,
     this.promoCodeName,
     this.promoDiscountType,
@@ -114,6 +138,7 @@ class PosOrderJob {
       department: json['department'] ?? '',
       totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0.0,
       vatAmount: double.tryParse(json['vatAmount']?.toString() ?? '0') ?? 0.0,
+      vatPercent: double.tryParse(json['vatPercent']?.toString() ?? '15') ?? 15.0,
       promoCodeId: json['promoCodeId']?.toString(),
       promoCodeName: json['promoCodeName']?.toString(),
       promoDiscountType: json['promoDiscountType']?.toString(),
@@ -228,9 +253,14 @@ class PosOrder {
   final String source;
   final int odometerReading;
   final String createdAt;
+  final String submittedAt;
+  final String orderDateTime;
+  final String orderDate;
+  final String orderTime;
   final OrderCustomer? customer;
   final OrderVehicle? vehicle;
   final int jobsCount;
+  final String assignedTo;
   final List<PosOrderJob> jobs;
   final List<dynamic> items;
 
@@ -247,15 +277,25 @@ class PosOrder {
   final double totalAmount;
   final double subtotal;
 
+  final String? corporateAccountId;
+  final String? corporateCompanyName;
+  final String? corporateApprovalRejectionReason;
+  final List<dynamic> pendingDepartments;
+
   PosOrder({
     required this.id,
     required this.status,
     required this.source,
     required this.odometerReading,
     required this.createdAt,
+    this.submittedAt = '',
+    this.orderDateTime = '',
+    this.orderDate = '',
+    this.orderTime = '',
     this.customer,
     this.vehicle,
     required this.jobsCount,
+    this.assignedTo = '',
     this.jobs = const [],
     this.items = const [],
     this.totalDiscountType,
@@ -268,27 +308,37 @@ class PosOrder {
     this.promoDiscountValue,
     this.totalAmount = 0.0,
     this.subtotal = 0.0,
+    this.corporateAccountId,
+    this.corporateCompanyName,
+    this.corporateApprovalRejectionReason,
+    this.pendingDepartments = const [],
   });
 
   factory PosOrder.fromJson(Map<String, dynamic> json) {
+    final parsedJobs =
+        (json['jobs'] as List?)?.map((j) => PosOrderJob.fromJson(j)).toList() ??
+        [];
     return PosOrder(
       id: json['id']?.toString() ?? '',
       status: json['status'] ?? '',
       source: json['source'] ?? '',
       odometerReading: json['odometerReading'] ?? 0,
       createdAt: json['createdAt'] ?? '',
+      submittedAt: json['submittedAt']?.toString() ?? '',
+      orderDateTime: json['orderDateTime']?.toString() ?? '',
+      orderDate: json['orderDate']?.toString() ?? '',
+      orderTime: json['orderTime']?.toString() ?? '',
       customer: json['customer'] != null
           ? OrderCustomer.fromJson(json['customer'])
           : null,
       vehicle: json['vehicle'] != null
           ? OrderVehicle.fromJson(json['vehicle'])
           : null,
-      jobsCount: json['jobsCount'] ?? 0,
-      jobs:
-          (json['jobs'] as List?)
-              ?.map((j) => PosOrderJob.fromJson(j))
-              .toList() ??
-          [],
+      jobsCount:
+          (json['jobsCount'] as num?)?.toInt() ??
+          parsedJobs.length,
+      assignedTo: json['assignedTo']?.toString() ?? '',
+      jobs: parsedJobs,
       items: json['items'] ?? json['products'] ?? [],
       totalDiscountType: json['totalDiscountType']?.toString(),
       totalDiscountValue: double.tryParse(json['totalDiscountValue']?.toString() ?? '0') ?? 0.0,
@@ -300,6 +350,12 @@ class PosOrder {
       promoDiscountValue: double.tryParse(json['promoDiscountValue']?.toString() ?? '0') ?? 0.0,
       totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0.0,
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0.0,
+      corporateAccountId: json['corporateAccountId']?.toString(),
+      corporateCompanyName: json['corporateCompanyName']?.toString(),
+      corporateApprovalRejectionReason: json['corporateApprovalRejectionReason']?.toString(),
+      pendingDepartments: json['pendingDepartments'] is List
+          ? List<dynamic>.from(json['pendingDepartments'] as List)
+          : const [],
     );
   }
 
@@ -309,9 +365,14 @@ class PosOrder {
     String? source,
     int? odometerReading,
     String? createdAt,
+    String? submittedAt,
+    String? orderDateTime,
+    String? orderDate,
+    String? orderTime,
     OrderCustomer? customer,
     OrderVehicle? vehicle,
     int? jobsCount,
+    String? assignedTo,
     List<PosOrderJob>? jobs,
     List<dynamic>? items,
     String? totalDiscountType,
@@ -324,6 +385,10 @@ class PosOrder {
     double? promoDiscountValue,
     double? totalAmount,
     double? subtotal,
+    String? corporateAccountId,
+    String? corporateCompanyName,
+    String? corporateApprovalRejectionReason,
+    List<dynamic>? pendingDepartments,
   }) {
     return PosOrder(
       id: id ?? this.id,
@@ -331,9 +396,14 @@ class PosOrder {
       source: source ?? this.source,
       odometerReading: odometerReading ?? this.odometerReading,
       createdAt: createdAt ?? this.createdAt,
+      submittedAt: submittedAt ?? this.submittedAt,
+      orderDateTime: orderDateTime ?? this.orderDateTime,
+      orderDate: orderDate ?? this.orderDate,
+      orderTime: orderTime ?? this.orderTime,
       customer: customer ?? this.customer,
       vehicle: vehicle ?? this.vehicle,
       jobsCount: jobsCount ?? this.jobsCount,
+      assignedTo: assignedTo ?? this.assignedTo,
       jobs: jobs ?? this.jobs,
       items: items ?? this.items,
       totalDiscountType: totalDiscountType ?? this.totalDiscountType,
@@ -346,13 +416,53 @@ class PosOrder {
       promoDiscountValue: promoDiscountValue ?? this.promoDiscountValue,
       totalAmount: totalAmount ?? this.totalAmount,
       subtotal: subtotal ?? this.subtotal,
+      corporateAccountId: corporateAccountId ?? this.corporateAccountId,
+      corporateCompanyName: corporateCompanyName ?? this.corporateCompanyName,
+      corporateApprovalRejectionReason:
+          corporateApprovalRejectionReason ?? this.corporateApprovalRejectionReason,
+      pendingDepartments: pendingDepartments ?? this.pendingDepartments,
     );
   }
+
+  bool get isCorporateWalkIn =>
+      source.toLowerCase() == 'walk_in_corporate' ||
+      (corporateAccountId != null && corporateAccountId!.isNotEmpty);
 
   String get customerName => customer?.name ?? 'Unknown';
   String get carModel => '${vehicle?.make ?? ""} ${vehicle?.model ?? ""}'.trim();
   String get plateNumber => vehicle?.plateNo ?? '';
-  String get date => createdAt.isNotEmpty ? createdAt.split('T')[0] : '';
+  /// Best-available date string (YYYY-MM-DD), device-local parse from ISO timestamp
+  String get date {
+    if (orderDate.isNotEmpty) return orderDate;
+    final iso = submittedAt.isNotEmpty ? submittedAt
+        : orderDateTime.isNotEmpty ? orderDateTime
+        : createdAt;
+    if (iso.isEmpty) return '';
+    try {
+      return DateTime.parse(iso).toLocal().toIso8601String().split('T')[0];
+    } catch (_) {
+      return iso.split('T')[0];
+    }
+  }
+
+  /// Best-available time string (HH:mm), device-local
+  String get time {
+    if (orderTime.isNotEmpty) {
+      return orderTime.length >= 5 ? orderTime.substring(0, 5) : orderTime;
+    }
+    final iso = submittedAt.isNotEmpty ? submittedAt
+        : orderDateTime.isNotEmpty ? orderDateTime
+        : createdAt;
+    if (iso.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    } catch (_) {
+      return '';
+    }
+  }
 
   List<String> get services => []; // API doesn't provide services in this list
 
@@ -382,8 +492,26 @@ class PosOrder {
     return latestJob?.status ?? status;
   }
 
+  String get displayJobStatus {
+    return _latestJobStatus;
+  }
+
+  String get normalizedJobStatus {
+    return _normalizeStatus(_latestJobStatus);
+  }
+
+  String get assignedTechnicianNames {
+    final techs = latestJob?.technicians ?? const <JobTechnician>[];
+    final names = techs
+        .map((t) => t.name.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+    if (names.isEmpty) return '';
+    return names.join(', ');
+  }
+
   Color get statusColor {
-    String currentStatus = _latestJobStatus;
+    String currentStatus = normalizedJobStatus;
     switch (currentStatus.toLowerCase()) {
       case 'invoiced':
       case 'completed':
@@ -391,6 +519,8 @@ class PosOrder {
       case 'draft':
       case 'pending':
       case 'waiting_for_technician_acception':
+      case 'waiting for technician acception':
+      case 'waiting for technician acceptance':
         return const Color(0xFFF2994A);
       case 'in_progress':
       case 'ready_for_invoice':
@@ -416,12 +546,25 @@ class PosOrder {
       }
     }
 
-    String currentStatus = _latestJobStatus;
+    String currentStatus = normalizedJobStatus;
 
     if (currentStatus.isEmpty) return 'Unknown';
 
     // Replace underscores with spaces and uppercase the string
     return currentStatus.replaceAll('_', ' ').toUpperCase();
+  }
+
+  String _normalizeStatus(String raw) {
+    final status = raw.trim().toLowerCase();
+    if (status == 'waiting for technician acception' ||
+        status == 'waiting_for_technician_acception') {
+      return 'waiting for technician';
+    }
+    if (status == 'waiting for technician acceptance' ||
+        status == 'waiting_for_technician_acceptance') {
+      return 'waiting for technician';
+    }
+    return raw;
   }
 }
 
@@ -429,14 +572,26 @@ class OrderCustomer {
   final String id;
   final String name;
   final String mobile;
+  final String vatNumber;
 
-  OrderCustomer({required this.id, required this.name, required this.mobile});
+  OrderCustomer({
+    required this.id,
+    required this.name,
+    required this.mobile,
+    this.vatNumber = '',
+  });
 
   factory OrderCustomer.fromJson(Map<String, dynamic> json) {
     return OrderCustomer(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       mobile: json['mobile'] ?? '',
+      vatNumber:
+          json['vatNumber']?.toString() ??
+          json['taxId']?.toString() ??
+          json['vat']?.toString() ??
+          json['vatNo']?.toString() ??
+          '',
     );
   }
 }
@@ -446,20 +601,29 @@ class OrderVehicle {
   final String plateNo;
   final String make;
   final String model;
+  final String? year;
+  final String? color;
+  final String? vin;
 
   OrderVehicle({
     required this.id,
     required this.plateNo,
     required this.make,
     required this.model,
+    this.year,
+    this.color,
+    this.vin,
   });
 
   factory OrderVehicle.fromJson(Map<String, dynamic> json) {
     return OrderVehicle(
       id: json['id']?.toString() ?? '',
-      plateNo: json['plateNo'] ?? '',
-      make: json['make'] ?? '',
-      model: json['model'] ?? '',
+      plateNo: json['plateNo']?.toString() ?? '',
+      make: json['make']?.toString() ?? '',
+      model: json['model']?.toString() ?? '',
+      year: json['year']?.toString(),
+      color: json['color']?.toString(),
+      vin: json['vin']?.toString() ?? json['carNo']?.toString(),
     );
   }
 }

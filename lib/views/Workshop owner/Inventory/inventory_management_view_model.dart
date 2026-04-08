@@ -38,6 +38,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
   String? _editingSubCategoryId;
   String? _editingCategoryName;
   String? _editingSubCategoryName;
+  String? _editingCategoryDepartmentId;
 
   bool get isEditingProduct => _editingProductId != null;
   bool get isEditingService => _editingServiceId != null;
@@ -45,6 +46,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
   bool get isEditingSubCategory => _editingSubCategoryId != null;
   String? get editingCategoryName => _editingCategoryName;
   String? get editingSubCategoryName => _editingSubCategoryName;
+  String? get editingCategoryDepartmentId => _editingCategoryDepartmentId;
 
   // Category controllers
   final TextEditingController categoryNameController = TextEditingController();
@@ -228,6 +230,8 @@ class InventoryManagementViewModel extends ChangeNotifier {
             flatSubs.add(OwnerSubCategory(
               id: c['id']?.toString() ?? '',
               name: c['name'] ?? '',
+              departmentId: c['departmentId']?.toString(),
+              departmentName: c['departmentName']?.toString(),
             ));
           }
         }
@@ -393,6 +397,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
     isActive = true;
     _editingCategoryName = null;
     _editingSubCategoryName = null;
+    _editingCategoryDepartmentId = null;
     
     categoryNameController.clear();
     categoryTypeController.text = 'product';
@@ -446,12 +451,14 @@ class InventoryManagementViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setEditCategory(OwnerCategory? c) {
+  void setEditCategory(OwnerCategory? c, {String? departmentId}) {
     if (c == null) {
       _editingCategoryId = null;
+      _editingCategoryDepartmentId = null;
       categoryNameController.clear();
     } else {
       _editingCategoryId = c.id;
+      _editingCategoryDepartmentId = departmentId;
       categoryNameController.text = c.name;
       categoryTypeController.text = c.type;
     }
@@ -675,9 +682,16 @@ class InventoryManagementViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> submitCategoryForm(BuildContext context) async {
+  Future<void> submitCategoryForm(
+    BuildContext context, {
+    required String? departmentId,
+  }) async {
     if (categoryNameController.text.trim().isEmpty) {
       ToastService.showError(context, 'Please fill in all required fields.');
+      return;
+    }
+    if (departmentId == null || departmentId.isEmpty) {
+      ToastService.showError(context, 'Please select a department.');
       return;
     }
 
@@ -691,6 +705,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
       final data = {
         "name": categoryNameController.text.trim(),
         "type": _selectedInnerTab == 0 ? 'product' : 'service',
+        "departmentId": departmentId,
         "isActive": true,
       };
 
@@ -702,8 +717,13 @@ class InventoryManagementViewModel extends ChangeNotifier {
         ToastService.showSuccess(context, _editingCategoryId == null ? 'Category Created Successfully' : 'Category Updated Successfully');
         setEditCategory(null);
         Navigator.pop(context); // Close the sheet
-        await fetchCategories(silent: true); // Refresh the list
-        await fetchProductCategoriesForTab(forceRefresh: true, silent: true); // Refresh the tab list
+        await fetchCategories(silent: true);
+        await fetchProductCategoriesForTab(forceRefresh: true, silent: true);
+        if (_selectedInnerTab == 0) {
+          await fetchProducts(silent: true);
+        } else {
+          await fetchServices(silent: true);
+        }
       }
     } catch (e) {
       if (context.mounted) {

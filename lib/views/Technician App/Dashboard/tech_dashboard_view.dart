@@ -5,7 +5,6 @@ import '../Orders/assigned_orders_view.dart';
 import '../History/performance_view.dart';
 import '../History/commission_history_view.dart';
 import '../technician_view_model.dart';
-import '../Orders/broadcast_overlay.dart';
 import '../Notifications/notifications_view.dart';
 
 class TechDashboardView extends StatelessWidget {
@@ -15,9 +14,7 @@ class TechDashboardView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TechAppViewModel>(
       builder: (context, vm, child) {
-        return Stack(
-          children: [
-            Scaffold(
+        return Scaffold(
               backgroundColor: const Color(0xFFF8F9FD),
               appBar: AppBar(
                 backgroundColor: AppColors.primaryLight,
@@ -123,9 +120,6 @@ class TechDashboardView extends StatelessWidget {
                       ),
                     ),
               ),
-            ),
-            const BroadcastOverlay(),
-          ],
         );
       },
     );

@@ -24,8 +24,8 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
   ];
 
   final List<PosCounter> _closingReports = [
-    PosCounter(id: '4', cashierName: 'Rami Yousef', branchName: 'Dammam Branch', status: 'closed', shiftSales: 5200, openOrders: 0, openedAt: DateTime.now().subtract(const Duration(hours: 10)), closedAt: DateTime.now().subtract(const Duration(hours: 1)), systemTotal: 5200, physicalTotal: 5150),
-    PosCounter(id: '5', cashierName: 'Tariq Nasser', branchName: 'Jeddah Center', status: 'closed', shiftSales: 3100, openOrders: 0, openedAt: DateTime.now().subtract(const Duration(hours: 11)), closedAt: DateTime.now().subtract(const Duration(hours: 2)), systemTotal: 3100, physicalTotal: 3100),
+    PosCounter(id: '4', cashierName: 'Rami Yousef', branchName: 'Dammam Branch', status: 'closed', shiftSales: 5200, openOrders: 0, openedAt: DateTime.now().subtract(const Duration(hours: 10)), closedAt: DateTime.now().subtract(const Duration(hours: 1)), systemTotalSales: 5200, physicalCash: 5150),
+    PosCounter(id: '5', cashierName: 'Tariq Nasser', branchName: 'Jeddah Center', status: 'closed', shiftSales: 3100, openOrders: 0, openedAt: DateTime.now().subtract(const Duration(hours: 11)), closedAt: DateTime.now().subtract(const Duration(hours: 2)), systemTotalSales: 3100, physicalCash: 3100),
   ];
 
   @override
@@ -257,8 +257,12 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
   }
 
   Widget _buildClosingCard(PosCounter counter) {
-    final diff = counter.locker;
-    final hasDiff = diff.abs() > 0;
+    final netDiff = counter.effectiveDiff;
+    final isShort = netDiff > 0.01;
+    final isExcess = netDiff < -0.01;
+    final hasDiff = isShort || isExcess;
+    final diffColor = hasDiff ? (isShort ? Colors.red : Colors.green) : Colors.green;
+    final diffLabel = isShort ? 'SHORT' : (isExcess ? 'EXCESS' : 'BALANCED');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -266,11 +270,13 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: hasDiff ? Colors.red.withOpacity(0.2) : Colors.grey.withOpacity(0.08)),
+        border: Border.all(color: hasDiff ? Colors.red.withOpacity(0.18) : Colors.grey.withOpacity(0.08)),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header ─────────────────────────────────────────────────────────
           Row(
             children: [
               Container(
@@ -289,25 +295,136 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
                   ],
                 ),
               ),
-              if (hasDiff)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(color: Colors.red.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
-                  child: Text('DIFF ${diff > 0 ? "+" : ""}${diff.toStringAsFixed(0)}', style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.w900)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: diffColor.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+                child: Text(
+                  diffLabel,
+                  style: TextStyle(color: diffColor, fontSize: 10, fontWeight: FontWeight.w900),
                 ),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 14),
+
+          // ── Reconciliation table ────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: const Color(0xFFF8F9FD), borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            child: Column(
               children: [
-                _buildCounterStat('SYSTEM', 'SAR ${counter.systemTotal?.toInt()}', AppColors.secondaryLight),
-                _buildCounterStat('PHYSICAL', 'SAR ${counter.physicalTotal?.toInt()}', Colors.green),
-                _buildCounterStat('LOCKER DIFF', '${diff >= 0 ? "+" : ""}${diff.toStringAsFixed(0)}', hasDiff ? Colors.red : Colors.green),
+                // Table header
+                Row(
+                  children: [
+                    const Expanded(child: Text('Category', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey))),
+                    _tableHeader('System'),
+                    _tableHeader('Physical'),
+                    _tableHeader('Diff'),
+                  ],
+                ),
+                const Divider(height: 12),
+                _reconcRow('Cash',      counter.systemCash,      counter.physicalCash,      counter.diffCash),
+                _reconcRow('Bank/Cards', counter.systemBank,     counter.physicalBank,      counter.diffBank),
+                _reconcRow('Corporate', counter.systemCorporate, counter.physicalCorporate, counter.diffCorporate),
+                _reconcRow('Tamara',    counter.systemTamara,    counter.physicalTamara,    counter.diffTamara),
+                _reconcRow('Tabby',     counter.systemTabby,     counter.physicalTabby,     counter.diffTabby),
+                const Divider(height: 12),
+                // Total sales row
+                Row(
+                  children: [
+                    const Expanded(child: Text('Total Sales', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800))),
+                    SizedBox(
+                      width: 64,
+                      child: Text(
+                        'SAR ${counter.effectiveSystemTotal.toStringAsFixed(0)}',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.secondaryLight),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 64,
+                      child: Text(
+                        'SAR ${counter.effectivePhysicalTotal.toStringAsFixed(0)}',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.green),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 52,
+                      child: Text(
+                        isShort ? '− SAR ${netDiff.abs().toStringAsFixed(0)}' : (isExcess ? '+ SAR ${netDiff.abs().toStringAsFixed(0)}' : '—'),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: diffColor),
+                      ),
+                    ),
+                  ],
+                ),
+                if (!counter.isV2) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      '⚠ Full breakdown unavailable — deploy latest backend to see per-category data',
+                      style: TextStyle(fontSize: 9, color: Colors.orange, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tableHeader(String label) {
+    return SizedBox(
+      width: label == 'Diff' ? 52 : 64,
+      child: Text(
+        label,
+        textAlign: TextAlign.right,
+        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _reconcRow(String label, double system, double physical, double diff) {
+    // diff = system − physical: positive = short (red), negative = excess (green)
+    final diffColor = diff.abs() < 0.01 ? Colors.green : (diff > 0 ? Colors.red : Colors.green);
+    final diffStr = diff.abs() < 0.01 ? '—' : '${diff > 0 ? "−" : "+"}${diff.abs().toStringAsFixed(0)}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w500))),
+          SizedBox(
+            width: 64,
+            child: Text(
+              system.toStringAsFixed(0),
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600),
+            ),
+          ),
+          SizedBox(
+            width: 64,
+            child: Text(
+              physical.toStringAsFixed(0),
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w700),
+            ),
+          ),
+          SizedBox(
+            width: 52,
+            child: Text(
+              diffStr,
+              textAlign: TextAlign.right,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: diffColor),
             ),
           ),
         ],

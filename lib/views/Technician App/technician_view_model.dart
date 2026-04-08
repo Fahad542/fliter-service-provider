@@ -3,21 +3,91 @@ import 'package:flutter/material.dart';
 import '../../models/technician_models.dart';
 import '../../data/repositories/technician_repository.dart';
 import '../../services/session_service.dart';
+import '../../services/realtime_service.dart';
 import '../../models/technician_performance_model.dart';
 import '../../models/technician_today_performance_model.dart';
 import '../../models/technician_profile_model.dart';
 import '../../models/technician_commission_history_model.dart';
+import '../../models/technician_broadcast_model.dart';
 import '../../utils/toast_service.dart';
 
 class TechAppViewModel extends ChangeNotifier {
   final TechnicianRepository _repository;
   final SessionService _sessionService;
+  final RealtimeService _realtimeService = RealtimeService();
 
   TechAppViewModel({
     required TechnicianRepository repository,
     required SessionService sessionService,
   })  : _repository = repository,
-        _sessionService = sessionService;
+        _sessionService = sessionService {
+    _initSocket();
+  }
+
+  Future<void> _initSocket() async {
+    final token = await _sessionService.getToken(role: 'tech');
+    if (token == null) return;
+    _realtimeService.connect(token);
+    _realtimeService.on(RealtimeService.eventTechnicianOrdersUpdated, _onAssignedOrdersUpdated);
+    _realtimeService.on(RealtimeService.eventTechnicianBroadcastCreated, _onBroadcastCreated);
+    _realtimeService.on(RealtimeService.eventTechnicianBroadcastClosed, _onBroadcastClosed);
+  }
+
+  void _onAssignedOrdersUpdated(Map<String, dynamic> payload) {
+    fetchAssignedOrders(affectLoading: false);
+  }
+
+  /// New broadcast(s) from cashier — sync with GET /technician/broadcasts.
+  void _onBroadcastCreated(Map<String, dynamic> payload) {
+    fetchBroadcasts();
+  }
+
+  /// Broadcast ended (e.g. reason `accepted` by another tech) — drop locally first, then re-fetch.
+  void _onBroadcastClosed(Map<String, dynamic> payload) {
+    final jobId = _parseJobIdFromSocketPayload(payload);
+    if (jobId != null && jobId.isNotEmpty) {
+      final before = _broadcasts.length;
+      _broadcasts = _broadcasts.where((b) => b.jobId != jobId).toList();
+      if (_broadcasts.length != before) {
+        _restartBroadcastCountdown();
+        notifyListeners();
+      }
+    }
+    fetchBroadcasts();
+  }
+
+  /// Best-effort job id from socket payload (shape may vary by server).
+  String? _parseJobIdFromSocketPayload(Map<String, dynamic> payload) {
+    for (final key in ['jobId', 'job_id']) {
+      final v = payload[key]?.toString();
+      if (v != null && v.isNotEmpty) return v;
+    }
+    final job = payload['job'];
+    if (job is Map) {
+      final m = Map<String, dynamic>.from(job);
+      final id = m['id']?.toString();
+      if (id != null && id.isNotEmpty) return id;
+    }
+    final data = payload['data'];
+    if (data is Map) {
+      return _parseJobIdFromSocketPayload(Map<String, dynamic>.from(data));
+    }
+    final broadcast = payload['broadcast'];
+    if (broadcast is Map) {
+      return _parseJobIdFromSocketPayload(Map<String, dynamic>.from(broadcast));
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _realtimeService.off(RealtimeService.eventTechnicianOrdersUpdated, _onAssignedOrdersUpdated);
+    _realtimeService.off(RealtimeService.eventTechnicianBroadcastCreated, _onBroadcastCreated);
+    _realtimeService.off(RealtimeService.eventTechnicianBroadcastClosed, _onBroadcastClosed);
+    _realtimeService.disconnect();
+    _broadcastTimer?.cancel();
+    super.dispose();
+  }
 
   // --- Toggles ---
   bool _isWorkshopDuty = false;
@@ -231,33 +301,88 @@ class TechAppViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Broadcast Logic ---
-  bool _hasActiveBroadcast = false;
-  int _broadcastTimerSeconds = 300; // 5:00
+  // --- Broadcast (GET /technician/broadcasts + socket refresh) ---
+  List<TechBroadcast> _broadcasts = [];
+  int _broadcastTimerSeconds = 0;
+  int _broadcastRingTotalSecs = 300;
+  DateTime? _broadcastCountdownStartedAt;
   Timer? _broadcastTimer;
 
-  bool get hasActiveBroadcast => _hasActiveBroadcast;
-  int get broadcastTimerSeconds => _broadcastTimerSeconds;
+  List<TechBroadcast> get broadcasts => List.unmodifiable(_broadcasts);
+  TechBroadcast? get primaryBroadcast =>
+      _broadcasts.isEmpty ? null : _broadcasts.first;
 
-  void startMockBroadcast() {
-    _hasActiveBroadcast = true;
-    _broadcastTimerSeconds = 300;
-    _broadcastTimer?.cancel();
-    _broadcastTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_broadcastTimerSeconds > 0) {
-        _broadcastTimerSeconds--;
-        notifyListeners();
-      } else {
-        stopBroadcast();
-      }
-    });
-    notifyListeners();
+  bool get hasActiveBroadcast => _broadcasts.isNotEmpty;
+  int get broadcastTimerSeconds => _broadcastTimerSeconds;
+  int get broadcastRingTotalSecs =>
+      _broadcastRingTotalSecs <= 0 ? 300 : _broadcastRingTotalSecs;
+
+  Future<void> fetchBroadcasts() async {
+    try {
+      final token = await _sessionService.getToken(role: 'tech');
+      if (token == null) return;
+      final list = await _repository.getBroadcasts(token);
+      _broadcasts = list;
+      _restartBroadcastCountdown();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching broadcasts: $e');
+    }
   }
 
-  void stopBroadcast() {
-    _hasActiveBroadcast = false;
+  void _restartBroadcastCountdown() {
     _broadcastTimer?.cancel();
-    notifyListeners();
+    final b = primaryBroadcast;
+    if (b == null) {
+      _broadcastTimerSeconds = 0;
+      _broadcastRingTotalSecs = 300;
+      _broadcastCountdownStartedAt = null;
+      return;
+    }
+
+    if (b.expiresAt != null) {
+      final left = b.expiresAt!.difference(DateTime.now()).inSeconds;
+      _broadcastTimerSeconds = left < 0 ? 0 : left;
+      _broadcastRingTotalSecs = _broadcastTimerSeconds > 0 ? _broadcastTimerSeconds : 300;
+    } else {
+      _broadcastCountdownStartedAt = DateTime.now();
+      _broadcastTimerSeconds = 300;
+      _broadcastRingTotalSecs = 300;
+    }
+
+    _broadcastTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final current = primaryBroadcast;
+      if (current == null) {
+        _broadcastTimer?.cancel();
+        return;
+      }
+      if (current.expiresAt != null) {
+        _broadcastTimerSeconds =
+            current.expiresAt!.difference(DateTime.now()).inSeconds;
+        if (_broadcastTimerSeconds < 0) _broadcastTimerSeconds = 0;
+      } else if (_broadcastCountdownStartedAt != null) {
+        final elapsed =
+            DateTime.now().difference(_broadcastCountdownStartedAt!).inSeconds;
+        _broadcastTimerSeconds = (300 - elapsed).clamp(0, 300);
+      }
+      notifyListeners();
+      if (_broadcastTimerSeconds <= 0) {
+        _broadcastTimer?.cancel();
+        fetchBroadcasts();
+      }
+    });
+  }
+
+  Future<bool> acceptCurrentBroadcast() async {
+    final jobId = primaryBroadcast?.jobId;
+    if (jobId == null) return false;
+    return acceptOrder(jobId);
+  }
+
+  Future<bool> rejectCurrentBroadcast() async {
+    final jobId = primaryBroadcast?.jobId;
+    if (jobId == null) return false;
+    return cancelOrder(jobId);
   }
 
   Future<void> fetchTodayPerformance({bool affectLoading = true}) async {
@@ -430,8 +555,8 @@ class TechAppViewModel extends ChangeNotifier {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
         await _repository.acceptOrder(token, jobId);
-        // Refresh orders list
         await fetchAssignedOrders();
+        await fetchBroadcasts();
         return true;
       }
       return false;
@@ -460,6 +585,7 @@ class TechAppViewModel extends ChangeNotifier {
       if (token != null) {
         await _repository.cancelOrder(token, jobId);
         await fetchAssignedOrders();
+        await fetchBroadcasts();
         return true;
       }
       return false;
@@ -535,6 +661,7 @@ class TechAppViewModel extends ChangeNotifier {
     // 2) Secondary APIs in background (don't block dashboard UI)
     unawaited(fetchAssignedOrders(affectLoading: false));
     unawaited(fetchCommissionHistory());
+    unawaited(fetchBroadcasts());
     
     // Notifications remain mock for now as per image focus
     _notifications = [
@@ -568,8 +695,10 @@ class TechAppViewModel extends ChangeNotifier {
     _assignedOrders = [];
     _currentOrderDetail = null;
     _notifications = [];
-    _hasActiveBroadcast = false;
+    _broadcasts = [];
     _broadcastTimer?.cancel();
+    _broadcastTimer = null;
+    _broadcastTimerSeconds = 0;
     _isLoading = false;
     notifyListeners();
   }

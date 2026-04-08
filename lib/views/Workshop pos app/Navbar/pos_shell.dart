@@ -4,7 +4,10 @@ import 'package:filter_service_providers/views/Workshop pos app/Home Screen/pos_
 import 'package:filter_service_providers/views/Workshop pos app/Technician Screen/technician_view_model.dart';
 
 import '../../../utils/app_colors.dart';
+import '../../../utils/app_text_styles.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../utils/pos_tablet_layout.dart';
 import '../Home Screen/pos_home_view.dart';
 import '../Order Screen/pos_orders_view.dart';
 import '../Petty Cash/petty_cash_view_model.dart';
@@ -14,11 +17,15 @@ import '../Product Grid/product_grid_view_model.dart';
 import '../Promo/pos_promo_view.dart';
 import '../Promo/promo_view_model.dart';
 import '../Sales Return/pos_sales_return_view.dart';
+import '../Sales Return/pos_sales_return_list_view.dart';
+import '../Sales Return/sales_return_list_view_model.dart';
 import '../Store Closing/pos_store_closing_view.dart';
 import '../Store Closing/store_closing_view_model.dart';
 import '../Technician Screen/pos_technician_view.dart';
 import '../Current Shift/pos_current_shift_view.dart';
 import '../Current Shift/current_shift_view_model.dart';
+import '../Takeaway/pos_takeaway_view.dart';
+import '../Takeaway/takeaway_view_model.dart';
 // import '../../utils/app_colors.dart';
 // import '../../utils/app_text_styles.dart';
 // import '../Workshop pos app/Home Screen/pos_home_view.dart';
@@ -41,6 +48,14 @@ class PosShell extends StatefulWidget {
   @override
   State<PosShell> createState() => _PosShellState();
 }
+
+/// Tablet landscape overlay rail (full-width AppBar above; rail below it).
+const double _kShellRailWidth = 110;
+const double _kShellRailMarginLeft = 12;
+const double _kShellRailMarginBottom = 12;
+const double _kShellRailGapAfter = 12;
+/// Vertical gap between full-width AppBar bottom and top of the nav rail.
+const double _kShellRailGapBelowAppBar = 10;
 
 class _PosShellState extends State<PosShell> {
   @override
@@ -69,12 +84,18 @@ class _PosShellState extends State<PosShell> {
     PosTechnicianView(),
     PosSalesReturnView(),
     PosCurrentShiftView(),
+    PosSalesReturnListView(),
+    PosTakeawayView(),
   ];
 
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final useLeftNavRail = isTablet && isLandscape;
     final posVm = context.watch<PosViewModel>();
+    final takeawayVm = context.watch<TakeawayViewModel>();
     final isReconciled = context.watch<StoreClosingViewModel>().isReconciled;
     final currentIndex = posVm.shellSelectedIndex;
 
@@ -82,6 +103,56 @@ class _PosShellState extends State<PosShell> {
     final validIndex = currentIndex < _screens.length ? currentIndex : 0;
     final isStoreClosingTab = validIndex == 3;
     final isLockedInStoreClosing = isStoreClosingTab && isReconciled;
+
+    final hideBottomBar = [4, 5, 6, 7, 8, 9, 10].contains(validIndex) ||
+        isLockedInStoreClosing;
+
+    Widget stackBody = IndexedStack(
+      index: validIndex,
+      children: _screens,
+    );
+
+    // Tablet landscape: AppBar spans full width; rail is stacked below AppBar with rounded corners.
+    if (useLeftNavRail && !isLockedInStoreClosing) {
+      final bodyLeftInset =
+          _kShellRailMarginLeft + _kShellRailWidth + _kShellRailGapAfter;
+      final railTop = _shellRailTop(context, validIndex, isReconciled);
+      final railBottom =
+          _shellRailBottom(context, validIndex, posVm, takeawayVm);
+      stackBody = Stack(
+        fit: StackFit.expand,
+        clipBehavior: Clip.none,
+        children: [
+          PosShellRailLayout(
+            bodyLeftPadding: bodyLeftInset,
+            child: IndexedStack(
+              index: validIndex,
+              children: _screens,
+            ),
+          ),
+          Positioned(
+            left: _kShellRailMarginLeft,
+            top: railTop,
+            bottom: railBottom,
+            width: _kShellRailWidth,
+            child: Material(
+              elevation: 10,
+              shadowColor: Colors.black26,
+              borderRadius: BorderRadius.circular(22),
+              clipBehavior: Clip.antiAlias,
+              color: Colors.transparent,
+              child: _TabletLandscapeNavRail(
+                selectedIndex: validIndex,
+                onSelect: (index) {
+                  _triggerVisitFetch(context, index);
+                  posVm.setShellSelectedIndex(index);
+                },
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     return PopScope(
       canPop: !isLockedInStoreClosing,
@@ -94,14 +165,11 @@ class _PosShellState extends State<PosShell> {
         drawer: isStoreClosingTab ? null : _buildDrawer(isTablet),
         body: MediaQuery(
           data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0),
+            textScaler: PosTabletLayout.textScaler(context),
           ),
-          child: IndexedStack(
-            index: validIndex,
-            children: _screens,
-          ),
+          child: stackBody,
         ),
-        bottomNavigationBar: [4, 5, 6, 7, 8].contains(validIndex) || isLockedInStoreClosing
+        bottomNavigationBar: hideBottomBar || useLeftNavRail
             ? const SizedBox.shrink()
             : PosBottomBar(
                 currentIndex: currentIndex,
@@ -112,6 +180,36 @@ class _PosShellState extends State<PosShell> {
               ),
       ),
     );
+  }
+
+  double _shellRailTop(
+      BuildContext context, int index, bool storeClosingReconciled) {
+    final topSafe = MediaQuery.paddingOf(context).top;
+    if (MediaQuery.sizeOf(context).width <= 600) return topSafe;
+    // Toolbar heights must match PosAppBar / PosScreenAppBar / Store reconciled AppBar.
+    if (index == 0) {
+      return topSafe + PosTabletLayout.appBarHeight + _kShellRailGapBelowAppBar;
+    }
+    if (index == 3 && storeClosingReconciled) {
+      return topSafe + PosTabletLayout.appBarHeight + _kShellRailGapBelowAppBar;
+    }
+    return topSafe + PosTabletLayout.appBarHeight + _kShellRailGapBelowAppBar;
+  }
+
+  double _shellRailBottom(
+    BuildContext context,
+    int index,
+    PosViewModel posVm,
+    TakeawayViewModel takeawayVm,
+  ) {
+    final bottomSafe = MediaQuery.paddingOf(context).bottom;
+    if (index == 1 && posVm.getCartCount(true) > 0) {
+      return bottomSafe + 88;
+    }
+    if (index == 10 && takeawayVm.cartLineCount > 0) {
+      return bottomSafe + 88;
+    }
+    return bottomSafe + _kShellRailMarginBottom;
   }
 
   void _triggerVisitFetch(BuildContext context, int index) {
@@ -145,6 +243,10 @@ class _PosShellState extends State<PosShell> {
       }
     } else if (index == 8) {
       context.read<CurrentShiftViewModel>().fetchCurrentSession();
+    } else if (index == 9) {
+      context.read<SalesReturnListViewModel>().fetchReturns(refresh: true);
+    } else if (index == 10) {
+      context.read<TakeawayViewModel>().loadCatalog();
     }
   }
 
@@ -166,7 +268,19 @@ class _PosShellState extends State<PosShell> {
                     0, 'Dashboard', Icons.dashboard_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
+                    2, 'Orders', Icons.receipt_long_outlined, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    10,
+                    'Takeaway',
+                    Icons.takeout_dining_rounded,
+                    isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
                     7, 'Sales Return', Icons.assignment_return_rounded, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    9, 'Returns List', Icons.list_alt_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                     4, 'Petty Cash', Icons.payments_rounded, isTablet),
@@ -328,6 +442,103 @@ class _PosShellState extends State<PosShell> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// All POS shell routes (indices match [_screens] / drawer).
+/// Display order for the landscape rail; [index] still matches [_screens] / shell API.
+const List<({int index, IconData icon, String label})> _kLandscapeNavEntries = [
+  (index: 0, icon: Icons.home_rounded, label: 'Home'),
+  (index: 1, icon: Icons.inventory_2_outlined, label: 'Products'),
+  (index: 2, icon: Icons.receipt_long_outlined, label: 'Orders'),
+  (index: 10, icon: Icons.takeout_dining_rounded, label: 'Takeaway'),
+  (index: 7, icon: Icons.assignment_return_rounded, label: 'Sales Return'),
+  (index: 9, icon: Icons.list_alt_rounded, label: 'Returns List'),
+  (index: 4, icon: Icons.payments_rounded, label: 'Petty Cash'),
+  (index: 5, icon: Icons.local_offer_rounded, label: 'Promo Codes'),
+  (index: 6, icon: Icons.engineering_rounded, label: 'Technicians'),
+  (index: 8, icon: Icons.access_time_filled_rounded, label: 'Current Shift'),
+  (index: 3, icon: Icons.store_rounded, label: 'Store Closing'),
+];
+
+/// Left rail for tablet landscape — every tab (scrollable), polished layout.
+class _TabletLandscapeNavRail extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  const _TabletLandscapeNavRail({
+    required this.selectedIndex,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.secondaryLight,
+      elevation: 0,
+      child: SizedBox.expand(
+        child: ListView(
+              padding: const EdgeInsets.fromLTRB(6, 8, 6, 12),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              children: [
+                for (final e in _kLandscapeNavEntries)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 0, vertical: 3),
+                    child: _item(e.index, e.icon, e.label),
+                  ),
+              ],
+            ),
+      ),
+    );
+  }
+
+  Widget _item(int index, IconData icon, String label) {
+    final isSelected = selectedIndex == index;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onSelect(index),
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          constraints: const BoxConstraints(minHeight: 64),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primaryLight : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 24,
+                color: isSelected ? Colors.black87 : Colors.white70,
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 9.5,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? Colors.black87 : Colors.white70,
+                  height: 1.18,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

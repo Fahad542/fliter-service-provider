@@ -540,6 +540,95 @@ class OwnerRepository {
     }
   }
 
+  /// [queue]: `fund` (default top-ups), `expense` (cashier POS expenses), `all`.
+  Future<PettyCashRequestsResponse> getPettyCashRequests(
+    String token, {
+    String? status,
+    String? branchId,
+    String? queue,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final params = <String, String>{
+        'limit': '$limit',
+        'offset': '$offset',
+      };
+      if (status != null && status.isNotEmpty) params['status'] = status;
+      if (branchId != null && branchId.isNotEmpty) params['branchId'] = branchId;
+      if (queue != null && queue.isNotEmpty) params['queue'] = queue;
+
+      final response = await _apiService.getWithQueryParams(
+        ApiConstants.workshopPettyCashRequestsEndpoint,
+        params,
+        token,
+      );
+      return PettyCashRequestsResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// History endpoint for workshop petty-cash approvals:
+  /// GET /workshop-staff/petty-cash/history
+  Future<PettyCashRequestsResponse> getPettyCashHistory(
+    String token, {
+    String? status,
+    String? branchId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final params = <String, String>{
+        'limit': '$limit',
+        'offset': '$offset',
+      };
+      if (status != null && status.isNotEmpty) params['status'] = status;
+      if (branchId != null && branchId.isNotEmpty) params['branchId'] = branchId;
+
+      final response = await _apiService.getWithQueryParams(
+        ApiConstants.workshopPettyCashHistoryEndpoint,
+        params,
+        token,
+      );
+      return PettyCashRequestsResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<bool> approvePettyCashRequest(String token, String requestId) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.workshopPettyCashApproveEndpoint(requestId),
+        {},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response['success'] == true;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<bool> rejectPettyCashRequest(String token, String requestId, String rejectionReason) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.workshopPettyCashRejectEndpoint(requestId),
+        {'rejectionReason': rejectionReason},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response['success'] == true;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Promo Codes
   Future<dynamic> updatePromoCode(String token, String id, Map<String, dynamic> data) async {
     try {
@@ -639,7 +728,23 @@ class OwnerRepository {
   Future<dynamic> updateCategory(String token, String id, Map<String, dynamic> data) async {
     try {
       final response = await _apiService.patch(
-        '${ApiConstants.categoriesEndpoint}/$id',
+        ApiConstants.editCategoryEndpoint(id),
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> updateCorporateAccount(String token, String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch(
+        ApiConstants.editCorporateAccountEndpoint(id),
         data,
         headers: {
           'Authorization': 'Bearer $token',

@@ -7,6 +7,7 @@ import '../../../utils/app_text_styles.dart';
 import '../../../utils/app_formatters.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shell_rail_layout.dart';
 import '../More Tab/pos_more_view.dart'; // Added
 import 'promo_code_dialog.dart'; // Added (same folder)
 import 'promo_view_model.dart';
@@ -41,15 +42,20 @@ class _PosPromoViewState extends State<PosPromoView> {
         showHamburger: true,
         onMenuPressed: () => Scaffold.of(context).openDrawer(),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      body: wrapPosShellRailBody(
+        context,
+        SingleChildScrollView(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: isTablet ? 8 : 12,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildEntrySection(isTablet),
-            const SizedBox(height: 24),
+            SizedBox(height: isTablet ? 10 : 20),
             _buildSectionTitle('Available Promotions', Icons.stars_outlined),
-            const SizedBox(height: 16),
+            SizedBox(height: isTablet ? 8 : 14),
             if (promoVm.isLoadingPromos)
               const Center(
                 child: Padding(
@@ -68,9 +74,14 @@ class _PosPromoViewState extends State<PosPromoView> {
                 ),
               )
             else
-              _buildPromotionCatalog(promoVm.availablePromotions, isTablet),
+              _buildPromotionCatalog(
+                promoVm.availablePromotions,
+                isTablet,
+                MediaQuery.of(context).orientation,
+              ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -106,7 +117,12 @@ class _PosPromoViewState extends State<PosPromoView> {
     final posVm = Provider.of<PosViewModel>(context, listen: false);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(
+        isTablet ? 16 : 20,
+        isTablet ? 14 : 20,
+        isTablet ? 16 : 20,
+        isTablet ? 12 : 20,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -122,8 +138,11 @@ class _PosPromoViewState extends State<PosPromoView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Apply Promo Code', Icons.local_offer_outlined),
-          const SizedBox(height: 16),
+          _buildSectionTitle(
+            'Apply Promo Code',
+            Icons.local_offer_outlined,
+          ),
+          SizedBox(height: isTablet ? 8 : 16),
           Text(
             'Check the validity of a customer provided code.',
             style: AppTextStyles.bodyMedium.copyWith(
@@ -131,94 +150,212 @@ class _PosPromoViewState extends State<PosPromoView> {
               fontSize: 13,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TextField(
-                    controller: promoVm.promoController,
-                    textCapitalization: TextCapitalization.characters,
-                    textAlign: TextAlign.left,
-                    textDirection: TextDirection.ltr,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
-                    ),
-                    inputFormatters: [EnglishNumberFormatter()],
-                    decoration: InputDecoration(
-                      hintText: 'e.g. SAVE10',
-                      hintStyle: TextStyle(
-                        color: Colors.grey.shade400,
-                        fontSize: 13,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.qr_code_scanner_rounded,
-                        size: 20,
-                        color: AppColors.secondaryLight,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.primaryLight,
-                          width: 2,
-                        ),
-                      ),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: promoVm.isLoading
-                      ? null
-                      : () => promoVm.checkMockValidity(null, posVm, context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondaryLight,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
+          SizedBox(height: isTablet ? 10 : 16),
+          if (isTablet)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 4,
-                    shadowColor: AppColors.secondaryLight.withOpacity(0.4),
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                  ),
-                  child: promoVm.isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'Check Validity',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                    child: TextField(
+                      controller: promoVm.promoController,
+                      textCapitalization: TextCapitalization.characters,
+                      textAlign: TextAlign.left,
+                      textDirection: TextDirection.ltr,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
+                      inputFormatters: [EnglishNumberFormatter()],
+                      decoration: InputDecoration(
+                        hintText: 'e.g. SAVE10',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 13,
                         ),
+                        prefixIcon: const Icon(
+                          Icons.qr_code_scanner_rounded,
+                          size: 20,
+                          color: AppColors.secondaryLight,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              BorderSide(color: Colors.grey.shade200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              BorderSide(color: Colors.grey.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryLight,
+                            width: 2,
+                          ),
+                        ),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: promoVm.isLoading
+                        ? null
+                        : () => promoVm.validatePromo(
+                              promoVm.promoController.text,
+                              posVm,
+                              context,
+                            ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondaryLight,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                      shadowColor:
+                          AppColors.secondaryLight.withOpacity(0.4),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                    ),
+                    child: promoVm.isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Check Validity',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                  ),
+                ),
+              ],
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextField(
+                          controller: promoVm.promoController,
+                          textCapitalization: TextCapitalization.characters,
+                          textAlign: TextAlign.left,
+                          textDirection: TextDirection.ltr,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                          inputFormatters: [EnglishNumberFormatter()],
+                          decoration: InputDecoration(
+                            hintText: 'e.g. SAVE10',
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 13,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.qr_code_scanner_rounded,
+                              size: 20,
+                              color: AppColors.secondaryLight,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade200),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.primaryLight,
+                                width: 2,
+                              ),
+                            ),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: promoVm.isLoading
+                            ? null
+                            : () => promoVm.validatePromo(
+                                  promoVm.promoController.text,
+                                  posVm,
+                                  context,
+                                ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondaryLight,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                          shadowColor:
+                              AppColors.secondaryLight.withOpacity(0.4),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                        ),
+                        child: promoVm.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Check Validity',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          if (promoVm.validResult != null) ...[
+            SizedBox(height: isTablet ? 12 : 12),
+            SizedBox(
+              width: double.infinity,
+              child: _buildResultCard(
+                promoVm.validResult!,
+                compact: isTablet,
+                onRemove: () => promoVm.removeAppliedPromo(posVm),
               ),
-            ],
-          ),
+            ),
+          ],
           if (promoVm.promoErrorMessage != null) ...[
             const SizedBox(height: 16),
             Container(
@@ -244,68 +381,115 @@ class _PosPromoViewState extends State<PosPromoView> {
               ),
             ),
           ],
-          if (promoVm.validResult != null) ...[
-            const SizedBox(height: 24),
-            _buildResultCard(promoVm.validResult!),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildResultCard(Map<String, dynamic> validResult) {
+  Widget _buildResultCard(
+    Map<String, dynamic> validResult, {
+    bool compact = false,
+    VoidCallback? onRemove,
+  }) {
+    final pad = compact ? 12.0 : 20.0;
+    final titleFs = compact ? 14.0 : 17.0;
+    final iconMain = compact ? 20.0 : 24.0;
+    final gapAfterTitle = compact ? 10.0 : 20.0;
+    final gapDetail = compact ? 6.0 : 8.0;
+    final EdgeInsetsGeometry cardPadding = compact
+        ? const EdgeInsets.fromLTRB(10, 8, 10, 10)
+        : EdgeInsets.all(pad);
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: cardPadding,
       decoration: BoxDecoration(
         color: Colors.green.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(compact ? 12 : 16),
         border: Border.all(color: Colors.green.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                validResult['message'],
-                style: const TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 17,
+              Icon(Icons.check_circle, color: Colors.green, size: iconMain),
+              SizedBox(width: compact ? 8 : 12),
+              Expanded(
+                child: Text(
+                  validResult['message']?.toString() ?? '',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.w800,
+                    fontSize: titleFs,
+                  ),
                 ),
               ),
+              if (onRemove != null)
+                Tooltip(
+                  message: 'Remove promo',
+                  child: IconButton(
+                    onPressed: onRemove,
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: compact ? 18 : 22,
+                      color: Colors.green.shade800,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 20),
-          _buildResultDetail(Icons.store, 'Store: ${validResult['store']}'),
-          const SizedBox(height: 8),
+          SizedBox(height: gapAfterTitle),
+          _buildResultDetail(
+            Icons.store,
+            'Store: ${validResult['store']}',
+            compact: compact,
+          ),
+          SizedBox(height: gapDetail),
           _buildResultDetail(
             Icons.inventory_2,
             'Products: ${validResult['products']}',
+            compact: compact,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: gapDetail),
           _buildResultDetail(
             Icons.calendar_today,
             'Period: ${validResult['period']}',
+            compact: compact,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildResultDetail(IconData icon, String text) {
+  Widget _buildResultDetail(
+    IconData icon,
+    String text, {
+    bool compact = false,
+  }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Colors.green.withOpacity(0.7)),
-        const SizedBox(width: 12),
-        Text(
-          text,
-          style: TextStyle(
-            color: Colors.grey.shade800,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+        Icon(
+          icon,
+          size: compact ? 14 : 16,
+          color: Colors.green.withOpacity(0.7),
+        ),
+        SizedBox(width: compact ? 8 : 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.grey.shade800,
+              fontSize: compact ? 12 : 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -315,13 +499,16 @@ class _PosPromoViewState extends State<PosPromoView> {
   Widget _buildPromotionCatalog(
     List<AvailablePromotion> promos,
     bool isTablet,
+    Orientation orientation,
   ) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: promos.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isTablet ? 2 : 1,
+        crossAxisCount: isTablet
+            ? (orientation == Orientation.landscape ? 3 : 2)
+            : 1,
         mainAxisExtent: 210, // Increased from 175 to fix overflow
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
@@ -424,7 +611,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                       context,
                       listen: false,
                     );
-                    promoVm.checkMockValidity(promo.code, posVm, context);
+                    promoVm.promoController.text = promo.code;
+                    promoVm.validatePromo(promo.code, posVm, context);
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(

@@ -4,6 +4,9 @@ class WalletBalanceResponse {
   final String currency;
   final String? walletId;
   final String? status;
+  final double lowBalanceThreshold;
+  final bool isLowBalance;
+  final bool requestFundRecommended;
   final String message;
 
   WalletBalanceResponse({
@@ -12,6 +15,9 @@ class WalletBalanceResponse {
     required this.currency,
     this.walletId,
     this.status,
+    this.lowBalanceThreshold = 100.0,
+    this.isLowBalance = false,
+    this.requestFundRecommended = false,
     this.message = '',
   });
 
@@ -22,6 +28,10 @@ class WalletBalanceResponse {
     } else if (json['success'] is String) {
       isSuccess = json['success'].toString().toLowerCase() == 'true';
     }
+    // Some wallet APIs don't return success explicitly.
+    if (!isSuccess && json.containsKey('balance')) {
+      isSuccess = true;
+    }
 
     return WalletBalanceResponse(
       success: isSuccess,
@@ -29,6 +39,11 @@ class WalletBalanceResponse {
       currency: json['currency'] ?? 'SAR',
       walletId: json['walletId']?.toString(),
       status: json['status'],
+      lowBalanceThreshold:
+          double.tryParse(json['lowBalanceThreshold']?.toString() ?? '100') ??
+          100.0,
+      isLowBalance: json['isLowBalance'] == true,
+      requestFundRecommended: json['requestFundRecommended'] == true,
       message: json['message'] ?? '',
     );
   }

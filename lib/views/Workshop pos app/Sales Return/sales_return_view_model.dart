@@ -16,6 +16,16 @@ class SalesReturnViewModel extends ChangeNotifier {
     required this.posRepository,
   });
 
+  void clearSearchResults() {
+    _searchResults = [];
+    _selectedInvoice = null;
+    _selectedItems.clear();
+    _returnQuantities.clear();
+    _returnReasons.clear();
+    _proofImage = null;
+    notifyListeners();
+  }
+
   // Search State
   final searchController = TextEditingController();
   bool _isSearching = false;
@@ -68,17 +78,18 @@ class SalesReturnViewModel extends ChangeNotifier {
           return Invoice(
             id: order.invoiceId,
             invoiceNo: order.invoiceNo.isNotEmpty ? order.invoiceNo : order.invoiceId,
-
             invoiceDate: order.createdAt,
-            subtotal: order.totalAmount, // Assuming no other breakdown available
+            subtotal: order.totalAmount,
             vatAmount: 0,
             discountAmount: order.totalDiscountValue,
             totalAmount: order.totalAmount,
             paymentStatus: order.status,
-            customerName: 'Customer ID: $query', // Emulate customer info if not fetched
+            customerName: order.customerName.isNotEmpty ? order.customerName : query,
             customerType: '',
             vehicleInfo: '',
             plateNo: '',
+            salesOrderId: order.id,
+            customerId: query,
             items: order.items.map((item) {
               return InvoiceItem(
                 id: item.id,
@@ -126,7 +137,7 @@ class SalesReturnViewModel extends ChangeNotifier {
   void toggleItemSelection(String itemId, bool isSelected, double maxQty) {
     _selectedItems[itemId] = isSelected;
     if (isSelected) {
-      _returnQuantities[itemId] = maxQty;
+      _returnQuantities[itemId] = 0;
       _returnReasons[itemId] = returnReasonOptions.first;
     } else {
       _returnQuantities.remove(itemId);
@@ -170,26 +181,24 @@ class SalesReturnViewModel extends ChangeNotifier {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Authentication token not found');
 
+      const defaultReason = 'Defective Product/Service';
+
       final List<SalesReturnItem> returnItems = [];
       _selectedItems.forEach((itemId, isSelected) {
         if (isSelected && _returnQuantities.containsKey(itemId)) {
-           returnItems.add(SalesReturnItem(
-             salesOrderItemId: itemId,
-             qty: _returnQuantities[itemId] ?? 1.0,
-           ));
+          returnItems.add(SalesReturnItem(
+            salesOrderItemId: itemId,
+            qty: _returnQuantities[itemId] ?? 1.0,
+            reason: _returnReasons[itemId] ?? defaultReason,
+          ));
         }
       });
 
-      // Just picking the first selected item's reason for the general reason string
-      String generalReason = 'Defective Product/Service';
-      if (_returnReasons.isNotEmpty) {
-        generalReason = _returnReasons.values.first;
-      }
-
       final request = SubmitSalesReturnRequest(
         invoiceId: _selectedInvoice!.id,
-        reason: generalReason,
-        proofUrl: null, // Image upload requires a distinct mechanism, leaving null for now based on API definition
+        orderId: _selectedInvoice!.salesOrderId,
+        customerId: _selectedInvoice!.customerId,
+        proofUrl: null,
         items: returnItems,
       );
 

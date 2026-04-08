@@ -290,7 +290,8 @@ class OwnerProduct {
       criticalLevel: double.tryParse(json['criticalStockPoint']?.toString() ?? '0') ?? (json['critical_level'] ?? 0.0).toDouble(),
       reorderLevel: (json['reorder_level'] ?? 0.0).toDouble(),
       imageUrl: json['image_url'],
-      isPriceEditable: json['is_price_editable'] ?? false,
+      isPriceEditable: json['isPriceEditable'] == true ||
+          json['is_price_editable'] == true,
       kmTypeValue: int.tryParse(json['kmTypeValue']?.toString() ?? '0') ?? (json['km_type_value'] ?? 0),
       allowDecimalQty: json['allowDecimalQty'] ?? json['allow_decimal_qty'] ?? false,
       isActive: json['isActive'] ?? json['active'] ?? true,
@@ -301,13 +302,22 @@ class OwnerProduct {
 class OwnerSubCategory {
   final String id;
   final String name;
+  final String? departmentId;
+  final String? departmentName;
 
-  OwnerSubCategory({required this.id, required this.name});
+  OwnerSubCategory({
+    required this.id,
+    required this.name,
+    this.departmentId,
+    this.departmentName,
+  });
 
   factory OwnerSubCategory.fromJson(Map<String, dynamic> json) {
     return OwnerSubCategory(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
+      departmentId: json['departmentId']?.toString(),
+      departmentName: json['departmentName']?.toString(),
     );
   }
 }
@@ -350,11 +360,13 @@ class CorporateCustomer {
   final String email;
   final double creditLimit;
   final double dueBalance;
-  final List<String> allowedBranchIds;
+  final List<String> selectedBranchIds;
   final String status;
-  final String category; // e.g., 'Bronze', 'Silver', 'Gold'
+  final String category;
   final double totalSales;
   final int vehicleCount;
+  final String address;
+  final String contactPerson;
 
   CorporateCustomer({
     required this.id,
@@ -365,11 +377,13 @@ class CorporateCustomer {
     required this.email,
     this.creditLimit = 0.0,
     this.dueBalance = 0.0,
-    required this.allowedBranchIds,
+    required this.selectedBranchIds,
     this.status = 'active',
     this.category = 'Bronze',
     this.totalSales = 0.0,
     this.vehicleCount = 0,
+    this.address = '',
+    this.contactPerson = '',
   });
 
   factory CorporateCustomer.fromJson(Map<String, dynamic> json) {
@@ -378,19 +392,21 @@ class CorporateCustomer {
       companyName: json['companyName'] ?? json['company_name'] ?? '',
       vatNumber: (json['customer'] != null && json['customer']['taxId'] != null)
           ? json['customer']['taxId'].toString()
-          : (json['vat_number'] ?? ''),
+          : (json['vatNumber'] ?? json['vat_number'] ?? ''),
       contactName: json['contactPerson'] ?? json['contact_name'] ?? '',
       mobile: (json['customer'] != null && json['customer']['mobile'] != null)
           ? json['customer']['mobile'].toString()
           : (json['mobile'] ?? ''),
-      email: json['email'] ?? '', // Email isn't explicitly in the screenshot but good to have fallback
+      email: json['email'] ?? '',
       creditLimit: double.tryParse(json['creditLimit']?.toString() ?? '0') ?? 0.0,
       dueBalance: double.tryParse(json['dueBalance']?.toString() ?? '0') ?? 0.0,
-      allowedBranchIds: List<String>.from(json['selectedBranchIds'] ?? json['allowed_branch_ids'] ?? []),
+      selectedBranchIds: List<String>.from(json['selectedBranchIds'] ?? json['allowed_branch_ids'] ?? []),
       status: json['status'] ?? 'active',
       category: json['category'] ?? 'Bronze',
-      totalSales: (json['total_sales'] ?? 0.0).toDouble(),
-      vehicleCount: json['vehicle_count'] ?? 0,
+      totalSales: (json['total_sales'] ?? json['totalSales'] ?? 0.0).toDouble(),
+      vehicleCount: json['vehicle_count'] ?? json['vehicleCount'] ?? 0,
+      address: json['address'] ?? '',
+      contactPerson: json['contactPerson'] ?? '',
     );
   }
 }
@@ -560,13 +576,43 @@ class PosCounter {
   final String id;
   final String cashierName;
   final String branchName;
-  final String status; // 'open', 'closing', 'closed'
+  final String status;
   final double shiftSales;
   final int openOrders;
   final DateTime openedAt;
   final DateTime? closedAt;
-  final double? systemTotal;
-  final double? physicalTotal;
+
+  // Per-category system totals
+  final double systemCash;
+  final double systemBank;
+  final double systemCorporate;
+  final double systemTamara;
+  final double systemTabby;
+  final double systemTotalSales;
+
+  // Per-category physical totals
+  final double physicalCash;
+  final double physicalBank;
+  final double physicalCorporate;
+  final double physicalTamara;
+  final double physicalTabby;
+
+  // Per-category diffs (physical − system, same sign as DB)
+  final double diffCash;
+  final double diffBank;
+  final double diffCorporate;
+  final double diffTamara;
+  final double diffTabby;
+
+  // Overall reconciliation difference (system − physical)
+  final double reconciliationTotalDifference;
+  final String? closingId;
+  final int schemaVersion; // 2 = new full payload, 1 = legacy cash-only
+
+  // Backend-computed summary fields (v2+)
+  final double systemSummary;    // json['system'] = systemTotalSales headline
+  final double physicalSummary;  // json['physicalTotal'] = sum of all 5 physical buckets
+  final double lockerDiff;       // json['lockerDiff'] = system − physicalTotal
 
   PosCounter({
     required this.id,
@@ -577,28 +623,121 @@ class PosCounter {
     this.openOrders = 0,
     required this.openedAt,
     this.closedAt,
-    this.systemTotal,
-    this.physicalTotal,
+    this.systemCash = 0,
+    this.systemBank = 0,
+    this.systemCorporate = 0,
+    this.systemTamara = 0,
+    this.systemTabby = 0,
+    this.systemTotalSales = 0,
+    this.physicalCash = 0,
+    this.physicalBank = 0,
+    this.physicalCorporate = 0,
+    this.physicalTamara = 0,
+    this.physicalTabby = 0,
+    this.diffCash = 0,
+    this.diffBank = 0,
+    this.diffCorporate = 0,
+    this.diffTamara = 0,
+    this.diffTabby = 0,
+    this.reconciliationTotalDifference = 0,
+    this.closingId,
+    this.schemaVersion = 1,
+    this.systemSummary = 0,
+    this.physicalSummary = 0,
+    this.lockerDiff = 0,
   });
 
-  double get locker => (systemTotal ?? 0) - (physicalTotal ?? 0);
+  /// True when the backend returned the full v2 breakdown payload
+  bool get isV2 => schemaVersion >= 2;
+
+  /// The single "SYSTEM" headline: prefer backend-computed summary, else sum of categories
+  double get effectiveSystemTotal =>
+      systemSummary > 0 ? systemSummary : systemTotalSales;
+
+  /// The single "PHYSICAL" headline: prefer backend-computed total, else sum of categories
+  double get effectivePhysicalTotal {
+    if (physicalSummary > 0) return physicalSummary;
+    return physicalCash + physicalBank + physicalCorporate + physicalTamara + physicalTabby;
+  }
+
+  /// The single "DIFF" headline: prefer lockerDiff, else reconciliationTotalDifference
+  double get effectiveDiff =>
+      lockerDiff != 0 ? lockerDiff : reconciliationTotalDifference;
+
+  static double _d(dynamic v) =>
+      double.tryParse(v?.toString() ?? '0') ?? 0.0;
 
   factory PosCounter.fromJson(Map<String, dynamic> json) {
+    final schemaVersion =
+        int.tryParse(json['closingReportSchemaVersion']?.toString() ?? '1') ?? 1;
+
+    final sysCash = _d(json['systemCash']);
+    final sysBank = _d(json['systemBank']);
+    final sysCorp = _d(json['systemCorporate']);
+    final sysTamara = _d(json['systemTamara']);
+    final sysTabby = _d(json['systemTabby']);
+    // v2: 'system' = systemTotalSales headline. v1 fallback: shiftSales
+    final sysTotalSales = _d(
+        json['systemTotalSales'] ?? json['system'] ?? json['shiftSales']);
+
+    final phyCash = _d(json['physicalCash']);
+    final phyBank = _d(json['physicalBank']);
+    final phyCorp = _d(json['physicalCorporate']);
+    final phyTamara = _d(json['physicalTamara']);
+    final phyTabby = _d(json['physicalTabby']);
+
+    // v2 summary fields
+    final systemSummary = _d(json['system'] ?? json['systemTotalSales']);
+    final physicalSummary = _d(json['physicalTotal']);
+    final lockerDiff = _d(json['lockerDiff']);
+
+    // Per-category diffs: prefer explicit fields, fall back to computing
+    final dCash = json['diffCash'] != null ? _d(json['diffCash']) : sysCash - phyCash;
+    final dBank = json['diffBank'] != null ? _d(json['diffBank']) : sysBank - phyBank;
+    final dCorp = json['diffCorporate'] != null ? _d(json['diffCorporate']) : sysCorp - phyCorp;
+    final dTamara = json['diffTamara'] != null ? _d(json['diffTamara']) : sysTamara - phyTamara;
+    final dTabby = json['diffTabby'] != null ? _d(json['diffTabby']) : sysTabby - phyTabby;
+
+    // Prefer explicit reconciliation total, then lockerDiff, then compute
+    final reconTotal = json['reconciliationTotalDifference'] != null
+        ? _d(json['reconciliationTotalDifference'])
+        : (json['lockerDiff'] != null
+            ? _d(json['lockerDiff'])
+            : dCash + dBank + dCorp + dTamara + dTabby);
+
     return PosCounter(
       id: json['posSessionId']?.toString() ?? '',
       cashierName: json['cashierName'] ?? '',
       branchName: json['branchName'] ?? '',
       status: json['shiftStatus']?.toString().toLowerCase() ?? 'open',
-      shiftSales: double.tryParse(json['shiftSales']?.toString() ?? '0') ?? 0.0,
+      shiftSales: _d(json['shiftSales']),
       openOrders: int.tryParse(json['shiftOpenOrders']?.toString() ?? '0') ?? 0,
-      openedAt: json['openedAt'] != null ? DateTime.tryParse(json['openedAt']) ?? DateTime.now() : DateTime.now(),
+      openedAt: json['openedAt'] != null
+          ? DateTime.tryParse(json['openedAt']) ?? DateTime.now()
+          : DateTime.now(),
       closedAt: json['closedAt'] != null ? DateTime.tryParse(json['closedAt']) : null,
-      systemTotal: json['systemTotal'] != null
-          ? double.tryParse(json['systemTotal'].toString())
-          : (json['systemCash'] != null ? double.tryParse(json['systemCash'].toString()) : null),
-      physicalTotal: json['physicalTotal'] != null
-          ? double.tryParse(json['physicalTotal'].toString())
-          : (json['physicalCash'] != null ? double.tryParse(json['physicalCash'].toString()) : null),
+      systemCash: sysCash,
+      systemBank: sysBank,
+      systemCorporate: sysCorp,
+      systemTamara: sysTamara,
+      systemTabby: sysTabby,
+      systemTotalSales: sysTotalSales,
+      physicalCash: phyCash,
+      physicalBank: phyBank,
+      physicalCorporate: phyCorp,
+      physicalTamara: phyTamara,
+      physicalTabby: phyTabby,
+      diffCash: dCash,
+      diffBank: dBank,
+      diffCorporate: dCorp,
+      diffTamara: dTamara,
+      diffTabby: dTabby,
+      reconciliationTotalDifference: reconTotal,
+      closingId: json['closingId']?.toString(),
+      schemaVersion: schemaVersion,
+      systemSummary: systemSummary,
+      physicalSummary: physicalSummary,
+      lockerDiff: lockerDiff,
     );
   }
 }
@@ -1029,6 +1168,131 @@ class AccountingSummaryResponse {
       summary: json['summary'] != null
           ? AccountingSummary.fromJson(json['summary'])
           : AccountingSummary(payables: 0, receivables: 0, overdue: 0),
+    );
+  }
+}
+
+class PettyCashRequestItem {
+  final String id;
+  final double amount;
+  final String reason;
+  final String status;
+  final DateTime? requestedAt;
+  final DateTime? approvedAt;
+  final String? rejectionReason;
+  final String branchId;
+  final String branchName;
+  final String cashierId;
+  final String cashierName;
+  final String? approvedBy;
+  /// `fund_request` | `expense` (workshop petty-cash queue).
+  final String? kind;
+  final String? categoryLabel;
+  final String? employeeName;
+  final String? proofUrl;
+
+  PettyCashRequestItem({
+    required this.id,
+    required this.amount,
+    required this.reason,
+    required this.status,
+    this.requestedAt,
+    this.approvedAt,
+    this.rejectionReason,
+    required this.branchId,
+    required this.branchName,
+    required this.cashierId,
+    required this.cashierName,
+    this.approvedBy,
+    this.kind,
+    this.categoryLabel,
+    this.employeeName,
+    this.proofUrl,
+  });
+
+  bool get isExpenseKind {
+    final k = kind?.toLowerCase() ?? '';
+    return k == 'expense';
+  }
+
+  factory PettyCashRequestItem.fromJson(Map<String, dynamic> json) {
+    final branch = (json['branch'] as Map<String, dynamic>?) ?? {};
+    final cashier = (json['cashier'] as Map<String, dynamic>?) ?? {};
+
+    String? categoryLabel;
+    final cat = json['category'];
+    if (cat is Map<String, dynamic>) {
+      categoryLabel = cat['name']?.toString() ?? cat['id']?.toString();
+    } else if (cat is String) {
+      categoryLabel = cat;
+    }
+
+    String? employeeName;
+    final emp = json['employee'];
+    if (emp is Map<String, dynamic>) {
+      employeeName = emp['name']?.toString() ?? emp['fullName']?.toString();
+    } else {
+      employeeName = json['employeeName']?.toString();
+    }
+
+    final reasonText = json['reason']?.toString() ??
+        json['description']?.toString() ??
+        json['notes']?.toString() ??
+        '';
+
+    return PettyCashRequestItem(
+      id: json['id']?.toString() ?? '',
+      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0,
+      reason: reasonText,
+      status: json['status']?.toString() ?? 'pending',
+      requestedAt: json['requestedAt'] != null
+          ? DateTime.tryParse(json['requestedAt'].toString())
+          : null,
+      approvedAt: json['approvedAt'] != null
+          ? DateTime.tryParse(json['approvedAt'].toString())
+          : null,
+      rejectionReason: json['rejectionReason']?.toString(),
+      branchId: branch['id']?.toString() ?? json['branchId']?.toString() ?? '',
+      branchName: branch['name']?.toString() ?? 'Unknown Branch',
+      cashierId: cashier['id']?.toString() ?? '',
+      cashierName: cashier['name']?.toString() ?? 'Unknown Cashier',
+      approvedBy: json['approvedBy']?.toString(),
+      kind: json['kind']?.toString(),
+      categoryLabel: categoryLabel,
+      employeeName: employeeName,
+      proofUrl: json['proofUrl']?.toString() ?? json['proof']?.toString(),
+    );
+  }
+}
+
+class PettyCashRequestsResponse {
+  final bool success;
+  final String currency;
+  final int total;
+  final int limit;
+  final int offset;
+  final List<PettyCashRequestItem> requests;
+
+  PettyCashRequestsResponse({
+    required this.success,
+    required this.currency,
+    required this.total,
+    required this.limit,
+    required this.offset,
+    required this.requests,
+  });
+
+  factory PettyCashRequestsResponse.fromJson(Map<String, dynamic> json) {
+    return PettyCashRequestsResponse(
+      success: json['success'] == true,
+      currency: json['currency']?.toString() ?? 'SAR',
+      total: int.tryParse(json['total']?.toString() ?? '0') ?? 0,
+      limit: int.tryParse(json['limit']?.toString() ?? '20') ?? 20,
+      offset: int.tryParse(json['offset']?.toString() ?? '0') ?? 0,
+      requests: ((json['requests'] as List?) ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(PettyCashRequestItem.fromJson)
+          .toList(),
     );
   }
 }

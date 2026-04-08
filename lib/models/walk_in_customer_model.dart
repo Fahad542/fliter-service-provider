@@ -4,6 +4,7 @@ class WalkInCustomerRequest {
   final String? vatNumber;
   final String? mobile;
   final String? vehicleNumber;
+  final String? vinNumber;
   final String? make;
   final String? model;
   final int? odometerReading;
@@ -13,6 +14,14 @@ class WalkInCustomerRequest {
   final String? totalDiscountType;
   final double? totalDiscountValue;
   final String? promoCode;
+  final String? promoCodeId;
+  final double? amountBeforeDiscount;
+  final double? amountAfterDiscount;
+  final double? amountAfterPromo;
+  final double? vat;
+  final double? totalAmount;
+  /// When set, use POST /cashier/walk-in-corporate/submit-for-approval instead of walk-in-order.
+  final String? corporateAccountId;
 
   WalkInCustomerRequest({
     this.orderId,
@@ -20,6 +29,7 @@ class WalkInCustomerRequest {
     this.vatNumber,
     this.mobile,
     this.vehicleNumber,
+    this.vinNumber,
     this.make,
     this.model,
     this.odometerReading,
@@ -29,20 +39,48 @@ class WalkInCustomerRequest {
     this.totalDiscountType,
     this.totalDiscountValue,
     this.promoCode,
+    this.promoCodeId,
+    this.amountBeforeDiscount,
+    this.amountAfterDiscount,
+    this.amountAfterPromo,
+    this.vat,
+    this.totalAmount,
+    this.corporateAccountId,
   });
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
       'departmentIds': departmentIds,
     };
-    
+
+    final isCorporateSubmit =
+        corporateAccountId != null && corporateAccountId!.trim().isNotEmpty;
+
     if (orderId != null && orderId!.isNotEmpty) data['orderId'] = orderId;
-    if (customerName != null) data['customerName'] = customerName;
-    if (vatNumber != null) data['vatNumber'] = vatNumber;
-    if (mobile != null) data['mobile'] = mobile;
-    if (vehicleNumber != null) data['vehicleNumber'] = vehicleNumber;
-    if (make != null) data['make'] = make;
-    if (model != null) data['model'] = model;
+
+    // Standard POST /cashier/walk-in-order: do not send customerName / vatNumber / mobile.
+    // Corporate submit-for-approval: customerName required (validated in view model); VAT/mobile optional.
+    if (isCorporateSubmit) {
+      if (customerName != null && customerName!.trim().isNotEmpty) {
+        data['customerName'] = customerName!.trim();
+      }
+      if (vatNumber != null && vatNumber!.trim().isNotEmpty) {
+        data['vatNumber'] = vatNumber!.trim();
+      }
+      if (mobile != null && mobile!.trim().isNotEmpty) {
+        data['mobile'] = mobile!.trim();
+      }
+    }
+
+    // DTO still requires vehicleNumber on append — send whenever we have a value.
+    if (vehicleNumber != null && vehicleNumber!.trim().isNotEmpty) {
+      data['vehicleNumber'] = vehicleNumber!.trim();
+    }
+    if (vinNumber != null && vinNumber!.trim().isNotEmpty) {
+      data['vinNumber'] = vinNumber!.trim();
+    }
+    if (make != null && make!.trim().isNotEmpty) data['make'] = make!.trim();
+    if (model != null && model!.trim().isNotEmpty) data['model'] = model!.trim();
     if (odometerReading != null) data['odometerReading'] = odometerReading;
 
     if (products != null && products!.isNotEmpty) {
@@ -55,6 +93,15 @@ class WalkInCustomerRequest {
     if (totalDiscountType != null) data['totalDiscountType'] = totalDiscountType;
     if (totalDiscountValue != null) data['totalDiscountValue'] = totalDiscountValue;
     if (promoCode != null) data['promoCode'] = promoCode;
+    if (promoCodeId != null) data['promoCodeId'] = promoCodeId;
+    if (amountBeforeDiscount != null) data['amountBeforeDiscount'] = amountBeforeDiscount;
+    if (amountAfterDiscount != null) data['amountAfterDiscount'] = amountAfterDiscount;
+    if (amountAfterPromo != null) data['amountAfterPromo'] = amountAfterPromo;
+    if (vat != null) data['VAT'] = vat;
+    if (totalAmount != null) data['TotalAmount'] = totalAmount;
+    if (corporateAccountId != null && corporateAccountId!.isNotEmpty) {
+      data['corporateAccountId'] = corporateAccountId;
+    }
 
     return data;
   }
@@ -66,6 +113,8 @@ class RequestedProduct {
   final double qty;
   final String? discountType;
   final double? discountValue;
+  final double? beforeDiscountPrice;
+  final double? afterDiscountPrice;
 
   RequestedProduct({
     required this.productId,
@@ -73,6 +122,8 @@ class RequestedProduct {
     required this.qty,
     this.discountType,
     this.discountValue,
+    this.beforeDiscountPrice,
+    this.afterDiscountPrice,
   });
 
   Map<String, dynamic> toJson() {
@@ -83,6 +134,8 @@ class RequestedProduct {
     };
     if (discountType != null) data['discountType'] = discountType;
     if (discountValue != null) data['discountValue'] = discountValue;
+    if (beforeDiscountPrice != null) data['beforeDiscountPrice'] = beforeDiscountPrice;
+    if (afterDiscountPrice != null) data['afterDiscountPrice'] = afterDiscountPrice;
     return data;
   }
 }
@@ -93,6 +146,10 @@ class RequestedService {
   final double qty;
   final String? discountType;
   final double? discountValue;
+  final double? beforeDiscountPrice;
+  final double? afterDiscountPrice;
+  /// Sent when service is price-editable; must be > 0 when provided.
+  final double? unitPrice;
 
   RequestedService({
     required this.serviceId,
@@ -100,6 +157,9 @@ class RequestedService {
     this.qty = 1.0,
     this.discountType,
     this.discountValue,
+    this.beforeDiscountPrice,
+    this.afterDiscountPrice,
+    this.unitPrice,
   });
 
   Map<String, dynamic> toJson() {
@@ -110,6 +170,9 @@ class RequestedService {
     };
     if (discountType != null) data['discountType'] = discountType;
     if (discountValue != null) data['discountValue'] = discountValue;
+    if (beforeDiscountPrice != null) data['beforeDiscountPrice'] = beforeDiscountPrice;
+    if (afterDiscountPrice != null) data['afterDiscountPrice'] = afterDiscountPrice;
+    if (unitPrice != null && unitPrice! > 0) data['unitPrice'] = unitPrice;
     return data;
   }
 }
@@ -222,20 +285,29 @@ class WalkInVehicle {
   final String plateNo;
   final String make;
   final String model;
+  final String? year;
+  final String? color;
+  final String? vin;
 
   WalkInVehicle({
     required this.id,
     required this.plateNo,
     required this.make,
     required this.model,
+    this.year,
+    this.color,
+    this.vin,
   });
 
   factory WalkInVehicle.fromJson(Map<String, dynamic> json) {
     return WalkInVehicle(
       id: json['id']?.toString() ?? '',
-      plateNo: json['plateNo'] ?? '',
-      make: json['make'] ?? '',
-      model: json['model'] ?? '',
+      plateNo: json['plateNo']?.toString() ?? '',
+      make: json['make']?.toString() ?? '',
+      model: json['model']?.toString() ?? '',
+      year: json['year']?.toString(),
+      color: json['color']?.toString(),
+      vin: json['vin']?.toString() ?? json['carNo']?.toString(),
     );
   }
 }

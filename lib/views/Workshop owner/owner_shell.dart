@@ -22,6 +22,7 @@ import 'package:provider/provider.dart';
 import '../Menu/menu_view.dart';
 import 'Suppliers/suppliers_view_model.dart';
 import 'Accounting/accounting_view_model.dart';
+import 'Approvals/approvals_view_model.dart';
 import '../../data/repositories/owner_repository.dart';
 import '../../utils/restart_widget.dart';
 
@@ -42,11 +43,22 @@ class OwnerShell extends StatefulWidget {
     state?.goToIndex(11, withBack: true);
   }
 
+  static void goToApprovals(BuildContext context) {
+    final state = context.findAncestorStateOfType<OwnerShellState>();
+    state?.goToIndex(10);
+  }
+
+  static void openDrawer(BuildContext context) {
+    final state = context.findAncestorStateOfType<OwnerShellState>();
+    state?._scaffoldKey.currentState?.openDrawer();
+  }
+
   @override
   State<OwnerShell> createState() => OwnerShellState();
 }
 
 class OwnerShellState extends State<OwnerShell> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   bool _notificationsHasBack = false;
   String _ownerName = 'Admin';
@@ -104,7 +116,13 @@ class OwnerShellState extends State<OwnerShell> {
       ),
       child: const AccountingView(),
     ),
-    const ApprovalsView(),           // 10
+    ChangeNotifierProvider(          // 10
+      create: (context) => ApprovalsViewModel(
+        ownerRepository: context.read<OwnerRepository>(),
+        sessionService: context.read<SessionService>(),
+      ),
+      child: const ApprovalsView(),
+    ),
     const SizedBox(),                // 11 — overridden by _currentView (Notifications)
     const OwnerSettingsView(),       // 12
     const DepartmentManagementView(),// 13
@@ -126,6 +144,7 @@ class OwnerShellState extends State<OwnerShell> {
     final bool showBottomBar = [0, 5, 6, 12].contains(_selectedIndex);
 
     return Scaffold(
+      key: _scaffoldKey,
       drawer: _buildDrawer(),
       body: _currentView,
       bottomNavigationBar: showBottomBar 
@@ -171,6 +190,8 @@ class OwnerShellState extends State<OwnerShell> {
                 _buildDrawerItem(9, 'Accounting', Icons.account_balance_rounded),
                 const SizedBox(height: 4),
                 _buildDrawerItem(14, 'Promo Codes', Icons.local_offer_rounded),
+                const SizedBox(height: 4),
+                _buildDrawerItem(10, 'Approvals', Icons.approval_rounded),
                 const SizedBox(height: 4),
                 _buildDrawerItem(11, 'Notifications', Icons.notifications_rounded),
                 const SizedBox(height: 4),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../utils/app_colors.dart';
+import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../widgets/pos_widgets.dart';
 // import '../../utils/app_colors.dart';
@@ -19,7 +20,7 @@ class NotificationsView extends StatelessWidget {
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0),
+        textScaler: PosTabletLayout.textScaler(context),
       ),
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,

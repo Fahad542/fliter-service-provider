@@ -5,11 +5,13 @@ import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../More Tab/settings_view_model.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Add Customer Screen/pos_add_customer_view.dart';
 import '../Search History/pos_search_history_view.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:flutter/services.dart';
 import '../../../utils/app_formatters.dart';
+import '../../../utils/pos_tablet_layout.dart';
 import '../Product Grid/pos_product_grid_view.dart';
 import '../Sales Return/sales_return_view_model.dart';
 import '../Sales Return/pos_sales_return_view.dart';
@@ -29,7 +31,7 @@ class PosHomeView extends StatelessWidget {
     return MediaQuery(
       data: MediaQuery.of(
         context,
-      ).copyWith(textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0)),
+      ).copyWith(textScaler: PosTabletLayout.textScaler(context)),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         resizeToAvoidBottomInset: false,
@@ -40,7 +42,9 @@ class PosHomeView extends StatelessWidget {
           infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
           onMenuPressed: () => Scaffold.of(context).openDrawer(),
         ),
-        body: GestureDetector(
+        body: wrapPosShellRailBody(
+          context,
+          GestureDetector(
           onTap: () {
             if (vm.homeSearchController.text.isEmpty) {
               vm.homeSearchFocusNode.unfocus();
@@ -52,10 +56,10 @@ class PosHomeView extends StatelessWidget {
 
               // 3. Main Content
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 24),
                 child: Column(
                   children: [
-                    const SizedBox(height: 24),
+                    SizedBox(height: isTablet ? 18 : 24),
                     // Title
                     RichText(
                       textAlign: TextAlign.center,
@@ -65,7 +69,7 @@ class PosHomeView extends StatelessWidget {
                             text: 'Workshop ',
                             style: AppTextStyles.h1.copyWith(
                               color: AppColors.primaryLight,
-                              fontSize: isTablet ? 46 : 34,
+                              fontSize: isTablet ? 36 : 34,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -73,7 +77,7 @@ class PosHomeView extends StatelessWidget {
                             text: 'POS',
                             style: AppTextStyles.h1.copyWith(
                               color: AppColors.secondaryLight,
-                              fontSize: isTablet ? 46 : 34,
+                              fontSize: isTablet ? 36 : 34,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -82,10 +86,10 @@ class PosHomeView extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Search by vehicle number, phone number,\nor customer name',
+                      'Search by customer number, vehicle number,\nphone number or customer name',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Colors.grey,
-                        fontSize: isTablet ? 18 : 15,
+                        fontSize: 15,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -96,7 +100,7 @@ class PosHomeView extends StatelessWidget {
                       controller: vm.homeSearchController,
                       focusNode: vm.homeSearchFocusNode,
                       hintText:
-                          'Search customer / vehicle / mobile / plate...',
+                          'Search customer no / vehicle / mobile / plate...',
                       onChanged: (val) => vm.handleSearchDebounce(val),
                     ),
 
@@ -153,6 +157,7 @@ class PosHomeView extends StatelessWidget {
             ],
           ),
         ),
+        ),
       ),
     );
   }
@@ -172,7 +177,7 @@ class PosHomeView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+                padding: const EdgeInsets.fromLTRB(6, 10, 6, 14),
                 child: Text(
                   'Recent Searches',
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -184,23 +189,25 @@ class PosHomeView extends StatelessWidget {
               ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 40),
-                  itemCount: vm.searchedCustomers.length,
-                  itemBuilder: (context, index) {
-                    final customer = vm.searchedCustomers[index];
-                    final latestOrder = customer.orders.isNotEmpty
-                        ? customer.orders.first
-                        : null;
-                    final vehicle = latestOrder?.vehicle;
+                  padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
+                  itemCount: isTablet
+                      ? (vm.searchedCustomers.length / 3).ceil()
+                      : vm.searchedCustomers.length,
+                  itemBuilder: (context, rowIndex) {
+                    Widget buildCustomerCard(int index) {
+                      final customer = vm.searchedCustomers[index];
+                      final latestOrder = customer.orders.isNotEmpty
+                          ? customer.orders.first
+                          : null;
+                      final vehicle = latestOrder?.vehicle;
 
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: SearchHistoryItem(
+                      return SearchHistoryItem(
                         vehicle: vehicle != null
                             ? '${vehicle.make} ${vehicle.model}'
                             : 'No Vehicle',
                         plate: vehicle?.plateNo ?? 'N/A',
                         customer: customer.name,
+                        phone: customer.mobile,
                         lastVisit: latestOrder != null
                             ? vm.formatDate(latestOrder.createdAt)
                             : 'N/A',
@@ -244,10 +251,48 @@ class PosHomeView extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const PosSalesReturnView(),
+                              builder: (_) => const PosSalesReturnView(showBackButton: true),
                             ),
                           );
                         },
+                      );
+                    }
+
+                    if (!isTablet) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: buildCustomerCard(rowIndex),
+                      );
+                    }
+
+                    final i0 = rowIndex * 3;
+                    final i1 = i0 + 1;
+                    final i2 = i0 + 2;
+                    final n = vm.searchedCustomers.length;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: i0 < n
+                                ? buildCustomerCard(i0)
+                                : const SizedBox.shrink(),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: i1 < n
+                                ? buildCustomerCard(i1)
+                                : const SizedBox.shrink(),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: i2 < n
+                                ? buildCustomerCard(i2)
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
                       ),
                     );
                   },

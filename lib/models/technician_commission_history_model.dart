@@ -38,13 +38,22 @@ class CommissionEntry {
   final double commission;
   final String date;
   final String status;
+  final String? invoiceId;
+  final String? paidAt;
 
   CommissionEntry({
     required this.orderId,
     required this.commission,
     required this.date,
     required this.status,
+    this.invoiceId,
+    this.paidAt,
   });
+
+  bool get isPaid => status.toLowerCase() == 'paid';
+
+  /// Returns paidAt for paid entries, falls back to date
+  String get displayDate => (isPaid && (paidAt?.isNotEmpty ?? false)) ? paidAt! : date;
 
   factory CommissionEntry.fromJson(Map<String, dynamic> json) {
     return CommissionEntry(
@@ -52,6 +61,8 @@ class CommissionEntry {
       commission: (json['commission'] ?? 0.0).toDouble(),
       date: json['date'] as String? ?? '',
       status: json['status'] as String? ?? 'pending',
+      invoiceId: json['invoiceId']?.toString(),
+      paidAt: json['paidAt']?.toString(),
     );
   }
 }

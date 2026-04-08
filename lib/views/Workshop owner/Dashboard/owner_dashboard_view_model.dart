@@ -4,6 +4,7 @@ import '../../../models/workshop_owner_models.dart';
 import '../../../services/session_service.dart';
 import '../../../data/repositories/owner_repository.dart';
 import '../../../services/owner_data_service.dart';
+import '../../../services/realtime_service.dart';
 
 class OwnerDashboardViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
@@ -26,6 +27,19 @@ class OwnerDashboardViewModel extends ChangeNotifier {
 
   OwnerDashboardResponse? _dashboardData;
   OwnerDashboardResponse? get dashboardData => _dashboardData;
+  List<PettyCashRequestItem> _pendingPettyCashRequests = [];
+  List<PettyCashRequestItem> get pendingPettyCashRequests =>
+      _pendingPettyCashRequests;
+  String _pettyCashCurrency = 'SAR';
+  String get pettyCashCurrency => _pettyCashCurrency;
+  String? _approvingRequestId;
+  String? _rejectingRequestId;
+  bool get hasApprovalActionInFlight =>
+      _approvingRequestId != null || _rejectingRequestId != null;
+  bool isApprovingRequest(String id) => _approvingRequestId == id;
+  bool isRejectingRequest(String id) => _rejectingRequestId == id;
+  final RealtimeService _realtimeService = RealtimeService();
+  bool _realtimeBound = false;
 
   OwnerDashboardViewModel({
     required this.ownerRepository,
@@ -51,6 +65,8 @@ class OwnerDashboardViewModel extends ChangeNotifier {
         await ownerDataService.fetchBranches();
       }
       await _fetchDashboardData(token);
+      await _fetchPendingPettyCashRequests(token);
+      await _bindRealtime(token);
     }
 
 
@@ -75,6 +91,24 @@ class OwnerDashboardViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> _fetchPendingPettyCashRequests(String token) async {
+    try {
+      final response = await ownerRepository.getPettyCashRequests(
+        token,
+        queue: 'all',
+        status: 'pending',
+        branchId: _selectedBranch?.id,
+        limit: 20,
+        offset: 0,
+      );
+      _pendingPettyCashRequests = response.requests;
+      _pettyCashCurrency = response.currency;
+    } catch (e) {
+      debugPrint('Error fetching pending petty-cash requests: $e');
+      _pendingPettyCashRequests = [];
+    }
+  }
+
   Future<void> setSelectedBranch(Branch? branch) async {
     _selectedBranch = branch;
     _isLoading = true;
@@ -83,6 +117,7 @@ class OwnerDashboardViewModel extends ChangeNotifier {
     String? token = await sessionService.getToken(role: 'owner');
     if (token != null) {
       await _fetchDashboardData(token);
+      await _fetchPendingPettyCashRequests(token);
     }
     
     _isLoading = false;
@@ -97,16 +132,89 @@ class OwnerDashboardViewModel extends ChangeNotifier {
   
   // Pending Approvals (not in dashboard API yet, mocked)
   int get pendingApprovals {
-    if (_selectedBranch != null) return 2;
-    return 8;
+    return _pendingPettyCashRequests.length;
   }
 
   // Per-branch details (not in dashboard API yet, mocked)
   int get activeOrders => _selectedBranch != null ? 14 : 0;
   double get technicianWorkload => _selectedBranch != null ? 0.85 : 0.0;
 
+  Future<void> _bindRealtime(String token) async {
+    if (_realtimeBound) return;
+    _realtimeService.connect(token);
+    _realtimeService.on(
+      RealtimeService.eventWorkshopPettyCashUpdated,
+      _onWorkshopPettyCashUpdated,
+    );
+    _realtimeBound = true;
+  }
+
+  void _unbindRealtime() {
+    if (!_realtimeBound) return;
+    _realtimeService.off(
+      RealtimeService.eventWorkshopPettyCashUpdated,
+      _onWorkshopPettyCashUpdated,
+    );
+    _realtimeService.disconnect();
+    _realtimeBound = false;
+  }
+
+  void _onWorkshopPettyCashUpdated(Map<String, dynamic> _) async {
+    final token = await sessionService.getToken(role: 'owner');
+    if (token == null) return;
+    await _fetchPendingPettyCashRequests(token);
+    notifyListeners();
+  }
+
+  Future<bool> approvePettyCashRequest(String requestId) async {
+    _approvingRequestId = requestId;
+    notifyListeners();
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token == null) return false;
+      final ok =
+          await ownerRepository.approvePettyCashRequest(token, requestId);
+      if (ok) {
+        await _fetchPendingPettyCashRequests(token);
+      }
+      return ok;
+    } catch (_) {
+      return false;
+    } finally {
+      _approvingRequestId = null;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> rejectPettyCashRequest(
+    String requestId,
+    String rejectionReason,
+  ) async {
+    _rejectingRequestId = requestId;
+    notifyListeners();
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token == null) return false;
+      final ok = await ownerRepository.rejectPettyCashRequest(
+        token,
+        requestId,
+        rejectionReason,
+      );
+      if (ok) {
+        await _fetchPendingPettyCashRequests(token);
+      }
+      return ok;
+    } catch (_) {
+      return false;
+    } finally {
+      _rejectingRequestId = null;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
+    _unbindRealtime();
     ownerDataService.removeListener(notifyListeners);
     super.dispose();
   }

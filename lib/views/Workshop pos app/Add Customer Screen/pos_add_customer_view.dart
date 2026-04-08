@@ -72,37 +72,39 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
             appBar: PosScreenAppBar(title: 'Add New Customer'),
             body: Column(
               children: [
-          const SizedBox(height: 20),
+          SizedBox(height: isTablet ? 14 : 12),
 
           // Tab Bar
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 24),
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 28 : 20),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+                borderRadius: BorderRadius.circular(isTablet ? 12 : 10),
               ),
-              padding: EdgeInsets.all(isTablet ? 5 : 4),
+              padding: EdgeInsets.all(isTablet ? 4 : 3),
               child: TabBar(
                 controller: _tabController,
                 indicator: BoxDecoration(
-                  color: AppColors.secondaryLight,
-                  borderRadius: BorderRadius.circular(isTablet ? 12 : 10),
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
-                labelColor: Colors.white,
-                unselectedLabelColor: AppColors.secondaryLight.withOpacity(0.5),
+                labelColor: AppColors.secondaryLight,
+                unselectedLabelColor: AppColors.secondaryLight.withOpacity(0.42),
                 labelStyle: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w700,
-                  fontSize: isTablet ? 15 : 13,
+                  fontSize: isTablet ? 14 : 14,
                 ),
                 unselectedLabelStyle: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w500,
-                  fontSize: isTablet ? 15 : 13,
-                  color: AppColors.secondaryLight.withOpacity(0.5),
+                  fontWeight: FontWeight.w600,
+                  fontSize: isTablet ? 14 : 14,
+                  color: AppColors.secondaryLight.withOpacity(0.42),
                 ),
-                labelPadding: EdgeInsets.symmetric(vertical: isTablet ? 4 : 0),
+                labelPadding: EdgeInsets.symmetric(vertical: isTablet ? 3 : 2),
+                overlayColor: MaterialStateProperty.all(Colors.transparent),
+                splashFactory: NoSplash.splashFactory,
                 tabs: const [
                   Tab(text: 'Normal Customer'),
                   Tab(text: 'Corporate Customer'),
@@ -110,7 +112,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
             ),
           ),
-          SizedBox(height: isTablet ? 20 : 16),
+          SizedBox(height: isTablet ? 14 : 12),
 
           // Tab Content
           Expanded(
@@ -132,69 +134,18 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
 
   // ── Normal Customer Form ──
   Widget _buildNormalCustomerForm(bool isTablet, AddCustomerViewModel vm) {
-    final hPad = isTablet ? 32.0 : 24.0;
-    final fieldGap = isTablet ? 18.0 : 14.0;
+    final hPad = isTablet ? 28.0 : 20.0;
+    final fieldGap = isTablet ? 14.0 : 12.0;
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 24),
+      padding: EdgeInsets.fromLTRB(hPad, 4, hPad, 18),
       child: Form(
         key: _normalFormKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTextField(
-              'Customer Name',
-              vm.nameController,
-              Icons.person_outline,
-              isTablet: isTablet,
-              enableSuggestions: true,
-              autocorrect: true,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter customer name';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: fieldGap),
-            _buildTextField(
-              'VAT Number',
-              vm.vatController,
-              Icons.receipt_long_outlined,
-              keyboardType: TextInputType.number,
-              isTablet: isTablet,
-              enableSuggestions: false,
-              autocorrect: false,
-              validator: (value) {
-                if (value != null && value.isNotEmpty && !RegExp(r'^[0-9٠-٩۰-۹०-९]+$').hasMatch(value)) {
-                  return 'Please enter a valid VAT number';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: fieldGap),
-            _buildTextField(
-              'Mobile Number',
-              vm.mobileController,
-              Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-              isTablet: isTablet,
-              enableSuggestions: false,
-              autocorrect: false,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter mobile number';
-                }
-                if (value.length < 8) {
-                  return 'Please enter a valid mobile number';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: isTablet ? 24.0 : 20.0),
-
-            // Vehicle Section
+            // Standard walk-in: customer name / VAT / mobile are collected before invoice (billing PATCH).
             _buildSectionHeader('Vehicle Information', isTablet: isTablet),
-            SizedBox(height: isTablet ? 16.0 : 12.0),
+            SizedBox(height: isTablet ? 12.0 : 10.0),
             if (isTablet) ...[
               Row(
                 children: [
@@ -206,22 +157,45 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       isTablet: isTablet,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Required';
+                          return 'Please enter vehicle number';
                         }
                         return null;
                       },
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _buildTextField(
                       'Make',
                       vm.makeController,
                       Icons.directions_car_outlined,
                       isTablet: isTablet,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: fieldGap),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      'VIN',
+                      vm.vinNumberController,
+                      Icons.tag_outlined,
+                      isTablet: isTablet,
+                      enableSuggestions: false,
+                      autocorrect: false,
+                      textCapitalization: TextCapitalization.characters,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                        LengthLimitingTextInputFormatter(17),
+                      ],
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Required';
+                          return null;
+                        }
+                        if (value.trim().length > 17) {
+                          return 'Max 17 characters';
                         }
                         return null;
                       },
@@ -238,14 +212,9 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       vm.modelController,
                       Icons.model_training_outlined,
                       isTablet: isTablet,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Required';
-                        }
-                        return null;
-                      },
                     ),
                   ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _buildTextField(
                       'Odometer',
@@ -257,9 +226,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       autocorrect: false,
                       inputFormatters: [EnglishNumberFormatter()],
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Required';
-                        }
+                        if (value == null || value.trim().isEmpty) return null;
                         if (!RegExp(r'^[0-9٠-٩۰-۹०-९]+$').hasMatch(value)) {
                           return 'Invalid number';
                         }
@@ -286,18 +253,35 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
+                'VIN',
+                vm.vinNumberController,
+                Icons.tag_outlined,
+                isTablet: isTablet,
+                enableSuggestions: false,
+                autocorrect: false,
+                textCapitalization: TextCapitalization.characters,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                  LengthLimitingTextInputFormatter(17),
+                ],
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return null;
+                  }
+                  if (value.trim().length > 17) {
+                    return 'Max 17 characters';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: fieldGap),
+              _buildTextField(
                 'Make',
                 vm.makeController,
                 Icons.directions_car_outlined,
                 isTablet: isTablet,
                 enableSuggestions: false,
                 autocorrect: false,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter vehicle make';
-                  }
-                  return null;
-                },
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
@@ -307,12 +291,6 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 isTablet: isTablet,
                 enableSuggestions: false,
                 autocorrect: false,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter vehicle model';
-                  }
-                  return null;
-                },
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
@@ -324,9 +302,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 enableSuggestions: false,
                 autocorrect: false,
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter odometer reading';
-                  }
+                  if (value == null || value.trim().isEmpty) return null;
                   if (int.tryParse(value) == null) {
                     return 'Please enter a valid number';
                   }
@@ -335,7 +311,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
             ],
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 22),
             _buildSaveButton(isTablet: isTablet, vm: vm),
           ],
         ),
@@ -345,10 +321,10 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
 
   // ── Corporate Customer Form ──
   Widget _buildCorporateCustomerForm(bool isTablet, AddCustomerViewModel vm) {
-    final hPad = isTablet ? 32.0 : 24.0;
-    final fieldGap = isTablet ? 18.0 : 14.0;
+    final hPad = isTablet ? 28.0 : 20.0;
+    final fieldGap = isTablet ? 14.0 : 12.0;
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 24),
+      padding: EdgeInsets.fromLTRB(hPad, 4, hPad, 18),
       child: Form(
         key: _corporateFormKey,
         child: Column(
@@ -356,15 +332,15 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           children: [
             // Corporate Dropdown
             _buildSectionHeader('Corporate Account', isTablet: isTablet),
-            SizedBox(height: isTablet ? 16.0 : 12.0),
+            SizedBox(height: isTablet ? 12.0 : 10.0),
             Consumer<PosViewModel>(
               builder: (context, posVm, child) {
                 if (posVm.isCorpAccountsLoading) {
                   return Container(
-                    height: isTablet ? 60 : 50,
+                    height: isTablet ? 52 : 46,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+                      borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: const Center(
@@ -380,10 +356,10 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 return Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+                    borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16, vertical: isTablet ? 4 : 0),
+                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 14 : 12, vertical: isTablet ? 2 : 0),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: vm.selectedCorporate,
@@ -391,10 +367,10 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                         posVm.corporateAccounts.isEmpty 
                             ? 'No Corporate Accounts Found' 
                             : 'Select Corporate Account',
-                        style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: isTablet ? 15 : 13),
+                        style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: isTablet ? 14 : 13),
                       ),
                       isExpanded: true,
-                      icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade400, size: isTablet ? 28 : 24),
+                      icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade400, size: isTablet ? 24 : 22),
                       items: posVm.corporateAccounts.map((corp) {
                         return DropdownMenuItem<String>(
                           value: corp.companyName,
@@ -402,7 +378,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                             corp.companyName,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: isTablet ? 15 : 13,
+                              fontSize: isTablet ? 14 : 13,
                             ),
                           ),
                         );
@@ -421,23 +397,28 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               },
             ),
 
-            SizedBox(height: isTablet ? 24.0 : 20.0),
+            SizedBox(height: isTablet ? 18.0 : 14.0),
 
             // Auto-filled fields (read-only)
             if (vm.selectedCorporateData != null) ...[
               _buildSectionHeader('Company Details (Auto-filled)', isTablet: isTablet),
-              SizedBox(height: isTablet ? 16.0 : 12.0),
+              SizedBox(height: isTablet ? 12.0 : 10.0),
               _buildReadOnlyField('Company Name', vm.selectedCorporateData!.companyName, Icons.business, isTablet: isTablet),
               SizedBox(height: fieldGap),
-              _buildReadOnlyField('VAT Number', 'N/A', Icons.receipt_long_outlined, isTablet: isTablet),
+              _buildReadOnlyField(
+                'VAT Number',
+                vm.selectedCorporateData!.effectiveVatNumber ?? 'N/A',
+                Icons.receipt_long_outlined,
+                isTablet: isTablet,
+              ),
               SizedBox(height: fieldGap),
-              _buildReadOnlyField('Billing Address', vm.selectedCorporateData!.address ?? 'N/A', Icons.location_on_outlined, isTablet: isTablet),
-              SizedBox(height: isTablet ? 24.0 : 20.0),
+              _buildReadOnlyField('Billing Address', vm.selectedCorporateData!.billingAddress ?? vm.selectedCorporateData!.address ?? 'N/A', Icons.location_on_outlined, isTablet: isTablet),
+              SizedBox(height: isTablet ? 18.0 : 14.0),
             ],
 
             // Vehicle Section
             _buildSectionHeader('Vehicle Information', isTablet: isTablet),
-            SizedBox(height: isTablet ? 16.0 : 12.0),
+            SizedBox(height: isTablet ? 12.0 : 10.0),
             if (isTablet) ...[
               Row(
                 children: [
@@ -457,7 +438,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       },
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _buildTextField(
                       'Make',
@@ -469,6 +450,35 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: fieldGap),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      'VIN',
+                      vm.corpVinNumberController,
+                      Icons.tag_outlined,
+                      isTablet: isTablet,
+                      enableSuggestions: false,
+                      autocorrect: false,
+                      textCapitalization: TextCapitalization.characters,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                        LengthLimitingTextInputFormatter(17),
+                      ],
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return null;
+                        }
+                        if (value.trim().length > 17) {
+                          return 'Max 17 characters';
                         }
                         return null;
                       },
@@ -495,7 +505,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       },
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _buildTextField(
                       'Odometer',
@@ -529,6 +539,29 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter vehicle number';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: fieldGap),
+              _buildTextField(
+                'VIN',
+                vm.corpVinNumberController,
+                Icons.tag_outlined,
+                isTablet: isTablet,
+                enableSuggestions: false,
+                autocorrect: false,
+                textCapitalization: TextCapitalization.characters,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                  LengthLimitingTextInputFormatter(17),
+                ],
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return null;
+                  }
+                  if (value.trim().length > 17) {
+                    return 'Max 17 characters';
                   }
                   return null;
                 },
@@ -584,7 +617,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
             ],
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 22),
             _buildSaveButton(isTablet: isTablet, vm: vm),
           ],
         ),
@@ -598,19 +631,19 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
     return Row(
       children: [
         Container(
-          width: isTablet ? 5 : 4,
-          height: isTablet ? 22 : 18,
+          width: 4,
+          height: isTablet ? 18 : 18,
           decoration: BoxDecoration(
             color: AppColors.primaryLight,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        SizedBox(width: isTablet ? 10 : 8),
+        const SizedBox(width: 8),
         Text(
           title,
           style: AppTextStyles.bodyMedium.copyWith(
             fontWeight: FontWeight.w700,
-            fontSize: isTablet ? 16 : 14,
+            fontSize: isTablet ? 15 : 14,
             color: AppColors.secondaryLight,
           ),
         ),
@@ -628,10 +661,12 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
     List<TextInputFormatter>? inputFormatters,
     bool enableSuggestions = true,
     bool autocorrect = true,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
       validator: (val) {
         if (val == null || val.isEmpty) return validator?.call(val);
         return validator?.call(EnglishNumberFormatter.convert(val));
@@ -646,32 +681,33 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
       ],
       enableSuggestions: enableSuggestions,
       autocorrect: autocorrect,
-      style: AppTextStyles.bodyMedium.copyWith(fontSize: isTablet ? 15 : 13, fontWeight: FontWeight.w500),
+      style: AppTextStyles.bodyMedium.copyWith(fontSize: isTablet ? 14 : 14, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: isTablet ? 15 : 13),
-        prefixIcon: Icon(icon, size: isTablet ? 24 : 20, color: Colors.grey.shade400),
+        labelStyle: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: isTablet ? 14 : 13),
+        prefixIcon: Icon(icon, size: isTablet ? 22 : 20, color: Colors.grey.shade400),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: EdgeInsets.fromLTRB(isTablet ? 12 : 8, isTablet ? 18 : 14, isTablet ? 12 : 8, isTablet ? 18 : 14),
+        isDense: true,
+        contentPadding: EdgeInsets.fromLTRB(isTablet ? 10 : 8, isTablet ? 14 : 12, isTablet ? 10 : 8, isTablet ? 14 : 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+          borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+          borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+          borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
           borderSide: BorderSide.none,
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+          borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
           borderSide: BorderSide.none,
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+          borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
           borderSide: BorderSide.none,
         ),
         errorStyle: const TextStyle(fontSize: 11, height: 1),
@@ -681,37 +717,37 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
 
   Widget _buildReadOnlyField(String label, String value, IconData icon, {bool isTablet = false}) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16, vertical: isTablet ? 18 : 14),
+      padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 14, vertical: isTablet ? 14 : 12),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+        borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         children: [
-          Icon(icon, size: isTablet ? 24 : 20, color: Colors.grey.shade400),
-          SizedBox(width: isTablet ? 16 : 12),
+          Icon(icon, size: isTablet ? 22 : 20, color: Colors.grey.shade400),
+          SizedBox(width: isTablet ? 12 : 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: AppTextStyles.bodySmall.copyWith(color: Colors.grey, fontSize: isTablet ? 12 : 10),
+                  style: AppTextStyles.bodySmall.copyWith(color: Colors.grey, fontSize: isTablet ? 12 : 12),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: isTablet ? 15 : 13,
+                    fontSize: isTablet ? 14 : 14,
                     color: AppColors.secondaryLight,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.lock_outline, size: isTablet ? 16 : 14, color: Colors.grey.shade300),
+          Icon(Icons.lock_outline, size: isTablet ? 16 : 16, color: Colors.grey.shade300),
         ],
       ),
     );
@@ -720,7 +756,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   Widget _buildSaveButton({bool isTablet = false, required AddCustomerViewModel vm}) {
     return SizedBox(
       width: double.infinity,
-      height: isTablet ? 64 : 52,
+      height: isTablet ? 54 : 50,
       child: ElevatedButton(
         onPressed: () {
           final isNormal = _tabController.index == 0;
@@ -734,11 +770,13 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           vm.saveAndProceed(
             isNormal: isNormal,
             onSuccess: () {
-              vm.clearAllFields(); // Clear all fields after successful order
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const PosDepartmentView(),
+                  builder: (_) => PosDepartmentView(
+                    initialDepartmentId:
+                        context.read<PosViewModel>().editDepartmentId,
+                  ),
                 ),
               );
             },
@@ -754,14 +792,14 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           foregroundColor: AppColors.secondaryLight,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+            borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
           ),
         ),
         child: Text(
           'Save & Proceed to Department',
           style: AppTextStyles.button.copyWith(
             fontWeight: FontWeight.w700,
-            fontSize: isTablet ? 17 : 15,
+            fontSize: isTablet ? 15 : 15,
           ),
         ),
       ),

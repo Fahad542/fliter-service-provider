@@ -22,6 +22,7 @@ class PromoCodeResponse {
 }
 
 class PromoData {
+  final String? id;
   final double discount;
   final bool isPercent;
   final String code;
@@ -32,6 +33,7 @@ class PromoData {
   final String? discountLabel;
 
   PromoData({
+    this.id,
     required this.discount,
     required this.isPercent,
     required this.code,
@@ -58,6 +60,7 @@ class PromoData {
     }
 
     return PromoData(
+      id: json['id']?.toString() ?? json['promoCodeId']?.toString(),
       discount: double.tryParse(json['discountValue']?.toString() ?? json['discount']?.toString() ?? '0') ?? 0.0,
       isPercent: isPercentValue,
       code: json['code'] ?? '',

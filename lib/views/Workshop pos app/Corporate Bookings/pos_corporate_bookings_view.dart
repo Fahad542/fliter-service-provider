@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../utils/app_colors.dart';
+import '../../../../utils/pos_tablet_layout.dart';
 import '../../../../widgets/pos_widgets.dart';
 import '../Department/department_view_model.dart';
 import '../Home Screen/pos_view_model.dart';
@@ -40,7 +41,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
     return MediaQuery(
       data: MediaQuery.of(
         context,
-      ).copyWith(textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0)),
+      ).copyWith(textScaler: PosTabletLayout.textScaler(context)),
       child: Scaffold(
         backgroundColor: const Color(0xFFFBF9F6),
         appBar: PosScreenAppBar(title: 'Corporate Bookings'),

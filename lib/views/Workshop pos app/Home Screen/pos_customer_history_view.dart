@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/customer_search_model.dart';
-import '../../../models/pos_order_model.dart';
+import '../../../models/invoiced_orders_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../widgets/pos_widgets.dart';
-
-import '../../../models/create_invoice_model.dart';
 import '../Home Screen/pos_view_model.dart';
 import 'package:provider/provider.dart';
 
@@ -25,14 +23,13 @@ class PosCustomerHistoryView extends StatefulWidget {
 }
 
 class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
-  Future<CreateInvoiceResponse?>? _invoiceFuture;
+  Future<InvoicedOrderResponse?>? _historyFuture;
 
   @override
   void initState() {
     super.initState();
-    if (widget.focusOrderId != null && widget.focusOrderId!.isNotEmpty) {
-      _invoiceFuture = context.read<PosViewModel>().fetchInvoiceByOrder(widget.focusOrderId!);
-    }
+    final vm = context.read<PosViewModel>();
+    _historyFuture = vm.fetchCustomerInvoicedHistory(widget.customer.id);
   }
 
   @override
@@ -43,100 +40,441 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F6),
       appBar: PosScreenAppBar(title: 'Customer History'),
-      body: FutureBuilder<CreateInvoiceResponse?>(
-        future: _invoiceFuture,
-        builder: (context, snapshot) {
-          final isLoading = widget.focusOrderId != null && snapshot.connectionState == ConnectionState.waiting;
-          final invoice = snapshot.data?.invoice;
+      body: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 32 : 16, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCustomerProfile(isTablet, customer),
 
-          return Stack(
-            children: [
-              SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 32 : 16, vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCustomerProfile(isTablet, customer),
-                    if (invoice != null && invoice.items.isNotEmpty)
-                      _buildFocusedOrderCard(invoice),
-                    const SizedBox(height: 32),
-                    Text(
-                      'Past Orders',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 20,
-                        color: const Color(0xFF1E2124),
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (customer.orders.isEmpty)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: Text('No order history found for this customer.'),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: customer.orders.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final searchedOrder = customer.orders[index];
-                          
-                          final posOrder = PosOrder(
-                            id: searchedOrder.id,
-                            status: searchedOrder.status,
-                            source: searchedOrder.source,
-                            odometerReading: searchedOrder.odometerReading,
-                            createdAt: searchedOrder.createdAt,
-                            customer: OrderCustomer(
-                              id: customer.id,
-                              name: customer.name,
-                              mobile: customer.mobile,
-                            ),
-                            vehicle: searchedOrder.vehicle != null 
-                                ? OrderVehicle(
-                                    id: searchedOrder.vehicle!.id,
-                                    plateNo: searchedOrder.vehicle!.plateNo,
-                                    make: searchedOrder.vehicle!.make,
-                                    model: searchedOrder.vehicle!.model,
-                                  )
-                                : null,
-                            jobsCount: 0, 
-                          );
-
-                          return OrderItemCard(order: posOrder, isTablet: isTablet);
-                        },
-                      ),
-                  ],
-                ),
+            const SizedBox(height: 32),
+            Text(
+              'Past Orders',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w800,
+                fontSize: isTablet ? 26 : 22,
+                color: const Color(0xFF1E2124),
+                letterSpacing: -0.5,
               ),
-              if (isLoading)
-                Positioned.fill(
-                  child: Container(
-                    color: const Color(0xFFFBF9F6).withValues(alpha: 0.8),
-                    child: const Center(
+            ),
+            const SizedBox(height: 16),
+            FutureBuilder<InvoicedOrderResponse?>(
+              future: _historyFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Center(
                       child: CircularProgressIndicator(
                         color: AppColors.primaryLight,
                         strokeWidth: 3,
                       ),
                     ),
+                  );
+                }
+                final orders = snapshot.data?.orders ?? [];
+                if (orders.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Text('No order history found for this customer.'),
+                    ),
+                  );
+                }
+                if (!isTablet) {
+                  return Column(
+                    children: [
+                      for (int i = 0; i < orders.length; i++) ...[
+                        _buildInvoicedOrderCard(orders[i], isTablet),
+                        if (i < orders.length - 1) const SizedBox(height: 12),
+                      ],
+                    ],
+                  );
+                }
+                final rows = (orders.length / 3).ceil();
+                return Column(
+                  children: [
+                    for (int r = 0; r < rows; r++) ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _buildInvoicedOrderSlot(
+                              orders,
+                              r * 3,
+                              isTablet,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildInvoicedOrderSlot(
+                              orders,
+                              r * 3 + 1,
+                              isTablet,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildInvoicedOrderSlot(
+                              orders,
+                              r * 3 + 2,
+                              isTablet,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (r < rows - 1) const SizedBox(height: 12),
+                    ],
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryOrderCard(SearchedCustomerOrder order, bool isTablet) {
+    final status = order.status.toLowerCase();
+    Color statusColor;
+    if (status == 'invoiced' || status == 'completed') {
+      statusColor = const Color(0xFF27AE60);
+    } else if (status.contains('pending') || status.contains('waiting') || status.contains('draft')) {
+      statusColor = const Color(0xFFF2994A);
+    } else if (status.contains('progress') || status.contains('accepted')) {
+      statusColor = const Color(0xFF2D9CDB);
+    } else {
+      statusColor = Colors.grey;
+    }
+
+    String formattedDate = order.createdAt;
+    try {
+      final parsed = DateTime.parse(order.createdAt);
+      formattedDate = DateFormat('dd MMM yyyy').format(parsed);
+    } catch (_) {}
+
+    return Container(
+      padding: EdgeInsets.all(isTablet ? 18 : 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Order #${order.id}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: isTablet ? 15 : 13,
+                    color: const Color(0xFF1E2124),
                   ),
                 ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  order.status.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: isTablet ? 11 : 10,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
             ],
-          );
-        }
+          ),
+          const SizedBox(height: 8),
+          if (order.vehicle != null) ...[
+            Row(
+              children: [
+                Icon(Icons.directions_car_rounded,
+                    size: isTablet ? 15 : 13, color: Colors.grey.shade500),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${order.vehicle!.make} ${order.vehicle!.model}  •  ${order.vehicle!.plateNo}',
+                    style: TextStyle(
+                      fontSize: isTablet ? 13 : 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
+          Row(
+            children: [
+              Icon(Icons.calendar_today_rounded,
+                  size: isTablet ? 13 : 11, color: Colors.grey.shade400),
+              const SizedBox(width: 6),
+              Text(
+                formattedDate,
+                style: TextStyle(
+                  fontSize: isTablet ? 12 : 11,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (order.invoiceNo != null && order.invoiceNo!.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Icon(Icons.receipt_long_rounded,
+                    size: isTablet ? 13 : 11, color: Colors.grey.shade400),
+                const SizedBox(width: 4),
+                Text(
+                  'Invoice: ${order.invoiceNo}',
+                  style: TextStyle(
+                    fontSize: isTablet ? 12 : 11,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvoicedOrderSlot(
+    List<InvoicedOrder> orders,
+    int index,
+    bool isTablet,
+  ) {
+    if (index >= orders.length) return const SizedBox.shrink();
+    return _buildInvoicedOrderCard(orders[index], isTablet, compact: true);
+  }
+
+  Widget _buildInvoicedOrderCard(
+    InvoicedOrder order,
+    bool isTablet, {
+    bool compact = false,
+  }) {
+    String formattedDate = order.createdAt;
+    try {
+      final parsed = DateTime.parse(order.createdAt);
+      formattedDate = DateFormat('dd MMM yyyy').format(parsed);
+    } catch (_) {}
+
+    final pad = compact
+        ? 12.0
+        : (isTablet ? 18.0 : 14.0);
+    final invFs = compact
+        ? 13.0
+        : (isTablet ? 17.0 : 15.0);
+    final invIcon = compact ? 14.0 : (isTablet ? 17.0 : 15.0);
+    final totalFs = compact
+        ? 15.0
+        : (isTablet ? 19.0 : 17.0);
+    final dateFs = compact
+        ? 12.0
+        : (isTablet ? 15.0 : 14.0);
+    final dateIcon = compact ? 13.0 : (isTablet ? 15.0 : 14.0);
+    final promoFs = compact ? 11.0 : (isTablet ? 14.0 : 13.0);
+    final promoIcon = compact ? 13.0 : (isTablet ? 15.0 : 14.0);
+    final lineNameFs = compact ? 12.0 : (isTablet ? 15.0 : 14.0);
+    final lineQtyFs = compact ? 11.0 : (isTablet ? 14.0 : 13.0);
+    final lineTotalFs = compact ? 12.0 : (isTablet ? 15.0 : 14.0);
+    final moreFs = compact ? 12.0 : (isTablet ? 14.0 : 13.0);
+
+    return Container(
+      padding: EdgeInsets.all(pad),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 8 : (isTablet ? 10 : 8),
+                      vertical: compact ? 4 : (isTablet ? 5 : 4)),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.receipt_long_rounded,
+                          size: invIcon, color: AppColors.primaryLight),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          order.invoiceNo.isNotEmpty ? order.invoiceNo : 'Order #${order.id}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: invFs,
+                            color: AppColors.primaryLight,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'SAR ${order.totalAmount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: totalFs,
+                  color: const Color(0xFF1E2124),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: compact ? 8 : 10),
+          Row(
+            children: [
+              Icon(Icons.calendar_today_rounded,
+                  size: dateIcon, color: Colors.grey.shade400),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  formattedDate,
+                  style: TextStyle(
+                    fontSize: dateFs,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (order.promoCodeName != null && order.promoCodeName!.isNotEmpty) ...[
+                const SizedBox(width: 10),
+                Icon(Icons.local_offer_rounded,
+                    size: promoIcon, color: Colors.orange.shade400),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    order.promoCodeName!,
+                    style: TextStyle(
+                      fontSize: promoFs,
+                      color: Colors.orange.shade500,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (order.items.isNotEmpty) ...[
+            SizedBox(height: compact ? 8 : 10),
+            Divider(color: Colors.grey.shade100, height: 1),
+            SizedBox(height: compact ? 8 : 10),
+            ...order.items.take(3).map(
+              (item) => Padding(
+                padding: EdgeInsets.only(bottom: compact ? 4 : 6),
+                child: Row(
+                  children: [
+                    Container(
+                      width: compact ? 5 : 6,
+                      height: compact ? 5 : 6,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: compact ? 6 : 8),
+                    Expanded(
+                      child: Text(
+                        item.productName,
+                        style: TextStyle(
+                          fontSize: lineNameFs,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(width: compact ? 4 : 8),
+                    Text(
+                      'x${item.qty.toStringAsFixed(item.qty == item.qty.roundToDouble() ? 0 : 1)}',
+                      style: TextStyle(
+                        fontSize: lineQtyFs,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(width: compact ? 4 : 8),
+                    Text(
+                      'SAR ${item.lineTotal.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: lineTotalFs,
+                        color: const Color(0xFF1E2124),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (order.items.length > 3)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '+${order.items.length - 3} more items',
+                  style: TextStyle(
+                    fontSize: moreFs,
+                    color: Colors.grey.shade400,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildCustomerProfile(bool isTablet, SearchedCustomer customer) {
+    final outerPad = isTablet ? 18.0 : 24.0;
+    final avatarPad = isTablet ? 12.0 : 16.0;
+    final avatarIcon = isTablet ? 28.0 : 36.0;
+    final nameFs = isTablet ? 19.0 : 24.0;
+    final metaFs = isTablet ? 14.0 : 16.0;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(outerPad),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -153,7 +491,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(avatarPad),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [AppColors.primaryLight.withValues(alpha: 0.2), AppColors.primaryLight.withValues(alpha: 0.05)],
@@ -163,24 +501,27 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2), width: 1.5),
             ),
-            child: Icon(Icons.person_rounded, color: AppColors.primaryLight, size: 36),
+            child: Icon(Icons.person_rounded, color: AppColors.primaryLight, size: avatarIcon),
           ),
-          const SizedBox(width: 20),
+          SizedBox(width: isTablet ? 16 : 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(
-                      customer.name,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 20,
+                    Flexible(
+                      child: Text(
+                        customer.name,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: nameFs,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _buildTypeBadge(customer),
+                    _buildTypeBadge(customer, isTablet),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -188,7 +529,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                   customer.mobile,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey.shade600,
-                    fontSize: 14,
+                    fontSize: metaFs,
                   ),
                 ),
                 if (customer.taxId != null && customer.taxId!.isNotEmpty) ...[
@@ -197,7 +538,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     'VAT: ${customer.taxId}',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.grey.shade600,
-                      fontSize: 14,
+                      fontSize: metaFs,
                     ),
                   ),
                 ],
@@ -209,10 +550,13 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     );
   }
 
-  Widget _buildTypeBadge(SearchedCustomer customer) {
+  Widget _buildTypeBadge(SearchedCustomer customer, bool isTablet) {
     final isCorporate = customer.customerType.toLowerCase() == 'corporate';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 8 : 10,
+        vertical: isTablet ? 3 : 4,
+      ),
       decoration: BoxDecoration(
         color: isCorporate ? Colors.blue.shade50 : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(6),
@@ -224,205 +568,13 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
         customer.customerType.toUpperCase(),
         style: TextStyle(
           color: isCorporate ? Colors.blue.shade700 : Colors.grey.shade700,
-          fontSize: 10,
+          fontSize: isTablet ? 11 : 13,
           fontWeight: FontWeight.w800,
         ),
       ),
     );
   }
 
-  Widget _buildFocusedOrderCard(Invoice invoice) {
-    if (widget.focusOrderId == null) return const SizedBox.shrink();
-
-    // Find the matching searched order for extra details like visit date, status
-    final searchedOrder = widget.customer.orders.firstWhere(
-          (o) => o.id == widget.focusOrderId,
-          orElse: () => widget.customer.orders.first,
-        );
-
-        final DateFormat displayFormat = DateFormat('dd MMM yyyy, hh:mm a');
-        final DateFormat parseFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
-        String formattedDate = searchedOrder.createdAt;
-        try {
-          final parsed = parseFormat.parse(searchedOrder.createdAt);
-          formattedDate = displayFormat.format(parsed);
-        } catch (_) {}
-
-        return Container(
-          padding: const EdgeInsets.all(24),
-          margin: const EdgeInsets.only(top: 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.3), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryLight.withValues(alpha: 0.08),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-                spreadRadius: -2,
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Order Details',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: AppColors.primaryLight,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '#${widget.focusOrderId}',
-                      style: const TextStyle(
-                        color: AppColors.primaryLight,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 12),
-              
-              // Key/Value Details
-              _buildDetailRow('Customer Name', invoice.customerName),
-              const SizedBox(height: 8),
-              _buildDetailRow('Vehicle', '${invoice.vehicleInfo} - ${invoice.plateNo}'),
-              const SizedBox(height: 8),
-              _buildDetailRow('Visit Date', formattedDate),
-              const SizedBox(height: 8),
-              _buildDetailRow('Status', searchedOrder.status.toUpperCase()),
-              
-              if (invoice.invoiceNo.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _buildDetailRow('Invoice No', invoice.invoiceNo),
-              ],
-              
-              const SizedBox(height: 16),
-              const Text('Services / Products', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: invoice.items.map((item) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${item.qty.toInt()}x ${item.productName}',
-                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                            ),
-                          ),
-                          Text(
-                            'SR ${item.lineTotal.toStringAsFixed(2)}',
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 12),
-              
-              // Totals
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Subtotal', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-                  Text(
-                    'SR ${invoice.subtotal.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                  ),
-                ],
-              ),
-              if (invoice.discountAmount > 0) ...[
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Discount', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15, color: Colors.green)),
-                    Text(
-                      '- SR ${invoice.discountAmount.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.green),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('VAT Amount', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-                  Text(
-                    'SR ${invoice.vatAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Total Amount', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-                  Text(
-                    'SR ${invoice.totalAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.secondaryLight),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: const TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            textAlign: TextAlign.right,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 

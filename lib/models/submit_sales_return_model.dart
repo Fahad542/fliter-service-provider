@@ -1,12 +1,14 @@
 class SubmitSalesReturnRequest {
   final String invoiceId;
-  final String reason;
+  final String orderId;
+  final String customerId;
   final String? proofUrl;
   final List<SalesReturnItem> items;
 
   SubmitSalesReturnRequest({
     required this.invoiceId,
-    required this.reason,
+    required this.orderId,
+    required this.customerId,
     this.proofUrl,
     required this.items,
   });
@@ -14,7 +16,8 @@ class SubmitSalesReturnRequest {
   Map<String, dynamic> toJson() {
     return {
       'invoiceId': invoiceId,
-      'reason': reason,
+      'orderId': orderId,
+      'customerId': customerId,
       if (proofUrl != null) 'proofUrl': proofUrl,
       'items': items.map((e) => e.toJson()).toList(),
     };
@@ -24,16 +27,19 @@ class SubmitSalesReturnRequest {
 class SalesReturnItem {
   final String salesOrderItemId;
   final double qty;
+  final String reason;
 
   SalesReturnItem({
     required this.salesOrderItemId,
     required this.qty,
+    required this.reason,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'salesOrderItemId': salesOrderItemId,
       'qty': qty,
+      'reason': reason,
     };
   }
 }

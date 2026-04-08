@@ -9,7 +9,10 @@ import '../../models/customer_search_model.dart';
 import '../../models/pos_product_model.dart';
 import '../../models/create_invoice_model.dart';
 import '../../models/promo_code_model.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import '../../models/expense_category_model.dart';
+import '../../models/cashier_expense_models.dart';
 import '../../models/wallet_balance_model.dart'; // Added import
 import '../../models/corporate_booking_model.dart'; // Added import
 import '../../models/store_closing_api_model.dart'; // Added import
@@ -17,6 +20,9 @@ import '../../models/cashier_complete_job_model.dart';
 import '../../models/cashier_corporate_accounts_api_model.dart';
 import '../../models/invoiced_orders_model.dart';
 import '../../models/submit_sales_return_model.dart';
+import '../../models/sales_return_list_model.dart';
+import '../../models/takeaway_models.dart';
+
 
 class PosRepository {
   final BaseApiService _apiService = BaseApiService();
@@ -68,6 +74,41 @@ class PosRepository {
     }
   }
 
+  /// [dutyMode] e.g. `workshop` or `on_call` — sent as JSON `type` per backend.
+  Future<Map<String, dynamic>> postJobBroadcast(
+    String jobId,
+    String dutyMode,
+    String token,
+  ) async {
+    try {
+      return await _apiService.post(
+        ApiConstants.cashierJobBroadcastEndpoint(jobId),
+        {'type': dutyMode},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelJobBroadcast(String jobId, String token) async {
+    try {
+      return await _apiService.post(
+        ApiConstants.cashierJobBroadcastCancelEndpoint(jobId),
+        {},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<CashierCompleteJobResponse> completeCashierJob(String jobId, String token, {Map<String, dynamic>? body}) async {
     try {
       final response = await _apiService.post(
@@ -84,15 +125,127 @@ class PosRepository {
     }
   }
 
-  Future<CashierOrdersResponse> getCashierOrders(String token) async {
+  Future<Map<String, dynamic>> updateJobPricing(
+    String jobId,
+    Map<String, dynamic> body,
+    String token,
+  ) async {
     try {
-      final response = await _apiService.get(
-        ApiConstants.cashierOrdersEndpoint,
+      final response = await _apiService.post(
+        ApiConstants.cashierJobPricingEndpoint(jobId),
+        body,
         headers: {
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
       );
-      return CashierOrdersResponse.fromJson(response);
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<CashierJobReadyResponse> checkJobCompleteReady(
+    String jobId,
+    String token,
+  ) async {
+    try {
+      final response = await _apiService.patch(
+        ApiConstants.cashierCompleteReadyEndpoint(jobId),
+        {},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return CashierJobReadyResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<CashierOrdersResponse> getCashierOrders(
+    String token, {
+    String? status,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final Map<String, String> qp = {};
+      if (status != null && status.trim().isNotEmpty) {
+        qp['status'] = status.trim();
+      }
+      if (limit != null) qp['limit'] = limit.toString();
+      if (offset != null) qp['offset'] = offset.toString();
+
+      final dynamic response = qp.isEmpty
+          ? await _apiService.get(
+              ApiConstants.cashierOrdersEndpoint,
+              headers: {'Authorization': 'Bearer $token'},
+            )
+          : await _apiService.getWithQueryParams(
+              ApiConstants.cashierOrdersEndpoint,
+              qp,
+              token,
+            );
+      return CashierOrdersResponse.fromJson(response as Map<String, dynamic>);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// GET /cashier/order/:orderId — jobs, pendingDepartments, corporate fields.
+  Future<Map<String, dynamic>> getCashierOrderDetail(String orderId, String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.cashierOrderDetailEndpoint(orderId),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Corporate walk-in quote (no jobs until approved + start-department).
+  Future<WalkInCustomerResponse> submitWalkInCorporateForApproval(
+    WalkInCustomerRequest request,
+    String token,
+  ) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.cashierWalkInCorporateSubmitForApprovalEndpoint,
+        request.toJson(),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return WalkInCustomerResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// After corporate approval — create one job for a department with pending lines.
+  Future<Map<String, dynamic>> startCorporateWalkInDepartment(
+    String orderId,
+    String departmentId,
+    String token,
+  ) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.cashierWalkInCorporateStartDepartmentEndpoint(orderId),
+        {'departmentId': departmentId},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response as Map<String, dynamic>;
     } catch (e) {
       rethrow;
     }
@@ -107,6 +260,59 @@ class PosRepository {
         },
       );
       return InvoicedOrderResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> editOrder(String orderId, String jobId, Map<String, dynamic> body, String token) async {
+    try {
+      final response = await _apiService.patch(
+        ApiConstants.editOrderEndpoint(orderId, jobId),
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// PATCH /cashier/order/:orderId/billing — walk_in orders without corporate account only.
+  Future<Map<String, dynamic>> patchWalkInOrderBilling(
+    String orderId,
+    Map<String, dynamic> body,
+    String token,
+  ) async {
+    try {
+      final response = await _apiService.patch(
+        ApiConstants.cashierOrderBillingEndpoint(orderId),
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelOrder(String orderId, String reason, String token) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.cancelOrderEndpoint(orderId),
+        {'reason': reason},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response as Map<String, dynamic>;
     } catch (e) {
       rethrow;
     }
@@ -245,14 +451,56 @@ class PosRepository {
           'Authorization': 'Bearer $token',
         },
       );
-      return ExpenseCategoriesResponse.fromJson(response);
+      return ExpenseCategoriesResponse.fromDynamic(response);
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<bool> submitExpense(Map<String, dynamic> data, String token) async {
+  /// [employeeId] only for Salary Advances; omitted when null/empty.
+  /// Receipt: multipart field `proof` when [receiptFilePath] exists; else JSON (optional proofUrl in [extraJson]).
+  Future<Map<String, dynamic>> submitExpense({
+    required double amount,
+    required String categoryId,
+    required String description,
+    String? employeeId,
+    String? receiptFilePath,
+    Map<String, dynamic>? extraJson,
+    required String token,
+  }) async {
     try {
+      final path = receiptFilePath?.trim() ?? '';
+      final hasFile = path.isNotEmpty && File(path).existsSync();
+      final emp = employeeId?.trim();
+
+      if (hasFile) {
+        final fields = <String, String>{
+          'amount': amount.toString(),
+          'categoryId': categoryId,
+          'description': description,
+        };
+        if (emp != null && emp.isNotEmpty) fields['employeeId'] = emp;
+        final file = await http.MultipartFile.fromPath('proof', path);
+        final response = await _apiService.postMultipart(
+          ApiConstants.expenseSubmitEndpoint,
+          fields,
+          [file],
+          token,
+        );
+        return Map<String, dynamic>.from(response as Map<dynamic, dynamic>);
+      }
+
+      final data = <String, dynamic>{
+        'amount': amount,
+        'categoryId': categoryId,
+        'description': description,
+        if (extraJson != null) ...extraJson,
+      };
+      if (emp != null && emp.isNotEmpty) {
+        data['employeeId'] = emp;
+      } else {
+        data.remove('employeeId');
+      }
       final response = await _apiService.post(
         ApiConstants.expenseSubmitEndpoint,
         data,
@@ -261,12 +509,67 @@ class PosRepository {
           'Content-Type': 'application/json',
         },
       );
-      if (response['success'] is bool) {
-        return response['success'];
-      } else if (response['success'] is String) {
-        return response['success'].toString().toLowerCase() == 'true';
-      }
-      return false;
+      return Map<String, dynamic>.from(response as Map<dynamic, dynamic>);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<BranchEmployeesResponse> getExpenseBranchEmployees(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.expenseBranchEmployeesEndpoint,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      return BranchEmployeesResponse.fromDynamic(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<CashierExpenseHistoryResponse> getExpenseHistory(
+    String token, {
+    String? status,
+    String? from,
+    String? to,
+    String? categoryId,
+    int limit = 30,
+    int offset = 0,
+  }) async {
+    try {
+      final params = <String, String>{
+        'limit': '$limit',
+        'offset': '$offset',
+      };
+      if (status != null && status.isNotEmpty) params['status'] = status;
+      if (from != null && from.isNotEmpty) params['from'] = from;
+      if (to != null && to.isNotEmpty) params['to'] = to;
+      if (categoryId != null && categoryId.isNotEmpty) params['categoryId'] = categoryId;
+      final response = await _apiService.getWithQueryParams(
+        ApiConstants.expenseHistoryEndpoint,
+        params,
+        token,
+      );
+      return CashierExpenseHistoryResponse.fromDynamic(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> requestPettyCashFund(
+    Map<String, dynamic> data,
+    String token,
+  ) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.pettyCashRequestFundEndpoint,
+        data,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response;
     } catch (e) {
       rethrow;
     }
@@ -274,11 +577,10 @@ class PosRepository {
 
   Future<WalletBalanceResponse> getWalletBalance(String token) async {
     try {
-      final response = await _apiService.get(
+      final response = await _apiService.getWithQueryParams(
         ApiConstants.walletBalanceEndpoint,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        {'currency': 'SAR'},
+        token,
       );
       return WalletBalanceResponse.fromJson(response);
     } catch (e) {
@@ -392,4 +694,78 @@ class PosRepository {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> submitCounterClosing(String token, Map<String, dynamic> body) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.counterClosingEndpoint,
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<SalesReturnListResponse> getSalesReturns(String token, {int limit = 50, int offset = 0, String? invoiceId}) async {
+    try {
+      final queryParams = {
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+        if (invoiceId != null && invoiceId.isNotEmpty) 'invoiceId': invoiceId,
+      };
+      
+      final response = await _apiService.getWithQueryParams(
+        ApiConstants.salesReturnListEndpoint,
+        queryParams,
+        token,
+      );
+      return SalesReturnListResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<TakeawayCatalogData> getTakeawayProductsCatalog(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.cashierTakeawayProductsCatalogEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return TakeawayCatalogData.fromJson(
+        Map<String, dynamic>.from(response as Map),
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<TakeawayCheckoutResponse> postTakeawayCheckout(
+    TakeawayCheckoutRequest request,
+    String token,
+  ) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.cashierTakeawayCheckoutEndpoint,
+        request.toJson(),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return TakeawayCheckoutResponse.fromJson(
+        Map<String, dynamic>.from(response as Map),
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
+

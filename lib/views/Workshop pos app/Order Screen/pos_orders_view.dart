@@ -8,6 +8,7 @@ import '../../../utils/app_formatters.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../models/pos_order_model.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shell_rail_layout.dart';
 
 class PosOrdersView extends StatefulWidget {
   const PosOrdersView({super.key});
@@ -36,7 +37,9 @@ class _PosOrdersViewState extends State<PosOrdersView> {
         showGlobalLeft: true,
         showHamburger: false,
       ),
-      body: Consumer<PosViewModel>(
+      body: wrapPosShellRailBody(
+        context,
+        Consumer<PosViewModel>(
         builder: (context, vm, child) {
           if (vm.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -70,12 +73,15 @@ class _PosOrdersViewState extends State<PosOrdersView> {
             children: [
               // Fixed Header Section
               Padding(
-                padding: EdgeInsets.fromLTRB(isTablet ? 32 : 12, 12, isTablet ? 32 : 12, 0),
+                padding: EdgeInsets.fromLTRB(
+                    isTablet ? 20 : 12, 8, isTablet ? 20 : 12, 0),
                 child: Column(
                   children: [
+                    const SizedBox(height: 4),
                     _buildStatCards(vm.orderStats, isTablet),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     _buildSearchAndFilter(context, isTablet),
+                    const SizedBox(height: 6),
                     _buildTabs(context, isTablet, vm.orderStatusFilter),
                   ],
                 ),
@@ -94,13 +100,13 @@ class _PosOrdersViewState extends State<PosOrdersView> {
                     slivers: [
                       SliverPadding(
                         padding: EdgeInsets.symmetric(
-                            horizontal: isTablet ? 32 : 12, vertical: 20),
+                            horizontal: isTablet ? 20 : 12, vertical: 12),
                         sliver: SliverToBoxAdapter(
                           child: _buildOrdersList(context, vm.orders, isTablet),
                         ),
                       ),
                       // Extra bottom padding for cart bar clearance on grid
-                      const SliverToBoxAdapter(child: SizedBox(height: 120)),
+                      const SliverToBoxAdapter(child: SizedBox(height: 88)),
                     ],
                   ),
                 ),
@@ -108,6 +114,7 @@ class _PosOrdersViewState extends State<PosOrdersView> {
             ],
           );
         },
+      ),
       ),
     );
   }
@@ -149,7 +156,7 @@ class _PosOrdersViewState extends State<PosOrdersView> {
             icon: stat['icon'] as IconData,
             accentColor: stat['color'] as Color,
             width: double.infinity,
-            height: 110,
+            height: 92,
             backgroundColor: Colors.white,
             textColor: AppColors.secondaryLight,
           ),
@@ -191,6 +198,9 @@ class _PosOrdersViewState extends State<PosOrdersView> {
       'All',
       'Draft',
       'Waiting',
+      'Corp. pending approval',
+      'Corporate approved',
+      'Rejected by corporate',
       'Accepted by Tech',
       'In Progress',
       'Tech Completed',
@@ -199,12 +209,12 @@ class _PosOrdersViewState extends State<PosOrdersView> {
     ];
 
     return SizedBox(
-      height: isTablet ? 72 : 44,
+      height: isTablet ? 58 : 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
         itemCount: statuses.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final status = statuses[index];
           final isSelected = currentStatus == status;
@@ -212,8 +222,8 @@ class _PosOrdersViewState extends State<PosOrdersView> {
             child: GestureDetector(
               onTap: () => context.read<PosViewModel>().setOrderStatusFilter(status),
               child: Container(
-                height: isTablet ? 48 : 34,
-                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
+                height: isTablet ? 40 : 34,
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 16),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.primaryLight : Colors.white,
@@ -232,7 +242,7 @@ class _PosOrdersViewState extends State<PosOrdersView> {
                 child: Text(
                   status,
                   style: TextStyle(
-                    fontSize: isTablet ? 15 : 12,
+                    fontSize: isTablet ? 12 : 10,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected ? AppColors.secondaryLight : Colors.grey.shade600,
                   ),
@@ -246,6 +256,8 @@ class _PosOrdersViewState extends State<PosOrdersView> {
   }
 
   Widget _buildOrdersList(BuildContext context, List<PosOrder> orders, bool isTablet) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     if (orders.isEmpty) {
       return Center(child: Padding(
         padding: const EdgeInsets.all(64.0),
@@ -281,16 +293,17 @@ class _PosOrdersViewState extends State<PosOrdersView> {
       ));
     }
     
-    if (isTablet) {
+    if (isTablet || isLandscape) {
       return GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: orders.length,
+        // Tight height: grid cells are fixed-size; extra [mainAxisExtent] = empty space under buttons.
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisExtent: isTablet ? 255 : 220,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+          crossAxisCount: 3,
+          mainAxisExtent: isTablet ? 172 : 160,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 10,
         ),
         itemBuilder: (context, index) {
           return OrderItemCard(order: orders[index], isTablet: isTablet);
@@ -302,7 +315,7 @@ class _PosOrdersViewState extends State<PosOrdersView> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: orders.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         return OrderItemCard(order: orders[index], isTablet: isTablet);
       },

@@ -64,6 +64,32 @@ class BaseApiService {
     }
   }
 
+  /// Multipart POST (e.g. expense proof upload). Do not json-encode [fields].
+  Future<dynamic> postMultipart(
+    String endpoint,
+    Map<String, String> fields,
+    List<http.MultipartFile> files,
+    String token,
+  ) async {
+    try {
+      final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+      print('POST Multipart URL: $uri');
+      print('POST Multipart fields: $fields');
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields.addAll(fields);
+      request.files.addAll(files);
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      return _returnResponse(response);
+    } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException')) {
+        throw FetchDataException('No Internet connection');
+      }
+      rethrow;
+    }
+  }
+
   Future<dynamic> post(String endpoint, dynamic data, {Map<String, String>? headers}) async {
     try {
       final url = '${ApiConstants.baseUrl}$endpoint';

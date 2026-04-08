@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
-import '../../../models/workshop_owner_models.dart';
 import '../widgets/owner_app_bar.dart';
+import '../widgets/owner_petty_cash_approval_card.dart';
+import 'approvals_view_model.dart';
 
 class ApprovalsView extends StatefulWidget {
   const ApprovalsView({super.key});
@@ -12,42 +13,138 @@ class ApprovalsView extends StatefulWidget {
 }
 
 class _ApprovalsViewState extends State<ApprovalsView> {
-  final List<OwnerApproval> _approvals = [
-    OwnerApproval(id: '1', type: 'Expense', submittedBy: 'Ali Hassan', branchName: 'Riyadh Main', amount: 450, date: DateTime.now().subtract(const Duration(hours: 2)), description: 'Office supplies purchase'),
-    OwnerApproval(id: '2', type: 'PurchaseInvoice', submittedBy: 'Omar Saeed', branchName: 'Jeddah Center', amount: 8400, date: DateTime.now().subtract(const Duration(hours: 4)), description: 'Oil filters batch – Al-Rashid Parts'),
-    OwnerApproval(id: '3', type: 'Advance', submittedBy: 'Sami Khalid', branchName: 'Riyadh Main', amount: 1200, date: DateTime.now().subtract(const Duration(hours: 6)), description: 'Salary advance request'),
-    OwnerApproval(id: '4', type: 'Locker', submittedBy: 'Rami Yousef', branchName: 'Dammam Branch', amount: 50, date: DateTime.now().subtract(const Duration(hours: 1)), description: 'Locker difference – EOD closing'),
-    OwnerApproval(id: '5', type: 'PhysicalCount', submittedBy: 'Tariq Nasser', branchName: 'Jeddah Center', amount: 0, date: DateTime.now().subtract(const Duration(hours: 3)), description: 'Engine oil 5W-30 variance: -12 ltr'),
+  final List<String> _filters = ['all', 'pending', 'approved', 'rejected'];
+  final List<MapEntry<String, String>> _queueOptions = const [
+    MapEntry('all', 'All'),
+    MapEntry('fund', 'Top-ups'),
+    MapEntry('expense', 'Expenses'),
   ];
 
-  String _filter = 'All';
-  final List<String> _filters = ['All', 'Expense', 'PurchaseInvoice', 'Advance', 'Locker', 'PhysicalCount'];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final vm = context.read<ApprovalsViewModel>();
+        vm.bindRealtime();
+        vm.fetchRequests();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<ApprovalsViewModel>().unbindRealtime();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final pending = _approvals.where((a) => a.status == 'pending').toList();
-    final filtered = _filter == 'All' ? pending : pending.where((a) => a.type == _filter).toList();
+    final vm = context.watch<ApprovalsViewModel>();
+    final requests = vm.requests;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
       appBar: OwnerAppBar(
         title: 'Approvals',
-        showGlobalLeft: true,
-        showNotification: true,
+        showGlobalLeft: false,
+        showNotification: false,
         showBackButton: false,
-        showDrawer: false,
+        showDrawer: true,
       ),
       body: Column(
         children: [
-          _buildSummaryBanner(pending.length),
-          _buildFilterChips(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSegmentLabel('Queue'),
+                const SizedBox(height: 8),
+                _buildApprovalSegmentedRow(
+                  options: _queueOptions,
+                  selectedKey: vm.queueFilter,
+                  onSelect: vm.setQueueFilter,
+                ),
+                const SizedBox(height: 12),
+                _buildSegmentLabel('Status'),
+                const SizedBox(height: 8),
+                _buildApprovalSegmentedRow(
+                  options: [
+                    for (final f in _filters)
+                      MapEntry(f, f[0].toUpperCase() + f.substring(1)),
+                  ],
+                  selectedKey: vm.statusFilter,
+                  onSelect: vm.setStatusFilter,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (vm.error != null && vm.error!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                ),
+                child: Text(
+                  vm.error!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
           Expanded(
-            child: filtered.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) => _buildApprovalCard(filtered[index]),
+            child: vm.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Stack(
+                    children: [
+                      RefreshIndicator(
+                        onRefresh: () => vm.fetchRequests(),
+                        child: requests.isEmpty
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: const [
+                                  SizedBox(height: 600),
+                                ],
+                              )
+                            : ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  4,
+                                  20,
+                                  32,
+                                ),
+                                itemCount: requests.length,
+                                itemBuilder: (context, index) {
+                                  final req = requests[index];
+                                  return OwnerPettyCashApprovalCard(
+                                    request: req,
+                                    currency: vm.currency,
+                                    hasApprovalActionInFlight:
+                                        vm.hasApprovalActionInFlight,
+                                    isApprovingThis:
+                                        vm.isApprovingRequest(req.id),
+                                    isRejectingThis:
+                                        vm.isRejectingRequest(req.id),
+                                    onApprove: () => vm.approveRequest(req.id),
+                                    onReject: (reason) =>
+                                        vm.rejectRequest(req.id, reason),
+                                  );
+                                },
+                              ),
+                      ),
+                      if (requests.isEmpty) _buildEmptyState(vm),
+                    ],
                   ),
           ),
         ],
@@ -55,45 +152,78 @@ class _ApprovalsViewState extends State<ApprovalsView> {
     );
   }
 
-  Widget _buildSummaryBanner(int count) {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: count > 0 ? Colors.orange.withOpacity(0.08) : Colors.green.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: count > 0 ? Colors.orange.withOpacity(0.2) : Colors.green.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(count > 0 ? Icons.pending_actions_rounded : Icons.check_circle_rounded, color: count > 0 ? Colors.orange : Colors.green, size: 22),
-          const SizedBox(width: 12),
-          Text(count > 0 ? '$count items awaiting your approval' : 'All caught up! No pending approvals.', style: TextStyle(fontWeight: FontWeight.w700, color: count > 0 ? Colors.orange.shade800 : Colors.green.shade800)),
-        ],
+  Widget _buildSegmentLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        color: Color(0xFF9CA3AF),
+        letterSpacing: 0.35,
       ),
     );
   }
 
-  Widget _buildFilterChips() {
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        scrollDirection: Axis.horizontal,
-        children: _filters.map((f) {
-          final isSelected = _filter == f;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _filter = f),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.secondaryLight : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isSelected ? AppColors.secondaryLight : Colors.grey.withOpacity(0.2)),
+  /// Same pattern as [AccountingView] / owner admin tab pills: white bar + primary selected segment.
+  Widget _buildApprovalSegmentedRow({
+    required List<MapEntry<String, String>> options,
+    required String selectedKey,
+    required void Function(String key) onSelect,
+  }) {
+    final pillRadius = BorderRadius.circular(12);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade200.withValues(alpha: 0.85),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: options.map((e) {
+          final selected = selectedKey == e.key;
+          return Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onSelect(e.key),
+                borderRadius: pillRadius,
+                splashColor: AppColors.primaryLight.withValues(alpha: 0.2),
+                highlightColor: AppColors.primaryLight.withValues(alpha: 0.06),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: selected ? AppColors.primaryLight : Colors.transparent,
+                    borderRadius: pillRadius,
+                  ),
+                  child: Text(
+                    e.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: selected ? 12.5 : 11,
+                      fontWeight:
+                          selected ? FontWeight.w800 : FontWeight.w600,
+                      color: selected
+                          ? AppColors.secondaryLight
+                          : const Color(0xFF9CA3AF),
+                    ),
+                  ),
                 ),
-                child: Text(f.replaceAll('Invoice', ' Invoice'), style: TextStyle(color: isSelected ? Colors.white : Colors.grey.shade700, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, fontSize: 12)),
               ),
             ),
           );
@@ -102,113 +232,37 @@ class _ApprovalsViewState extends State<ApprovalsView> {
     );
   }
 
-  Widget _buildApprovalCard(OwnerApproval approval) {
-    final typeData = _getTypeData(approval.type);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16, top: 8),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.08)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 12, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: typeData['color'].withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(typeData['icon'], color: typeData['color'], size: 18),
+  Widget _buildEmptyState(ApprovalsViewModel vm) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 120),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              size: 72,
+              color: Colors.green.withOpacity(0.2),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              vm.queueFilter == 'expense'
+                  ? 'No expense approvals'
+                  : 'No petty cash requests',
+              style: const TextStyle(
+                color: Colors.grey,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(approval.type.replaceAll('Invoice', ' Invoice'), style: TextStyle(fontWeight: FontWeight.w900, color: typeData['color'], fontSize: 12, letterSpacing: 0.5)),
-                    Text(approval.submittedBy, style: AppTextStyles.h2.copyWith(fontSize: 15, color: AppColors.secondaryLight)),
-                  ],
-                ),
-              ),
-              if (approval.amount > 0)
-                Text('SAR ${approval.amount.toInt()}', style: AppTextStyles.h2.copyWith(fontSize: 15, color: AppColors.secondaryLight)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(approval.description, style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
-          Text('${approval.branchName} • ${_timeAgo(approval.date)}', style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => setState(() => approval.status = 'rejected'),
-                  icon: const Icon(Icons.close_rounded, size: 16),
-                  label: const Text('Reject'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => setState(() => approval.status = 'approved'),
-                  icon: const Icon(Icons.check_rounded, size: 16),
-                  label: const Text('Approve'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'No records for this queue and status.',
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.check_circle_outline_rounded, size: 72, color: Colors.green.withOpacity(0.2)),
-          const SizedBox(height: 16),
-          const Text('No pending approvals', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w700, fontSize: 16)),
-          const SizedBox(height: 8),
-          Text('All caught up for $_filter!', style: const TextStyle(color: Colors.grey, fontSize: 13)),
-        ],
-      ),
-    );
-  }
-
-  Map<String, dynamic> _getTypeData(String type) {
-    switch (type) {
-      case 'Expense': return {'color': Colors.orange, 'icon': Icons.receipt_rounded};
-      case 'PurchaseInvoice': return {'color': const Color(0xFF2D9CDB), 'icon': Icons.shopping_cart_rounded};
-      case 'Advance': return {'color': Colors.purple, 'icon': Icons.person_rounded};
-      case 'Locker': return {'color': Colors.red, 'icon': Icons.lock_rounded};
-      case 'PhysicalCount': return {'color': Colors.teal, 'icon': Icons.inventory_rounded};
-      default: return {'color': Colors.grey, 'icon': Icons.pending_rounded};
-    }
-  }
-
-  String _timeAgo(DateTime date) {
-    final diff = DateTime.now().difference(date);
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    return '${diff.inMinutes}m ago';
   }
 }

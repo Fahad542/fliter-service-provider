@@ -8,6 +8,7 @@ import '../../../services/session_service.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
+import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/custom_auth_header.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/custom_text_field.dart';
@@ -58,13 +59,24 @@ class _LoginViewState extends State<LoginView> {
 
     if (success) {
       if (mounted) {
+        final autoClosed = loginViewModel.previousSessionAutoClosed;
         ToastService.showSuccess(context, 'Login successful');
         await context.read<SessionService>().saveLastPortal('cashier');
-        context.read<PosViewModel>().setShellSelectedIndex(0); // Add this line
+        context.read<PosViewModel>().setShellSelectedIndex(0);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const PosShell()),
         );
+        if (autoClosed && mounted) {
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) {
+              ToastService.showInfo(
+                context,
+                'Previous shift was automatically closed. New shift started.',
+              );
+            }
+          });
+        }
       }
     } else {
       if (mounted) {
@@ -85,7 +97,7 @@ class _LoginViewState extends State<LoginView> {
         final isTablet = MediaQuery.of(context).size.width > 600;
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0),
+            textScaler: PosTabletLayout.textScaler(context),
           ),
           child: Padding(
             padding: EdgeInsets.only(
@@ -159,7 +171,7 @@ class _LoginViewState extends State<LoginView> {
     
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0),
+        textScaler: PosTabletLayout.textScaler(context),
       ),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,

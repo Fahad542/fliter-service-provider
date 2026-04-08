@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/app_text_styles.dart';
 import 'package:provider/provider.dart';
 import '../Home Screen/pos_view_model.dart';
@@ -20,7 +21,7 @@ class PosMoreView extends StatelessWidget {
         .width > 600;
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(isTablet ? 1.2 : 1.0),
+        textScaler: PosTabletLayout.textScaler(context),
       ),
       child: Material(
         color: Colors.transparent,

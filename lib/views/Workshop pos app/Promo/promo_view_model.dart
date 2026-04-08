@@ -92,14 +92,20 @@ class PromoViewModel extends ChangeNotifier {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Token not found');
 
+      // If the cart is empty pass a large sentinel so the backend only checks
+      // code validity / expiry and not the minimum-order threshold.
+      final cartAmount = posVm.getSubtotalExclVat(isMainTab);
+      final orderAmount = cartAmount > 0 ? cartAmount : 999999.0;
+
       final response = await posRepository.applyPromoCode(
         cleanCode,
-        posVm.getSubtotalExclVat(isMainTab), // Correct context-aware subtotal
+        orderAmount,
         token,
       );
 
       if (response.success && response.valid && response.promoCode != null) {
         _validResult = {
+          'id': response.promoCode!.id,
           'discount': response.promoCode!.discount,
           'isPercent': response.promoCode!.isPercent,
           'message': response.promoCode!.isPercent
@@ -141,6 +147,15 @@ class PromoViewModel extends ChangeNotifier {
     if (changed) {
       notifyListeners();
     }
+  }
+
+  /// Clears validated promo UI, input text, and any promo applied on the cart.
+  void removeAppliedPromo(PosViewModel posVm, {bool isMainTab = false}) {
+    _validResult = null;
+    _promoErrorMessage = null;
+    promoController.clear();
+    posVm.clearPromoCode(isMainTab: isMainTab);
+    notifyListeners();
   }
 
   Future<void> checkMockValidity(String? explicitCode, PosViewModel posVm, BuildContext context) async {
@@ -210,6 +225,7 @@ class PromoViewModel extends ChangeNotifier {
       promoController.text.trim().toUpperCase(),
       _validResult!['discount'],
       _validResult!['isPercent'],
+      promoCodeId: _validResult!['id']?.toString(),
     );
   }
 

@@ -239,7 +239,9 @@ class AssignedOrdersView extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  order.customerName,
+                  order.plateNumber.trim().isNotEmpty
+                      ? order.plateNumber.toUpperCase()
+                      : '—',
                   style: const TextStyle(
                     color: AppColors.secondaryLight,
                     fontSize: 19,
@@ -253,38 +255,53 @@ class AssignedOrdersView extends StatelessWidget {
                     const Padding(
                       padding: EdgeInsets.only(top: 2),
                       child: Icon(
-                        Icons.directions_car_rounded,
+                        Icons.person_outline_rounded,
                         color: Colors.black38,
                         size: 16,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '${order.vehicleModel} • ',
-                              style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            TextSpan(
-                              text: order.plateNumber,
-                              style: TextStyle(
-                                color: Colors.orange.shade300,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                      child: Text(
+                        order.customerName.trim().isNotEmpty
+                            ? order.customerName
+                            : '—',
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ],
                 ),
+                if (order.vehicleModel.trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Icon(
+                          Icons.directions_car_rounded,
+                          color: Colors.black38,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          order.vehicleModel,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

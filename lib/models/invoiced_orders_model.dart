@@ -26,6 +26,7 @@ class InvoicedOrder {
   final String? promoCodeName;
   final double totalAmount;
   final String createdAt;
+  final String customerName;
   final List<InvoicedOrderItem> items;
 
   InvoicedOrder({
@@ -39,10 +40,17 @@ class InvoicedOrder {
     this.promoCodeName,
     required this.totalAmount,
     required this.createdAt,
+    this.customerName = '',
     required this.items,
   });
 
   factory InvoicedOrder.fromJson(Map<String, dynamic> json) {
+    // Customer name may come as a top-level field or nested under 'customer'
+    final customerMap = json['customer'] as Map<String, dynamic>?;
+    final parsedName = json['customerName']?.toString() ??
+        customerMap?['name']?.toString() ??
+        '';
+
     return InvoicedOrder(
       id: json['id']?.toString() ?? json['order_id']?.toString() ?? '',
       invoiceId: json['invoice_id']?.toString() ?? json['invoiceId']?.toString() ?? '',
@@ -55,6 +63,7 @@ class InvoicedOrder {
       promoCodeName: json['promoCodeName']?.toString(),
       totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0,
       createdAt: json['createdAt']?.toString() ?? '',
+      customerName: parsedName,
       items: (json['items'] as List<dynamic>?)
               ?.map((e) =>
                   InvoicedOrderItem.fromJson(e as Map<String, dynamic>))

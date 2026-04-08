@@ -15,6 +15,8 @@ class PosProduct {
   final double vatRate;
   final int criticalStockPoint;
   final bool allowDecimalQty;
+  /// When true (services), cashier may override unit price on orders.
+  final bool isPriceEditable;
 
   PosProduct({
     required this.id,
@@ -31,6 +33,7 @@ class PosProduct {
     this.vatRate = 0.15,
     this.criticalStockPoint = 0,
     this.allowDecimalQty = false,
+    this.isPriceEditable = false,
   });
 
   factory PosProduct.fromJson(Map<String, dynamic> json) {
@@ -48,6 +51,8 @@ class PosProduct {
       imageUrl: json['imageUrl'],
       criticalStockPoint: int.tryParse(json['criticalStockPoint']?.toString() ?? '0') ?? 0,
       allowDecimalQty: json['allowDecimalQty'] == true || json['allowDecimalQty'] == 'true',
+      isPriceEditable: json['isPriceEditable'] == true ||
+          json['is_price_editable'] == true,
     );
     product.isServiceType = json['type'] == 'service';
     return product;
@@ -235,20 +240,33 @@ class CartItem {
   double quantity;
   double discount;
   bool isDiscountPercent;
+  /// When [product.isPriceEditable] (service), per-unit override; null = catalog [product.price].
+  double? serviceUnitPrice;
 
   CartItem({
     required this.product,
     this.quantity = 1.0,
     this.discount = 0.0,
     this.isDiscountPercent = false,
+    this.serviceUnitPrice,
   });
+
+  double get effectiveUnitPrice {
+    if (product.isService && product.isPriceEditable) {
+      final u = serviceUnitPrice;
+      if (u != null && u > 0) return u;
+    }
+    return product.price;
+  }
+
+  double get lineSubtotalGross => effectiveUnitPrice * quantity;
 
   double get actualDiscountAmount {
     if (isDiscountPercent) {
-      return (product.price * quantity) * (discount / 100);
+      return lineSubtotalGross * (discount / 100);
     }
     return discount;
   }
 
-  double get totalPrice => (product.price * quantity) - actualDiscountAmount;
+  double get totalPrice => lineSubtotalGross - actualDiscountAmount;
 }

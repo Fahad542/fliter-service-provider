@@ -6,8 +6,25 @@ import '../Notifications/notifications_view.dart';
 import 'package:intl/intl.dart';
 import '../../../models/technician_commission_history_model.dart';
 
-class CommissionHistoryView extends StatelessWidget {
+class CommissionHistoryView extends StatefulWidget {
   const CommissionHistoryView({super.key});
+
+  @override
+  State<CommissionHistoryView> createState() => _CommissionHistoryViewState();
+}
+
+class _CommissionHistoryViewState extends State<CommissionHistoryView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vm = context.read<TechAppViewModel>();
+      vm.fetchCommissionHistory(
+        month: vm.selectedCommissionMonth.month,
+        year: vm.selectedCommissionMonth.year,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,15 +161,15 @@ class CommissionHistoryView extends StatelessWidget {
   }
 
   Widget _buildCommissionItem(CommissionEntry entry) {
-    final isPaid = entry.status.toLowerCase() == 'paid';
-    
-    // Parse the date
+    final isPaid = entry.isPaid;
+    final statusColor = isPaid ? Colors.green : Colors.orange;
+
     String formattedDate = '';
     try {
-      final dt = DateTime.parse(entry.date);
+      final dt = DateTime.parse(entry.displayDate).toLocal();
       formattedDate = DateFormat('MMM d, yyyy').format(dt);
     } catch (_) {
-      formattedDate = entry.date;
+      formattedDate = entry.displayDate;
     }
 
     return Container(
@@ -167,7 +184,11 @@ class CommissionHistoryView extends StatelessWidget {
               blurRadius: 10,
               offset: const Offset(0, 4)),
         ],
-        border: Border.all(color: Colors.black.withOpacity(0.04)),
+        border: Border.all(
+          color: isPaid
+              ? Colors.green.withOpacity(0.15)
+              : Colors.black.withOpacity(0.04),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -177,15 +198,14 @@ class CommissionHistoryView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color:
-                      (isPaid ? Colors.green : Colors.orange).withOpacity(0.1),
+                  color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   isPaid
                       ? Icons.check_circle_rounded
                       : Icons.pending_actions_rounded,
-                  color: isPaid ? Colors.green : Colors.orange,
+                  color: statusColor,
                   size: 20,
                 ),
               ),
@@ -193,16 +213,28 @@ class CommissionHistoryView extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(entry.orderId,
-                      style: const TextStyle(
-                          color: AppColors.secondaryLight,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14)),
-                  Text(entry.status.toUpperCase(),
+                  Text(
+                    entry.orderId,
+                    style: const TextStyle(
+                        color: AppColors.secondaryLight,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14),
+                  ),
+                  if (isPaid && entry.invoiceId != null)
+                    Text(
+                      'INV-${entry.invoiceId}',
                       style: TextStyle(
-                          color: isPaid ? Colors.green : Colors.orange,
+                          color: Colors.grey.shade500,
                           fontSize: 10,
-                          fontWeight: FontWeight.w900)),
+                          fontWeight: FontWeight.w600),
+                    ),
+                  Text(
+                    entry.status.toUpperCase(),
+                    style: TextStyle(
+                        color: statusColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900),
+                  ),
                 ],
               ),
             ],
@@ -210,16 +242,28 @@ class CommissionHistoryView extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('SAR ${entry.commission.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                      color: AppColors.secondaryLight,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16)),
-              Text(formattedDate,
-                  style: const TextStyle(
-                      color: Colors.black26,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600)),
+              Text(
+                'SAR ${entry.commission.toStringAsFixed(2)}',
+                style: const TextStyle(
+                    color: AppColors.secondaryLight,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16),
+              ),
+              Text(
+                formattedDate,
+                style: const TextStyle(
+                    color: Colors.black26,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600),
+              ),
+              if (isPaid)
+                Text(
+                  'Credited to wallet',
+                  style: TextStyle(
+                      color: Colors.green.shade400,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700),
+                ),
             ],
           ),
         ],

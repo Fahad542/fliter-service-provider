@@ -6,6 +6,7 @@ import '../../../models/create_invoice_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
+import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart' as pvm;
 import 'package:provider/provider.dart';
@@ -76,6 +77,341 @@ extension PaymentMethodLabel on PaymentMethod {
       case PaymentMethod.tamara:
         return Icons.shopping_bag_rounded;
     }
+  }
+}
+
+// ── Walk-in invoice dialog (StatefulWidget: controllers disposed with route) ─
+
+InputDecoration _walkInInvoiceFieldDecoration(String label, {bool optional = false}) {
+  final borderRadius = BorderRadius.circular(12);
+  return InputDecoration(
+    labelText: optional ? '$label (optional)' : label,
+    filled: true,
+    fillColor: Colors.grey.shade50,
+    isDense: true,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    border: OutlineInputBorder(borderRadius: borderRadius),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: borderRadius,
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: borderRadius,
+      borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
+    ),
+  );
+}
+
+Widget _walkInInvoiceSectionHeader(String title, IconData icon) {
+  return Row(
+    children: [
+      Icon(icon, size: 20, color: AppColors.secondaryLight),
+      const SizedBox(width: 8),
+      Text(
+        title,
+        style: AppTextStyles.bodyLarge.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppColors.secondaryLight,
+        ),
+      ),
+    ],
+  );
+}
+
+class _WalkInInvoiceFormResult {
+  final String name;
+  final String mobile;
+  final String vat;
+  final String vehicleNumber;
+  final String vin;
+  final String make;
+  final String model;
+  final String year;
+  final String color;
+  final int odometer;
+
+  const _WalkInInvoiceFormResult({
+    required this.name,
+    required this.mobile,
+    required this.vat,
+    required this.vehicleNumber,
+    required this.vin,
+    required this.make,
+    required this.model,
+    required this.year,
+    required this.color,
+    required this.odometer,
+  });
+}
+
+class _WalkInInvoiceDetailsDialog extends StatefulWidget {
+  final PosOrder order;
+  final pvm.PosViewModel posVm;
+
+  const _WalkInInvoiceDetailsDialog({
+    required this.order,
+    required this.posVm,
+  });
+
+  @override
+  State<_WalkInInvoiceDetailsDialog> createState() => _WalkInInvoiceDetailsDialogState();
+}
+
+class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _mobileCtrl;
+  late final TextEditingController _vatCtrl;
+  late final TextEditingController _plateCtrl;
+  late final TextEditingController _makeCtrl;
+  late final TextEditingController _modelCtrl;
+  late final TextEditingController _yearCtrl;
+  late final TextEditingController _vinCtrl;
+  late final TextEditingController _odoCtrl;
+  final _formKey = GlobalKey<FormState>();
+
+  static String _pick(String vm, String fallback) {
+    final a = vm.trim();
+    return a.isNotEmpty ? a : fallback.trim();
+  }
+
+  static int _parseOdometer(String s) {
+    final t = s.trim().replaceAll(RegExp(r'[\s,]'), '');
+    if (t.isEmpty) return 0;
+    return int.tryParse(t) ?? 0;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final o = widget.order;
+    final c = o.customer;
+    final v = o.vehicle;
+    final posVm = widget.posVm;
+    _nameCtrl = TextEditingController(text: _pick(posVm.customerName, c?.name ?? ''));
+    _mobileCtrl = TextEditingController(text: _pick(posVm.mobile, c?.mobile ?? ''));
+    _vatCtrl = TextEditingController(text: _pick(posVm.vatNumber, c?.vatNumber ?? ''));
+    _plateCtrl = TextEditingController(text: _pick(posVm.vehicleNumber, v?.plateNo ?? ''));
+    _makeCtrl = TextEditingController(text: _pick(posVm.make, v?.make ?? ''));
+    _modelCtrl = TextEditingController(text: _pick(posVm.model, v?.model ?? ''));
+    _yearCtrl = TextEditingController(text: _pick(posVm.vehicleYear, v?.year ?? ''));
+    _vinCtrl = TextEditingController(text: _pick(posVm.vinNumber, v?.vin ?? ''));
+    _odoCtrl = TextEditingController(
+      text: posVm.odometerReading != 0
+          ? '${posVm.odometerReading}'
+          : (o.odometerReading != 0 ? '${o.odometerReading}' : ''),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _mobileCtrl.dispose();
+    _vatCtrl.dispose();
+    _plateCtrl.dispose();
+    _makeCtrl.dispose();
+    _modelCtrl.dispose();
+    _yearCtrl.dispose();
+    _vinCtrl.dispose();
+    _odoCtrl.dispose();
+    super.dispose();
+  }
+
+  void _close([_WalkInInvoiceFormResult? result]) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pop(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.sizeOf(context);
+    final maxW = min(440.0, mq.width - 40);
+    final maxH = min(560.0, mq.height * 0.88);
+    final v = widget.order.vehicle;
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      backgroundColor: AppColors.surfaceLight,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxW, maxHeight: maxH),
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Invoice details',
+                    style: AppTextStyles.h3.copyWith(color: AppColors.secondaryLight),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Confirm billing contact and vehicle before creating the invoice.',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.grey.shade700,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _walkInInvoiceSectionHeader('Billing', Icons.person_outline_rounded),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _nameCtrl,
+                        decoration: _walkInInvoiceFieldDecoration('Customer name'),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (s) =>
+                            (s == null || s.trim().isEmpty) ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _mobileCtrl,
+                        decoration: _walkInInvoiceFieldDecoration('Mobile'),
+                        keyboardType: TextInputType.phone,
+                        validator: (s) =>
+                            (s == null || s.trim().isEmpty) ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _vatCtrl,
+                        decoration: _walkInInvoiceFieldDecoration('VAT', optional: true),
+                      ),
+                      const SizedBox(height: 22),
+                      _walkInInvoiceSectionHeader('Vehicle', Icons.directions_car_outlined),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _plateCtrl,
+                        decoration: _walkInInvoiceFieldDecoration('Plate number'),
+                        textCapitalization: TextCapitalization.characters,
+                        validator: (s) =>
+                            (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _makeCtrl,
+                              decoration: _walkInInvoiceFieldDecoration('Make', optional: true),
+                              textCapitalization: TextCapitalization.words,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _modelCtrl,
+                              decoration: _walkInInvoiceFieldDecoration('Model', optional: true),
+                              textCapitalization: TextCapitalization.words,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _yearCtrl,
+                              decoration: _walkInInvoiceFieldDecoration('Year', optional: true),
+                              keyboardType: TextInputType.number,
+                              validator: (s) {
+                                if (s == null || s.trim().isEmpty) return null;
+                                final yi = int.tryParse(s.trim());
+                                if (yi == null || yi < 1900 || yi > 2100) {
+                                  return 'Invalid year';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _vinCtrl,
+                              decoration: _walkInInvoiceFieldDecoration('VIN', optional: true),
+                              textCapitalization: TextCapitalization.characters,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _odoCtrl,
+                        decoration: _walkInInvoiceFieldDecoration('Odometer', optional: true),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => _close(null),
+                    child: Text(
+                      'Cancel',
+                      style: AppTextStyles.button.copyWith(
+                        color: AppColors.secondaryLight.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primaryLight,
+                      foregroundColor: AppColors.onPrimaryLight,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      if (_formKey.currentState?.validate() != true) return;
+                      _close(
+                        _WalkInInvoiceFormResult(
+                          name: _nameCtrl.text,
+                          mobile: _mobileCtrl.text,
+                          vat: _vatCtrl.text,
+                          vehicleNumber: _plateCtrl.text,
+                          vin: _vinCtrl.text,
+                          make: _makeCtrl.text,
+                          model: _modelCtrl.text,
+                          year: _yearCtrl.text,
+                          color: _pick(widget.posVm.vehicleColor, v?.color ?? ''),
+                          odometer: _parseOdometer(_odoCtrl.text),
+                        ),
+                      );
+                    },
+                    child: Text('Continue', style: AppTextStyles.button),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -181,11 +517,28 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   }
 
   // Subtotal AFTER item-level discounts (This is the "Gross Subtotal" for job/promo discounts)
-  double get _grossSubtotal =>
-      _currentInvoice?.subtotal ?? _items.fold(0.0, (s, i) => s + i.lineTotal);
+  double get _grossSubtotal {
+    if (_currentInvoice != null) return _currentInvoice!.subtotal;
+    if (widget.order.subtotal > 0) return widget.order.subtotal;
+    return _items.fold(0.0, (s, i) => s + i.lineTotal);
+  }
 
   // Total amount of ALL discounts (including Items, Job, and Promo)
   double get _totalDiscountAmount {
+    if (_currentInvoice != null) {
+      return _currentInvoice!.discountAmount;
+    }
+
+    // Prefer backend aggregate values when order totals are available.
+    if (widget.order.totalAmount > 0 && _grossSubtotal > 0) {
+      final impliedVat = _vatAmount;
+      final backendNet = (widget.order.totalAmount - impliedVat).clamp(
+        0.0,
+        double.infinity,
+      );
+      return max(0, _grossSubtotal - backendNet);
+    }
+
     // 1. Initial subtotal for job-level discounts (Items are already accounted for in _items.lineTotal)
     double currentSubtotal = _grossSubtotal;
 
@@ -228,6 +581,13 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
   // The final base for VAT (Price after all discounts)
   double get _netSubtotal {
+    if (_currentInvoice != null) {
+      return max(0, _currentInvoice!.totalAmount - _currentInvoice!.vatAmount);
+    }
+    if (widget.order.totalAmount > 0) {
+      return max(0, widget.order.totalAmount - _vatAmount);
+    }
+
     double currentSubtotal = _grossSubtotal;
 
     // 1. Calculate Job Discount
@@ -264,11 +624,20 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
   // Total amount of VAT (15% on the net subtotal)
   double get _vatAmount {
+    if (_currentInvoice != null) return _currentInvoice!.vatAmount;
+
+    final jobsVat = widget.order.jobs.fold<double>(0.0, (sum, job) {
+      return sum + (job.vatAmount > 0 ? job.vatAmount : 0);
+    });
+    if (jobsVat > 0) return jobsVat;
+
     return _netSubtotal * 0.15;
   }
 
   // Final Total to be paid (Net + VAT)
   double get _totalAmount {
+    if (_currentInvoice != null) return _currentInvoice!.totalAmount;
+    if (widget.order.totalAmount > 0) return widget.order.totalAmount;
     return _netSubtotal + _vatAmount;
   }
 
@@ -277,25 +646,95 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   String? get _promoCode =>
       _currentInvoice?.promoCodeName ?? widget.order.promoCodeName;
 
-  // Commission per technician: Derived from the final TOTAL amount to ensure consistency
-  Map<String, double> get _commissions {
-    // Collect unique technician names involved in the order
-    final uniqueTechs = _items.map((i) => i.technicianName).toSet().toList();
-    if (uniqueTechs.isEmpty) return {};
-
-    final map = <String, double>{};
-
-    // Total commission is 10% of the final post-tax total
-    final totalOrderCommission = _totalAmount * 0.10;
-
-    // Split the total commission evenly among all technicians
-    final commissionPerTech = totalOrderCommission / uniqueTechs.length;
-
-    for (final tech in uniqueTechs) {
-      map[tech] = commissionPerTech;
+  // Build commission display entries from real invoice data
+  List<_CommissionDisplayEntry> get _commissions {
+    if (_currentInvoice != null && _currentInvoice!.departments.isNotEmpty) {
+      final entries = <_CommissionDisplayEntry>[];
+      for (final dept in _currentInvoice!.departments) {
+        for (final c in dept.commissions) {
+          if (c.technicianName.isNotEmpty) {
+            entries.add(_CommissionDisplayEntry(
+              technicianName: c.technicianName,
+              departmentName: dept.departmentName,
+              commissionAmount: c.commissionAmount,
+              commissionPercent: c.commissionPercent,
+            ));
+          }
+        }
+      }
+      if (entries.isNotEmpty) return entries;
     }
 
-    return map;
+    // Fallback 1: use technician data already present in the order's jobs
+    final jobEntries = <_CommissionDisplayEntry>[];
+    for (final job in widget.order.jobs) {
+      for (final tech in job.technicians) {
+        if (tech.name.isEmpty) continue;
+        double amount = tech.commissionAmount;
+        double percent = tech.commissionPercent;
+        // If backend didn't return a monetary amount, compute from percent or default 10%
+        if (amount <= 0) {
+          final rate = percent > 0 ? percent / 100.0 : 0.10;
+          amount = job.totalAmount * rate;
+          if (percent <= 0) percent = 10.0;
+        }
+        jobEntries.add(_CommissionDisplayEntry(
+          technicianName: tech.name,
+          departmentName: job.department,
+          commissionAmount: amount,
+          commissionPercent: percent,
+        ));
+      }
+    }
+    if (jobEntries.isNotEmpty) return jobEntries;
+
+    // Fallback 2: pure 10% estimate — no technician data at all
+    if (_totalAmount <= 0) return [];
+    return [
+      _CommissionDisplayEntry(
+        technicianName: 'Technician',
+        departmentName: widget.order.jobs.isNotEmpty ? widget.order.jobs.first.department : '',
+        commissionAmount: _totalAmount * 0.10,
+        commissionPercent: 10.0,
+      )
+    ];
+  }
+
+  bool _isStandardWalkInOrder(PosOrder o) {
+    if ((o.corporateAccountId ?? '').trim().isNotEmpty) return false;
+    final s = o.source.toLowerCase().replaceAll('-', '_');
+    return s == 'walk_in';
+  }
+
+  /// Standard walk-in: confirm billing + vehicle (merged into billing PATCH before invoice).
+  Future<bool> _ensureWalkInBillingContact(pvm.PosViewModel posVm) async {
+    if (!_isStandardWalkInOrder(widget.order)) return true;
+
+    final result = await showDialog<_WalkInInvoiceFormResult?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _WalkInInvoiceDetailsDialog(
+        order: widget.order,
+        posVm: posVm,
+      ),
+    );
+
+    if (result != null) {
+      posVm.updateWalkInBillingContact(
+        name: result.name,
+        mobile: result.mobile,
+        vat: result.vat,
+        vehicleNumber: result.vehicleNumber,
+        vin: result.vin,
+        make: result.make,
+        model: result.model,
+        odometer: result.odometer,
+        year: result.year,
+        color: result.color,
+      );
+    }
+
+    return result != null;
   }
 
   void _generateInvoice() async {
@@ -314,13 +753,16 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       return;
     }
 
+    final posVm = Provider.of<pvm.PosViewModel>(context, listen: false);
+    final billingOk = await _ensureWalkInBillingContact(posVm);
+    if (!billingOk) return;
+
     setState(() => _isLoading = true);
 
     try {
-      final posVm = Provider.of<pvm.PosViewModel>(context, listen: false);
-
       final response = await posVm.generateInvoice(
         widget.order.id,
+        orderForBilling: widget.order,
         isCorporate: _isCorporate,
         paymentMethod: _isCorporate == true
             ? 'Corporate'
@@ -360,14 +802,22 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         ),
       );
     }
+    final sortedJobs = List<PosOrderJob>.from(widget.order.jobs)
+      ..sort((a, b) {
+        final aId = int.tryParse(a.id) ?? -1;
+        final bId = int.tryParse(b.id) ?? -1;
+        final byNumericId = bId.compareTo(aId);
+        if (byNumericId != 0) return byNumericId;
+        return b.id.compareTo(a.id);
+      });
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: widget.order.jobs.length,
+      itemCount: sortedJobs.length,
       separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        final job = widget.order.jobs[index];
+        final job = sortedJobs[index];
         final hasItems = job.items.isNotEmpty;
 
         return Container(
@@ -416,14 +866,28 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        job.department,
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.secondaryLight,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            job.department,
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondaryLight,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Job ID: ${job.id}',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w800,
+                              fontSize: isTablet ? 14 : 13,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     _buildStatusBadge(job.status),
@@ -768,7 +1232,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         status.toUpperCase(),
         style: TextStyle(
           color: textColor,
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.5,
         ),
@@ -787,16 +1251,21 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         backgroundColor: const Color(0xFFF5F6FA),
         appBar: PosScreenAppBar(
           title: _isGenerated ? 'Invoice Ready' : 'Final Review',
-          showBackButton: !_isGenerated,
+          showBackButton: false,
+          showHamburger: false,
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: isTablet ? 32 : 16,
-            vertical: 20,
+        body: MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: PosTabletLayout.textScaler(context),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 32 : 16,
+              vertical: isTablet ? 20 : 14,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               // ── Header Card ──────────────────────────────────────────────────
               _OrderHeaderCard(order: widget.order, isTablet: isTablet),
               const SizedBox(height: 16),
@@ -856,7 +1325,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                             Text(
                               'Total Amount',
                               style: TextStyle(
-                                fontSize: isTablet ? 17 : 15,
+                                fontSize: isTablet ? 18 : 16,
                                 fontWeight: FontWeight.w900,
                                 color: const Color(0xFF1E2124),
                                 letterSpacing: 0.5,
@@ -865,7 +1334,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                             Text(
                               'SAR ${currencyFormat.format(_totalAmount)}',
                               style: TextStyle(
-                                fontSize: isTablet ? 20 : 18,
+                                fontSize: isTablet ? 21 : 19,
                                 fontWeight: FontWeight.w900,
                                 color: AppColors.secondaryLight,
                               ),
@@ -919,7 +1388,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 ),
                 const SizedBox(height: 24),
               ],
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -967,7 +1437,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
           Text(
             label,
             style: TextStyle(
-              fontSize: isBold ? 15 : 13,
+              fontSize: isBold ? 16 : 14,
               fontWeight: isBold ? FontWeight.w900 : FontWeight.w500,
               color: isBold ? const Color(0xFF1E2124) : Colors.grey.shade600,
             ),
@@ -975,7 +1445,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
           Text(
             value,
             style: TextStyle(
-              fontSize: isBold ? 16 : 14,
+              fontSize: isBold ? 17 : 15,
               fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
               color: isNegative
                   ? Colors.red.shade700
@@ -1012,19 +1482,28 @@ class _OrderHeaderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  order.customerName,
+                  order.plateNumber.isNotEmpty
+                      ? order.plateNumber.toUpperCase()
+                      : '—',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: isTablet ? 20 : 17,
+                    fontSize: isTablet ? 21 : 18,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${order.carModel}  •  ${order.plateNumber.toUpperCase()}',
+                  () {
+                    final m = order.carModel.trim();
+                    final c = order.customerName;
+                    if (c != 'Unknown' && c.isNotEmpty) {
+                      return m.isEmpty ? c : '$c  •  $m';
+                    }
+                    return m.isEmpty ? 'Walk-in' : m;
+                  }(),
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.75),
-                    fontSize: isTablet ? 13 : 12,
+                    fontSize: isTablet ? 14 : 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1041,7 +1520,7 @@ class _OrderHeaderCard extends StatelessWidget {
               'Order #${order.id}',
               style: const TextStyle(
                 color: Colors.black,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1096,7 +1575,7 @@ class _SectionCard extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AppColors.secondaryLight,
                   ),
@@ -1146,7 +1625,7 @@ class _ItemRow extends StatelessWidget {
                   item.name,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: isTablet ? 14 : 13,
+                    fontSize: isTablet ? 15 : 14,
                     color: const Color(0xFF1E2124),
                   ),
                 ),
@@ -1154,7 +1633,7 @@ class _ItemRow extends StatelessWidget {
                 Text(
                   'Tech: ${item.technicianName}',
                   style: TextStyle(
-                    fontSize: isTablet ? 12 : 11,
+                    fontSize: isTablet ? 13 : 12,
                     color: Colors.grey.shade500,
                   ),
                 ),
@@ -1168,14 +1647,14 @@ class _ItemRow extends StatelessWidget {
                 'SAR ${currencyFormat.format(item.lineTotal)}',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  fontSize: isTablet ? 14 : 13,
+                  fontSize: isTablet ? 15 : 14,
                   color: AppColors.secondaryLight,
                 ),
               ),
               if (item.qty > 1)
                 Text(
                   'x${item.qty}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
                 ),
             ],
           ),
@@ -1368,7 +1847,7 @@ class _VatBreakdownWidget extends StatelessWidget {
               Text(
                 'Total amount',
                 style: TextStyle(
-                  fontSize: isTablet ? 16 : 14,
+                  fontSize: isTablet ? 17 : 15,
                   fontWeight: FontWeight.w900,
                   color: const Color(0xFF1E2124),
                 ),
@@ -1376,7 +1855,7 @@ class _VatBreakdownWidget extends StatelessWidget {
               Text(
                 'SAR ${currencyFormat.format(computedTotalAmount)}',
                 style: TextStyle(
-                  fontSize: isTablet ? 18 : 16,
+                  fontSize: isTablet ? 19 : 17,
                   fontWeight: FontWeight.w900,
                   color: const Color(0xFF1E2124),
                 ),
@@ -1409,7 +1888,7 @@ class _PriceRow extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 14,
             color: labelColor ?? Colors.grey,
             fontWeight: FontWeight.w500,
           ),
@@ -1417,7 +1896,7 @@ class _PriceRow extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
             color: valueColor ?? const Color(0xFF1E2124),
           ),
@@ -1427,8 +1906,22 @@ class _PriceRow extends StatelessWidget {
   }
 }
 
+class _CommissionDisplayEntry {
+  final String technicianName;
+  final String departmentName;
+  final double commissionAmount;
+  final double commissionPercent;
+
+  const _CommissionDisplayEntry({
+    required this.technicianName,
+    required this.departmentName,
+    required this.commissionAmount,
+    required this.commissionPercent,
+  });
+}
+
 class _CommissionsWidget extends StatelessWidget {
-  final Map<String, double> commissions;
+  final List<_CommissionDisplayEntry> commissions;
   final NumberFormat currencyFormat;
   final bool isTablet;
   const _CommissionsWidget({
@@ -1446,57 +1939,71 @@ class _CommissionsWidget extends StatelessWidget {
       );
     }
     return Column(
-      children: commissions.entries
-          .map(
-            (e) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: AppColors.primaryLight.withOpacity(0.2),
-                    child: Text(
-                      e.key.substring(0, 1),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.secondaryLight,
-                        fontSize: 13,
-                      ),
-                    ),
+      children: commissions.map((e) {
+        final initial = e.technicianName.isNotEmpty
+            ? e.technicianName[0].toUpperCase()
+            : '?';
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primaryLight.withOpacity(0.2),
+                child: Text(
+                  initial,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.secondaryLight,
+                    fontSize: 13,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      e.key,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      e.technicianName,
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: isTablet ? 14 : 13,
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'SAR ${currencyFormat.format(e.value)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF2E7D32),
+                    if (e.departmentName.isNotEmpty)
+                      Text(
+                        e.departmentName,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: isTablet ? 12 : 11,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          )
-          .toList(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'SAR ${currencyFormat.format(e.commissionAmount)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -1748,7 +2255,7 @@ class _GeneratedSuccessCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isTablet ? 24 : 16),
       decoration: BoxDecoration(
         color: AppColors.secondaryLight,
         borderRadius: BorderRadius.circular(20),
@@ -1756,38 +2263,38 @@ class _GeneratedSuccessCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: isTablet ? 56 : 44,
+            height: isTablet ? 56 : 44,
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_rounded,
               color: Colors.black,
-              size: 30,
+              size: isTablet ? 30 : 22,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: isTablet ? 16 : 10),
+          Text(
             'Invoice Generated & Locked',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: isTablet ? 18 : 14,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: isTablet ? 6 : 4),
           Text(
             invoiceNo,
             style: TextStyle(
               color: AppColors.primaryLight,
-              fontSize: 14,
+              fontSize: isTablet ? 14 : 12,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: isTablet ? 14 : 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
@@ -1823,7 +2330,7 @@ class _GeneratedSuccessCard extends StatelessWidget {
 }
 
 class _CommissionsCard extends StatelessWidget {
-  final Map<String, double> commissions;
+  final List<_CommissionDisplayEntry> commissions;
   final NumberFormat currencyFormat;
   final bool isTablet;
   const _CommissionsCard({
@@ -1880,7 +2387,7 @@ class _MockInvoicePrintDialog extends StatelessWidget {
   final double discountAmount;
   final bool isCorporate;
   final PaymentMethod? paymentMethod;
-  final Map<String, double> commissions;
+  final List<_CommissionDisplayEntry> commissions;
   final VoidCallback onDone;
 
   const _MockInvoicePrintDialog({
@@ -1961,13 +2468,15 @@ class _MockInvoicePrintDialog extends StatelessWidget {
               const Divider(),
               const SizedBox(height: 12),
 
-              // Customer info
+              // Customer / vehicle (plate prominent)
+              _DialogRow(
+                label: 'Vehicle no.',
+                value: order.plateNumber.isNotEmpty
+                    ? order.plateNumber.toUpperCase()
+                    : '—',
+              ),
               _DialogRow(label: 'Customer', value: order.customerName),
               _DialogRow(label: 'Vehicle', value: order.carModel),
-              _DialogRow(
-                label: 'Plate No.',
-                value: order.plateNumber.toUpperCase(),
-              ),
               _DialogRow(
                 label: 'Billing',
                 value: isCorporate

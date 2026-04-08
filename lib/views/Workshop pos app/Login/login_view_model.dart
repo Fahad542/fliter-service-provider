@@ -20,6 +20,8 @@ class LoginViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  bool previousSessionAutoClosed = false;
+
   // UI State (Moved from View)
   bool _obscurePassword = true;
 
@@ -58,9 +60,12 @@ class LoginViewModel extends ChangeNotifier {
 
       if (authResponse.token != null) {
         try {
-          await _authRepository.openSession(email, password, authResponse.token!);
+          final sessionResponse = await _authRepository.openSession(email, password, authResponse.token!);
+          previousSessionAutoClosed =
+              sessionResponse is Map && sessionResponse['previousSessionAutoClosed'] == true;
         } catch (e) {
           debugPrint('Failed to open shift session: $e');
+          previousSessionAutoClosed = false;
         }
       }
 

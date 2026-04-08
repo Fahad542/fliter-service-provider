@@ -30,6 +30,10 @@ class OrderDetailsData {
   final double commission;
   final String? completedAt;
   final List<TechOrderDepartment> departments;
+  final String submittedAt;
+  final String orderDateTime;
+  final String orderDate;
+  final String orderTime;
 
   OrderDetailsData({
     required this.jobId,
@@ -46,9 +50,16 @@ class OrderDetailsData {
     required this.commission,
     this.completedAt,
     this.departments = const [],
+    this.submittedAt = '',
+    this.orderDateTime = '',
+    this.orderDate = '',
+    this.orderTime = '',
   });
 
   factory OrderDetailsData.fromJson(Map<String, dynamic> json) {
+    // arrivalTime: prefer submittedAt (new field), fallback to legacy arrivalTime
+    final submitted = json['submittedAt']?.toString() ?? '';
+    final legacyArrival = json['arrivalTime']?.toString() ?? '';
     return OrderDetailsData(
       jobId: json['jobId']?.toString() ?? '',
       orderId: json['orderId']?.toString() ?? '',
@@ -59,7 +70,7 @@ class OrderDetailsData {
       plateNo: json['plateNo'] ?? '',
       department: json['department'] ?? '',
       serviceType: json['serviceType'] ?? '',
-      arrivalTime: json['arrivalTime']?.toString() ?? '',
+      arrivalTime: submitted.isNotEmpty ? submitted : legacyArrival,
       value: (json['value'] ?? 0).toDouble(),
       commission: (json['commission'] ?? 0).toDouble(),
       completedAt: json['completedAt']?.toString(),
@@ -67,7 +78,41 @@ class OrderDetailsData {
               ?.map((d) => TechOrderDepartment.fromJson(d))
               .toList() ??
           [],
+      submittedAt: submitted,
+      orderDateTime: json['orderDateTime']?.toString() ?? '',
+      orderDate: json['orderDate']?.toString() ?? '',
+      orderTime: json['orderTime']?.toString() ?? '',
     );
+  }
+
+  String get displayDate {
+    if (orderDate.isNotEmpty) return orderDate;
+    final iso = submittedAt.isNotEmpty ? submittedAt
+        : orderDateTime.isNotEmpty ? orderDateTime
+        : arrivalTime;
+    if (iso.isEmpty) return '';
+    try {
+      return DateTime.parse(iso).toLocal().toIso8601String().split('T')[0];
+    } catch (_) {
+      return iso.split('T')[0];
+    }
+  }
+
+  String get displayTime {
+    if (orderTime.isNotEmpty) {
+      return orderTime.length >= 5 ? orderTime.substring(0, 5) : orderTime;
+    }
+    final iso = submittedAt.isNotEmpty ? submittedAt
+        : orderDateTime.isNotEmpty ? orderDateTime : '';
+    if (iso.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    } catch (_) {
+      return '';
+    }
   }
 }
 

@@ -6,13 +6,16 @@ import '../../../models/pos_product_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/app_formatters.dart';
+import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shell_rail_layout.dart';
 
 import '../Home Screen/pos_view_model.dart';
 import '../Navbar/pos_shell.dart';
 import '../Promo/promo_code_dialog.dart';
 import '../../../models/pos_order_model.dart';
 import '../Technician Assignment/pos_technician_assignment_view.dart';
+import '../Department/department_view_model.dart';
 import 'product_grid_view_model.dart';
 
 class PosProductGridView extends StatefulWidget {
@@ -43,6 +46,132 @@ class PosProductGridView extends StatefulWidget {
 
 class _PosProductGridViewState extends State<PosProductGridView> {
   // All state moved to ProductGridViewModel and PosViewModel
+  Future<bool> _confirmBackNavigation() async {
+    final vm = context.read<PosViewModel>();
+    final hasInvoiceData =
+        vm.getCartCount(widget.isMainTab) > 0 ||
+        vm.getActiveGlobalDiscount(widget.isMainTab) > 0 ||
+        vm.getTotalIndividualDiscount(widget.isMainTab) > 0 ||
+        vm.getActivePromoCode(widget.isMainTab).isNotEmpty;
+
+    if (!hasInvoiceData) return true;
+
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) {
+        final w = MediaQuery.of(dialogCtx).size.width;
+        final isDialogTablet = w > 600;
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: isDialogTablet ? w * 0.28 : 24,
+            vertical: 24,
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              isDialogTablet ? 28 : 22,
+              isDialogTablet ? 24 : 20,
+              isDialogTablet ? 28 : 22,
+              isDialogTablet ? 22 : 18,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Go back?',
+                  style: AppTextStyles.h3.copyWith(
+                    fontSize: isDialogTablet ? 26 : 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Do you really want to go back?',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.grey.shade800,
+                    fontSize: isDialogTablet ? 17 : 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your invoice data will be refreshed.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.grey.shade600,
+                    fontSize: isDialogTablet ? 16 : 14,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(dialogCtx, false),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            vertical: isDialogTablet ? 16 : 13,
+                          ),
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w700,
+                            fontSize: isDialogTablet ? 16 : 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogCtx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryLight,
+                          foregroundColor: AppColors.secondaryLight,
+                          elevation: 0,
+                          padding: EdgeInsets.symmetric(
+                            vertical: isDialogTablet ? 16 : 13,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: isDialogTablet ? 16 : 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (shouldLeave == true) {
+      vm.clearCart(isMainTab: widget.isMainTab);
+      vm.clearEditOrderContext(notify: false);
+      try {
+        context.read<DepartmentViewModel>().setSelectedIndex(null);
+      } catch (_) {}
+      return true;
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -77,12 +206,24 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         for (final item in widget.preSelectedItems!) {
           try
           {
-            final productId = item['productId']?.toString() ?? item['serviceId']?.toString() ?? item['id']?.toString();
+            final productId = item['productId']?.toString();
+            final serviceId = item['serviceId']?.toString();
+            final fallbackId = item['id']?.toString();
+            final lookupId = productId ?? serviceId ?? fallbackId;
             final qtyRaw = item['quantity'] ?? item['qty'] ?? 1;
             final double qty = (qtyRaw is num) ? qtyRaw.toDouble() : double.tryParse(qtyRaw.toString()) ?? 1.0;
 
-            if (productId != null && productId.isNotEmpty) {
-              final product = allProducts.firstWhere((p) => p.id == productId);
+            if (lookupId != null && lookupId.isNotEmpty) {
+              final bool? mustBeService = serviceId != null && serviceId.isNotEmpty
+                  ? true
+                  : (productId != null && productId.isNotEmpty ? false : null);
+
+              final product = allProducts.firstWhere((p) {
+                final idMatches = p.id == lookupId;
+                if (!idMatches) return false;
+                if (mustBeService == null) return true;
+                return p.isServiceType == mustBeService;
+              });
               vm.addToCart(product);
               
               if (qty != 1.0) {
@@ -96,6 +237,18 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               
               if (discountValue > 0 && discountTypeStr != null && discountTypeStr.isNotEmpty) {
                 vm.setIndividualDiscount(product, discountValue, discountTypeStr == 'percent');
+              }
+
+              final upRaw = item['unitPrice'];
+              if (product.isService &&
+                  product.isPriceEditable &&
+                  upRaw != null) {
+                final u = (upRaw is num)
+                    ? upRaw.toDouble()
+                    : double.tryParse(upRaw.toString());
+                if (u != null && u > 0) {
+                  vm.setServiceUnitPrice(product, u, isMainTab: false);
+                }
               }
             }
           } catch (_)
@@ -119,26 +272,38 @@ class _PosProductGridViewState extends State<PosProductGridView> {
             ? targetJob.totalDiscountValue 
             : (widget.completingOrder!.totalDiscountValue ?? 0.0);
 
-        final promoValueAmount = (targetJob != null && targetJob.promoDiscountAmount > 0) 
-            ? targetJob.promoDiscountAmount 
-            : (widget.completingOrder!.promoDiscountAmount ?? 0.0);
+        final promoValueAmount = (targetJob != null && targetJob.promoDiscountAmount > 0)
+            ? targetJob.promoDiscountAmount
+            : 0.0;
+        final finalPromoCodeId = targetJob?.promoCodeId;
 
-        final promoType = targetJob?.promoDiscountType ?? widget.completingOrder!.promoDiscountType ?? globalType;
+        final promoType = targetJob?.promoDiscountType ?? globalType;
         
         if (globalValue > 0 && globalType != null && globalType.isNotEmpty) {
           vm.setGlobalDiscount(globalValue, globalType == 'percent');
         }
 
-        final finalPromoCodeName = targetJob?.promoCodeName ?? widget.completingOrder!.promoCodeName;
+        final finalPromoCodeName = targetJob?.promoCodeName;
+        final promoValue = (targetJob != null && targetJob.promoDiscountValue > 0)
+            ? targetJob.promoDiscountValue
+            : promoValueAmount;
+        final hasValidPromo =
+            finalPromoCodeName != null &&
+            finalPromoCodeName.isNotEmpty &&
+            finalPromoCodeId != null &&
+            finalPromoCodeId.trim().isNotEmpty &&
+            promoValue > 0;
 
-        if (finalPromoCodeName != null && finalPromoCodeName.isNotEmpty) {
-          final promoValue = (targetJob != null && targetJob.promoDiscountValue > 0) 
-              ? targetJob.promoDiscountValue 
-              : (widget.completingOrder!.promoDiscountValue ?? 0.0);
-              
-          final pVal = promoValue;
-          
-          vm.applyPromoCode(finalPromoCodeName, pVal, promoType == 'percent');
+        if (hasValidPromo) {
+          vm.applyPromoCode(
+            finalPromoCodeName,
+            promoValue,
+            promoType == 'percent',
+            promoCodeId: finalPromoCodeId,
+          );
+        } else {
+          // Prevent stale promo from a previously edited/completed job.
+          vm.clearPromoCode();
         }
       }
     });
@@ -254,22 +419,39 @@ class _PosProductGridViewState extends State<PosProductGridView> {
 
     final vm = Provider.of<PosViewModel>(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F3F0),
-      appBar: PosScreenAppBar(
-        title: widget.isReadOnly ? 'Products' : 'Add Products',
-        showBackButton: widget.showBackButton,
-        showGlobalLeft: !widget.showBackButton,
-        showHamburger: false,
-      ),
-      body: vm.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildProductSection(isTablet),
-      // ─── Bottom Bar (Cart Summary) ───
-      bottomNavigationBar: (vm.getCartCount(widget.isMainTab) == 0 || widget.isReadOnly)
-          ? const SizedBox.shrink()
-          : Container(
-              padding: EdgeInsets.fromLTRB(isTablet ? 20 : 14, 12, isTablet ? 20 : 14, MediaQuery.of(context).padding.bottom + 12),
+    return WillPopScope(
+      onWillPop: _confirmBackNavigation,
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: PosTabletLayout.textScaler(context),
+        ),
+        child: Scaffold(
+        backgroundColor: const Color(0xFFF5F3F0),
+        appBar: PosScreenAppBar(
+          title: (widget.departmentName != null &&
+                  widget.departmentName!.trim().isNotEmpty &&
+                  widget.departmentName!.trim().toLowerCase() != 'all')
+              ? widget.departmentName!
+              : (widget.isReadOnly ? 'Products' : 'Add Products'),
+          showBackButton: widget.showBackButton,
+          showGlobalLeft: !widget.showBackButton,
+          showHamburger: false,
+          onBack: () async {
+            final canPop = await _confirmBackNavigation();
+            if (canPop && mounted) Navigator.pop(context);
+          },
+        ),
+        body: wrapPosShellRailBody(
+          context,
+          vm.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildProductSection(isTablet),
+        ),
+        // ─── Bottom Bar (Cart Summary) ───
+        bottomNavigationBar: (vm.getCartCount(widget.isMainTab) == 0 || widget.isReadOnly)
+            ? const SizedBox.shrink()
+            : Container(
+              padding: EdgeInsets.fromLTRB(isTablet ? 18 : 16, 12, isTablet ? 18 : 16, MediaQuery.of(context).padding.bottom + 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border(top: BorderSide(color: Colors.grey.shade200)),
@@ -285,7 +467,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 children: [
                   // Cart count badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF3F4F6),
                       borderRadius: BorderRadius.circular(8),
@@ -293,42 +475,49 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.shopping_cart_outlined, size: isTablet ? 22 : 16, color: const Color(0xFF1E2124)),
+                        Icon(Icons.shopping_cart_outlined, size: isTablet ? 20 : 17, color: const Color(0xFF1E2124)),
                         const SizedBox(width: 8),
                         Text(
                           '${context.watch<PosViewModel>().getCartCount(widget.isMainTab)} items',
-                          style: TextStyle(fontSize: isTablet ? 15 : 11, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
+                          style: TextStyle(fontSize: isTablet ? 14 : 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
                         ),
                       ],
                     ),
                   ),
-                  SizedBox(width: isTablet ? 16 : 12),
+                  SizedBox(width: isTablet ? 12 : 10),
                   // Grand total
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Grand Total', style: TextStyle(fontSize: isTablet ? 12 : 9, color: Colors.grey, fontWeight: FontWeight.w500)),
+                        Text('Grand Total', style: TextStyle(fontSize: isTablet ? 12 : 10, color: Colors.grey, fontWeight: FontWeight.w500)),
                         Text(
                           'SAR ${context.watch<PosViewModel>().getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}',
-                          style: TextStyle(fontSize: isTablet ? 22 : 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
+                          style: TextStyle(fontSize: isTablet ? 19 : 18, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
                         ),
                       ],
                     ),
                   ),
                   // View Invoice button
                   SizedBox(
-                    height: isTablet ? 54 : 42,
+                    height: isTablet ? 48 : 46,
                     child: ElevatedButton.icon(
-                      onPressed: () => _showInvoiceBottomSheet(context, isTablet),
-                      icon: Icon(Icons.receipt_long_outlined, size: isTablet ? 22 : 16),
-                      label: Text('View Invoice', style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 16 : 12)),
+                      onPressed: () {
+                        final isLandscape =
+                            MediaQuery.of(context).orientation ==
+                            Orientation.landscape;
+                        // Landscape tablets use compact sheet typography so order list stays visible.
+                        final useTabletSizing = isTablet && !isLandscape;
+                        _showInvoiceBottomSheet(context, useTabletSizing);
+                      },
+                      icon: Icon(Icons.receipt_long_outlined, size: isTablet ? 20 : 18),
+                      label: Text('View Invoice', style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 14 : 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC145),
                         foregroundColor: const Color(0xFF1E2124),
                         elevation: 0,
-                        padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 18),
+                        padding: EdgeInsets.symmetric(horizontal: isTablet ? 18 : 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                     ),
@@ -336,6 +525,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 ],
               ),
             ),
+      ),
+      ),
     );
   }
 
@@ -343,40 +534,76 @@ class _PosProductGridViewState extends State<PosProductGridView> {
   void _showInvoiceBottomSheet(BuildContext context, bool isTablet) {
     bool isSavingDraft = false;
     bool isForwarding = false;
+    final actualIsTablet = MediaQuery.of(context).size.width > 600;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-              child: Container(
-                height: MediaQuery.of(context).size.height * (isTablet ? 0.96 : 0.80),
+            return Dialog(
+              insetPadding: EdgeInsets.symmetric(
+                horizontal: actualIsTablet ? 16 : 14,
+                vertical: actualIsTablet ? 12 : 24,
+              ),
+              backgroundColor: Colors.transparent,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                ),
+                child: Container(
+                height: MediaQuery.of(context).size.height *
+                    (actualIsTablet ? 0.90 : 0.80),
+                width: actualIsTablet
+                    ? (MediaQuery.of(ctx).size.width - 32)
+                    : (MediaQuery.of(ctx).size.width - 28),
                 decoration: const BoxDecoration(
                   color: Color(0xFFFBF9F6),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
                 ),
                 child: MediaQuery(
                   data: MediaQuery.of(context).copyWith(
-                    textScaler: const TextScaler.linear(1.0),
+                    textScaler: TextScaler.linear(
+                      MediaQuery.of(context).orientation == Orientation.landscape
+                          ? 1.12
+                          : 1.14,
+                    ),
                   ),
                   child: Column(
-                    children: [
-                      // Handle bar
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          margin: const EdgeInsets.only(top: 10, bottom: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(2),
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 10, bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 12),
+                    child: Row(
+                      children: [
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                          iconSize: isTablet ? 24 : 20,
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.grey.shade700,
+                            side: BorderSide(color: Colors.grey.shade200),
                           ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
 
                       // ── Customer & Vehicle Card ──
                       Builder(
@@ -387,19 +614,29 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             orderIdText = '#${widget.completingOrder!.id.length > 8 ? widget.completingOrder!.id.substring(0, 8) : widget.completingOrder!.id}';
                           }
                           
-                          String custName = widget.completingOrder?.customerName ?? vm.customerName;
+                          String custName = vm.customerName.isNotEmpty
+                              ? vm.customerName
+                              : (widget.completingOrder?.customerName ?? '');
                           if (custName.isEmpty) custName = 'Walk-in Customer';
                           
-                          String make = widget.completingOrder?.vehicle?.make ?? vm.make;
-                          String model = widget.completingOrder?.vehicle?.model ?? vm.model;
-                          String plate = widget.completingOrder?.plateNumber ?? vm.vehicleNumber;
+                          String make = vm.make.isNotEmpty
+                              ? vm.make
+                              : (widget.completingOrder?.vehicle?.make ?? '');
+                          String model = vm.model.isNotEmpty
+                              ? vm.model
+                              : (widget.completingOrder?.vehicle?.model ?? '');
+                          String plate = vm.vehicleNumber.isNotEmpty
+                              ? vm.vehicleNumber
+                              : (widget.completingOrder?.plateNumber ?? '');
                           String vehicleText = [make, model].where((s) => s.isNotEmpty).join(' ');
                           if (plate.isNotEmpty) {
                             vehicleText = vehicleText.isNotEmpty ? '$vehicleText • $plate' : plate;
                           }
                           if (vehicleText.trim().isEmpty || vehicleText == '•') vehicleText = 'No Vehicle Details';
 
-                          String phoneText = widget.completingOrder?.customer?.mobile ?? vm.mobile;
+                          String phoneText = vm.mobile.isNotEmpty
+                              ? vm.mobile
+                              : (widget.completingOrder?.customer?.mobile ?? '');
                           if (phoneText.isEmpty) phoneText = 'No Phone';
 
                           String statusText = widget.completingOrder?.statusText ?? 'Draft';
@@ -427,14 +664,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                         ),
                                         child: Text(
                                           orderIdText,
-                                          style: TextStyle(fontSize: isTablet ? 16 : 10, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
+                                          style: TextStyle(fontSize: isLandscape ? (isTablet ? 18 : 12) : (isTablet ? 16 : 10), fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
                                         ),
                                       ),
                                       SizedBox(width: isTablet ? 8 : 6),
                                       Expanded(
                                         child: Text(
                                           custName,
-                                          style: TextStyle(fontSize: isTablet ? 22 : 13, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
+                                          style: TextStyle(fontSize: isLandscape ? (isTablet ? 24 : 15) : (isTablet ? 22 : 13), fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -444,7 +681,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                           color: statusColor.withOpacity(0.1),
                                           borderRadius: BorderRadius.circular(20),
                                         ),
-                                        child: Text(statusText, style: TextStyle(color: statusColor, fontSize: isTablet ? 17 : 11, fontWeight: FontWeight.w700)),
+                                        child: Text(statusText, style: TextStyle(color: statusColor, fontSize: isLandscape ? (isTablet ? 18 : 12) : (isTablet ? 17 : 11), fontWeight: FontWeight.w700)),
                                       ),
                                     ],
                                   ),
@@ -473,7 +710,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
 
                       // ── Order Items Header ──
                       Padding(
-                        padding: EdgeInsets.fromLTRB(isTablet ? 36 : 18, isTablet ? 24 : 12, isTablet ? 36 : 18, 10),
+                        padding: EdgeInsets.fromLTRB(isTablet ? 24 : 16, isTablet ? 10 : 10, isTablet ? 24 : 16, isTablet ? 6 : 8),
                         child: Row(
                           children: [
                             Text('Order Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 20 : 14, color: const Color(0xFF1E2124))),
@@ -493,6 +730,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         child: Consumer<PosViewModel>(
                           builder: (context, vm, child) {
                             final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+                            final isLandscape =
+                                MediaQuery.of(context).orientation ==
+                                Orientation.landscape;
+                            final cartTwoCols =
+                                MediaQuery.sizeOf(context).width > 600 ||
+                                isLandscape;
+
                             return activeCart.isEmpty
                                 ? Center(
                                     child: Column(
@@ -504,14 +748,64 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                       ],
                                     ),
                                   )
-                                : ListView.builder(
-                                    padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
-                                    itemCount: activeCart.length,
-                                    itemBuilder: (context, index) {
-                                      final item = activeCart[index];
-                                      return _buildCartItem(item, isTablet);
-                                    },
-                                  );
+                                : (!isTablet && !isLandscape)
+                                    ? ListView.separated(
+                                        padding: const EdgeInsets.fromLTRB(12, 2, 12, 8),
+                                        itemCount: activeCart.length,
+                                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                        itemBuilder: (context, index) {
+                                          return _buildCartItem(activeCart[index], isTablet);
+                                        },
+                                      )
+                                    : cartTwoCols
+                                        ? LayoutBuilder(
+                                            builder: (context, constraints) {
+                                              final hPad = isTablet ? 16.0 : 12.0;
+                                              final gap = isTablet ? 5.0 : 8.0;
+                                              final contentW =
+                                                  constraints.maxWidth - 2 * hPad;
+                                              final cellW = (contentW - gap) / 2;
+                                              return SingleChildScrollView(
+                                                padding: EdgeInsets.fromLTRB(
+                                                  hPad,
+                                                  isTablet ? 0 : 2,
+                                                  hPad,
+                                                  isTablet ? 4 : 8,
+                                                ),
+                                                child: Wrap(
+                                                  spacing: gap,
+                                                  runSpacing: gap,
+                                                  children: [
+                                                    for (final item in activeCart)
+                                                      SizedBox(
+                                                        width: cellW,
+                                                        child: _buildCartItem(
+                                                          item,
+                                                          isTablet,
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          )
+                                        : ListView.separated(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              12,
+                                              2,
+                                              12,
+                                              8,
+                                            ),
+                                            itemCount: activeCart.length,
+                                            separatorBuilder: (_, __) =>
+                                                const SizedBox(height: 8),
+                                            itemBuilder: (context, index) {
+                                              return _buildCartItem(
+                                                activeCart[index],
+                                                isTablet,
+                                              );
+                                            },
+                                          );
                           },
                         ),
                       ),
@@ -546,16 +840,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                       width: isTablet ? 80 : 60,
                                       height: isTablet ? 28 : 24,
                                       child: TextFormField(
-                                        key: ValueKey('global_disc_${vm.getActiveIsGlobalDiscountPercent(widget.isMainTab)}_${vm.getActiveGlobalDiscount(widget.isMainTab)}'),
                                         initialValue: vm.getActiveGlobalDiscount(widget.isMainTab) > 0
                                             ? (vm.getActiveGlobalDiscount(widget.isMainTab) % 1 == 0
                                                 ? vm.getActiveGlobalDiscount(widget.isMainTab).toInt().toString()
                                                 : vm.getActiveGlobalDiscount(widget.isMainTab).toString())
                                             : '',
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        inputFormatters: [EnglishNumberFormatter()],
+                                        keyboardType: TextInputType.text,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.allow(
+                                            RegExp(r'[0-9.,+\s]'),
+                                          ),
+                                        ],
                                         onChanged: (val) {
-                                          final discount = double.tryParse(val) ?? 0.0;
+                                          final discount =
+                                              _parseCombinedDiscountInput(val);
                                           context.read<PosViewModel>().setGlobalDiscount(discount, vm.getActiveIsGlobalDiscountPercent(widget.isMainTab), isMainTab: widget.isMainTab);
                                         },
                                         style: TextStyle(fontSize: isTablet ? 14 : 11, color: Colors.green),
@@ -609,9 +907,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 
                                 Row(
                                   children: [
-                                    Text('Total amount', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isTablet ? 24 : 14, color: const Color(0xFF1E2124))),
+                                    Text('Total amount', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isLandscape ? (isTablet ? 27 : 17) : (isTablet ? 24 : 14), color: const Color(0xFF1E2124))),
                                     const Spacer(),
-                                    Text('SAR ${vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isTablet ? 24 : 14, color: const Color(0xFF1E2124))),
+                                    Text('SAR ${vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isLandscape ? (isTablet ? 27 : 17) : (isTablet ? 24 : 14), color: const Color(0xFF1E2124))),
                                   ],
                                 ),
                               ],
@@ -633,10 +931,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             );
                           },
                           child: Container(
-                            padding: EdgeInsets.symmetric(vertical: isTablet ? 16 : 12),
+                            padding: EdgeInsets.symmetric(
+                              vertical: isLandscape
+                                  ? (isTablet ? 12 : 10)
+                                  : (isTablet ? 11 : 10),
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(color: Colors.grey.shade200),
+                              border: Border.all(color: Colors.grey.shade100),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Consumer<PosViewModel>(
@@ -648,8 +950,12 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     if (promoCode.isNotEmpty)
                                       SizedBox(width: isTablet ? 36 : 28), // Balance the row
                                     
-                                    Icon(Icons.local_offer_outlined, size: isTablet ? 24 : 16, color: const Color(0xFFFFC145)),
-                                    SizedBox(width: isTablet ? 10 : 8),
+                                    Icon(
+                                      Icons.local_offer_outlined,
+                                      size: isTablet ? 18 : 15,
+                                      color: const Color(0xFFFFC145).withOpacity(0.75),
+                                    ),
+                                    SizedBox(width: isTablet ? 8 : 6),
                                     Text(
                                       promoCode.isEmpty ? 'Add Promo Code' : 'Promo: $promoCode',
                                       style: TextStyle(
@@ -685,7 +991,11 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       // ── Action Buttons ──
                       Padding(
                         padding: EdgeInsets.fromLTRB(isTablet ? 32 : 14, 0, isTablet ? 32 : 14, MediaQuery.of(context).padding.bottom + 20),
-                        child: widget.completingOrderId != null
+                        child: (widget.completingOrderId != null &&
+                                !(widget.completingOrder?.statusText
+                                        .toLowerCase()
+                                        .contains('pending assignment') ??
+                                    false))
                             ? SizedBox(
                                 width: double.infinity,
                                 height: isTablet ? 60 : 48,
@@ -743,70 +1053,81 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                   if (!widget.isMainTab) 
                                     Row(
                                       children: [
-                                        Expanded(
-                                          child: SizedBox(
-                                            height: isTablet ? 60 : 44,
-                                            child: Consumer<PosViewModel>(
-                                              builder: (context, vm, child) {
-                                                return ElevatedButton(
-                                                  onPressed: vm.isLoading || isForwarding || isSavingDraft
-                                                      ? null
-                                                      : () async {
-                                                          setSheetState(() => isSavingDraft = true);
-                                                          String finalDeptId = '1';
-                                                          if (widget.departmentId != null) {
-                                                            finalDeptId = widget.departmentId!;
-                                                          } else {
-                                                            if (_currentProducts.isNotEmpty) {
-                                                              finalDeptId = _currentProducts.first.departmentId ?? '1';
-                                                            } else if (vm.products.isNotEmpty) {
-                                                              finalDeptId = vm.products.first.departmentId ?? '1';
+                                        if (widget.completingOrderId == null) ...[
+                                          Expanded(
+                                            child: SizedBox(
+                                              height: isLandscape
+                                                  ? (isTablet ? 64 : 50)
+                                                  : (isTablet ? 60 : 44),
+                                              child: Consumer<PosViewModel>(
+                                                builder: (context, vm, child) {
+                                                  return ElevatedButton(
+                                                    onPressed: vm.isLoading || isForwarding || isSavingDraft
+                                                        ? null
+                                                        : () async {
+                                                            setSheetState(() => isSavingDraft = true);
+                                                            String finalDeptId = '1';
+                                                            if (widget.departmentId != null) {
+                                                              finalDeptId = widget.departmentId!;
+                                                            } else {
+                                                              if (_currentProducts.isNotEmpty) {
+                                                                finalDeptId = _currentProducts.first.departmentId ?? '1';
+                                                              } else if (vm.products.isNotEmpty) {
+                                                                finalDeptId = vm.products.first.departmentId ?? '1';
+                                                              }
                                                             }
-                                                          }
-                                                          final success = await vm.submitWalkInOrder([finalDeptId], context);
-                                                          if (success && context.mounted) {
-                                                            vm.setShellSelectedIndex(2);
-                                                            vm.fetchOrders();
-                                                            Navigator.pushAndRemoveUntil(
-                                                              context,
-                                                              MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
-                                                              (route) => false,
-                                                            );
-                                                          }
-                                                          if (mounted) {
-                                                            setSheetState(() => isSavingDraft = false);
-                                                          }
-                                                        },
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: AppColors.secondaryLight,
-                                                    foregroundColor: Colors.white,
-                                                    disabledBackgroundColor: AppColors.secondaryLight.withOpacity(0.7),
-                                                    disabledForegroundColor: Colors.white,
-                                                    elevation: 0,
-                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                                  ),
-                                                  child: isSavingDraft
-                                                      ? const SizedBox(
-                                                          height: 18,
-                                                          width: 18,
-                                                          child: CircularProgressIndicator(
-                                                            strokeWidth: 2,
-                                                            color: Colors.white,
+                                                            final success = await vm.submitWalkInOrder([finalDeptId], context);
+                                                            if (success && context.mounted) {
+                                                              vm.setShellSelectedIndex(2);
+                                                              vm.fetchOrders();
+                                                              Navigator.pushAndRemoveUntil(
+                                                                context,
+                                                                MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
+                                                                (route) => false,
+                                                              );
+                                                            }
+                                                            if (mounted) {
+                                                              setSheetState(() => isSavingDraft = false);
+                                                            }
+                                                          },
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: AppColors.secondaryLight,
+                                                      foregroundColor: Colors.white,
+                                                      disabledBackgroundColor: AppColors.secondaryLight.withOpacity(0.7),
+                                                      disabledForegroundColor: Colors.white,
+                                                      elevation: 0,
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                    ),
+                                                    child: isSavingDraft
+                                                        ? const SizedBox(
+                                                            height: 18,
+                                                            width: 18,
+                                                            child: CircularProgressIndicator(
+                                                              strokeWidth: 2,
+                                                              color: Colors.white,
+                                                            ),
+                                                          )
+                                                        : Text(
+                                                            'Save Draft',
+                                                            style: TextStyle(
+                                                              fontWeight: FontWeight.w600,
+                                                              fontSize: isLandscape
+                                                                  ? (isTablet ? 18 : 13)
+                                                                  : (isTablet ? 16 : 11),
+                                                            ),
                                                           ),
-                                                        )
-                                                      : Text(
-                                                          'Save Draft',
-                                                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 16 : 11),
-                                                        ),
-                                                );
-                                              },
+                                                  );
+                                                },
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        SizedBox(width: isTablet ? 8 : 6),
+                                          SizedBox(width: isTablet ? 8 : 6),
+                                        ],
                                         Expanded(
                                           child: SizedBox(
-                                            height: isTablet ? 60 : 44,
+                                            height: isLandscape
+                                                ? (isTablet ? 64 : 50)
+                                                : (isTablet ? 60 : 44),
                                             child: Consumer<PosViewModel>(
                                               builder: (context, vm, child) {
                                                 return ElevatedButton(
@@ -824,6 +1145,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                             }
                                                           }
                                                           // Navigate directly — walk-in API called on "Assign to Technician"
+                                                          Navigator.of(ctx).pop();
                                                           Navigator.push(
                                                             context,
                                                             MaterialPageRoute(
@@ -855,7 +1177,12 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                         )
                                                       : Text(
                                                           'Forward to Technician',
-                                                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 16 : 11),
+                                                          style: TextStyle(
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: isLandscape
+                                                                ? (isTablet ? 18 : 13)
+                                                                : (isTablet ? 16 : 11),
+                                                          ),
                                                         ),
                                                 );
                                               },
@@ -867,11 +1194,11 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 ],
                               ),
                       ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ),
               ),
-            );
+            ));
           },
         );
       },
@@ -890,8 +1217,17 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         final isService = vm.selectedProductType == 'Services';
         if (product.isServiceType != isService) return false;
       }
-      final matchesDept = gridVm.selectedDepartment == 'All' || product.departmentName == gridVm.selectedDepartment;
-      final matchesCategory = gridVm.selectedCategory == 'All' || (product.categoryName ?? '') == gridVm.selectedCategory;
+      final selectedDept = gridVm.selectedDepartment.trim().toLowerCase();
+      final productDept = (product.departmentName ?? '').trim().toLowerCase();
+      final matchesDept =
+          selectedDept == 'all' ||
+          productDept == selectedDept ||
+          (widget.departmentId != null &&
+              widget.departmentId != 'All' &&
+              (product.departmentId ?? '') == widget.departmentId);
+      final matchesCategory =
+          gridVm.selectedCategory == 'All' ||
+          product.category == gridVm.selectedCategory;
       final matchesSearch = gridVm.searchQuery.isEmpty || product.name.toLowerCase().contains(gridVm.searchQuery.toLowerCase());
       return matchesDept && matchesCategory && matchesSearch;
     }).toList();
@@ -910,7 +1246,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           if (vm.allProducts.isNotEmpty) ...[
             // ─── FIXED HEADERS: Search, Tabs & Categories ───
             Padding(
-              padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+              padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
               child: PosSearchBar(
                 controller: gridVm.searchController,
                 onChanged: (v) => gridVm.setSearchQuery(v),
@@ -918,11 +1254,11 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(32, 20, 32, 8),
+              padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.grey.shade200),
                   boxShadow: [
                     BoxShadow(
@@ -945,7 +1281,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
             _buildSubCategoryChips(true, vm, gridVm),
           ],
 
-          SizedBox(height: isTablet ? 24 : 12),
+          SizedBox(height: isTablet ? 10 : 8),
           Expanded(
             child: vm.allProducts.isEmpty
                 ? _buildEmptyState(vm, true)
@@ -953,20 +1289,21 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     ? Center(
                         child: Text(
                           'No products match your search.',
-                          style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
+                          style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                         ),
                       )
                     : Builder(
                         builder: (context) {
                           Widget grid = GridView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            physics: const BouncingScrollPhysics(),
                             clipBehavior: Clip.hardEdge,
-                            padding: const EdgeInsets.fromLTRB(32, 20, 32, 120),
+                            padding: const EdgeInsets.fromLTRB(22, 8, 22, 100),
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: isPortrait ? 2 : 3,
-                              mainAxisExtent: 220,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 20,
+                              crossAxisCount: isPortrait ? 2 : 4,
+                              // Match tablet card content + small flex gap; extra height = empty band under qty row.
+                              mainAxisExtent: 156,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
                             ),
                             itemCount: filteredProducts.length,
                             itemBuilder: (context, index) {
@@ -974,7 +1311,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               return Consumer<PosViewModel>(
                                 builder: (context, vm, child) {
                                   final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
-                                  final cartItemIndex = activeCart.indexWhere((i) => i.product.id == product.id);
+                                  final cartItemIndex = activeCart.indexWhere(
+                                    (i) =>
+                                        i.product.id == product.id &&
+                                        i.product.isServiceType ==
+                                            product.isServiceType &&
+                                        (i.product.departmentId ?? '') ==
+                                            (product.departmentId ?? ''),
+                                  );
                                   final qty = cartItemIndex != -1 ? activeCart[cartItemIndex].quantity : 0.0;
                                   return _buildProductCard(product, qty, true);
                                 },
@@ -982,15 +1326,6 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             },
                           );
 
-                          // Only apply 1.4x scaling to the grid if not already scaled by PosShell
-                          if (!widget.isMainTab && isTablet) {
-                            return MediaQuery(
-                              data: MediaQuery.of(context).copyWith(
-                                textScaler: const TextScaler.linear(1.4),
-                              ),
-                              child: grid,
-                            );
-                          }
                           return grid;
                         },
                       ),
@@ -1031,7 +1366,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           _buildSubCategoryChips(false, vm, gridVm),
         ],
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Expanded(
           child: vm.allProducts.isEmpty
               ? _buildEmptyState(vm, false)
@@ -1045,13 +1380,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       itemCount: filteredProducts.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      separatorBuilder: (context, index) => const SizedBox(height: 6),
                       itemBuilder: (context, index) {
                         final product = filteredProducts[index];
                         return Consumer<PosViewModel>(
                           builder: (context, vm, child) {
                             final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
-                            final cartItemIndex = activeCart.indexWhere((i) => i.product.id == product.id);
+                            final cartItemIndex = activeCart.indexWhere(
+                              (i) =>
+                                  i.product.id == product.id &&
+                                  i.product.isServiceType ==
+                                      product.isServiceType &&
+                                  (i.product.departmentId ?? '') ==
+                                      (product.departmentId ?? ''),
+                            );
                             final qty = cartItemIndex != -1 ? activeCart[cartItemIndex].quantity : 0.0;
                             return _buildProductCard(product, qty, false);
                           },
@@ -1073,10 +1415,10 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           gridVm.setCategory('All');
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryLight : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
           child: Text(
@@ -1084,7 +1426,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
             style: TextStyle(
               color: isSelected ? AppColors.secondaryLight : AppColors.secondaryLight.withOpacity(0.6),
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              fontSize: isTablet ? 15 : 13,
+              fontSize: isTablet ? 13 : 13,
             ),
           ),
         ),
@@ -1103,9 +1445,21 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           sourceProducts = vm.allProducts.toList();
         }
 
+        // Keep category chips scoped to the currently selected department.
+        if (widget.departmentId != null && widget.departmentId != 'All') {
+          sourceProducts = sourceProducts
+              .where((p) => p.departmentId == widget.departmentId)
+              .toList();
+        } else {
+          sourceProducts = sourceProducts.where((p) {
+            return gridVm.selectedDepartment == 'All' ||
+                p.departmentName == gridVm.selectedDepartment;
+          }).toList();
+        }
+
         Set<String> subCatsSet = {};
         for (var p in sourceProducts) {
-          final catName = p.categoryName ?? '';
+          final catName = p.category;
           if (catName.isNotEmpty) subCatsSet.add(catName);
         }
 
@@ -1117,26 +1471,26 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         return Column(
           children: [
             SizedBox(
-              height: isTablet ? 72 : 44,
+              height: isTablet ? 56 : 44,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 12, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 22 : 12, vertical: 6),
                 itemCount: displaySubCats.length,
                 itemBuilder: (context, index) {
                   final subCat = displaySubCats[index];
                   final isSelected = gridVm.selectedCategory == subCat;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.only(right: 8),
                     child: Center(
                       child: GestureDetector(
                         onTap: () => gridVm.setCategory(subCat),
                         child: Container(
-                          height: isTablet ? 48 : 34,
-                          padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
+                          height: isTablet ? 40 : 34,
+                          padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 16),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: isSelected ? AppColors.secondaryLight : Colors.white,
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: isSelected ? AppColors.secondaryLight : Colors.grey.shade300),
                             boxShadow: isSelected ? [
                               BoxShadow(
@@ -1149,7 +1503,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                           child: Text(
                             subCat,
                             style: TextStyle(
-                              fontSize: isTablet ? 15 : 12,
+                              fontSize: isTablet ? 12 : 11,
                               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                               color: isSelected ? Colors.white : Colors.grey.shade600,
                             ),
@@ -1176,7 +1530,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           const SizedBox(height: 12),
           Text(
             vm.selectedProductType == 'Services' ? 'No services found' : 'No products found',
-            style: TextStyle(color: Colors.grey.shade400, fontSize: isTablet ? 16 : 14),
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           ),
         ],
       ),
@@ -1185,55 +1539,60 @@ class _PosProductGridViewState extends State<PosProductGridView> {
 
   Widget _buildProductCard(PosProduct product, double cartQty, bool isTablet) {
     if (!isTablet) {
-      return Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: widget.isReadOnly ? null : () => _addToCart(product),
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.isReadOnly ? null : () => _addToCart(product),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: (cartQty > 0 && !widget.isReadOnly)
-                      ? Border.all(color: AppColors.primaryLight, width: 2)
-                      : Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+              border: (cartQty > 0 && !widget.isReadOnly)
+                  ? Border.all(color: AppColors.primaryLight, width: 2)
+                  : Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Column(
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    product.name,
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      right: cartQty > 0 && !widget.isReadOnly ? 44 : 0,
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                    child: Text(
+                                      product.name,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 3),
                             if (product.unit != null && product.unit!.isNotEmpty) ...[
                               Text(
                                 'Unit: ${product.unit}',
@@ -1245,10 +1604,10 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                             ],
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
                                 color: product.stockColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
@@ -1256,7 +1615,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               child: Text(
                                 product.stockLabel,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   color: product.stockColor,
                                 ),
@@ -1264,9 +1623,35 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
+                        if (cartQty > 0 && !widget.isReadOnly)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                'x${cartQty % 1 == 0 ? cartQty.toInt() : cartQty}',
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.secondaryLight),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -1274,12 +1659,12 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             'SAR ${product.allowDecimalQty ? product.price.toStringAsFixed(2) : product.price.toInt()}',
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w800,
-                              fontSize: 15,
+                              fontSize: 14,
                               color: AppColors.secondaryLight,
                             ),
                           ),
                           if (!widget.isReadOnly) ...[
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1289,13 +1674,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 GestureDetector(
                                   onTap: () => _showQtyDialog(product, isTablet),
                                   child: Container(
-                                    height: 28,
-                                    width: 32,
+                                    height: 24,
+                                    width: 28,
                                     alignment: Alignment.center,
-                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    margin: const EdgeInsets.symmetric(horizontal: 3),
                                     decoration: BoxDecoration(
                                       color: Colors.grey.shade50,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(6),
                                       border: Border.all(color: Colors.grey.shade200),
                                     ),
                                     child: Text(
@@ -1318,33 +1703,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 ),
               ),
             ),
-          ),
-          if (cartQty > 0 && !widget.isReadOnly)
-            Positioned(
-              top: -10,
-              right: -4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  'x${cartQty % 1 == 0 ? cartQty.toInt() : cartQty}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.secondaryLight),
-                ),
-              ),
-            ),
-        ],
-      );
+          );
     }
 
     // Tablet View (Grid Item)
@@ -1354,11 +1713,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.isReadOnly ? null : () => _addToCart(product),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
+              width: double.infinity,
+              height: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
                 border: (cartQty > 0 && !widget.isReadOnly)
                     ? Border.all(color: AppColors.primaryLight, width: 2)
                     : Border.all(color: Colors.grey.shade200),
@@ -1371,106 +1732,119 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Name + Stock badge
-                    Row(
+                    // Name + meta + price grouped at top; qty sits at card bottom only.
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
+                        SizedBox(
+                          height: 36,
                           child: Text(
                             product.name,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w700,
-                              fontSize: 17,
+                              fontSize: 14,
+                              height: 1.2,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    if (product.unit != null && product.unit!.isNotEmpty) ...[
-                      Text(
-                        'Unit: ${product.unit}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          height: 16,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: (product.unit != null &&
+                                    product.unit!.isNotEmpty)
+                                ? Text(
+                                    'Unit: ${product.unit}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-
-                    // Stock indicators
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: product.stockColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        product.stockLabel,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: product.stockColor,
-                        ),
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Price
-                    Text(
-                      'SAR ${product.allowDecimalQty ? product.price.toStringAsFixed(2) : product.price.toInt()}',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 19,
-                        color: AppColors.secondaryLight,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // +/- Controls
-                    if (!widget.isReadOnly)
-                      Row(
-                        children: [
-                          _buildQtyButton(Icons.remove, true, onTap: cartQty > 0
-                              ? () => _updateQty(product, -1)
-                              : null),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _showQtyDialog(product, true),
-                              child: Container(
-                                height: 32,
-                                alignment: Alignment.center,
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade200),
-                                ),
-                                child: Text(
-                                  (!product.allowDecimalQty || cartQty % 1 == 0) ? '${cartQty.toInt()}' : cartQty.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                        SizedBox(
+                          height: 22,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: product.stockColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                product.stockLabel,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: product.stockColor,
                                 ),
                               ),
                             ),
                           ),
-                          _buildQtyButton(Icons.add, true, onTap: () => _addToCart(product)),
-                        ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'SAR ${product.allowDecimalQty ? product.price.toStringAsFixed(2) : product.price.toInt()}',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 17,
+                            height: 1.1,
+                            color: AppColors.secondaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!widget.isReadOnly)
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Row(
+                            children: [
+                              _buildQtyButton(Icons.remove, true, onTap: cartQty > 0
+                                  ? () => _updateQty(product, -1)
+                                  : null),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _showQtyDialog(product, true),
+                                  child: Container(
+                                    height: 28,
+                                    alignment: Alignment.center,
+                                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(7),
+                                      border: Border.all(color: Colors.grey.shade200),
+                                    ),
+                                    child: Text(
+                                      (!product.allowDecimalQty || cartQty % 1 == 0) ? '${cartQty.toInt()}' : cartQty.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              _buildQtyButton(Icons.add, true, onTap: () => _addToCart(product)),
+                            ],
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -1480,13 +1854,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         ),
         if (cartQty > 0 && !widget.isReadOnly)
           Positioned(
-            top: -12,
-            right: -6,
+            top: 4,
+            right: 4,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
@@ -1498,7 +1872,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               ),
               child: Text(
                 'x${cartQty % 1 == 0 ? cartQty.toInt() : cartQty}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.secondaryLight),
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.secondaryLight),
               ),
             ),
           ),
@@ -1510,142 +1884,307 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: isTablet ? 32 : 28,
-        height: isTablet ? 32 : 28,
+        width: isTablet ? 28 : 28,
+        height: isTablet ? 28 : 28,
         decoration: BoxDecoration(
           color: onTap != null ? AppColors.secondaryLight : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(7),
         ),
-        child: Icon(icon, size: isTablet ? 16 : 14, color: onTap != null ? Colors.white : Colors.grey),
+        child: Icon(icon, size: isTablet ? 14 : 14, color: onTap != null ? Colors.white : Colors.grey),
       ),
     );
   }
 
   // ── Cart Item ──
   Widget _buildCartItem(CartItem item, bool isTablet) {
-    return Container(
-      margin: EdgeInsets.only(bottom: isTablet ? 12 : 6),
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 10, vertical: isTablet ? 14 : 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: EdgeInsets.zero,
+          padding: EdgeInsets.only(
+            left: isTablet ? 14 : 12,
+            right: isTablet ? 44 : 38,
+            top: isTablet ? 12 : 10,
+            bottom: isTablet ? 12 : 12,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(isTablet ? 13 : 14),
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.product.name,
-                        style: TextStyle(fontSize: isTablet ? 18 : 14, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
-                        maxLines: 2, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    Row(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(4),
+                        Text(item.product.name,
+                            style: TextStyle(
+                              fontSize: isTablet ? 17 : 13,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E2124),
+                              height: isTablet ? 1.2 : 1.15,
+                            ),
+                            maxLines: isTablet ? 2 : 1,
+                            overflow: TextOverflow.ellipsis),
+                        SizedBox(height: isTablet ? 8 : 6),
+                        if (item.product.isService && item.product.isPriceEditable)
+                          _EditableServiceUnitPriceRow(
+                            item: item,
+                            isMainTab: widget.isMainTab,
+                            isTablet: isTablet,
+                          )
+                        else
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isTablet ? 9 : 6,
+                              vertical: isTablet ? 5 : 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${item.quantity % 1 == 0 ? item.quantity.toInt() : item.quantity} × SAR ${item.effectiveUnitPrice.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: isTablet ? 13 : 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                                height: isTablet ? 1.1 : 1.0,
+                              ),
+                            ),
                           ),
+                      ],
+                    ),
+                  ),
+
+                  if (isTablet) ...[
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 2),
                           child: Text(
-                            '${item.quantity % 1 == 0 ? item.quantity.toInt() : item.quantity} × SAR ${item.product.price.toStringAsFixed(0)}',
-                            style: TextStyle(fontSize: isTablet ? 14 : 11, fontWeight: FontWeight.w600, color: Colors.grey),
+                            'SAR ${item.totalPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1E2124),
+                              height: 1.2,
+                            ),
                           ),
+                        ),
+                        if (item.actualDiscountAmount > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '-SAR ${item.actualDiscountAmount.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green,
+                                height: 1.15,
+                              ),
+                            ),
+                          ),
+                        SizedBox(
+                          height: item.actualDiscountAmount > 0 ? 8 : 10,
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Dis.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 60,
+                              height: 28,
+                              child: TextFormField(
+                                key: ValueKey(
+                                  'ind_disc_${item.product.id}_${item.isDiscountPercent}',
+                                ),
+                                initialValue: item.discount > 0
+                                    ? (item.discount % 1 == 0
+                                        ? item.discount.toInt().toString()
+                                        : item.discount.toString())
+                                    : '',
+                                keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                onChanged: (val) {
+                                  final discount = double.tryParse(val) ?? 0.0;
+                                  context.read<PosViewModel>().setIndividualDiscount(
+                                        item.product,
+                                        discount,
+                                        item.isDiscountPercent,
+                                        isMainTab: widget.isMainTab,
+                                      );
+                                },
+                                style: const TextStyle(fontSize: 12),
+                                textAlign: TextAlign.center,
+                                decoration: InputDecoration(
+                                  contentPadding: EdgeInsets.zero,
+                                  hintText: '0',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                context.read<PosViewModel>().setIndividualDiscount(
+                                      item.product,
+                                      item.discount,
+                                      !item.isDiscountPercent,
+                                      isMainTab: widget.isMainTab,
+                                    );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFC145)
+                                      .withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: Text(
+                                  item.isDiscountPercent ? '%' : 'SAR',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF1E2124),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'SAR ${item.totalPrice.toStringAsFixed(2)}',
-                    style: TextStyle(fontSize: isTablet ? 18 : 14, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
-                  ),
-                  if (item.actualDiscountAmount > 0)
-                    Text(
-                      '-SAR ${item.actualDiscountAmount.toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: isTablet ? 13 : 11, fontWeight: FontWeight.w600, color: Colors.green),
+
+                  // Price + discount on the right for mobile (compact row)
+                  if (!isTablet) ...[
+                    const SizedBox(width: 6),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'SAR ${item.totalPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1E2124),
+                          ),
+                        ),
+                        if (item.actualDiscountAmount > 0)
+                          Text(
+                            '-SAR ${item.actualDiscountAmount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green),
+                          ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Dis.', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                            const SizedBox(width: 3),
+                            SizedBox(
+                              width: 38,
+                              height: 18,
+                              child: TextFormField(
+                                key: ValueKey('ind_disc_${item.product.id}_${item.isDiscountPercent}'),
+                                initialValue: item.discount > 0
+                                    ? (item.discount % 1 == 0 ? item.discount.toInt().toString() : item.discount.toString())
+                                    : '',
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                onChanged: (val) {
+                                  final discount = double.tryParse(val) ?? 0.0;
+                                  context.read<PosViewModel>().setIndividualDiscount(item.product, discount, item.isDiscountPercent, isMainTab: widget.isMainTab);
+                                },
+                                style: const TextStyle(fontSize: 10),
+                                textAlign: TextAlign.center,
+                                decoration: InputDecoration(
+                                  contentPadding: EdgeInsets.zero,
+                                  hintText: '0',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            GestureDetector(
+                              onTap: () => context.read<PosViewModel>().setIndividualDiscount(item.product, item.discount, !item.isDiscountPercent, isMainTab: widget.isMainTab),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFC145).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  item.isDiscountPercent ? '%' : 'SAR',
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF1E2124)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
+                  ],
                 ],
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  context.read<PosViewModel>().removeFromCart(item.product, isMainTab: widget.isMainTab);
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(Icons.close, size: isTablet ? 22 : 18, color: Colors.red.shade400),
-                ),
-              ),
             ],
           ),
-          
-          // Discount Row Inside Item
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text('Dis.', style: TextStyle(fontSize: isTablet ? 13 : 11, color: Colors.grey)),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: isTablet ? 60 : 50,
-                height: isTablet ? 26 : 24,
-                child: TextFormField(
-                  key: ValueKey('ind_disc_${item.product.id}_${item.isDiscountPercent}'),
-                  initialValue: item.discount > 0 
-                      ? (item.discount % 1 == 0 ? item.discount.toInt().toString() : item.discount.toString())
-                      : '',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (val) {
-                    final discount = double.tryParse(val) ?? 0.0;
-                    context.read<PosViewModel>().setIndividualDiscount(item.product, discount, item.isDiscountPercent, isMainTab: widget.isMainTab);
-                  },
-                  style: TextStyle(fontSize: isTablet ? 13 : 11),
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    contentPadding: EdgeInsets.zero,
-                    hintText: '0',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: Colors.grey.shade300)),
-                    isDense: true,
+        ),
+        Positioned(
+          top: isTablet ? 8 : 8,
+          right: isTablet ? 8 : 8,
+          child: GestureDetector(
+            onTap: () {
+              context.read<PosViewModel>().removeFromCart(item.product, isMainTab: widget.isMainTab);
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: EdgeInsets.all(isTablet ? 6 : 6),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () {
-                  context.read<PosViewModel>().setIndividualDiscount(item.product, item.discount, !item.isDiscountPercent, isMainTab: widget.isMainTab);
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 6, vertical: isTablet ? 4 : 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFC145).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    item.isDiscountPercent ? '%' : 'SAR',
-                    style: TextStyle(fontSize: isTablet ? 14 : 11, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
-                  ),
-                ),
-              ),
-            ],
+              child: Icon(Icons.close, size: isTablet ? 17 : 15, color: Colors.red.shade400),
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1658,6 +2197,22 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         Text(value, style: TextStyle(fontSize: isTablet ? 18 : 10, fontWeight: FontWeight.w600, color: color ?? AppColors.secondaryLight)),
       ],
     );
+  }
+
+  double _parseCombinedDiscountInput(String input) {
+    final normalized = input.trim();
+    if (normalized.isEmpty) return 0.0;
+
+    final parts = normalized
+        .split(RegExp(r'[+,]'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty);
+
+    double total = 0.0;
+    for (final part in parts) {
+      total += double.tryParse(part) ?? 0.0;
+    }
+    return total;
   }
 
   void _showQtyDialog(PosProduct product, bool isTablet) {
@@ -1714,6 +2269,119 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Unit price editor for price-editable services in the cart (stable [TextEditingController]).
+class _EditableServiceUnitPriceRow extends StatefulWidget {
+  final CartItem item;
+  final bool isMainTab;
+  final bool isTablet;
+
+  const _EditableServiceUnitPriceRow({
+    required this.item,
+    required this.isMainTab,
+    required this.isTablet,
+  });
+
+  @override
+  State<_EditableServiceUnitPriceRow> createState() =>
+      _EditableServiceUnitPriceRowState();
+}
+
+class _EditableServiceUnitPriceRowState extends State<_EditableServiceUnitPriceRow> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.item.effectiveUnitPrice.toStringAsFixed(2),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _EditableServiceUnitPriceRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.product.id != widget.item.product.id) {
+      _controller.text = widget.item.effectiveUnitPrice.toStringAsFixed(2);
+      return;
+    }
+    if (oldWidget.item.serviceUnitPrice != widget.item.serviceUnitPrice ||
+        oldWidget.item.product.price != widget.item.product.price) {
+      final next = widget.item.effectiveUnitPrice.toStringAsFixed(2);
+      if (_controller.text != next) {
+        _controller.text = next;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = widget.item.quantity;
+    final qtyLabel = q % 1 == 0 ? q.toInt().toString() : q.toString();
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: widget.isTablet ? 9 : 6,
+        vertical: widget.isTablet ? 5 : 3,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Text(
+            '$qtyLabel × ',
+            style: TextStyle(
+              fontSize: widget.isTablet ? 13 : 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+          ),
+          Text(
+            'SAR ',
+            style: TextStyle(
+              fontSize: widget.isTablet ? 12 : 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          SizedBox(
+            width: widget.isTablet ? 76 : 64,
+            child: TextField(
+              controller: _controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(
+                fontSize: widget.isTablet ? 13 : 11,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1E2124),
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                border: InputBorder.none,
+                hintText: '0.00',
+              ),
+              onChanged: (v) {
+                final p = double.tryParse(v.trim());
+                context.read<PosViewModel>().setServiceUnitPrice(
+                      widget.item.product,
+                      p,
+                      isMainTab: widget.isMainTab,
+                    );
+              },
+            ),
           ),
         ],
       ),

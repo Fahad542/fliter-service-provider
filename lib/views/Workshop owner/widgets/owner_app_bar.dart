@@ -86,37 +86,46 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
   // _buildTitle method removed as it's now handled inline inside the Stack
 
   Widget _buildDrawerButton(BuildContext context) {
-    final onTap = showBackButton
-        ? (onBackPressed ?? () => OwnerShell.goHome(context))
-        : (onMenuPressed ?? () => Scaffold.maybeOf(context)?.openDrawer());
-
     if (showBackButton) {
+      final onTap = onBackPressed ?? () => OwnerShell.goHome(context);
       return IconButton(
         onPressed: onTap,
-        icon: const Icon(Icons.arrow_back_rounded, color: AppColors.secondaryLight, size: 26),
+        icon: const Icon(
+          Icons.arrow_back_rounded,
+          color: AppColors.secondaryLight,
+          size: 30,
+        ),
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(), // Removes default extra padding
       );
     }
 
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppColors.secondaryLight,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.secondaryLight.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+    return Builder(
+      builder: (innerContext) {
+        final onTap = onMenuPressed ??
+            () {
+              OwnerShell.openDrawer(innerContext);
+            };
+        return InkWell(
+          onTap: onTap,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.secondaryLight,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.secondaryLight.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
-      ),
+            child: const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
+          ),
+        );
+      },
     );
   }
 

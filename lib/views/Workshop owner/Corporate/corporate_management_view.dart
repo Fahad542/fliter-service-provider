@@ -162,22 +162,34 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
           
           Container(height: 1, color: Colors.grey.withOpacity(0.06)),
 
-          // Bottom Section: Add User Action
+          // Bottom Section: Actions
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: Row(
               children: [
                 Expanded(
                   child: TextButton.icon(
                     onPressed: () => _showAddUserSheet(context, context.read<CorporateManagementViewModel>(), customer.id),
-                    icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                    label: const Text('Add User Access', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+                    label: const Text('Add User', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.secondaryLight,
                       backgroundColor: AppColors.primaryLight,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                TextButton.icon(
+                  onPressed: () => _showEditCorporateSheet(context, context.read<CorporateManagementViewModel>(), customer),
+                  icon: const Icon(Icons.edit_rounded, size: 16),
+                  label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.secondaryLight,
+                    backgroundColor: AppColors.secondaryLight.withOpacity(0.08),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
               ],
@@ -248,6 +260,16 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _AddCorporateUserSheet(vm: vm, corporateAccountId: customerId),
+    );
+  }
+
+  void _showEditCorporateSheet(BuildContext context, CorporateManagementViewModel vm, CorporateCustomer customer) {
+    vm.setEditCorporate(customer);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _EditCorporateSheet(vm: vm),
     );
   }
 }
@@ -655,7 +677,14 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
     );
   }
 
-  Widget _buildTextField(String label, IconData icon, TextEditingController controller, {bool isNumber = false, bool obscureText = false, Widget? suffixIcon}) {
+  Widget _buildTextField(
+    String label,
+    IconData icon,
+    TextEditingController controller, {
+    bool isNumber = false,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextField(
@@ -672,6 +701,178 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
+          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────
+// Edit Corporate Account Sheet
+// ─────────────────────────────────────────
+class _EditCorporateSheet extends StatelessWidget {
+  final CorporateManagementViewModel vm;
+  const _EditCorporateSheet({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider.value(
+      value: vm,
+      child: Consumer<CorporateManagementViewModel>(
+        builder: (context, vm, _) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.78,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Edit Corporate Account', style: AppTextStyles.h2.copyWith(fontSize: 18)),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Update the details below. Only changed fields will be sent.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 20),
+                      _editField('Company Name', Icons.business_rounded, vm.editCompanyNameController),
+                      _editField('Customer Name', Icons.person_rounded, vm.editCustomerNameController),
+                      _editField('Mobile', Icons.phone_android_rounded, vm.editMobileController, inputType: TextInputType.phone),
+                      _editField('Tax ID (VAT)', Icons.receipt_long_rounded, vm.editTaxIdController),
+                      const SizedBox(height: 4),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: DropdownButtonFormField<String>(
+                          value: ['pending', 'active', 'rejected'].contains(vm.editStatus) ? vm.editStatus : 'active',
+                          decoration: InputDecoration(
+                            labelText: 'Status',
+                            prefixIcon: const Icon(Icons.toggle_on_rounded, color: AppColors.secondaryLight, size: 20),
+                            filled: true,
+                            fillColor: Colors.grey.withOpacity(0.05),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                            labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
+                          items: ['pending', 'active', 'rejected']
+                              .map((s) => DropdownMenuItem(value: s, child: Text(s[0].toUpperCase() + s.substring(1))))
+                              .toList(),
+                          onChanged: (v) { if (v != null) vm.setEditStatus(v); },
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.store_mall_directory_rounded, size: 18, color: AppColors.secondaryLight),
+                          const SizedBox(width: 8),
+                          const Text('Select Branches', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w800, fontSize: 14)),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: AppColors.primaryLight.withOpacity(0.18), borderRadius: BorderRadius.circular(12)),
+                            child: Text(
+                              '${vm.editSelectedBranchIds.length} selected',
+                              style: const TextStyle(color: AppColors.secondaryLight, fontSize: 11, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (vm.branches.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(color: Colors.grey.withOpacity(0.06), borderRadius: BorderRadius.circular(14)),
+                          child: const Text('No branches found', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        )
+                      else
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 180),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8F9FD),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: vm.branches.length,
+                            itemBuilder: (ctx, i) {
+                              final branch = vm.branches[i];
+                              final isSelected = vm.editSelectedBranchIds.contains(branch.id);
+                              return CheckboxListTile(
+                                value: isSelected,
+                                activeColor: AppColors.primaryLight,
+                                controlAffinity: ListTileControlAffinity.leading,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                title: Text(branch.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                subtitle: branch.location.isEmpty ? null : Text(branch.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                onChanged: (_) => vm.toggleEditBranchSelection(branch.id),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(
+                  left: 24, right: 24, top: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                ),
+                child: ElevatedButton(
+                  onPressed: vm.isActionLoading ? null : () => vm.submitEditCorporateForm(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryLight,
+                    disabledBackgroundColor: AppColors.primaryLight,
+                    foregroundColor: AppColors.secondaryLight,
+                    disabledForegroundColor: AppColors.secondaryLight,
+                    minimumSize: const Size.fromHeight(56),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: vm.isActionLoading
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: AppColors.secondaryLight, strokeWidth: 2))
+                      : const Text('Save Changes', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _editField(String label, IconData icon, TextEditingController controller, {TextInputType inputType = TextInputType.text}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: controller,
+        keyboardType: inputType,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: AppColors.secondaryLight, size: 20),
+          filled: true,
+          fillColor: Colors.grey.withOpacity(0.05),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ),

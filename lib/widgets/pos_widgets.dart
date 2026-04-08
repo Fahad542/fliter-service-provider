@@ -13,11 +13,19 @@ import '../models/pos_product_model.dart'; // Added import for ProductCard
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/toast_service.dart';
+import '../utils/pos_tablet_layout.dart';
 import '../views/Workshop pos app/Notifications/notifications_view.dart';
 import '../views/Workshop pos app/Product Grid/pos_product_grid_view.dart';
 import '../views/Workshop pos app/Order Screen/pos_order_review_view.dart';
 import '../views/Workshop pos app/Department/pos_department_view.dart';
 import '../views/Workshop pos app/Technician Assignment/pos_technician_assignment_view.dart';
+import '../views/Workshop pos app/Add Customer Screen/pos_add_customer_view.dart';
+
+/// Left nav rail is shown on tablet landscape — hide redundant drawer hamburger.
+bool kPosHideDrawerMenuTabletLandscape(BuildContext context) {
+  final m = MediaQuery.of(context);
+  return m.size.width > 600 && m.orientation == Orientation.landscape;
+}
 
 // ── Reusable POS Screen AppBar (Back + Title + Global Icon) ──
 class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -43,9 +51,16 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final double iconContainerSize = isTablet ? 54 : 32;
-    final double iconSize = isTablet ? 28 : 16;
-    final double currentToolbarHeight = isTablet ? 80 : kToolbarHeight;
+    final double iconContainerSize =
+        isTablet ? PosTabletLayout.appBarIconBox : 32;
+    final double iconSize =
+        isTablet ? PosTabletLayout.appBarIconGlyph : 16;
+    final double currentToolbarHeight = PosTabletLayout.appBarHeight;
+    final hideDrawerMenu = kPosHideDrawerMenuTabletLandscape(context) &&
+        !showBackButton &&
+        !showGlobalLeft;
+    final showMenuLeading =
+        (showHamburger || onMenuPressed != null) && !hideDrawerMenu;
 
     return PreferredSize(
       preferredSize: Size.fromHeight(currentToolbarHeight),
@@ -53,17 +68,28 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
         decoration: BoxDecoration(
           color: AppColors.primaryLight,
           borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(isTablet ? 32 : 24),
+            bottom: Radius.circular(
+                isTablet ? PosTabletLayout.appBarBottomRadius : 24),
           ),
         ),
         child: AppBar(
           toolbarHeight: currentToolbarHeight,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leadingWidth: isTablet ? 80 : 56,
+          leadingWidth: showBackButton
+              ? (isTablet ? 56 : 48)
+              : showGlobalLeft
+                  ? (isTablet ? 80 : 56)
+                  : showMenuLeading
+                      ? (isTablet ? 80 : 56)
+                      : (isTablet ? 18 : 12),
           leading: showBackButton
               ? IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: Colors.black,
+                    size: isTablet ? PosTabletLayout.appBarBackIcon : 28,
+                  ),
                   onPressed: onBack ?? () => Navigator.pop(context),
                 )
               : showGlobalLeft
@@ -81,8 +107,8 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                             },
                             borderRadius: BorderRadius.circular(20),
                             child: Container(
-                              width: isTablet ? 54 : 40,
-                              height: isTablet ? 54 : 40,
+                              width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                              height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.35),
                                 shape: BoxShape.circle,
@@ -90,12 +116,12 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                               child: Center(
                                 child: Image.asset(
                                   'assets/images/global.png',
-                                  width: isTablet ? 30 : 22,
+                                  width: isTablet ? 26 : 22,
                                   color: Colors.black,
                                   errorBuilder: (context, error, stackTrace) =>
                                       Icon(
                                         Icons.language_rounded,
-                                        size: isTablet ? 30 : 22,
+                                        size: isTablet ? 26 : 22,
                                         color: Colors.black,
                                       ),
                                 ),
@@ -105,7 +131,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                         },
                       ),
                     )
-                  : (showHamburger || onMenuPressed != null)
+                  : showMenuLeading
                       ? Padding(
                           padding: EdgeInsets.only(left: isTablet ? 14 : 14),
                           child: Align(
@@ -139,13 +165,17 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                             ),
                           ),
                         )
-                      : null,
+                      : Padding(
+                          padding: EdgeInsets.only(left: isTablet ? 10 : 6),
+                          child: const SizedBox.shrink(),
+                        ),
           title: Text(
             title,
             style: TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
-              fontSize: isTablet ? 21 : 19,
+              fontSize:
+                  isTablet ? PosTabletLayout.appBarTitleSize : 19,
             ),
           ),
           centerTitle: true,
@@ -162,8 +192,8 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                       settings.updateLocale(newLocale);
                     },
                     child: Container(
-                      width: isTablet ? 54 : 40,
-                      height: isTablet ? 54 : 40,
+                      width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                      height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.35),
                         shape: BoxShape.circle,
@@ -171,11 +201,11 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                       child: Center(
                         child: Image.asset(
                           'assets/images/global.png',
-                          width: isTablet ? 30 : 22,
+                          width: isTablet ? 26 : 22,
                           color: Colors.black,
                           errorBuilder: (context, error, stackTrace) => Icon(
                             Icons.language_rounded,
-                            size: isTablet ? 30 : 22,
+                            size: isTablet ? 26 : 22,
                             color: Colors.black,
                           ),
                         ),
@@ -186,7 +216,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             const SizedBox(width: 8),
             Padding(
-              padding: EdgeInsets.only(right: isTablet ? 24 : 12),
+              padding: EdgeInsets.only(right: isTablet ? 18 : 12),
               child: InkWell(
                 onTap: () {
                   Navigator.push(
@@ -198,8 +228,8 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  width: isTablet ? 54 : 40,
-                  height: isTablet ? 54 : 40,
+                  width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                  height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.35),
                     shape: BoxShape.circle,
@@ -209,17 +239,17 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                     children: [
                       Image.asset(
                         'assets/images/notifications.png',
-                        width: isTablet ? 30 : 22,
+                        width: isTablet ? 26 : 22,
                         color: Colors.black,
                         errorBuilder: (context, error, stackTrace) => Icon(
                           Icons.notifications_rounded,
-                          size: isTablet ? 30 : 22,
+                          size: isTablet ? 26 : 22,
                           color: Colors.black,
                         ),
                       ),
                       Positioned(
-                        top: isTablet ? 12 : 8,
-                        right: isTablet ? 12 : 8,
+                        top: isTablet ? 9 : 8,
+                        right: isTablet ? 9 : 8,
                         child: Container(
                           width: isTablet ? 10 : 8,
                           height: isTablet ? 10 : 8,
@@ -242,11 +272,8 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize {
-    // This is called before build, so we use a basic check or just kToolbarHeight
-    // but the PreferredSize widget above handles the actual height used in layout.
-    return const Size.fromHeight(80); 
-  }
+  Size get preferredSize =>
+      const Size.fromHeight(PosTabletLayout.appBarHeight);
 }
 
 class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -278,30 +305,43 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final double iconContainerSize = isTablet ? 56 : 36;
-    final double iconSize = isTablet ? 28 : 18;
-    final bool hasInfo = infoTitle != null;
-    final double currentToolbarHeight = isTablet ? 110 : 70;
+    final double iconContainerSize =
+        isTablet ? PosTabletLayout.menuIconBox : 36;
+    final double iconSize =
+        isTablet ? PosTabletLayout.menuIconGlyph : 18;
+    final double currentToolbarHeight =
+        customHeight ?? PosTabletLayout.appBarHeight;
+    final hideDrawerMenu =
+        showDrawer && kPosHideDrawerMenuTabletLandscape(context);
+    final showDrawerLeading = showDrawer && !hideDrawerMenu;
+    // Home (etc.): rail replaces drawer — put FILTER logo at start of app bar.
+    final alignTitleStart =
+        hideDrawerMenu && !showGlobalLeft && !showBackButton;
 
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: AppColors.primaryLight,
       elevation: 0,
-      centerTitle: true,
+      centerTitle: !alignTitleStart,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(isTablet ? 40 : 32),
+          bottom: Radius.circular(
+              isTablet ? PosTabletLayout.appBarBottomRadius : 24),
         ),
       ),
       toolbarHeight: currentToolbarHeight,
       leadingWidth: showGlobalLeft
           ? (isTablet ? 74 : 64)
-          : (showDrawer ? (isTablet ? 74 : 64) : 0),
+          : showDrawerLeading
+              ? (isTablet ? 74 : 64)
+              : hideDrawerMenu
+                  ? (isTablet ? 20 : 12)
+                  : 0,
       leading: showGlobalLeft
           ? Padding(
               padding: EdgeInsets.only(
                 left: 10,
-                top: isTablet ? 20 : 8,
+                top: isTablet ? 8 : 8,
                 bottom: isTablet ? 8 : 8,
               ),
               child: Consumer<SettingsViewModel>(
@@ -315,8 +355,8 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                     },
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      width: isTablet ? 54 : 40,
-                      height: isTablet ? 54 : 40,
+                      width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                      height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.35),
                         shape: BoxShape.circle,
@@ -324,12 +364,12 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                       child: Center(
                         child: Image.asset(
                           'assets/images/global.png',
-                          width: isTablet ? 30 : 22,
+                          width: isTablet ? 26 : 22,
                           color: Colors.black,
                           errorBuilder: (context, error, stackTrace) =>
                               Icon(
                                 Icons.language_rounded,
-                                size: isTablet ? 30 : 22,
+                                size: isTablet ? 26 : 22,
                                 color: Colors.black,
                               ),
                         ),
@@ -339,53 +379,55 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                 },
               ),
             )
-          : showDrawer
-          ? Padding(
-              padding: EdgeInsets.only(left: isTablet ? 14 : 14),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap:
-                      onMenuPressed ?? () => Scaffold.of(context).openDrawer(),
-                  child: Container(
-                    width: iconContainerSize,
-                    height: iconContainerSize,
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryLight,
-                      borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.secondaryLight.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
+          : showDrawerLeading
+              ? Padding(
+                  padding: EdgeInsets.only(left: isTablet ? 14 : 14),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onMenuPressed ??
+                          () => Scaffold.of(context).openDrawer(),
+                      child: Container(
+                        width: iconContainerSize,
+                        height: iconContainerSize,
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryLight,
+                          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.secondaryLight.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.menu_rounded,
-                      color: Colors.white,
-                      size: iconSize,
+                        child: Icon(
+                          Icons.menu_rounded,
+                          color: Colors.white,
+                          size: iconSize,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            )
-          : null,
+                )
+              : hideDrawerMenu
+                  ? const SizedBox.shrink()
+                  : null,
       title: Padding(
-        padding: EdgeInsets.only(top: isTablet ? 25 : 0),
+        padding: EdgeInsets.zero,
         child: customTitle != null
             ? Text(
                 customTitle!,
                 style: AppTextStyles.h2.copyWith(
                   color: Colors.black,
-                  fontSize: isTablet ? 24 : 18,
+                  fontSize: isTablet ? PosTabletLayout.appBarTitleSize : 18,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
               )
             : SizedBox(
-                height: isTablet ? 45 : 28,
+                height: isTablet ? PosTabletLayout.appBarLogoHeight : 28,
                 child: Image.asset(
                   'assets/images/icon.png',
                   color: Colors.black,
@@ -399,10 +441,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
         if (!showGlobalLeft) ...[
           // Language Pill
           Padding(
-            padding: EdgeInsets.only(
-              top: isTablet ? 20 : 0,
-              bottom: isTablet ? 8 : 0,
-            ),
+            padding: EdgeInsets.zero,
             child: Consumer<SettingsViewModel>(
               builder: (context, settings, _) {
                 return InkWell(
@@ -414,8 +453,8 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                   },
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    width: isTablet ? 54 : 40,
-                    height: isTablet ? 54 : 40,
+                    width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                    height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.35),
                       shape: BoxShape.circle,
@@ -423,12 +462,12 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                     child: Center(
                       child: Image.asset(
                         'assets/images/global.png',
-                        width: isTablet ? 30 : 22,
+                        width: isTablet ? 26 : 22,
                         color: Colors.black,
                         errorBuilder: (context, error, stackTrace) =>
                             Icon(
                               Icons.language_rounded,
-                              size: isTablet ? 30 : 22,
+                              size: isTablet ? 26 : 22,
                               color: Colors.black,
                             ),
                       ),
@@ -442,10 +481,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
 
         Padding(
-          padding: EdgeInsets.only(
-            top: isTablet ? 20 : 0,
-            bottom: isTablet ? 8 : 0,
-          ),
+          padding: EdgeInsets.zero,
           child: InkWell(
             onTap: () {
               Navigator.push(
@@ -457,8 +493,8 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(
-              width: isTablet ? 54 : 40,
-              height: isTablet ? 54 : 40,
+              width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+              height: isTablet ? PosTabletLayout.appBarIconBox : 40,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.35),
                 shape: BoxShape.circle,
@@ -468,17 +504,17 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                   Image.asset(
                     'assets/images/notifications.png',
-                    width: isTablet ? 30 : 22,
+                    width: isTablet ? 26 : 22,
                     color: Colors.black,
                     errorBuilder: (context, error, stackTrace) => Icon(
                       Icons.notifications_rounded,
-                      size: isTablet ? 30 : 22,
+                      size: isTablet ? 26 : 22,
                       color: Colors.black,
                     ),
                   ),
                   Positioned(
-                    top: isTablet ? 12 : 8,
-                    right: isTablet ? 12 : 8,
+                    top: isTablet ? 9 : 8,
+                    right: isTablet ? 9 : 8,
                     child: Container(
                       width: isTablet ? 10 : 8,
                       height: isTablet ? 10 : 8,
@@ -501,9 +537,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize {
     if (customHeight != null) return Size.fromHeight(customHeight!);
-    // Return a height that works for both mobile and tablet, or detect here if possible
-    // Using a dynamic value based on kToolbarHeight is usually safer
-    return const Size.fromHeight(110); 
+    return const Size.fromHeight(PosTabletLayout.appBarHeight);
   }
 }
 
@@ -655,6 +689,7 @@ class SearchHistoryData {
   final String vehicle;
   final String plate;
   final String customer;
+  final String? phone;
   final String lastVisit;
   final String lastService;
   final bool isCorporate;
@@ -663,6 +698,7 @@ class SearchHistoryData {
     required this.vehicle,
     required this.plate,
     required this.customer,
+    this.phone,
     required this.lastVisit,
     required this.lastService,
     required this.isCorporate,
@@ -673,6 +709,7 @@ class SearchHistoryItem extends StatelessWidget {
   final String vehicle;
   final String plate;
   final String customer;
+  final String? phone;
   final String lastVisit;
   final String lastService;
   final String? orderNumber;
@@ -686,6 +723,7 @@ class SearchHistoryItem extends StatelessWidget {
     required this.vehicle,
     required this.plate,
     required this.customer,
+    this.phone,
     required this.lastVisit,
     required this.lastService,
     this.orderNumber,
@@ -699,7 +737,7 @@ class SearchHistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // Reverting to compact scaling for both mobile and tablet as per user request
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -767,19 +805,19 @@ class SearchHistoryItem extends StatelessWidget {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 9),
                     Text(
-                      'Plate: $plate  •  $customer',
+                      'Plate: $plate  •  $customer${(phone != null && phone!.trim().isNotEmpty) ? '  •  ${phone!.trim()}' : ''}',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Colors.grey.shade600,
                         fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                        horizontal: 12,
+                        vertical: 7,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
@@ -815,7 +853,7 @@ class SearchHistoryItem extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
@@ -825,7 +863,7 @@ class SearchHistoryItem extends StatelessWidget {
                     backgroundColor: AppColors.primaryLight,
                     foregroundColor: AppColors.secondaryLight,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -839,7 +877,7 @@ class SearchHistoryItem extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
                   onPressed: onViewHistory ?? () {},
@@ -847,7 +885,7 @@ class SearchHistoryItem extends StatelessWidget {
                     backgroundColor: AppColors.secondaryLight,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -861,20 +899,20 @@ class SearchHistoryItem extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton(
                   onPressed: onSalesReturn ?? () {},
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red.shade400,
                     side: BorderSide(color: Colors.red.shade200),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
-                    'Sales Return / Credit Note',
+                    'Sales Return',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 11,
@@ -962,14 +1000,14 @@ class PosBottomBar extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: isTablet ? 28 : 22,
+              size: isTablet ? 25 : 22,
               color: isSelected ? AppColors.primaryLight : Colors.grey,
             ),
             const SizedBox(height: 3),
             Text(
               label,
               style: AppTextStyles.bodyMedium.copyWith(
-                fontSize: isTablet ? 12 : 10,
+                fontSize: isTablet ? 11 : 10,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? AppColors.secondaryLight : Colors.grey,
               ),
@@ -1004,6 +1042,7 @@ class PosSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final fieldFont = isTablet ? 13.0 : 14.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -1026,9 +1065,9 @@ class PosSearchBar extends StatelessWidget {
               autofocus: autofocus,
               textAlign: TextAlign.left,
               onTap: onTap,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF1E2124),
+              style: TextStyle(
+                fontSize: fieldFont,
+                color: const Color(0xFF1E2124),
                 fontWeight: FontWeight.w500,
               ),
               decoration: InputDecoration(
@@ -1036,13 +1075,13 @@ class PosSearchBar extends StatelessWidget {
                 hintText: hintText,
                 hintStyle: TextStyle(
                   color: Colors.grey.shade400,
-                  fontSize: 14,
+                  fontSize: fieldFont,
                   fontWeight: FontWeight.w400,
                 ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 16 : 20,
+                  vertical: isTablet ? 12 : 14,
                 ),
               ),
               inputFormatters: inputFormatters ?? [EnglishNumberFormatter()],
@@ -1078,27 +1117,112 @@ class OrderItemCard extends StatefulWidget {
 }
 
 class _OrderItemCardState extends State<OrderItemCard> {
+  PosOrderJob? _getHighestJobById() {
+    if (widget.order.jobs.isEmpty) return null;
+    final sorted = List<PosOrderJob>.from(widget.order.jobs);
+    sorted.sort(
+      (a, b) =>
+          (int.tryParse(a.id) ?? 0).compareTo(int.tryParse(b.id) ?? 0),
+    );
+    return sorted.last;
+  }
+
+  void _openEditOrderFlow(BuildContext context) {
+    final posVm = context.read<pvm.PosViewModel>();
+
+    String departmentId = '1';
+    String departmentName = 'All';
+
+    if (widget.order.jobs.isNotEmpty) {
+      final latestJob = _getHighestJobById()!;
+      if (latestJob.department.isNotEmpty) {
+        departmentName = latestJob.department;
+      }
+      if (latestJob.items.isNotEmpty &&
+          latestJob.items.first.departmentId.isNotEmpty) {
+        departmentId = latestJob.items.first.departmentId;
+      }
+    }
+
+    if (departmentId == '1' && widget.order.items.isNotEmpty) {
+      for (final item in widget.order.items) {
+        final itemDepartmentId = item['departmentId']?.toString();
+        if (itemDepartmentId != null && itemDepartmentId.isNotEmpty) {
+          departmentId = itemDepartmentId;
+          final itemDepartmentName = item['departmentName']?.toString();
+          if (itemDepartmentName != null && itemDepartmentName.isNotEmpty) {
+            departmentName = itemDepartmentName;
+          }
+          break;
+        }
+      }
+    }
+
+    List<dynamic> preSelectedItems = [];
+    if (widget.order.jobs.isNotEmpty) {
+      final highestJob = _getHighestJobById()!;
+      for (final item in highestJob.items) {
+        preSelectedItems.add({
+          item.itemType == 'service' ? 'serviceId' : 'productId': item.productId,
+          'quantity': item.qty,
+          'discountType': item.discountType,
+          'discountValue': item.discountValue ?? 0.0,
+          if (item.itemType == 'service' && item.unitPrice > 0) 'unitPrice': item.unitPrice,
+        });
+      }
+    } else if (widget.order.items.isNotEmpty) {
+      preSelectedItems = widget.order.items;
+    }
+
+    posVm.clearCart();
+    posVm.setCustomerData(
+      name: widget.order.customerName,
+      vat: widget.order.customer?.vatNumber ?? '',
+      mobile: widget.order.customer?.mobile ?? '',
+      vehicleNumber: widget.order.plateNumber,
+      make: widget.order.vehicle?.make ?? '',
+      model: widget.order.vehicle?.model ?? '',
+      odometer: widget.order.odometerReading,
+      previousOrderId: widget.order.id,
+    );
+    posVm.setEditOrderContext(
+      departmentId: departmentId,
+      preSelectedItems: preSelectedItems,
+      order: widget.order,
+      completingOrderId: widget.order.jobs.isNotEmpty
+          ? _getHighestJobById()!.id
+          : widget.order.id,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PosAddCustomerView(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final displayStatus = widget.order.statusText.toLowerCase();
+    final displayStatus = widget.order.displayJobStatus.toLowerCase();
     final isInvoiced = widget.order.status.toLowerCase() == 'invoiced';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 3),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
         border: Border.all(color: Colors.black.withOpacity(0.02)),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: isInvoiced
               ? null
@@ -1109,50 +1233,44 @@ class _OrderItemCardState extends State<OrderItemCard> {
                     widget.isTablet,
                   );
                 },
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: widget.isTablet ? 24 : 16,
-              vertical: widget.isTablet ? 16 : 14,
-            ),
-            child: Column(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                widget.isTablet ? 12 : 16,
+                widget.isTablet ? 9 : 14,
+                widget.isTablet ? 12 : 16,
+                widget.isTablet ? 8 : 14,
+              ),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            'Order #${widget.order.id.split('-').last.toUpperCase()}',
-                            style: TextStyle(
-                              fontSize: widget.isTablet ? 14 : 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
                           Row(
                             children: [
-                              Flexible(
+                              Expanded(
                                 child: Text(
-                                  widget.order.customerName,
+                                  'Order #${widget.order.id.split('-').last.toUpperCase()}',
                                   style: TextStyle(
-                                    fontSize: widget.isTablet ? 18 : 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF1E2124),
+                                    fontSize: widget.isTablet ? 10 : 8.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.shade500,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
+                                  horizontal: 5,
+                                  vertical: 1,
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade200,
@@ -1163,14 +1281,14 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                   children: [
                                     Icon(
                                       Icons.layers_rounded,
-                                      size: widget.isTablet ? 14 : 10,
+                                      size: widget.isTablet ? 13 : 9,
                                       color: const Color(0xFF1E2124),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${widget.order.jobsCount} JOBS',
+                                      '${widget.order.jobsCount} JOB',
                                       style: TextStyle(
-                                        fontSize: widget.isTablet ? 11 : 9,
+                                        fontSize: widget.isTablet ? 8 : 7.5,
                                         fontWeight: FontWeight.w700,
                                         color: const Color(0xFF1E2124),
                                         letterSpacing: 0.2,
@@ -1179,24 +1297,44 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 6),
+                              _buildStatusPill(widget.order),
                             ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.order.plateNumber.trim().isNotEmpty
+                                ? widget.order.plateNumber.toUpperCase()
+                                : '—',
+                            style: TextStyle(
+                              fontSize: widget.isTablet ? 13 : 13,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E2124),
+                              height: 1.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    _buildStatusPill(widget.order),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: widget.isTablet ? 8 : 10),
                 Row(
                   children: [
                     Expanded(
                       flex: 6,
                       child: _buildPremiumDetailItem(
-                        widget.order.carModel,
-                        subtitle:
-                            'Plate: ${widget.order.plateNumber.toUpperCase()}',
+                        widget.order.customerName == 'Unknown'
+                            ? (widget.order.carModel.isNotEmpty
+                                ? widget.order.carModel
+                                : '—')
+                            : widget.order.customerName,
+                        subtitle: widget.order.carModel.isNotEmpty &&
+                                widget.order.customerName != 'Unknown'
+                            ? widget.order.carModel
+                            : null,
                         isTablet: widget.isTablet,
                       ),
                     ),
@@ -1213,16 +1351,52 @@ class _OrderItemCardState extends State<OrderItemCard> {
                     ),
                   ],
                 ),
+                SizedBox(height: widget.isTablet ? 5 : 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.engineering_rounded,
+                      size: widget.isTablet ? 11 : 11,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Technician: ${widget.order.assignedTechnicianNames.trim().isEmpty ? 'None' : widget.order.assignedTechnicianNames}',
+                        style: TextStyle(
+                          fontSize: widget.isTablet ? 8.5 : 8,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w600,
+                          height: 1.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: widget.isTablet ? 8 : 10),
                 Builder(
                   builder: (context) {
-                    String displayStatus = widget.order.statusText
+                    String displayStatus = widget.order.displayJobStatus
                         .toLowerCase();
+                    final canShowCancelOrder =
+                        displayStatus != 'completed' &&
+                        displayStatus != 'completed by technician' &&
+                        displayStatus != 'cancelled';
+                    final canShowOrderDetails =
+                        displayStatus != 'completed' &&
+                        displayStatus != 'completed by technician' &&
+                        displayStatus != 'invoiced' &&
+                        displayStatus != 'pending assignment' &&
+                        displayStatus != 'cancelled';
 
                     if (displayStatus == 'completed by technician') {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const SizedBox(height: 16),
+                          SizedBox(height: widget.isTablet ? 5 : 4),
                           Row(
                             children: [
                               Expanded(
@@ -1248,7 +1422,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                     .jobs
                                                     .isNotEmpty) {
                                                   final job =
-                                                      widget.order.latestJob!;
+                                                      _getHighestJobById()!;
                                                   if (job
                                                       .department
                                                       .isNotEmpty) {
@@ -1334,13 +1508,14 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                     .order
                                                     .jobs
                                                     .isNotEmpty) {
+                                                  final highestJob =
+                                                      _getHighestJobById()!;
                                                   for (var item
-                                                      in widget
-                                                          .order
-                                                          .latestJob!
-                                                          .items) {
+                                                      in highestJob.items) {
                                                     preSelected.add({
-                                                      'productId':
+                                                      item.itemType == 'service'
+                                                          ? 'serviceId'
+                                                          : 'productId':
                                                           item.productId,
                                                       'quantity': item.qty,
                                                       'discountType':
@@ -1356,6 +1531,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                   preSelected =
                                                       widget.order.items;
                                                 }
+                                                posVm.clearCart();
                                                 Navigator.push(
                                                   context,
                                                   MaterialPageRoute(
@@ -1373,7 +1549,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                                   .isNotEmpty
                                                               ? widget
                                                                     .order
-                                                                    .latestJob!
+                                                                    .jobs
+                                                                    .reduce((a, b) => (int.tryParse(a.id) ?? 0) > (int.tryParse(b.id) ?? 0) ? a : b)
                                                                     .id
                                                               : widget.order.id,
                                                           completingOrder:
@@ -1385,10 +1562,26 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                             },
                                       isLoading: isCurrentOrderLoading,
                                       icon: Icons.check_circle_outline_rounded,
-                                      label: 'Service Completed',
-                                      color: AppColors.primaryLight,
+                                      label: 'Complete',
+                                      color: AppColors.secondaryLight,
+                                      isSecondary: true,
                                     );
                                   },
+                                ),
+                              ),
+                              SizedBox(width: widget.isTablet ? 10 : 8),
+                              Expanded(
+                                child: _buildActionButton(
+                                  onPressed: () {
+                                    _showOrderDetailsSheet(
+                                      context,
+                                      widget.order,
+                                      widget.isTablet,
+                                    );
+                                  },
+                                  icon: Icons.visibility_outlined,
+                                  label: 'Order Details',
+                                  color: AppColors.primaryLight,
                                 ),
                               ),
                             ],
@@ -1404,37 +1597,91 @@ class _OrderItemCardState extends State<OrderItemCard> {
                           widget.order.status.toLowerCase() == 'invoiced';
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const SizedBox(height: 16),
+                          SizedBox(height: widget.isTablet ? 5 : 4),
                           if (displayStatus.contains('pending') || displayStatus.contains('draft'))
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                              padding: EdgeInsets.only(
+                                bottom: widget.isTablet ? 10 : 8,
+                              ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: _buildActionButton(
                                       onPressed: () {
+                                        if (displayStatus ==
+                                            'pending assignment') {
+                                          _openEditOrderFlow(context);
+                                          return;
+                                        }
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (_) => PosTechnicianAssignmentView(
-                                              jobId: widget.order.jobs.isNotEmpty
-                                                  ? widget.order.latestJob!.id
-                                                  : widget.order.id,
-                                              departmentName: widget
-                                                  .order.latestJob?.department,
-                                            ),
+                                            builder: (_) =>
+                                                PosTechnicianAssignmentView(
+                                                  jobId:
+                                                      widget.order.jobs.isNotEmpty
+                                                      ? _getHighestJobById()!.id
+                                                      : widget.order.id,
+                                                  departmentName: widget
+                                                      .order
+                                                      .jobs
+                                                      .isNotEmpty
+                                                      ? _getHighestJobById()!.department
+                                                      : widget.order.latestJob
+                                                      ?.department,
+                                                ),
                                           ),
                                         );
                                       },
                                       icon: Icons.assignment_ind_rounded,
-                                      label: 'Forward to Technician',
+                                      label: displayStatus == 'pending assignment'
+                                          ? 'Edit Order'
+                                          : 'Forward to Technician',
                                       color: AppColors.primaryLight,
+                                      labelFontSize: 12,
                                     ),
                                   ),
+                                  if (canShowCancelOrder) ...[
+                                    SizedBox(width: widget.isTablet ? 10 : 8),
+                                    Expanded(
+                                      child: _buildActionButton(
+                                        onPressed: () => _showCancelOrderDialog(
+                                          context,
+                                          widget.order.id,
+                                        ),
+                                        icon: Icons.cancel_outlined,
+                                        label: 'Cancel Order',
+                                        color: AppColors.secondaryLight,
+                                        isSecondary: true,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
+                          if (canShowOrderDetails) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildActionButton(
+                                    onPressed: () {
+                                      _showOrderDetailsSheet(
+                                        context,
+                                        widget.order,
+                                        widget.isTablet,
+                                      );
+                                    },
+                                    icon: Icons.visibility_outlined,
+                                    label: 'Order Details',
+                                    color: AppColors.primaryLight,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           if (!(displayStatus.contains('pending') || displayStatus.contains('draft')))
                             Row(
                               children: [
@@ -1504,7 +1751,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                   },
                                 ),
                               ),
-                              if (!isInvoiced) const SizedBox(width: 10),
+                              if (!isInvoiced)
+                                SizedBox(width: widget.isTablet ? 10 : 8),
                               if (!isInvoiced)
                                 Expanded(
                                   child: Consumer<pvm.PosViewModel>(
@@ -1515,7 +1763,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                           posVm.setCustomerData(
                                             name: widget.order.customerName,
                                             vat:
-                                                '', // VAT doesn't seem to be in PosOrder list model directly
+                                                widget.order.customer?.vatNumber ??
+                                                '',
                                             mobile:
                                                 widget.order.customer?.mobile ??
                                                 '',
@@ -1552,6 +1801,48 @@ class _OrderItemCardState extends State<OrderItemCard> {
                         ],
                       );
                     }
+                    if (canShowCancelOrder) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(height: widget.isTablet ? 5 : 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildActionButton(
+                                  onPressed: canShowOrderDetails
+                                      ? () {
+                                          _showOrderDetailsSheet(
+                                            context,
+                                            widget.order,
+                                            widget.isTablet,
+                                          );
+                                        }
+                                      : null,
+                                  icon: Icons.visibility_outlined,
+                                  label: 'Order Details',
+                                  color: AppColors.primaryLight,
+                                ),
+                              ),
+                              SizedBox(width: widget.isTablet ? 10 : 8),
+                              Expanded(
+                                child: _buildActionButton(
+                                  onPressed: () => _showCancelOrderDialog(
+                                    context,
+                                    widget.order.id,
+                                  ),
+                                  icon: Icons.cancel_outlined,
+                                  label: 'Cancel Order',
+                                  color: AppColors.secondaryLight,
+                                  isSecondary: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
                     return const SizedBox.shrink();
                   },
                 ),
@@ -1559,9 +1850,130 @@ class _OrderItemCardState extends State<OrderItemCard> {
             ),
           ),
         ),
+        ),
       ),
     );
   }
+}
+
+void _showCancelOrderDialog(BuildContext context, String orderId) {
+  final reasonController = TextEditingController();
+  bool isLoading = false;
+
+  showDialog(
+    context: context,
+    builder: (dialogContext) {
+      return StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+            titlePadding: const EdgeInsets.fromLTRB(28, 28, 28, 8),
+            contentPadding: const EdgeInsets.fromLTRB(28, 12, 28, 20),
+            actionsPadding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
+            title: const Text(
+              'Cancel Order',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Please provide a reason for cancellation.',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                ),
+                const SizedBox(height: 18),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: const TextStyle(fontSize: 15),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Customer requested cancellation',
+                    hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: AppColors.primaryLight, width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondaryLight,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Go Back', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              final reason = reasonController.text.trim();
+                              if (reason.isEmpty) {
+                                ToastService.showError(ctx, 'Please enter a cancellation reason');
+                                return;
+                              }
+                              setDialogState(() => isLoading = true);
+                              final vm = ctx.read<pvm.PosViewModel>();
+                              final success = await vm.cancelOrder(context, orderId, reason);
+                              if (success && dialogContext.mounted) {
+                                Navigator.pop(dialogContext);
+                              } else {
+                                setDialogState(() => isLoading = false);
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryLight,
+                        foregroundColor: AppColors.secondaryLight,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : const Text('Confirm Cancel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 }
 
 void _showOrderDetailsSheet(
@@ -1627,15 +2039,15 @@ void _showOrderDetailsSheet(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
-      final sortedJobs = List<PosOrderJob>.from(order.jobs);
-      final latestId = order.latestJob?.id;
-      if (latestId != null) {
-        sortedJobs.sort((a, b) {
-          if (a.id == latestId) return -1;
-          if (b.id == latestId) return 1;
-          return 0; // maintain relative order
+      final sortedJobs = List<PosOrderJob>.from(order.jobs)
+        ..sort((a, b) {
+          final aId = int.tryParse(a.id) ?? -1;
+          final bId = int.tryParse(b.id) ?? -1;
+          final byNumericId = bId.compareTo(aId); // greatest id first
+          if (byNumericId != 0) return byNumericId;
+          return b.id.compareTo(a.id);
         });
-      }
+      final latestId = order.latestJob?.id;
 
       return Container(
         constraints: BoxConstraints(
@@ -1710,7 +2122,9 @@ void _showOrderDetailsSheet(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          order.customerName,
+                          order.plateNumber.trim().isNotEmpty
+                              ? order.plateNumber.toUpperCase()
+                              : '—',
                           style: AppTextStyles.h3.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -1721,11 +2135,20 @@ void _showOrderDetailsSheet(
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${order.vehicle?.make ?? ""} ${order.vehicle?.model ?? ""}'
-                                  .trim()
-                                  .isEmpty
-                              ? "Walk-in${order.plateNumber.isNotEmpty ? '  •  ${order.plateNumber}' : ''}"
-                              : '${order.vehicle?.make ?? ""} ${order.vehicle?.model ?? ""}  •  ${order.plateNumber.isNotEmpty ? order.plateNumber : 'N/A'}',
+                          () {
+                            final model =
+                                '${order.vehicle?.make ?? ""} ${order.vehicle?.model ?? ""}'
+                                    .trim();
+                            final cust = order.customerName;
+                            if (cust != 'Unknown' && cust.isNotEmpty) {
+                              return model.isEmpty
+                                  ? cust
+                                  : '$cust  •  $model';
+                            }
+                            return model.isEmpty
+                                ? 'Walk-in'
+                                : model;
+                          }(),
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Colors.grey.shade400,
                             fontWeight: FontWeight.w500,
@@ -1821,34 +2244,38 @@ void _showOrderDetailsSheet(
                                       ),
                                     ),
                                     child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primaryLight
-                                                .withOpacity(0.15),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.business_center_rounded,
-                                            size: 16,
-                                            color: AppColors.secondaryLight,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
                                         Expanded(
-                                          child: Text(
-                                            job.department,
-                                            style: AppTextStyles.bodyLarge
-                                                .copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color:
-                                                      AppColors.secondaryLight,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                job.department,
+                                                style: AppTextStyles.bodyLarge
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: AppColors
+                                                          .secondaryLight,
+                                                    ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Job ID: ${job.id}',
+                                                style: AppTextStyles.bodySmall
+                                                    .copyWith(
+                                                      color:
+                                                          Colors.grey.shade600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                         buildStatusBadge(
@@ -2178,10 +2605,27 @@ void _showCompletionBottomSheet(
   pvm.PosViewModel posVm,
 ) {
   final isTablet = MediaQuery.of(context).size.width > 600;
+  PosOrderJob? highestJob;
+  if (order.jobs.isNotEmpty) {
+    final sorted = List<PosOrderJob>.from(order.jobs);
+    sorted.sort(
+      (a, b) =>
+          (int.tryParse(a.id) ?? 0).compareTo(int.tryParse(b.id) ?? 0),
+    );
+    highestJob = sorted.last;
+  }
 
-  // Parse order items for display
+  // Parse latest job items for display (fallback to order items)
   final List<Map<String, dynamic>> parsedItems = [];
-  if (order.items.isNotEmpty) {
+  if (highestJob != null && highestJob.items.isNotEmpty) {
+    for (final item in highestJob.items) {
+      parsedItems.add({
+        'name': item.productName,
+        'price': item.unitPrice,
+        'qty': item.qty,
+      });
+    }
+  } else if (order.items.isNotEmpty) {
     for (var item in order.items) {
       final priceDynamic = item['price'] ?? item['unitPrice'] ?? 0.0;
       final double price = (priceDynamic as num?)?.toDouble() ?? 0.0;
@@ -2274,7 +2718,9 @@ void _showCompletionBottomSheet(
                               SizedBox(width: isTablet ? 8 : 6),
                               Expanded(
                                 child: Text(
-                                  order.customerName,
+                                  order.plateNumber.trim().isNotEmpty
+                                      ? order.plateNumber.toUpperCase()
+                                      : '—',
                                   style: TextStyle(
                                     fontSize: isTablet ? 22 : 13,
                                     fontWeight: FontWeight.w700,
@@ -2314,7 +2760,14 @@ void _showCompletionBottomSheet(
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  '${order.carModel} • ${order.plateNumber.toUpperCase()}',
+                                  () {
+                                    final m = order.carModel.trim();
+                                    final c = order.customerName;
+                                    if (c != 'Unknown' && c.isNotEmpty) {
+                                      return m.isEmpty ? c : '$m • $c';
+                                    }
+                                    return m.isEmpty ? '—' : m;
+                                  }(),
                                   style: TextStyle(
                                     color: Colors.grey,
                                     fontSize: isTablet ? 17 : 10,
@@ -2491,11 +2944,12 @@ void _showCompletionBottomSheet(
                                       try {
                                         final String jobIdToComplete =
                                             order.jobs.isNotEmpty
-                                            ? order.latestJob!.id
+                                            ? highestJob!.id
                                             : order.id;
                                         final response = await posVm
                                             .completeCashierJob(
                                               jobIdToComplete,
+                                              sourceOrder: order,
                                             );
                                         if (response != null &&
                                             response.success) {
@@ -2569,7 +3023,7 @@ void _showCompletionBottomSheet(
 }
 
 Widget _buildStatusPill(PosOrder order) {
-  String statusStr = order.statusText;
+  String statusStr = order.displayJobStatus.replaceAll('_', ' ').toUpperCase();
 
   String status = statusStr.toLowerCase();
 
@@ -2599,16 +3053,16 @@ Widget _buildStatusPill(PosOrder order) {
   }
 
   return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
     decoration: BoxDecoration(
       color: bgColor,
       borderRadius: BorderRadius.circular(12),
     ),
     child: Text(
-      statusStr.toUpperCase().replaceAll(' ACCEPTION', ''),
+      statusStr.replaceAll(' ACCEPTION', ''),
       style: TextStyle(
         color: textColor,
-        fontSize: 9,
+        fontSize: 8,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.5,
       ),
@@ -2624,26 +3078,31 @@ Widget _buildPremiumDetailItem(
 }) {
   return Column(
     crossAxisAlignment: crossAxisAlignment,
+    mainAxisSize: MainAxisSize.min,
     children: [
       Text(
         title,
         style: TextStyle(
-          fontSize: isTablet ? 15 : 12,
+          fontSize: isTablet ? 12 : 11,
           fontWeight: FontWeight.w500,
           color: const Color(0xFF1E2124),
+          height: 1.15,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       if (subtitle != null) ...[
-        const SizedBox(height: 2),
+        SizedBox(height: isTablet ? 3 : 2),
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: isTablet ? 13 : 10,
+            fontSize: isTablet ? 10 : 9,
             fontWeight: FontWeight.w400,
             color: Colors.grey.shade400,
+            height: 1.1,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     ],
@@ -2657,6 +3116,7 @@ Widget _buildActionButton({
   required Color color,
   bool isLoading = false,
   bool isSecondary = false,
+  double labelFontSize = 12,
 }) {
   Color bgColor = color;
   Color textColor = Colors.white;
@@ -2673,22 +3133,24 @@ Widget _buildActionButton({
   }
 
   return Container(
-    height: 42,
+    height: 30,
     decoration: BoxDecoration(
       color: bgColor,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
     ),
     child: TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
         foregroundColor: textColor,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: isLoading
           ? SizedBox(
-              height: 16,
-              width: 16,
+              height: 13,
+              width: 13,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: textColor,
@@ -2698,7 +3160,7 @@ Widget _buildActionButton({
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 13,
+                fontSize: labelFontSize,
                 color: textColor,
               ),
             ),
@@ -2859,413 +3321,138 @@ class InvoiceDialog extends StatelessWidget {
       symbol: 'SAR ',
       decimalDigits: 2,
     );
-    final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
+    final dateFormat = DateFormat('dd/MM/yyyy');
     final DateTime? invDate = DateTime.tryParse(invoice.invoiceDate);
+    final invoiceDateText = invDate != null
+        ? dateFormat.format(invDate)
+        : invoice.invoiceDate.split('T').first;
+    final paymentMethodText = invoice.payments.isNotEmpty
+        ? invoice.payments.map((p) => p.method).join(', ')
+        : (invoice.paymentMethod ?? requestedPaymentMethod ?? 'Unpaid');
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF1E2124), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 30,
-              offset: const Offset(0, 15),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(14),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header Gradient
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 40,
-                  horizontal: 20,
-                ),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.secondaryLight, Color(0xFF2C3E50)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'INVOICE READY',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      invoice.invoiceDate.isNotEmpty
-                          ? '${invoice.invoiceNo}  •  ${invoice.invoiceDate.split('T').first}'
-                          : invoice.invoiceNo,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildMetaItem(
-                            'Date',
-                            invDate != null
-                                ? dateFormat.format(invDate)
-                                : invoice.invoiceDate,
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              color: const Color(0xFF5B5B5B),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'FILTER',
+                                    style: TextStyle(
+                                      color: AppColors.primaryLight,
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const Text(
+                                    'Car Services',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Simplified TAX Invoice',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Invoice No: ${invoice.invoiceNo}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Date: $invoiceDateText',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                          _buildMetaItem(
-                            'Status',
-                            invoice.paymentStatus.toUpperCase(),
-                            color: Colors.green,
+                          Container(
+                            width: 148,
+                            height: 148,
+                            margin: const EdgeInsets.only(left: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: Colors.black87, width: 0.9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.qr_code_2,
+                                size: 146,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'CUSTOMER & VEHICLE',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.grey,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(15),
+                        width: double.infinity,
+                        color: AppColors.primaryLight,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
                         ),
-                        child: Column(
-                          children: [
-                            _buildInfoRow(
-                              Icons.person_outline,
-                              'Customer',
-                              invoice.customerName,
-                            ),
-                            if (invoice.customerMobile != null &&
-                                invoice.customerMobile!.isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                child: Divider(height: 1),
-                              ),
-                              _buildInfoRow(
-                                Icons.phone_outlined,
-                                'Phone',
-                                invoice.customerMobile!,
-                              ),
-                            ],
-                            if (invoice.customerTaxId != null &&
-                                invoice.customerTaxId!.isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                child: Divider(height: 1),
-                              ),
-                              _buildInfoRow(
-                                Icons.receipt_long_outlined,
-                                'Tax ID',
-                                invoice.customerTaxId!,
-                              ),
-                            ],
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Divider(height: 1),
-                            ),
-                            _buildInfoRow(
-                              Icons.directions_car_outlined,
-                              'Vehicle',
-                              invoice.vehicleInfo,
-                            ),
-                            if (invoice.odometerReading != null) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                child: Divider(height: 1),
-                              ),
-                              _buildInfoRow(
-                                Icons.speed_outlined,
-                                'Odometer',
-                                '${invoice.odometerReading} km',
-                              ),
-                            ],
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Divider(height: 1),
-                            ),
-                            _buildInfoRow(
-                              Icons.pin_outlined,
-                              'Plate No',
-                              invoice.plateNo.toUpperCase(),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Divider(height: 1),
-                            ),
-                            _buildInfoRow(
-                              Icons.business_center_outlined,
-                              'Billing',
-                              invoice.customerType.toLowerCase().contains(
-                                        'corporate',
-                                      ) ||
-                                      (requestedPaymentMethod != null &&
-                                          requestedPaymentMethod!.contains(
-                                            'Corporate',
-                                          ))
-                                  ? 'Corporate (Monthly)'
-                                  : 'Individual',
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Divider(height: 1),
-                            ),
-                            _buildInfoRow(
-                              Icons.payment_outlined,
-                              'Method',
-                              invoice.payments.isNotEmpty
-                                  ? invoice.payments
-                                        .map((p) => p.method)
-                                        .join(', ')
-                                  : ((invoice.paymentMethod?.isNotEmpty == true)
-                                        ? invoice.paymentMethod!
-                                        : ((requestedPaymentMethod
-                                                      ?.isNotEmpty ==
-                                                  true)
-                                              ? requestedPaymentMethod!
-                                              : 'Unpaid')),
-                            ),
-                            if (invoice.cashierName != null) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                child: Divider(height: 1),
-                              ),
-                              _buildInfoRow(
-                                Icons.person_pin_outlined,
-                                'Cashier',
-                                invoice.cashierName!,
-                              ),
-                            ],
-                            if (invoice.branchName != null) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                child: Divider(height: 1),
-                              ),
-                              _buildInfoRow(
-                                Icons.storefront_outlined,
-                                'Branch',
-                                invoice.branchName!,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'ORDER ITEMS',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.grey,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (invoice.departments.isNotEmpty)
-                        ...invoice.departments.map(
-                          (dept) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Department Header
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 6,
-                                  ),
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.label_important_rounded,
-                                        size: 14,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          (dept.departmentName.isEmpty
-                                                  ? 'General Services'
-                                                  : dept.departmentName)
-                                              .toUpperCase(),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.grey.shade800,
-                                            letterSpacing: 0.8,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Department Items
-                                ...dept.items.map(
-                                  (item) => Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: 8,
-                                      left: 4,
-                                      right: 4,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.productName,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              'Qty: ${item.qty.toInt()}   |   Unit Price: SAR ${currencyFormat.format(item.unitPrice).replaceAll('SAR', '').trim()}',
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            Text(
-                                              'Total: SAR ${currencyFormat.format(item.lineTotal).replaceAll('SAR', '').trim()}',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      else // FLAT OLD ITEMS
-                        ...invoice.items.map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.productName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Qty: ${item.qty.toInt()}   |   Unit Price: SAR ${currencyFormat.format(item.unitPrice).replaceAll('SAR', '').trim()}',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Total: SAR ${currencyFormat.format(item.lineTotal).replaceAll('SAR', '').trim()}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                        child: Text(
+                          (invoice.branchName ?? 'Branch').toUpperCase(),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1E2124),
                           ),
                         ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.grey.shade100),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildPriceRow(
-                              'Subtotal',
-                              currencyFormat.format(invoice.subtotal),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildPriceRow(
-                              'VAT (15%)',
-                              currencyFormat.format(invoice.vatAmount),
-                            ),
-                            if (invoice.discountAmount > 0) ...[
-                              const SizedBox(height: 8),
-                              _buildPriceRow(
-                                'Discount',
-                                '-${currencyFormat.format(invoice.discountAmount)}',
-                                isDiscount: true,
-                              ),
-                            ],
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Divider(),
-                            ),
-                            _buildPriceRow(
-                              'Total Amount',
-                              currencyFormat.format(invoice.totalAmount),
-                              isTotal: true,
-                            ),
-                          ],
-                        ),
                       ),
+                      _buildInvoiceInfoTable(paymentMethodText),
+                      const SizedBox(height: 12),
+                      _buildItemsTaxTable(currencyFormat),
+                      const SizedBox(height: 12),
+                      _buildTotalsTaxTable(currencyFormat),
                     ],
                   ),
                 ),
@@ -3273,7 +3460,7 @@ class InvoiceDialog extends StatelessWidget {
 
               // Actions
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                 child: Row(
                   children: [
                     Expanded(
@@ -3292,9 +3479,9 @@ class InvoiceDialog extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondaryLight,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           elevation: 0,
                         ),
@@ -3317,9 +3504,9 @@ class InvoiceDialog extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryLight,
                           foregroundColor: AppColors.secondaryLight,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           elevation: 0,
                         ),
@@ -3342,6 +3529,258 @@ class InvoiceDialog extends StatelessWidget {
     );
   }
 
+  Widget _buildInvoiceInfoTable(String paymentMethodText) {
+    final rows = <List<String>>[
+      ['Customer', invoice.customerName],
+      ['Phone', invoice.customerMobile ?? '-'],
+      ['Tax ID', invoice.customerTaxId ?? '-'],
+      ['Model', invoice.vehicleModel.isNotEmpty ? invoice.vehicleModel : '-'],
+      ['Mileage', invoice.odometerReading?.toString() ?? '-'],
+      ['Plate', invoice.plateNo.isNotEmpty ? invoice.plateNo : '-'],
+      ['Make', invoice.vehicleMake.isNotEmpty ? invoice.vehicleMake : '-'],
+      ['Payment Method', paymentMethodText],
+    ];
+    return Container(
+      decoration: BoxDecoration(border: Border.all(color: const Color(0xFF1E2124))),
+      child: Column(
+        children: List.generate((rows.length / 2).ceil(), (index) {
+          final left = rows[index * 2];
+          final right = (index * 2 + 1) < rows.length
+              ? rows[index * 2 + 1]
+              : ['', ''];
+          return Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: _buildInfoCell(
+                  left[0],
+                  isLabel: true,
+                  rightBorder: true,
+                  bottomBorder: true,
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: _buildInfoCell(left[1], bottomBorder: true),
+              ),
+              Expanded(
+                flex: 2,
+                child: _buildInfoCell(
+                  right[0],
+                  isLabel: true,
+                  rightBorder: true,
+                  leftBorder: true,
+                  bottomBorder: true,
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: _buildInfoCell(right[1], bottomBorder: true),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildInfoCell(
+    String text, {
+    bool isLabel = false,
+    bool leftBorder = false,
+    bool rightBorder = false,
+    bool bottomBorder = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border(
+          left: leftBorder
+              ? const BorderSide(color: Color(0xFF1E2124))
+              : BorderSide.none,
+          right: rightBorder
+              ? const BorderSide(color: Color(0xFF1E2124))
+              : BorderSide.none,
+          bottom: bottomBorder
+              ? const BorderSide(color: Color(0xFF1E2124))
+              : BorderSide.none,
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isLabel ? FontWeight.w700 : FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemsTaxTable(NumberFormat currencyFormat) {
+    final rows = <Map<String, String>>[];
+    final departments = invoice.departments;
+    if (departments.isNotEmpty) {
+      for (final dept in departments) {
+        for (final item in dept.items) {
+          final before = item.beforeDiscountPrice > 0
+              ? item.beforeDiscountPrice
+              : item.unitPrice * item.qty;
+          final discount = (before - item.lineTotal) > 0 ? (before - item.lineTotal) : 0;
+          final beforeTax = item.lineTotal;
+          final vat = beforeTax * 0.15;
+          final withVat = beforeTax + vat;
+          rows.add({
+            'name': item.productName,
+            'unit': currencyFormat.format(item.unitPrice),
+            'qty': item.qty % 1 == 0 ? item.qty.toInt().toString() : item.qty.toStringAsFixed(2),
+            'discount': currencyFormat.format(discount),
+            'beforeTax': currencyFormat.format(beforeTax),
+            'vat': currencyFormat.format(vat),
+            'withVat': currencyFormat.format(withVat),
+          });
+        }
+      }
+    } else {
+      for (final item in invoice.items) {
+        final before = item.beforeDiscountPrice > 0
+            ? item.beforeDiscountPrice
+            : item.unitPrice * item.qty;
+        final discount = (before - item.lineTotal) > 0 ? (before - item.lineTotal) : 0;
+        final beforeTax = item.lineTotal;
+        final vat = beforeTax * 0.15;
+        final withVat = beforeTax + vat;
+        rows.add({
+          'name': item.productName,
+          'unit': currencyFormat.format(item.unitPrice),
+          'qty': item.qty % 1 == 0 ? item.qty.toInt().toString() : item.qty.toStringAsFixed(2),
+          'discount': currencyFormat.format(discount),
+          'beforeTax': currencyFormat.format(beforeTax),
+          'vat': currencyFormat.format(vat),
+          'withVat': currencyFormat.format(withVat),
+        });
+      }
+    }
+
+    Widget cell(String text, {int flex = 1, bool bold = false, Color? bg}) {
+      return Expanded(
+        flex: flex,
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border.all(color: const Color(0xFF1E2124), width: 0.6),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            cell('Goods/Services', flex: 4, bold: true, bg: AppColors.primaryLight),
+            cell('Unit Price', flex: 2, bold: true, bg: AppColors.primaryLight),
+            cell('Qty', flex: 1, bold: true, bg: AppColors.primaryLight),
+            cell('Discount', flex: 2, bold: true, bg: AppColors.primaryLight),
+            cell('Total Before Tax', flex: 3, bold: true, bg: AppColors.primaryLight),
+            cell('VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
+            cell('Total With VAT', flex: 3, bold: true, bg: AppColors.primaryLight),
+          ],
+        ),
+        ...rows.map(
+          (r) => Row(
+            children: [
+              cell(r['name']!, flex: 4),
+              cell(r['unit']!, flex: 2),
+              cell(r['qty']!, flex: 1),
+              cell(r['discount']!, flex: 2),
+              cell(r['beforeTax']!, flex: 3),
+              cell(r['vat']!, flex: 2),
+              cell(r['withVat']!, flex: 3),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTotalsTaxTable(NumberFormat currencyFormat) {
+    Widget row(String label, String value, {bool total = false}) {
+      return Row(
+        children: [
+          Expanded(
+            flex: 6,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Color(0xFF1E2124)),
+                  right: BorderSide(color: Color(0xFF1E2124)),
+                  bottom: BorderSide(color: Color(0xFF1E2124)),
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: total ? 14 : 12,
+                  fontWeight: total ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: Color(0xFF1E2124)),
+                  bottom: BorderSide(color: Color(0xFF1E2124)),
+                ),
+              ),
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: total ? 14 : 12,
+                  fontWeight: total ? FontWeight.w900 : FontWeight.w700,
+                  color: total ? AppColors.secondaryLight : const Color(0xFF1E2124),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final taxable = invoice.subtotal - invoice.discountAmount;
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          color: AppColors.primaryLight,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          child: const Text(
+            'Total Amount',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+          ),
+        ),
+        row('Total (Excluding VAT)', currencyFormat.format(invoice.subtotal)),
+        row('Discount', currencyFormat.format(invoice.discountAmount)),
+        row('Total Taxable Amount (Excluding VAT)', currencyFormat.format(taxable)),
+        row('Total VAT', currencyFormat.format(invoice.vatAmount)),
+        row('Total Amount Due', currencyFormat.format(invoice.totalAmount), total: true),
+      ],
+    );
+  }
+
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
@@ -3351,7 +3790,7 @@ class InvoiceDialog extends StatelessWidget {
           '$label:',
           style: TextStyle(
             color: Colors.grey.shade600,
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -3361,7 +3800,7 @@ class InvoiceDialog extends StatelessWidget {
             value,
             style: const TextStyle(
               color: Color(0xFF1E2124),
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
             textAlign: TextAlign.right,
@@ -3379,7 +3818,7 @@ class InvoiceDialog extends StatelessWidget {
           label,
           style: TextStyle(
             color: Colors.grey.shade500,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -3388,7 +3827,7 @@ class InvoiceDialog extends StatelessWidget {
           value,
           style: TextStyle(
             color: color ?? const Color(0xFF1E2124),
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -3401,6 +3840,8 @@ class InvoiceDialog extends StatelessWidget {
     String value, {
     bool isTotal = false,
     bool isDiscount = false,
+    Color? labelColor,
+    Color? valueColor,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3408,21 +3849,28 @@ class InvoiceDialog extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: isTotal ? 16 : 14,
+            fontSize: isTotal ? 17 : 15,
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.w600,
-            color: isTotal ? const Color(0xFF1E2124) : Colors.grey.shade700,
+            color:
+                labelColor ??
+                (isDiscount
+                    ? Colors.red.shade700
+                    : (isTotal
+                          ? const Color(0xFF1E2124)
+                          : Colors.grey.shade700)),
           ),
         ),
         Text(
           value,
           style: TextStyle(
-            fontSize: isTotal ? 20 : 14,
+            fontSize: isTotal ? 21 : 15,
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.w800,
-            color: isDiscount
-                ? Colors.red
-                : (isTotal
-                      ? AppColors.secondaryLight
-                      : const Color(0xFF1E2124)),
+            color: valueColor ??
+                (isDiscount
+                    ? Colors.red.shade700
+                    : (isTotal
+                          ? AppColors.secondaryLight
+                          : const Color(0xFF1E2124))),
           ),
         ),
       ],
@@ -3432,7 +3880,8 @@ class InvoiceDialog extends StatelessWidget {
 
 class TechnicianCard extends StatelessWidget {
   final PosTechnician tech;
-  const TechnicianCard({super.key, required this.tech});
+  final bool compact;
+  const TechnicianCard({super.key, required this.tech, this.compact = false});
 
   Color _getStatusColor(String status) {
     final lowerStatus = status.toLowerCase();
@@ -3452,9 +3901,17 @@ class TechnicianCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     final statusColor = _getStatusColor(tech.statusInfo);
+    final departmentText = tech.departments.isNotEmpty
+        ? tech.departments.map((d) => d.name).where((e) => e.isNotEmpty).join(', ')
+        : 'No department';
+    final lastSeenText = tech.isOnline ? 'Online now' : 'Last seen: ${tech.formattedLastSeen}';
+    final slotsFull = tech.totalSlots > 0 && tech.slotsUsed >= tech.totalSlots;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 12 : 10,
+        vertical: isTablet ? 9 : 8,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -3467,55 +3924,109 @@ class TechnicianCard extends StatelessWidget {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: isTablet ? 28 : 24,
-            backgroundColor: AppColors.primaryLight.withOpacity(0.15),
-            child: Icon(
-              Icons.person,
-              size: isTablet ? 28 : 24,
-              color: AppColors.secondaryLight,
-            ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: isTablet ? 24 : 20,
+                backgroundColor: AppColors.primaryLight.withOpacity(0.15),
+                child: Icon(
+                  Icons.person,
+                  size: isTablet ? 24 : 20,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
+              Positioned(
+                right: -1,
+                bottom: -1,
+                child: Container(
+                  width: isTablet ? 11 : 9,
+                  height: isTablet ? 11 : 9,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
+                Text(
+                  lastSeenText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isTablet ? 10.0 : 9.0,
+                    fontWeight: FontWeight.w600,
+                    color: tech.isOnline
+                        ? Colors.green.shade700
+                        : Colors.grey.shade600,
+                  ),
+                ),
+                SizedBox(height: isTablet ? 4 : 2),
                 Text(
                   tech.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: isTablet ? 19 : 15,
-                    fontWeight: FontWeight.w700,
+                    fontSize: isTablet ? 14.5 : 11.5,
+                    fontWeight: FontWeight.w800,
                     color: const Color(0xFF1E2124),
                   ),
                 ),
-                const SizedBox(height: 6),
+                if (!compact) ...[
+                  SizedBox(height: isTablet ? 4 : 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.apartment_rounded,
+                        size: isTablet ? 14 : 10,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          departmentText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: isTablet ? 10.0 : 9.0,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isTablet ? 3 : 2),
+                ] else
+                  SizedBox(height: isTablet ? 3 : 2),
                 Row(
                   children: [
-                    Container(
-                      width: isTablet ? 8 : 6,
-                      height: isTablet ? 8 : 6,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
-                      ),
+                    Icon(
+                      Icons.event_seat_rounded,
+                      size: isTablet ? 14 : 10,
+                      color: slotsFull ? Colors.red.shade400 : Colors.green.shade600,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 3),
                     Expanded(
                       child: Text(
-                        tech.statusInfo,
+                        'Slots ${tech.slotsUsed}/${tech.totalSlots}',
+                        style: TextStyle(
+                          fontSize: isTablet ? 10.0 : 9.0,
+                          fontWeight: FontWeight.w700,
+                          color: slotsFull ? Colors.red.shade500 : Colors.green.shade700,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: isTablet ? 11 : 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade600,
-                        ),
                       ),
                     ),
                   ],
@@ -3523,11 +4034,12 @@ class TechnicianCard extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.grey.shade300,
-            size: 20,
-          ),
+          if (!compact)
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey.shade300,
+              size: 20,
+            ),
         ],
       ),
     );
@@ -3561,10 +4073,10 @@ class StatCard extends StatelessWidget {
     return Container(
       width: width ?? 95,
       height: height ?? 85, // Use provided height or fallback
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: 8),
       decoration: BoxDecoration(
         color: backgroundColor ?? Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -3589,7 +4101,7 @@ class StatCard extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    fontSize: 10,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w600,
                     color: textColor ?? Colors.grey.shade600,
                   ),
@@ -3597,11 +4109,11 @@ class StatCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
                 Text(
                   value,
                   style: AppTextStyles.h2.copyWith(
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: textColor ?? AppColors.secondaryLight,
                     letterSpacing: -0.5,

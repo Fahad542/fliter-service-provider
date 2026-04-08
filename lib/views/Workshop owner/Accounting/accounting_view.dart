@@ -36,10 +36,12 @@ class _AccountingViewState extends State<AccountingView> with SingleTickerProvid
   }
 
   void _onTabChanged() {
-    if (_tabController.index == _lastFetchedIndex) return;
-    _lastFetchedIndex = _tabController.index;
+    if (_tabController.indexIsChanging) return;
+    final idx = _tabController.index;
+    if (idx == _lastFetchedIndex) return;
+    _lastFetchedIndex = idx;
     final vm = Provider.of<AccountingViewModel>(context, listen: false);
-    vm.fetchTransactions(_types[_tabController.index]);
+    vm.fetchTransactions(_types[idx]);
   }
 
   @override
@@ -130,20 +132,74 @@ class _AccountingViewState extends State<AccountingView> with SingleTickerProvid
     );
   }
 
+  /// White pill bar: selected = solid primary + dark text (no shadow on pill).
   Widget _buildTabBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.withOpacity(0.1))),
-      child: TabBar(
-        controller: _tabController,
-        dividerColor: Colors.transparent,
-        labelColor: AppColors.secondaryLight,
-        unselectedLabelColor: Colors.grey,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-        indicatorSize: TabBarIndicatorSize.tab,
-        indicator: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(10)),
-        tabs: _tabs.map((t) => Tab(text: t)).toList(),
+    final pillRadius = BorderRadius.circular(12);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.grey.shade200.withValues(alpha: 0.85),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: AnimatedBuilder(
+          animation: _tabController,
+          builder: (context, _) {
+            return Row(
+              children: List.generate(_tabs.length, (i) {
+                final selected = _tabController.index == i;
+                return Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _tabController.animateTo(i),
+                      borderRadius: pillRadius,
+                      splashColor: AppColors.primaryLight.withValues(alpha: 0.2),
+                      highlightColor: AppColors.primaryLight.withValues(alpha: 0.06),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppColors.primaryLight
+                              : Colors.transparent,
+                          borderRadius: pillRadius,
+                        ),
+                        child: Text(
+                          _tabs[i],
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: selected ? 12.5 : 11,
+                            fontWeight:
+                                selected ? FontWeight.w800 : FontWeight.w600,
+                            color: selected
+                                ? AppColors.secondaryLight
+                                : const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            );
+          },
+        ),
       ),
     );
   }

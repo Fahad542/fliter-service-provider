@@ -27,6 +27,8 @@ class ReferralOption {
 class CorporateManagementViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
+
+  // ── Create form controllers ──
   final TextEditingController companyNameController = TextEditingController();
   final TextEditingController vatNumberController = TextEditingController();
   final TextEditingController contactNameController = TextEditingController();
@@ -34,9 +36,25 @@ class CorporateManagementViewModel extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  // ── Edit form controllers ──
+  final TextEditingController editCompanyNameController = TextEditingController();
+  final TextEditingController editCustomerNameController = TextEditingController();
+  final TextEditingController editMobileController = TextEditingController();
+  final TextEditingController editTaxIdController = TextEditingController();
+  final TextEditingController editCreditLimitController = TextEditingController();
+  final TextEditingController editAddressController = TextEditingController();
+  final TextEditingController editContactPersonController = TextEditingController();
+  String? _editingCorporateId;
+  String? get editingCorporateId => _editingCorporateId;
+  String _editStatus = 'active';
+  String get editStatus => _editStatus;
+  final Set<String> _editSelectedBranchIds = <String>{};
+  List<String> get editSelectedBranchIds => _editSelectedBranchIds.toList();
+
   final TextEditingController userNameController = TextEditingController();
   final TextEditingController userEmailController = TextEditingController();
   final TextEditingController userPasswordController = TextEditingController();
+
   bool _isActionLoading = false;
   bool get isActionLoading => _isActionLoading;
 
@@ -239,6 +257,89 @@ class CorporateManagementViewModel extends ChangeNotifier {
     }
   }
 
+  // ── Edit Corporate Account ──
+  void setEditCorporate(CorporateCustomer customer) {
+    _editingCorporateId = customer.id;
+    editCompanyNameController.text = customer.companyName;
+    editCustomerNameController.text = customer.contactName;
+    editMobileController.text = customer.mobile;
+    editTaxIdController.text = customer.vatNumber;
+    editCreditLimitController.text = customer.creditLimit > 0 ? customer.creditLimit.toStringAsFixed(0) : '';
+    editAddressController.text = customer.address;
+    editContactPersonController.text = customer.contactPerson;
+    _editStatus = customer.status.isEmpty ? 'active' : customer.status;
+    _editSelectedBranchIds
+      ..clear()
+      ..addAll(customer.selectedBranchIds);
+    notifyListeners();
+  }
+
+  void setEditStatus(String status) {
+    _editStatus = status;
+    notifyListeners();
+  }
+
+  void toggleEditBranchSelection(String branchId) {
+    if (_editSelectedBranchIds.contains(branchId)) {
+      _editSelectedBranchIds.remove(branchId);
+    } else {
+      _editSelectedBranchIds.add(branchId);
+    }
+    notifyListeners();
+  }
+
+  Future<void> submitEditCorporateForm(BuildContext context) async {
+    if (_editingCorporateId == null) return;
+    if (editCompanyNameController.text.trim().isEmpty) {
+      ToastService.showError(context, 'Company name is required');
+      return;
+    }
+
+    _isActionLoading = true;
+    notifyListeners();
+
+    try {
+      final token = await sessionService.getToken(role: 'owner');
+      if (token == null) throw Exception('No token');
+
+      final data = <String, dynamic>{
+        if (editCompanyNameController.text.trim().isNotEmpty)
+          'companyName': editCompanyNameController.text.trim(),
+        if (editCustomerNameController.text.trim().isNotEmpty)
+          'customerName': editCustomerNameController.text.trim(),
+        if (editMobileController.text.trim().isNotEmpty)
+          'mobile': editMobileController.text.trim(),
+        if (editTaxIdController.text.trim().isNotEmpty)
+          'taxId': editTaxIdController.text.trim(),
+        if (editCreditLimitController.text.trim().isNotEmpty)
+          'creditLimit': double.tryParse(editCreditLimitController.text.trim()) ?? 0,
+        if (editAddressController.text.trim().isNotEmpty)
+          'address': editAddressController.text.trim(),
+        if (editContactPersonController.text.trim().isNotEmpty)
+          'contactPerson': editContactPersonController.text.trim(),
+        'status': _editStatus,
+        if (_editSelectedBranchIds.isNotEmpty)
+          'selectedBranchIds': _editSelectedBranchIds.toList(),
+      };
+
+      await ownerRepository.updateCorporateAccount(token, _editingCorporateId!, data);
+
+      if (context.mounted) {
+        ToastService.showSuccess(context, 'Corporate Account Updated Successfully');
+        _editingCorporateId = null;
+        Navigator.pop(context);
+        _init();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, 'Failed to update corporate account');
+      }
+    } finally {
+      _isActionLoading = false;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     companyNameController.dispose();
@@ -247,6 +348,13 @@ class CorporateManagementViewModel extends ChangeNotifier {
     mobileController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    editCompanyNameController.dispose();
+    editCustomerNameController.dispose();
+    editMobileController.dispose();
+    editTaxIdController.dispose();
+    editCreditLimitController.dispose();
+    editAddressController.dispose();
+    editContactPersonController.dispose();
     userNameController.dispose();
     userEmailController.dispose();
     userPasswordController.dispose();

@@ -7,6 +7,7 @@ import 'technician_view_model.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../models/pos_technician_model.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shell_rail_layout.dart';
 
 class PosTechnicianView extends StatefulWidget {
   const PosTechnicianView({super.key});
@@ -36,7 +37,9 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         showHamburger: true,
         onMenuPressed: () => Scaffold.of(context).openDrawer(),
       ),
-      body: RefreshIndicator(
+      body: wrapPosShellRailBody(
+        context,
+        RefreshIndicator(
         onRefresh: () => context.read<TechnicianViewModel>().fetchTechnicians(),
         color: AppColors.secondaryLight,
         backgroundColor: Colors.white,
@@ -69,36 +72,49 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
             }
 
             final technicians = vm.technicians;
+            final horizontalPadding = isTablet ? 32.0 : 16.0;
 
             return Column(
               children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 32 : 16,
-                      vertical: 24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Search & View All Bar
-                        _buildSearchSection(context, isTablet),
-                        const SizedBox(height: 32),
-
-                        // Technician Sections
-                        if (technicians.isEmpty)
-                          const Center(child: Text('No technicians found'))
-                        else
-                          _buildTechnicianGrid(technicians, isTablet),
-                      ],
-                    ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    24,
+                    horizontalPadding,
+                    0,
                   ),
+                  child: _buildSearchSection(context, isTablet),
                 ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: technicians.isEmpty
+                      ? SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                            vertical: 16,
+                          ),
+                          child: const SizedBox(
+                            height: 280,
+                            child: Center(child: Text('No technicians found')),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            0,
+                            horizontalPadding,
+                            24,
+                          ),
+                          child: _buildTechnicianGrid(technicians, isTablet),
+                        ),
+                  ),
               ],
             );
           },
         ),
+      ),
       ),
     );
   }
@@ -121,18 +137,27 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
     List<PosTechnician> technicians,
     bool isTablet,
   ) {
+    final orientation = MediaQuery.of(context).orientation;
+    final crossAxisCount = orientation == Orientation.landscape ? 4 : 2;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: technicians.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isTablet ? 4 : 1,
-        childAspectRatio: isTablet ? 1.8 : 4,
-        crossAxisSpacing: 18,
-        mainAxisSpacing: 18,
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: isTablet
+            ? (orientation == Orientation.landscape ? 2.15 : 2.6)
+            : (orientation == Orientation.landscape ? 2.3 : 2.3),
+        crossAxisSpacing: isTablet ? 18 : 12,
+        mainAxisSpacing: isTablet ? 18 : 12,
       ),
       itemBuilder: (context, index) {
-        return TechnicianCard(tech: technicians[index]);
+        return TechnicianCard(
+          tech: technicians[index],
+          // On mobile portrait always use compact to avoid overflow
+          compact: !isTablet && orientation == Orientation.portrait,
+        );
       },
     );
   }

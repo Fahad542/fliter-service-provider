@@ -29,6 +29,8 @@ import 'views/Workshop pos app/Current Shift/current_shift_view_model.dart';
 import 'views/Workshop pos app/Promo/promo_view_model.dart';
 import 'views/Workshop pos app/Product Grid/product_grid_view_model.dart';
 import 'views/Workshop pos app/Sales Return/sales_return_view_model.dart';
+import 'views/Workshop pos app/Sales Return/sales_return_list_view_model.dart';
+import 'views/Workshop pos app/Takeaway/takeaway_view_model.dart';
 import 'views/Workshop Owner/Dashboard/owner_dashboard_view_model.dart';
 import 'views/Workshop Owner/Branches/branch_management_view_model.dart';
 import 'views/Workshop Owner/Employees/employee_management_view_model.dart';
@@ -43,6 +45,7 @@ import 'views/Super Admin/Auth/super_admin_login_view_model.dart';
 import 'views/Super Admin/Departments/super_admin_departments_view_model.dart';
 import 'views/Workshop Owner/Promo/owner_promo_view_model.dart';
 import 'views/Technician App/technician_view_model.dart';
+import 'views/Technician App/Orders/broadcast_overlay.dart';
 import 'views/Locker App/locker_view_model.dart';
 import 'views/Workshop Owner/POS Monitoring/pos_monitoring_view_model.dart';
 import 'package:filter_service_providers/utils/restart_widget.dart';
@@ -168,6 +171,26 @@ class _MyAppState extends State<MyApp> {
           ),
           update: (context, posRepo, sessionService, previous) =>
               previous ?? SalesReturnViewModel(posRepository: posRepo, sessionService: sessionService),
+        ),
+        ChangeNotifierProxyProvider2<PosRepository, SessionService, SalesReturnListViewModel>(
+          create: (context) => SalesReturnListViewModel(
+            posRepository: context.read<PosRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, posRepo, sessionService, previous) =>
+              previous ?? SalesReturnListViewModel(posRepository: posRepo, sessionService: sessionService),
+        ),
+        ChangeNotifierProxyProvider2<PosRepository, SessionService, TakeawayViewModel>(
+          create: (context) => TakeawayViewModel(
+            posRepository: context.read<PosRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, posRepo, sessionService, previous) =>
+              previous ??
+              TakeawayViewModel(
+                posRepository: posRepo,
+                sessionService: sessionService,
+              ),
         ),
         
         ChangeNotifierProxyProvider2<OwnerRepository, SessionService, OwnerDataService>(
@@ -357,7 +380,18 @@ class _MyAppState extends State<MyApp> {
               Locale('en'), // English
               Locale('ar'), // Arabic
             ],
-            
+
+            /// Technician broadcast modal above any screen (tabs + pushed routes) when active.
+            builder: (context, child) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (child != null) child,
+                  const BroadcastOverlay(),
+                ],
+              );
+            },
+
             home: FutureBuilder<String?>(
               future: _startScreenFuture,
               builder: (context, snapshot) {

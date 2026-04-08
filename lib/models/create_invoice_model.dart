@@ -1,14 +1,14 @@
 class CreateInvoiceRequest {
   final String orderId;
   final double discountAmount;
-  final String invoicedDate;
+  final String invoiceDate;
   final String? paymentMethod;
   final bool? isCorporate;
 
   CreateInvoiceRequest({
     required this.orderId,
     this.discountAmount = 0,
-    required this.invoicedDate,
+    required this.invoiceDate,
     this.paymentMethod,
     this.isCorporate,
   });
@@ -17,7 +17,7 @@ class CreateInvoiceRequest {
     return {
       'orderId': orderId,
       'discountAmount': discountAmount,
-      'invoicedDate': invoicedDate,
+      'invoiceDate': invoiceDate,
       if (paymentMethod != null) 'paymentMethod': paymentMethod,
       if (isCorporate != null) 'isCorporate': isCorporate,
     };
@@ -69,9 +69,19 @@ class Invoice {
   final String? customerTaxId;
   final int? odometerReading;
   final String vehicleInfo;
+  final String vehicleMake;
+  final String vehicleModel;
   final String plateNo;
   final String? branchName;
+  final String? branchAddress;
   final String? cashierName;
+  final String? cashierEmail;
+  final String? cashierMobile;
+  final String salesOrderId;
+  final String salesOrderStatus;
+  final String salesOrderSource;
+  final String salesOrderCreatedAt;
+  final String customerId;
 
   Invoice({
     required this.id,
@@ -93,9 +103,19 @@ class Invoice {
     this.customerTaxId,
     this.odometerReading,
     required this.vehicleInfo,
+    this.vehicleMake = '',
+    this.vehicleModel = '',
     required this.plateNo,
     this.branchName,
+    this.branchAddress,
     this.cashierName,
+    this.cashierEmail,
+    this.cashierMobile,
+    this.salesOrderId = '',
+    this.salesOrderStatus = '',
+    this.salesOrderSource = '',
+    this.salesOrderCreatedAt = '',
+    this.customerId = '',
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
@@ -117,9 +137,17 @@ class Invoice {
     if (parsedDepartments.isEmpty && flatItemsList.isNotEmpty) {
       parsedDepartments.add(
         InvoiceDepartment(
+          jobId: '',
+          jobStatus: '',
           departmentId: 'legacy',
           departmentName: 'General Items',
           subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
+          amountBeforeDiscount: 0,
+          amountAfterDiscount: 0,
+          amountAfterPromo: 0,
+          vatPercent: 0,
+          vatAmount: 0,
+          totalAmount: 0,
           commissions: [],
           items: flatItemsList.map((i) => InvoiceItem.fromJson(i)).toList(),
         ),
@@ -168,56 +196,104 @@ class Invoice {
         salesOrder['odometerReading']?.toString() ?? '',
       ),
       vehicleInfo: '${vehicle['make'] ?? ""} ${vehicle['model'] ?? ""}'.trim(),
+      vehicleMake: vehicle['make']?.toString() ?? '',
+      vehicleModel: vehicle['model']?.toString() ?? '',
       plateNo: vehicle['plateNo'] ?? '',
       branchName: branch['name'],
+      branchAddress: branch['address']?.toString(),
       cashierName: createdByUser['name'],
+      cashierEmail: createdByUser['email']?.toString(),
+      cashierMobile: createdByUser['mobile']?.toString(),
+      salesOrderId: salesOrder['id']?.toString() ?? '',
+      salesOrderStatus: salesOrder['status']?.toString() ?? '',
+      salesOrderSource: salesOrder['source']?.toString() ?? '',
+      salesOrderCreatedAt: salesOrder['createdAt']?.toString() ?? '',
+      customerId: customer['id']?.toString() ?? '',
     );
   }
 }
 
 class InvoiceItem {
   final String id;
+  final String itemType;
+  final String productId;
   final String productName;
   final double qty;
   final double unitPrice;
   final double lineTotal;
   final String? discountType;
   final double? discountValue;
+  final double beforeDiscountPrice;
+  final double afterDiscountPrice;
 
   InvoiceItem({
     required this.id,
+    this.itemType = '',
+    this.productId = '',
     required this.productName,
     required this.qty,
     required this.unitPrice,
     required this.lineTotal,
     this.discountType,
     this.discountValue,
+    this.beforeDiscountPrice = 0,
+    this.afterDiscountPrice = 0,
   });
 
   factory InvoiceItem.fromJson(Map<String, dynamic> json) {
     return InvoiceItem(
       id: json['id']?.toString() ?? '',
+      itemType: json['itemType']?.toString() ?? '',
+      productId: json['productId']?.toString() ?? json['serviceId']?.toString() ?? '',
       productName: json['productName'] ?? json['name'] ?? '',
       qty: double.tryParse(json['qty']?.toString() ?? '0') ?? 0,
       unitPrice: double.tryParse(json['unitPrice']?.toString() ?? '0') ?? 0,
       lineTotal: double.tryParse(json['lineTotal']?.toString() ?? '0') ?? 0,
       discountType: json['discountType']?.toString(),
       discountValue: double.tryParse(json['discountValue']?.toString() ?? '0') ?? 0.0,
+      beforeDiscountPrice:
+          double.tryParse(json['beforeDiscountPrice']?.toString() ?? '0') ?? 0,
+      afterDiscountPrice:
+          double.tryParse(json['afterDiscountPrice']?.toString() ?? '0') ?? 0,
     );
   }
 }
 
 class InvoiceDepartment {
+  final String jobId;
+  final String jobStatus;
   final String departmentId;
   final String departmentName;
   final double subtotal;
+  final double amountBeforeDiscount;
+  final double amountAfterDiscount;
+  final double amountAfterPromo;
+  final double vatPercent;
+  final double vatAmount;
+  final double totalAmount;
+  final String? totalDiscountType;
+  final double totalDiscountValue;
+  final double promoDiscountAmount;
+  final String? promoCodeName;
   final List<InvoiceCommission> commissions;
   final List<InvoiceItem> items;
 
   InvoiceDepartment({
+    required this.jobId,
+    required this.jobStatus,
     required this.departmentId,
     required this.departmentName,
     required this.subtotal,
+    required this.amountBeforeDiscount,
+    required this.amountAfterDiscount,
+    required this.amountAfterPromo,
+    required this.vatPercent,
+    required this.vatAmount,
+    required this.totalAmount,
+    this.totalDiscountType,
+    this.totalDiscountValue = 0,
+    this.promoDiscountAmount = 0,
+    this.promoCodeName,
     required this.commissions,
     required this.items,
   });
@@ -228,9 +304,26 @@ class InvoiceDepartment {
     var itemsList = json['items'] as List? ?? [];
 
     return InvoiceDepartment(
+      jobId: json['id']?.toString() ?? json['jobId']?.toString() ?? '',
+      jobStatus: json['status']?.toString() ?? '',
       departmentId: json['departmentId']?.toString() ?? '',
       departmentName: json['department'] ?? json['departmentName'] ?? '',
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
+      amountBeforeDiscount:
+          double.tryParse(json['amountBeforeDiscount']?.toString() ?? '0') ?? 0,
+      amountAfterDiscount:
+          double.tryParse(json['amountAfterDiscount']?.toString() ?? '0') ?? 0,
+      amountAfterPromo:
+          double.tryParse(json['amountAfterPromo']?.toString() ?? '0') ?? 0,
+      vatPercent: double.tryParse(json['vatPercent']?.toString() ?? '0') ?? 0,
+      vatAmount: double.tryParse(json['vatAmount']?.toString() ?? '0') ?? 0,
+      totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0,
+      totalDiscountType: json['totalDiscountType']?.toString(),
+      totalDiscountValue:
+          double.tryParse(json['totalDiscountValue']?.toString() ?? '0') ?? 0,
+      promoDiscountAmount:
+          double.tryParse(json['promoDiscountAmount']?.toString() ?? '0') ?? 0,
+      promoCodeName: json['promoCodeName']?.toString(),
       commissions: commissionsList
           .map((c) => InvoiceCommission.fromJson(c))
           .toList(),

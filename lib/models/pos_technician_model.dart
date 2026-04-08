@@ -96,7 +96,14 @@ class PosTechnician {
               .toList() ??
           [],
       status: PosTechnicianStatus.fromJson(
-        json['technicianStatus'] ?? json['status'] ?? {},
+        (json['technicianStatus'] is Map<String, dynamic>)
+            ? json['technicianStatus']
+            : (json['status'] is Map<String, dynamic>)
+            ? json['status']
+            : {
+                'status': json['onlineStatus'] ?? json['status'] ?? 'offline',
+                'lastSeenAt': json['lastSeenAt'] ?? '',
+              },
       ),
       slotsUsed: (json['slots'] != null && json['slots'] is Map)
           ? int.tryParse(json['slots']['active']?.toString() ?? '') ?? 0
@@ -132,7 +139,10 @@ class PosTechnicianStatus {
 
   factory PosTechnicianStatus.fromJson(Map<String, dynamic> json) {
     return PosTechnicianStatus(
-      status: json['status'] ?? 'offline',
+      status:
+          json['status']?.toString() ??
+          json['onlineStatus']?.toString() ??
+          'offline',
       lastSeenAt: json['lastSeenAt'] ?? '',
     );
   }

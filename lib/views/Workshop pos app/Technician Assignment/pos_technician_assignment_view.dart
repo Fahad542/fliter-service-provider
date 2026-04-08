@@ -30,6 +30,16 @@ class PosTechnicianAssignmentView extends StatefulWidget {
 
 class _PosTechnicianAssignmentViewState
     extends State<PosTechnicianAssignmentView> {
+  /// Existing job on server, or walk-in/edit flow (order saved when broadcasting / assigning).
+  bool get _canTapBroadcast =>
+      widget.jobId.isNotEmpty || widget.isWalkIn;
+
+  /// `workshop` / `on_call` while that broadcast is in progress (null = idle).
+  String? _broadcastingDuty;
+
+  /// After first save in walk-in mode, reuse this job for another broadcast tap (avoid duplicate POST).
+  String? _cachedJobIdFromSave;
+
   @override
   void initState() {
     super.initState();
@@ -50,19 +60,39 @@ class _PosTechnicianAssignmentViewState
 
     String jobIdToUse = widget.jobId;
 
-    // Walk-in flow: call walk-in order API first
+    // Walk-in / Edit-order flow: call appropriate API first
     if (widget.isWalkIn) {
       final deptId = widget.departmentId ?? '';
-      final success = await posVm.submitWalkInOrder(
-        deptId.isNotEmpty ? [deptId] : [],
-        context,
-      );
-      if (!mounted) return;
-      if (!success) return; // Error toast already shown by submitWalkInOrder
-      jobIdToUse = posVm.currentJobId ?? '';
-      if (jobIdToUse.isEmpty) {
-        ToastService.showError(context, 'Failed to get order ID');
-        return;
+      final isEditMode = posVm.editingOrder != null;
+
+      if (isEditMode) {
+        // Edit order: call PATCH edit API, reuse existing jobId
+        final existingJobId = posVm.editingCompletingOrderId ?? '';
+        if (existingJobId.isEmpty) {
+          ToastService.showError(context, 'Failed to get job ID for edit');
+          return;
+        }
+        final success = await posVm.submitEditOrder(
+          deptId.isNotEmpty ? [deptId] : [],
+          context,
+        );
+        if (!mounted) return;
+        if (!success) return;
+        jobIdToUse = existingJobId;
+      } else {
+        // New walk-in order: call walk-in API, get new jobId from response
+        final success = await posVm.submitWalkInOrder(
+          deptId.isNotEmpty ? [deptId] : [],
+          context,
+          clearCustomerOnSuccess: false,
+        );
+        if (!mounted) return;
+        if (!success) return;
+        jobIdToUse = posVm.currentJobId ?? '';
+        if (jobIdToUse.isEmpty) {
+          ToastService.showError(context, 'Failed to get order ID');
+          return;
+        }
       }
     }
 
@@ -88,14 +118,59 @@ class _PosTechnicianAssignmentViewState
     }
   }
 
+  /// Same persistence as multi-assign: walk-in POST or edit PATCH, then returns real `jobId`.
+  Future<String?> _resolveJobIdForBroadcast(BuildContext context) async {
+    if (widget.jobId.isNotEmpty) return widget.jobId;
+    final cached = _cachedJobIdFromSave;
+    if (cached != null && cached.isNotEmpty) return cached;
+    if (!widget.isWalkIn) return null;
+
+    final posVm = context.read<PosViewModel>();
+    final deptId = widget.departmentId ?? '';
+    final isEditMode = posVm.editingOrder != null;
+
+    if (isEditMode) {
+      final existingJobId = posVm.editingCompletingOrderId ?? '';
+      if (existingJobId.isEmpty) {
+        ToastService.showError(context, 'Failed to get job ID for edit');
+        return null;
+      }
+      final success = await posVm.submitEditOrder(
+        deptId.isNotEmpty ? [deptId] : [],
+        context,
+      );
+      if (!mounted) return null;
+      if (!success) return null;
+      _cachedJobIdFromSave = existingJobId;
+      return existingJobId;
+    }
+
+    final success = await posVm.submitWalkInOrder(
+      deptId.isNotEmpty ? [deptId] : [],
+      context,
+      clearCustomerOnSuccess: false,
+    );
+    if (!mounted) return null;
+    if (!success) return null;
+    final jobIdToUse = posVm.currentJobId ?? '';
+    if (jobIdToUse.isEmpty) {
+      ToastService.showError(context, 'Failed to get order ID');
+      return null;
+    }
+    _cachedJobIdFromSave = jobIdToUse;
+    return jobIdToUse;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return MediaQuery(
       data: MediaQuery.of(
         context,
-      ).copyWith(textScaler: TextScaler.linear(isTablet ? 1.4 : 1.0)),
+      ).copyWith(textScaler: const TextScaler.linear(1.0)),
       child: ChangeNotifierProvider(
         create: (_) =>
             TechnicianAssignmentViewModel()
@@ -186,14 +261,15 @@ class _PosTechnicianAssignmentViewState
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(color: Colors.grey.shade200),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withValues(
-                                        alpha: 0.05,
+                                        alpha: 0.04,
                                       ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
@@ -211,7 +287,7 @@ class _PosTechnicianAssignmentViewState
                                     border: InputBorder.none,
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
-                                      vertical: 14,
+                                      vertical: 15,
                                     ),
                                   ),
                                 ),
@@ -228,12 +304,24 @@ class _PosTechnicianAssignmentViewState
                                 padding: EdgeInsets.only(
                                   right: isTablet ? 24.0 : 16,
                                 ),
-                                child: Text(
-                                  assignVm.showAll ? 'Show Dept' : 'Show All',
-                                  style: const TextStyle(
-                                    color: AppColors.secondaryLight,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryLight.withValues(
+                                      alpha: 0.25,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    assignVm.showAll ? 'Show Dept' : 'Show All',
+                                    style: const TextStyle(
+                                      color: AppColors.secondaryLight,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -251,10 +339,12 @@ class _PosTechnicianAssignmentViewState
                                 itemCount: technicians.length,
                                 gridDelegate:
                                     SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: isTablet ? 3 : 1,
-                                      childAspectRatio: isTablet ? 2.8 : 3.8,
+                                      crossAxisCount: isLandscape
+                                          ? 3
+                                          : (isTablet ? 2 : 1),
+                                      mainAxisExtent: isTablet ? 142 : 124,
                                       crossAxisSpacing: 16,
-                                      mainAxisSpacing: 6,
+                                      mainAxisSpacing: 10,
                                     ),
                                 itemBuilder: (context, index) {
                                   final tech = technicians[index];
@@ -265,7 +355,8 @@ class _PosTechnicianAssignmentViewState
                                   return InkWell(
                                     onTap:
                                         (vm.isAssigning ||
-                                            tech.slotsUsed >= tech.totalSlots)
+                                            tech.slotsUsed >= tech.totalSlots ||
+                                            !tech.isOnline)
                                         ? null
                                         : () => assignVm.toggleSelection(tech),
                                     borderRadius: BorderRadius.circular(12),
@@ -273,8 +364,8 @@ class _PosTechnicianAssignmentViewState
                                       opacity: tech.isEligible ? 1.0 : 0.5,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 4,
+                                          horizontal: 14,
+                                          vertical: 10,
                                         ),
                                         decoration: BoxDecoration(
                                           color: isSelected
@@ -295,8 +386,8 @@ class _PosTechnicianAssignmentViewState
                                               color: Colors.black.withValues(
                                                 alpha: 0.02,
                                               ),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 3),
                                             ),
                                           ],
                                         ),
@@ -305,36 +396,35 @@ class _PosTechnicianAssignmentViewState
                                             Stack(
                                               children: [
                                                 CircleAvatar(
-                                                  radius: isTablet ? 24 : 20,
+                                                  radius: isTablet ? 25 : 22,
                                                   backgroundColor: AppColors
                                                       .primaryLight
                                                       .withValues(alpha: 0.1),
                                                   child: Icon(
                                                     Icons.person,
-                                                    size: isTablet ? 24 : 20,
+                                                    size: isTablet ? 25 : 21,
                                                     color: AppColors
                                                         .secondaryLight,
                                                   ),
                                                 ),
-                                                if (tech.isOnline)
-                                                  Positioned(
-                                                    right: 0,
-                                                    bottom: 0,
-                                                    child: Container(
-                                                      width: isTablet ? 12 : 10,
-                                                      height: isTablet
-                                                          ? 12
-                                                          : 10,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.green,
-                                                        shape: BoxShape.circle,
-                                                        border: Border.all(
-                                                          color: Colors.white,
-                                                          width: 2,
-                                                        ),
+                                                Positioned(
+                                                  right: 0,
+                                                  bottom: 0,
+                                                  child: Container(
+                                                    width: isTablet ? 12 : 10,
+                                                    height: isTablet ? 12 : 10,
+                                                    decoration: BoxDecoration(
+                                                      color: tech.isOnline
+                                                          ? Colors.green
+                                                          : Colors.grey.shade400,
+                                                      shape: BoxShape.circle,
+                                                      border: Border.all(
+                                                        color: Colors.white,
+                                                        width: 2,
                                                       ),
                                                     ),
                                                   ),
+                                                ),
                                               ],
                                             ),
                                             const SizedBox(width: 12),
@@ -347,20 +437,44 @@ class _PosTechnicianAssignmentViewState
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Text(
-                                                    tech.name,
+                                                    tech.isOnline
+                                                        ? 'Online'
+                                                        : 'Last seen: ${tech.formattedLastSeen}',
                                                     style: TextStyle(
                                                       fontSize: isTablet
-                                                          ? 15
-                                                          : 14,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: const Color(
-                                                        0xFF1E2124,
-                                                      ),
+                                                          ? 13
+                                                          : 12,
+                                                      color: tech.isOnline
+                                                          ? Colors.green.shade700
+                                                          : Colors.grey,
+                                                      fontWeight: FontWeight.w500,
                                                     ),
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          tech.name,
+                                                          style: TextStyle(
+                                                            fontSize: isTablet
+                                                                ? 16
+                                                                : 15,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: const Color(
+                                                              0xFF1E2124,
+                                                            ),
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow:
+                                                              TextOverflow.ellipsis,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                   if (tech
                                                       .departments
@@ -372,8 +486,8 @@ class _PosTechnicianAssignmentViewState
                                                           .join(' • '),
                                                       style: TextStyle(
                                                         fontSize: isTablet
-                                                            ? 12
-                                                            : 11,
+                                                            ? 13
+                                                            : 12,
                                                         color: Colors.blueGrey,
                                                         fontWeight:
                                                             FontWeight.w500,
@@ -383,35 +497,12 @@ class _PosTechnicianAssignmentViewState
                                                           TextOverflow.ellipsis,
                                                     ),
                                                   ],
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    tech.isOnline
-                                                        ? 'Online'
-                                                        : 'Last seen: ${tech.formattedLastSeen}',
-                                                    style: TextStyle(
-                                                      fontSize: isTablet
-                                                          ? 12
-                                                          : 11,
-                                                      color: tech.isOnline
-                                                          ? Colors.green
-                                                          : Colors.grey,
-                                                      fontWeight: tech.isOnline
-                                                          ? FontWeight.bold
-                                                          : FontWeight.normal,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                  const SizedBox(height: 4),
+                                                  const SizedBox(height: 3),
                                                   Row(
                                                     children: [
                                                       Icon(
-                                                        Icons
-                                                            .work_history_outlined,
-                                                        size: isTablet
-                                                            ? 14
-                                                            : 12,
+                                                        Icons.work_history_outlined,
+                                                        size: isTablet ? 14 : 12,
                                                         color:
                                                             tech.slotsUsed >=
                                                                 tech.totalSlots
@@ -419,32 +510,27 @@ class _PosTechnicianAssignmentViewState
                                                                   .red
                                                                   .shade400
                                                             : Colors
-                                                                  .blue
+                                                                  .green
                                                                   .shade400,
                                                       ),
-                                                      const SizedBox(width: 4),
-                                                      Expanded(
-                                                        child: Text(
-                                                          'Slots: ${tech.slotsUsed}/${tech.totalSlots} used',
-                                                          style: TextStyle(
-                                                            fontSize: isTablet
-                                                                ? 12
-                                                                : 10,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            color:
-                                                                tech.slotsUsed >=
-                                                                    tech.totalSlots
-                                                                ? Colors
-                                                                      .red
-                                                                      .shade600
-                                                                : Colors
-                                                                      .blue
-                                                                      .shade600,
-                                                          ),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
+                                                      const SizedBox(width: 3),
+                                                      Text(
+                                                        'Slots: ${tech.slotsUsed}/${tech.totalSlots}',
+                                                        style: TextStyle(
+                                                          fontSize: isTablet
+                                                              ? 12
+                                                              : 11,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color:
+                                                              tech.slotsUsed >=
+                                                                  tech.totalSlots
+                                                              ? Colors
+                                                                    .red
+                                                                    .shade600
+                                                              : Colors
+                                                                    .green
+                                                                    .shade600,
                                                         ),
                                                       ),
                                                     ],
@@ -452,8 +538,9 @@ class _PosTechnicianAssignmentViewState
                                                 ],
                                               ),
                                             ),
-                                            if (tech.slotsUsed <
-                                                tech.totalSlots)
+                                            if (tech.isOnline &&
+                                                tech.slotsUsed <
+                                                    tech.totalSlots)
                                               Checkbox(
                                                 value: isSelected,
                                                 onChanged: vm.isAssigning
@@ -466,6 +553,11 @@ class _PosTechnicianAssignmentViewState
                                                     AppColors.secondaryLight,
                                                 checkColor:
                                                     AppColors.primaryLight,
+                                                visualDensity:
+                                                    const VisualDensity(
+                                                      horizontal: 0.2,
+                                                      vertical: 0.2,
+                                                    ),
                                               ),
                                           ],
                                         ),
@@ -484,11 +576,14 @@ class _PosTechnicianAssignmentViewState
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(18),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
+                        color: Colors.black.withValues(alpha: 0.06),
                         offset: const Offset(0, -4),
-                        blurRadius: 10,
+                        blurRadius: 14,
                       ),
                     ],
                   ),
@@ -496,18 +591,22 @@ class _PosTechnicianAssignmentViewState
                       ? Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
-                                onPressed: () {
-                                  _showBroadcastWorkshopDialog(context);
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.secondaryLight,
-                                  side: const BorderSide(
-                                    color: AppColors.secondaryLight,
-                                  ),
+                              child: ElevatedButton(
+                                onPressed: (_canTapBroadcast &&
+                                        _broadcastingDuty == null)
+                                    ? () => _broadcastWorkshop(context)
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.secondaryLight,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor:
+                                      Colors.grey.shade300,
+                                  disabledForegroundColor:
+                                      Colors.grey.shade500,
+                                  elevation: 0,
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 8,
+                                    vertical: 16,
+                                    horizontal: 10,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
@@ -516,16 +615,26 @@ class _PosTechnicianAssignmentViewState
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(
-                                      Icons.campaign_outlined,
-                                      size: 18,
-                                    ),
+                                    if (_broadcastingDuty == 'workshop')
+                                      const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    else
+                                      const Icon(
+                                        Icons.campaign_outlined,
+                                        size: 18,
+                                      ),
                                     const SizedBox(width: 4),
                                     Flexible(
                                       child: Text(
                                         'Broadcast to Workshop',
                                         style: TextStyle(
-                                          fontSize: isTablet ? 14 : 12,
+                                          fontSize: isTablet ? 15 : 13,
                                           fontWeight: FontWeight.bold,
                                         ),
                                         maxLines: 1,
@@ -539,16 +648,21 @@ class _PosTechnicianAssignmentViewState
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {
-                                  _showBroadcastOnCallDialog(context);
-                                },
+                                onPressed: (_canTapBroadcast &&
+                                        _broadcastingDuty == null)
+                                    ? () => _broadcastOnCall(context)
+                                    : null,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primaryLight,
                                   foregroundColor: AppColors.secondaryLight,
+                                  disabledBackgroundColor:
+                                      AppColors.primaryLight.withOpacity(0.5),
+                                  disabledForegroundColor:
+                                      AppColors.secondaryLight.withOpacity(0.5),
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 8,
+                                    vertical: 16,
+                                    horizontal: 10,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
@@ -557,16 +671,26 @@ class _PosTechnicianAssignmentViewState
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(
-                                      Icons.online_prediction,
-                                      size: 18,
-                                    ),
+                                    if (_broadcastingDuty == 'on_call')
+                                      SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.secondaryLight,
+                                        ),
+                                      )
+                                    else
+                                      const Icon(
+                                        Icons.online_prediction,
+                                        size: 18,
+                                      ),
                                     const SizedBox(width: 4),
                                     Flexible(
                                       child: Text(
                                         'Broadcast to On-Call',
                                         style: TextStyle(
-                                          fontSize: isTablet ? 14 : 12,
+                                          fontSize: isTablet ? 15 : 13,
                                           fontWeight: FontWeight.bold,
                                         ),
                                         maxLines: 1,
@@ -594,8 +718,8 @@ class _PosTechnicianAssignmentViewState
                                     backgroundColor: AppColors.secondaryLight,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                      horizontal: 8,
+                                      vertical: 16,
+                                      horizontal: 10,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
@@ -625,7 +749,7 @@ class _PosTechnicianAssignmentViewState
                                               ? 'Assigning...'
                                               : 'Assign to ${assignVm.selectedTechnicianIds.length} Technician${assignVm.selectedTechnicianIds.length > 1 ? 's' : ''}',
                                           style: TextStyle(
-                                            fontSize: isTablet ? 14 : 12,
+                                            fontSize: isTablet ? 15 : 13,
                                             fontWeight: FontWeight.bold,
                                           ),
                                           maxLines: 1,
@@ -648,11 +772,37 @@ class _PosTechnicianAssignmentViewState
     );
   }
 
-  void _showBroadcastWorkshopDialog(BuildContext context) {
-    ToastService.showInfo(context, 'Broadcasted to Workshop technicians');
+  Future<void> _broadcastWorkshop(BuildContext context) async {
+    if (!_canTapBroadcast || _broadcastingDuty != null) return;
+    setState(() => _broadcastingDuty = 'workshop');
+    try {
+      final jobId = await _resolveJobIdForBroadcast(context);
+      if (!mounted) return;
+      if (jobId == null || jobId.isEmpty) return;
+      await context.read<PosViewModel>().broadcastJob(
+            context,
+            jobId,
+            dutyMode: 'workshop',
+          );
+    } finally {
+      if (mounted) setState(() => _broadcastingDuty = null);
+    }
   }
 
-  void _showBroadcastOnCallDialog(BuildContext context) {
-    ToastService.showInfo(context, 'Broadcasted to On-Call technicians');
+  Future<void> _broadcastOnCall(BuildContext context) async {
+    if (!_canTapBroadcast || _broadcastingDuty != null) return;
+    setState(() => _broadcastingDuty = 'on_call');
+    try {
+      final jobId = await _resolveJobIdForBroadcast(context);
+      if (!mounted) return;
+      if (jobId == null || jobId.isEmpty) return;
+      await context.read<PosViewModel>().broadcastJob(
+            context,
+            jobId,
+            dutyMode: 'on_call',
+          );
+    } finally {
+      if (mounted) setState(() => _broadcastingDuty = null);
+    }
   }
 }

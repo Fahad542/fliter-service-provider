@@ -188,9 +188,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
     final String categoryTag = (product.subCategoryName?.isNotEmpty == true)
         ? product.subCategoryName!
         : ((product.category?.isNotEmpty == true) ? product.category! : '');
-    final String displayTag = isService
-        ? departmentTag
-        : [departmentTag, categoryTag].where((e) => e.trim().isNotEmpty).join(' • ');
+    final String displayTag = [departmentTag, categoryTag].where((e) => e.trim().isNotEmpty).join(' • ');
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -296,30 +294,36 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                   ),
                   Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
                 ],
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: isService ? 0 : 12),
-                    child: _buildMetricItem(
-                      isService ? 'CATEGORY' : 'RETAIL',
-                      isService
-                          ? (product.subCategoryName?.isNotEmpty == true
-                              ? product.subCategoryName!
-                              : (product.category?.isNotEmpty == true ? product.category! : '-'))
-                          : 'SAR ${product.salePrice.toInt()}',
-                      isService ? AppColors.primaryLight : Colors.grey.shade600,
-                      centered: isService,
+                if (!isService)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: _buildMetricItem(
+                        'RETAIL',
+                        'SAR ${product.salePrice.toInt()}',
+                        Colors.grey.shade600,
+                      ),
                     ),
                   ),
-                ),
                 if (isService) ...[
+                  Expanded(
+                    child: _buildMetricItem(
+                      'PRICE',
+                      'SAR ${product.salePrice.toInt()}',
+                      Colors.grey.shade600,
+                      centered: true,
+                    ),
+                  ),
                   Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 12),
                       child: _buildMetricItem(
-                        'PRICE',
-                        'SAR ${product.salePrice.toInt()}',
-                        Colors.grey.shade600,
+                        'CORP RANGE',
+                        (product.minPriceCorporate != null && product.minPriceCorporate! > 0)
+                            ? 'SAR ${product.minPriceCorporate!.toInt()} - ${product.maxPriceCorporate?.toInt() ?? 0}'
+                            : '-',
+                        AppColors.primaryLight,
                         centered: true,
                       ),
                     ),
@@ -434,16 +438,20 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                       itemBuilder: (context, index) {
                         final cat = vm.displayedSubCategories[index];
                         return _buildSimpleActionCard(
-                          cat.name, 
+                          cat.name,
                           vm.selectedInnerTab == 0 ? Icons.inventory_2_rounded : Icons.build_rounded,
-                          AppColors.primaryLight, 
+                          AppColors.primaryLight,
+                          subtitle: cat.departmentName,
                           onEdit: () {
-                          vm.setEditCategory(OwnerCategory(
-                            id: cat.id,
-                            name: cat.name,
-                            type: vm.selectedInnerTab == 0 ? 'product' : 'service',
-                            workshopId: '',
-                          ));
+                          vm.setEditCategory(
+                            OwnerCategory(
+                              id: cat.id,
+                              name: cat.name,
+                              type: vm.selectedInnerTab == 0 ? 'product' : 'service',
+                              workshopId: '',
+                            ),
+                            departmentId: cat.departmentId,
+                          );
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -454,10 +462,6 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
                               child: const _AddCategorySheet(),
                             ),
                           );
-                        }, onDelete: () {
-                          _showDeleteConfirmation(context, vm, cat.name, () {
-                            vm.deleteCategory(context, cat.id);
-                          });
                         });
                       },
                     ),
@@ -491,10 +495,10 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
     );
   }
 
-  Widget _buildSimpleActionCard(String title, IconData iconData, Color color, {VoidCallback? onEdit, VoidCallback? onDelete}) {
+  Widget _buildSimpleActionCard(String title, IconData iconData, Color color, {String? subtitle, VoidCallback? onEdit, VoidCallback? onDelete}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -506,25 +510,71 @@ class _InventoryManagementViewState extends State<InventoryManagementView> with 
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: color.withOpacity(0.2)),
             ),
-             child: Icon(iconData, color: AppColors.primaryLight, size: 22),
+            child: Icon(iconData, color: AppColors.primaryLight, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.secondaryLight),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.secondaryLight),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                if (subtitle != null && subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Icon(Icons.store_rounded, size: 12, color: Colors.grey.shade400),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          subtitle,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox.shrink(),
+          if (onEdit != null)
+            IconButton(
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_rounded, size: 18),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.primaryLight.withOpacity(0.12),
+                foregroundColor: AppColors.primaryLight,
+                padding: const EdgeInsets.all(8),
+              ),
+              tooltip: 'Edit',
+            ),
+          if (onDelete != null) ...[
+            const SizedBox(width: 6),
+            IconButton(
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.red.withOpacity(0.08),
+                foregroundColor: Colors.red.shade400,
+                padding: const EdgeInsets.all(8),
+              ),
+              tooltip: 'Delete',
+            ),
+          ],
         ],
       ),
     );
@@ -867,61 +917,82 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                             return DropdownMenuItem(value: item, child: Text(item));
                           }).toList(),
                           onChanged: (val) {
-                            setState(() => selectedDepartmentId =
-                                deptVm.departments.firstWhere((d) => d.name == val).id);
-                          },
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
-                        ),
-                      ),
-
-                    // Unified Category Dropdown (Sub-category logic)
-                    if (vm.isSubCategoriesLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
-                      )
-                    else if (vm.displayedSubCategories.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: DropdownButtonFormField<String>(
-                          value: vm.displayedSubCategories.any((s) => s.id == selectedSubCategoryId) 
-                              ? vm.displayedSubCategories.firstWhere((s) => s.id == selectedSubCategoryId).name
-                              : vm.displayedSubCategories.any((s) => s.id == selectedCategoryId)
-                                ? vm.displayedSubCategories.firstWhere((s) => s.id == selectedCategoryId).name
-                                : vm.displayedSubCategories.first.name,
-                          decoration: InputDecoration(
-                            labelText: 'Category',
-                            labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.05),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                          ),
-                          items: vm.displayedSubCategories.map((s) {
-                            return DropdownMenuItem(value: s.name, child: Text(s.name));
-                          }).toList(),
-                          onChanged: (val) {
                             if (val != null) {
-                              final selected = vm.displayedSubCategories.firstWhere((s) => s.name == val);
-                              OwnerCategory? parentCat;
-                              for (var c in vm.categories) {
-                                if (c.subCategories.any((sub) => sub.id == selected.id)) {
-                                  parentCat = c;
-                                  break;
-                                }
-                              }
                               setState(() {
-                                if (parentCat != null) {
-                                  selectedCategoryId = parentCat.id;
-                                  selectedSubCategoryId = selected.id;
-                                } else {
-                                  selectedCategoryId = selected.id;
-                                  selectedSubCategoryId = null;
-                                }
+                                selectedDepartmentId = deptVm.departments.firstWhere((d) => d.name == val).id;
+                                selectedCategoryId = null;
+                                selectedSubCategoryId = null;
                               });
                             }
                           },
                           icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
                         ),
+                      ),
+
+                    // Unified Category Dropdown — filtered by selected department
+                    if (vm.isSubCategoriesLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
+                      )
+                    else
+                      Builder(
+                        builder: (context) {
+                          final filteredCats = selectedDepartmentId != null
+                              ? vm.displayedSubCategories
+                                  .where((s) => s.departmentId == selectedDepartmentId)
+                                  .toList()
+                              : vm.displayedSubCategories;
+
+                          if (filteredCats.isEmpty) return const SizedBox.shrink();
+
+                          final hasSubSelected = filteredCats.any((s) => s.id == selectedSubCategoryId);
+                          final hasCatSelected = filteredCats.any((s) => s.id == selectedCategoryId);
+                          final dropdownValue = hasSubSelected
+                              ? filteredCats.firstWhere((s) => s.id == selectedSubCategoryId).name
+                              : hasCatSelected
+                                  ? filteredCats.firstWhere((s) => s.id == selectedCategoryId).name
+                                  : filteredCats.first.name;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: DropdownButtonFormField<String>(
+                              value: dropdownValue,
+                              decoration: InputDecoration(
+                                labelText: 'Category',
+                                labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                                filled: true,
+                                fillColor: Colors.grey.withOpacity(0.05),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                              ),
+                              items: filteredCats.map((s) {
+                                return DropdownMenuItem(value: s.name, child: Text(s.name));
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  final selected = filteredCats.firstWhere((s) => s.name == val);
+                                  OwnerCategory? parentCat;
+                                  for (var c in vm.categories) {
+                                    if (c.subCategories.any((sub) => sub.id == selected.id)) {
+                                      parentCat = c;
+                                      break;
+                                    }
+                                  }
+                                  setState(() {
+                                    if (parentCat != null) {
+                                      selectedCategoryId = parentCat.id;
+                                      selectedSubCategoryId = selected.id;
+                                    } else {
+                                      selectedCategoryId = selected.id;
+                                      selectedSubCategoryId = null;
+                                    }
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
+                            ),
+                          );
+                        },
                       ),
 
                     _buildTextField('Product Name', Icons.inventory_2_rounded, controller: vm.nameController),
@@ -1212,61 +1283,82 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
                             return DropdownMenuItem(value: item, child: Text(item));
                           }).toList(),
                           onChanged: (val) {
-                            setState(() => selectedDepartmentId =
-                                deptVm.departments.firstWhere((d) => d.name == val).id);
-                          },
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
-                        ),
-                      ),
-
-                    // Unified Category Dropdown
-                    if (vm.isSubCategoriesLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
-                      )
-                    else if (vm.displayedSubCategories.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: DropdownButtonFormField<String>(
-                          value: vm.displayedSubCategories.any((s) => s.id == selectedSubCategoryId) 
-                              ? vm.displayedSubCategories.firstWhere((s) => s.id == selectedSubCategoryId).name
-                              : vm.displayedSubCategories.any((s) => s.id == selectedCategoryId)
-                                ? vm.displayedSubCategories.firstWhere((s) => s.id == selectedCategoryId).name
-                                : vm.displayedSubCategories.first.name,
-                          decoration: InputDecoration(
-                            labelText: 'Category',
-                            labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.05),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                          ),
-                          items: vm.displayedSubCategories.map((s) {
-                            return DropdownMenuItem(value: s.name, child: Text(s.name));
-                          }).toList(),
-                          onChanged: (val) {
                             if (val != null) {
-                              final selected = vm.displayedSubCategories.firstWhere((s) => s.name == val);
-                              OwnerCategory? parentCat;
-                              for (var c in vm.categories) {
-                                if (c.subCategories.any((sub) => sub.id == selected.id)) {
-                                  parentCat = c;
-                                  break;
-                                }
-                              }
                               setState(() {
-                                if (parentCat != null) {
-                                  selectedCategoryId = parentCat.id;
-                                  selectedSubCategoryId = selected.id;
-                                } else {
-                                  selectedCategoryId = selected.id;
-                                  selectedSubCategoryId = null;
-                                }
+                                selectedDepartmentId = deptVm.departments.firstWhere((d) => d.name == val).id;
+                                selectedCategoryId = null;
+                                selectedSubCategoryId = null;
                               });
                             }
                           },
                           icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
                         ),
+                      ),
+
+                    // Unified Category Dropdown — filtered by selected department
+                    if (vm.isSubCategoriesLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
+                      )
+                    else
+                      Builder(
+                        builder: (context) {
+                          final filteredCats = selectedDepartmentId != null
+                              ? vm.displayedSubCategories
+                                  .where((s) => s.departmentId == selectedDepartmentId)
+                                  .toList()
+                              : vm.displayedSubCategories;
+
+                          if (filteredCats.isEmpty) return const SizedBox.shrink();
+
+                          final hasSubSelected = filteredCats.any((s) => s.id == selectedSubCategoryId);
+                          final hasCatSelected = filteredCats.any((s) => s.id == selectedCategoryId);
+                          final dropdownValue = hasSubSelected
+                              ? filteredCats.firstWhere((s) => s.id == selectedSubCategoryId).name
+                              : hasCatSelected
+                                  ? filteredCats.firstWhere((s) => s.id == selectedCategoryId).name
+                                  : filteredCats.first.name;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: DropdownButtonFormField<String>(
+                              value: dropdownValue,
+                              decoration: InputDecoration(
+                                labelText: 'Category',
+                                labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                                filled: true,
+                                fillColor: Colors.grey.withOpacity(0.05),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                              ),
+                              items: filteredCats.map((s) {
+                                return DropdownMenuItem(value: s.name, child: Text(s.name));
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  final selected = filteredCats.firstWhere((s) => s.name == val);
+                                  OwnerCategory? parentCat;
+                                  for (var c in vm.categories) {
+                                    if (c.subCategories.any((sub) => sub.id == selected.id)) {
+                                      parentCat = c;
+                                      break;
+                                    }
+                                  }
+                                  setState(() {
+                                    if (parentCat != null) {
+                                      selectedCategoryId = parentCat.id;
+                                      selectedSubCategoryId = selected.id;
+                                    } else {
+                                      selectedCategoryId = selected.id;
+                                      selectedSubCategoryId = null;
+                                    }
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
+                            ),
+                          );
+                        },
                       ),
 
                     Container(
@@ -1298,7 +1390,51 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
                         ),
                       ),
                     ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 16, right: 8),
+                            child: TextField(
+                              controller: vm.minCorporatePriceController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Min Corp Price',
+                                prefixIcon: const Icon(Icons.business_center_rounded, color: AppColors.secondaryLight, size: 20),
+                                filled: true,
+                                fillColor: Colors.grey.withOpacity(0.05),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                                labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 16, left: 8),
+                            child: TextField(
+                              controller: vm.maxCorporatePriceController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Max Corp Price',
+                                prefixIcon: const Icon(Icons.business_center_rounded, color: AppColors.secondaryLight, size: 20),
+                                filled: true,
+                                fillColor: Colors.grey.withOpacity(0.05),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                                labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
+                    _buildToggleRow(
+                      'Cashier can change price on POS',
+                      vm.isPriceEditable,
+                      (val) => vm.toggleIsPriceEditable(val),
+                    ),
+                    const SizedBox(height: 12),
                     _buildToggleRow('Active Status', vm.isActive, (val) => vm.toggleIsActive(val)),
                     const SizedBox(height: 20),
                   ],
@@ -1359,10 +1495,28 @@ class _AddCategorySheet extends StatefulWidget {
 }
 
 class _AddCategorySheetState extends State<_AddCategorySheet> {
+  String? selectedDepartmentId;
+
+  @override
+  void initState() {
+    super.initState();
+    final deptVm = context.read<DepartmentManagementViewModel>();
+    final vm = context.read<InventoryManagementViewModel>();
+
+    // If editing, pre-select the category's department from API response
+    if (vm.isEditingCategory && vm.editingCategoryDepartmentId != null) {
+      final editingDeptId = vm.editingCategoryDepartmentId!;
+      final exists = deptVm.departments.any((d) => d.id == editingDeptId);
+      selectedDepartmentId = exists ? editingDeptId : (deptVm.departments.isNotEmpty ? deptVm.departments.first.id : null);
+    } else if (deptVm.departments.isNotEmpty) {
+      selectedDepartmentId = deptVm.departments.first.id;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<InventoryManagementViewModel>();
+    final deptVm = context.watch<DepartmentManagementViewModel>();
 
     return FocusScope(
       child: Container(
@@ -1415,6 +1569,42 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                         ),
                       ),
                     ),
+                    if (deptVm.departments.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: DropdownButtonFormField<String>(
+                          value: deptVm.departments.any((d) => d.id == selectedDepartmentId)
+                              ? deptVm.departments.firstWhere((d) => d.id == selectedDepartmentId).name
+                              : deptVm.departments.first.name,
+                          decoration: InputDecoration(
+                            labelText: 'Department',
+                            labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                            filled: true,
+                            fillColor: Colors.grey.withOpacity(0.05),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          items: deptVm.departments
+                              .map((d) => d.name)
+                              .toSet()
+                              .toList()
+                              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                              .toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              selectedDepartmentId = deptVm.departments
+                                  .firstWhere((d) => d.name == val)
+                                  .id;
+                            });
+                          },
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.secondaryLight,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1427,7 +1617,12 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
             child: ElevatedButton(
-              onPressed: vm.isActionLoading ? null : () => vm.submitCategoryForm(context),
+              onPressed: vm.isActionLoading
+                  ? null
+                  : () => vm.submitCategoryForm(
+                        context,
+                        departmentId: selectedDepartmentId,
+                      ),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
                   disabledBackgroundColor: AppColors.primaryLight,

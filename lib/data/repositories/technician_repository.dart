@@ -6,6 +6,7 @@ import '../../models/technician_profile_model.dart';
 import '../../models/technician_assigned_orders_model.dart';
 import '../../models/technician_order_details_model.dart';
 import '../../models/technician_commission_history_model.dart';
+import '../../models/technician_broadcast_model.dart';
 
 class TechnicianRepository {
   final BaseApiService _apiService = BaseApiService();
@@ -189,6 +190,30 @@ class TechnicianRepository {
       }
     } catch (e) {
       throw Exception('Error starting order: $e');
+    }
+  }
+
+  Future<List<TechBroadcast>> getBroadcasts(String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.technicianBroadcastsEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      final raw = response['broadcasts'] ?? response['data'] ?? response['items'];
+      if (raw is! List) return [];
+      return raw
+          .map((e) {
+            if (e is! Map) return null;
+            return TechBroadcast.fromJson(Map<String, dynamic>.from(e));
+          })
+          .whereType<TechBroadcast>()
+          .where((b) => b.jobId.isNotEmpty)
+          .toList();
+    } catch (e) {
+      rethrow;
     }
   }
 
