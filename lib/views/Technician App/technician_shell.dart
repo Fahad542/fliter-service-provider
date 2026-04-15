@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'technician_view_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import 'Notifications/notifications_view.dart';
@@ -10,7 +11,6 @@ import 'History/performance_view.dart';
 import 'Orders/assigned_orders_view.dart';
 import '../Menu/menu_view.dart';
 import '../../services/session_service.dart';
-import 'technician_view_model.dart';
 import '../../../utils/restart_widget.dart';
 
 class TechShell extends StatefulWidget {
@@ -37,6 +37,13 @@ class TechShellState extends State<TechShell> {
   void initState() {
     super.initState();
     _loadUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final vm = context.read<TechAppViewModel>();
+      if (!vm.isBootstrapped) {
+        vm.init();
+      }
+    });
   }
 
   Future<void> _loadUser() async {
@@ -198,7 +205,8 @@ class TechShellState extends State<TechShell> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 0,
         backgroundColor: Colors.white,
-        child: Padding(
+        child: Container(
+          width: 400,
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,

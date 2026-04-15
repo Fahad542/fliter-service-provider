@@ -1,3 +1,5 @@
+import 'pos_order_model.dart';
+
 class AssignTechnicianRequest {
   final List<String> employeeIds;
 
@@ -12,20 +14,71 @@ class AssignTechnicianResponse {
   final bool success;
   final String message;
   final TechnicianAssignment? assignment;
+  /// From `assignments` or `assigned` on POST /cashier/job/:id/assign (for immediate UI).
+  final List<JobTechnician> assignedTechnicians;
 
   AssignTechnicianResponse({
     required this.success,
     required this.message,
     this.assignment,
+    this.assignedTechnicians = const [],
   });
+
+  /// POST can return `success: true` with `assigned: []` when the server skips every
+  /// id (e.g. invalid ids, or historically when duplicate checks counted cancelled rows).
+  /// Callers should not toast success when [requestedEmployeeIds] is non-empty but
+  /// [assignedTechnicians] is empty.
+  bool isEffectiveAssignFailure(List<String> requestedEmployeeIds) {
+    if (!success) return true;
+    if (requestedEmployeeIds.isEmpty) return false;
+    return assignedTechnicians.isEmpty;
+  }
+
+  static List<JobTechnician> _listToJobTechnicians(List<dynamic> raw) {
+    final out = <JobTechnician>[];
+    for (final e in raw) {
+      if (e is Map<String, dynamic>) {
+        out.add(JobTechnician.fromJson(e));
+      } else if (e is Map) {
+        out.add(JobTechnician.fromJson(Map<String, dynamic>.from(e)));
+      }
+    }
+    return out;
+  }
+
+  /// Prefer `assigned` (active list); `assignments` may include cancelled history.
+  static List<JobTechnician> _parseTechnicianList(Map<String, dynamic> json) {
+    final assigned = json['assigned'];
+    if (assigned is List) {
+      return _listToJobTechnicians(assigned);
+    }
+    if (json['data'] is Map) {
+      final d = Map<String, dynamic>.from(json['data'] as Map);
+      final inner = d['assigned'];
+      if (inner is List) return _listToJobTechnicians(inner);
+    }
+
+    dynamic raw = json['assignments'] ?? json['technicians'];
+    if (raw == null && json['data'] is Map) {
+      final d = Map<String, dynamic>.from(json['data'] as Map);
+      raw = d['assignments'] ?? d['technicians'];
+    }
+    if (raw is! List) return [];
+    return _listToJobTechnicians(List<dynamic>.from(raw))
+        .where((t) => t.isActiveAssignment)
+        .toList();
+  }
 
   factory AssignTechnicianResponse.fromJson(Map<String, dynamic> json) {
     return AssignTechnicianResponse(
       success: json['success'] ?? false,
-      message: json['message'] ?? '',
+      message: json['message']?.toString() ?? '',
       assignment: json['assignment'] != null
-          ? TechnicianAssignment.fromJson(json['assignment'])
+          ? TechnicianAssignment.fromJson(
+              Map<String, dynamic>.from(json['assignment'] as Map),
+            )
           : null,
+      assignedTechnicians: _parseTechnicianList(json),
     );
   }
 }

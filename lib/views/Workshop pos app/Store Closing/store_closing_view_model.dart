@@ -53,7 +53,9 @@ class StoreClosingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Fetch system totals from GET endpoint so user can see expected amounts
+  /// Fetch system totals from GET endpoint so user can see expected amounts.
+  /// Uses raw JSON so `paymentCategoryTotals` (split payment buckets) are
+  /// forwarded to [StoreClosingSummary.fromJson].
   Future<void> loadSummary() async {
     _isLoadingSummary = true;
     notifyListeners();
@@ -63,14 +65,8 @@ class StoreClosingViewModel extends ChangeNotifier {
       final user = await sessionService.getUser();
       final workshopId = user?.workshopId ?? '';
       final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final response = await posRepository.getStoreClosing(token, todayDate, workshopId);
-      _summary = StoreClosingSummary.fromJson({
-        'cashAmount': response.cashAmount,
-        'bankAmount': response.bankAmount,
-        'corporateAmount': response.corporateAmount,
-        'totalAmount': response.totalAmount,
-        'totalInvoices': response.totalInvoices,
-      });
+      final raw = await posRepository.getStoreClosingRaw(token, todayDate, workshopId);
+      _summary = StoreClosingSummary.fromJson(raw);
     } catch (_) {
       // summary is optional, silently ignore
     } finally {

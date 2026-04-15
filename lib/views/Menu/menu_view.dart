@@ -22,12 +22,13 @@ class MenuView extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
-    final crossAxisCount =
-        2; // Fixed 2 columns for both (clean 2x2 grid on tablet)
-    final childAspectRatio = isTablet ? 1.15 : 0.85;
+    final isLandscape = screenWidth > screenHeight;
+    
+    final crossAxisCount = isTablet ? (isLandscape ? 3 : 2) : 2;
+    final childAspectRatio = isTablet ? (isLandscape ? 1.15 : 1.15) : 0.85;
     final horizontalPadding = isTablet
-        ? screenWidth * 0.15
-        : 24.0; // Reduced padding to make cards larger (70% width)
+        ? screenWidth * (isLandscape ? 0.1 : 0.15)
+        : 24.0;
 
     final double iconContainerSize = isTablet ? 50 : 40;
     final double iconSize = isTablet ? 30 : 22;
@@ -46,13 +47,14 @@ class MenuView extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const CustomAuthHeader(
+                  CustomAuthHeader(
                     title: 'ALL Apps',
                     subtitle: 'Please choose one of these apps',
+                    height: isTablet ? (isLandscape ? screenHeight * 0.50 : null) : null,
                   ),
                   Padding(
                     padding: EdgeInsets.only(
-                      top: screenHeight * (isTablet ? 0.25 : 0.22),
+                      top: isTablet ? (isLandscape ? screenHeight * 0.32 : screenHeight * 0.25) : screenHeight * 0.22,
                       left: horizontalPadding,
                       right: horizontalPadding,
                     ),

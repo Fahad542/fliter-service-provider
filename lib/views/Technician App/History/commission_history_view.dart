@@ -14,16 +14,35 @@ class CommissionHistoryView extends StatefulWidget {
 }
 
 class _CommissionHistoryViewState extends State<CommissionHistoryView> {
+  /// Shared height so Row children get bounded constraints (avoids semantics / hit-test layout errors).
+  static const double _kCommissionFilterRowHeight = 52;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final vm = context.read<TechAppViewModel>();
-      vm.fetchCommissionHistory(
-        month: vm.selectedCommissionMonth.month,
-        year: vm.selectedCommissionMonth.year,
-      );
+      context.read<TechAppViewModel>().fetchCommissionHistory();
     });
+  }
+
+  Future<void> _pickFrom(TechAppViewModel vm) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: vm.commissionHistoryFrom,
+      firstDate: DateTime(2020),
+      lastDate: vm.commissionHistoryTo,
+    );
+    if (picked != null) vm.setCommissionHistoryFrom(picked);
+  }
+
+  Future<void> _pickTo(TechAppViewModel vm) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: vm.commissionHistoryTo,
+      firstDate: vm.commissionHistoryFrom,
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) vm.setCommissionHistoryTo(picked);
   }
 
   @override
@@ -66,7 +85,8 @@ class _CommissionHistoryViewState extends State<CommissionHistoryView> {
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsView())),
             child: Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), shape: BoxShape.circle),
               child: Center(child: Image.asset('assets/images/notifications.png', width: 22, height: 22, color: Colors.black, errorBuilder: (_, __, ___) => const Icon(Icons.notifications_rounded, size: 22, color: Colors.black))),
             ),
@@ -78,7 +98,7 @@ class _CommissionHistoryViewState extends State<CommissionHistoryView> {
         builder: (context, vm, child) {
           return Column(
             children: [
-              _buildMonthSelector(vm),
+              _buildDateRangeFilter(context, vm),
               Expanded(
                 child: vm.isLoadingCommission
                     ? const Center(
@@ -96,7 +116,7 @@ class _CommissionHistoryViewState extends State<CommissionHistoryView> {
                             ),
                           )
                         : ListView.builder(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                             itemCount: vm.commissionHistory.length,
                             itemBuilder: (context, index) {
                               return _buildCommissionItem(
@@ -111,49 +131,170 @@ class _CommissionHistoryViewState extends State<CommissionHistoryView> {
     );
   }
 
-  Widget _buildMonthSelector(TechAppViewModel vm) {
+  Widget _buildDateRangeFilter(BuildContext context, TechAppViewModel vm) {
+    final fmt = DateFormat.yMMMd();
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: vm.availableCommissionMonths.map((dt) {
-            final name = DateFormat('MMMM yyyy').format(dt);
-            final isSelected = dt.year == vm.selectedCommissionMonth.year &&
-                dt.month == vm.selectedCommissionMonth.month;
-            return _buildMonthPill(name, isSelected, () {
-              vm.selectCommissionMonth(dt);
-            });
-          }).toList(),
-        ),
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'DATE RANGE',
+            style: TextStyle(
+              color: Colors.black38,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: _kCommissionFilterRowHeight,
+                  child: _buildDateField(
+                    label: 'From',
+                    value: fmt.format(vm.commissionHistoryFrom),
+                    onTap: () => _pickFrom(vm),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SizedBox(
+                  height: _kCommissionFilterRowHeight,
+                  child: _buildDateField(
+                    label: 'To',
+                    value: fmt.format(vm.commissionHistoryTo),
+                    onTap: () => _pickTo(vm),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 84,
+                height: _kCommissionFilterRowHeight,
+                child: ElevatedButton(
+                  onPressed: vm.isLoadingCommission ? null : () => vm.fetchCommissionHistory(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondaryLight,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text(
+                    'Apply',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (vm.commissionHistoryBusinessTimeZone != null &&
+              vm.commissionHistoryBusinessTimeZone!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Listed dates match the server (${vm.commissionHistoryBusinessTimeZone!.trim()}); range uses calendar days only.',
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.38),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildMonthPill(String name, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryLight : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? []
-              : [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.02), blurRadius: 5)
+  /// Prefer API [CommissionEntry.displayYmd] (no clock); fall back to legacy timestamps.
+  String _formatCommissionRowDate(CommissionEntry entry) {
+    final ymd = entry.displayYmd.trim();
+    if (ymd.length == 10 && RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(ymd)) {
+      try {
+        final p = ymd.split('-');
+        final dt = DateTime(int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+        return DateFormat.yMMMd().format(dt);
+      } catch (_) {}
+    }
+    try {
+      return DateFormat.yMMMd().format(DateTime.parse(entry.displayDate).toLocal());
+    } catch (_) {
+      return entry.displayDate.isNotEmpty ? entry.displayDate : ymd;
+    }
+  }
+
+  Widget _buildDateField({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FD),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black.withOpacity(0.06)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.secondaryLight,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.calendar_today_rounded, size: 14, color: Colors.grey.shade500),
                 ],
-        ),
-        child: Text(
-          name.toUpperCase(),
-          style: TextStyle(
-            color: isSelected ? Colors.black87 : Colors.black38,
-            fontWeight: FontWeight.w900,
-            fontSize: 11,
-            letterSpacing: 0.5,
+              ),
+            ],
           ),
         ),
       ),
@@ -163,14 +304,7 @@ class _CommissionHistoryViewState extends State<CommissionHistoryView> {
   Widget _buildCommissionItem(CommissionEntry entry) {
     final isPaid = entry.isPaid;
     final statusColor = isPaid ? Colors.green : Colors.orange;
-
-    String formattedDate = '';
-    try {
-      final dt = DateTime.parse(entry.displayDate).toLocal();
-      formattedDate = DateFormat('MMM d, yyyy').format(dt);
-    } catch (_) {
-      formattedDate = entry.displayDate;
-    }
+    final formattedDate = _formatCommissionRowDate(entry);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

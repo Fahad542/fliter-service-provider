@@ -5,7 +5,6 @@ import '../technician_view_model.dart';
 import '../../../models/technician_models.dart';
 import 'order_details_view.dart';
 import '../Notifications/notifications_view.dart';
-import '../../../utils/toast_service.dart';
 
 class AssignedOrdersView extends StatelessWidget {
   final bool isFromDashboard;
@@ -114,7 +113,8 @@ class AssignedOrdersView extends StatelessWidget {
           body: RefreshIndicator(
             onRefresh: () => vm.fetchAssignedOrders(),
             color: AppColors.primaryLight,
-            child: vm.isLoading && vm.assignedOrders.isEmpty
+            child: (vm.isAssignedOrdersRequestInFlight || vm.isLoading) &&
+                    vm.assignedOrders.isEmpty
                 ? const Center(
                     child: CircularProgressIndicator(
                       color: AppColors.primaryLight,
@@ -154,7 +154,7 @@ class AssignedOrdersView extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           const Text(
-            'No Active Jobs',
+            'No invoiced jobs yet',
             style: TextStyle(
               color: Colors.black54,
               fontSize: 18,
@@ -162,9 +162,13 @@ class AssignedOrdersView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Assigned jobs will appear here',
-            style: TextStyle(color: Colors.black26, fontSize: 14),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'Jobs you worked on appear here after the cashier generates the invoice. You can view details and your commission.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black26, fontSize: 14),
+            ),
           ),
         ],
       ),
@@ -176,22 +180,7 @@ class AssignedOrdersView extends StatelessWidget {
     TechOrder order,
     TechAppViewModel vm,
   ) {
-    final status = order.assignmentStatus.toLowerCase();
-    final bool isPending = status == 'pending' || status == 'assigned';
-    final bool isAccepted = status == 'accepted';
-    final bool isInProgress =
-        status == 'in progress' || status == 'in_progress';
-
-    // Normalize and decide which status to show
-    final orderStatus = order.status.toLowerCase();
-    final bool isOrderFinalized =
-        orderStatus == 'completed' ||
-        orderStatus == 'invoiced' ||
-        orderStatus == 'success';
-
-    final String displayStatus = isOrderFinalized
-        ? 'COMPLETED'
-        : order.assignmentStatus;
+    final String displayStatus = 'COMPLETED';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -306,14 +295,12 @@ class AssignedOrdersView extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (isOrderFinalized) ...[
-                      _buildInfoColumn(
-                        'COMMISSION',
-                        'SAR ${order.commission.toStringAsFixed(2)}',
-                        isPrimary: true,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                    _buildInfoColumn(
+                      'COMMISSION',
+                      'SAR ${order.commission.toStringAsFixed(2)}',
+                      isPrimary: true,
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -335,177 +322,23 @@ class AssignedOrdersView extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-                if (isPending)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          'CANCEL',
-                          AppColors.secondaryLight,
-                          Colors.white,
-                          () async {
-                            final success = await vm.cancelOrder(order.jobId);
-                            if (!context.mounted) return;
-                            if (success) {
-                              ToastService.showSuccess(
-                                context,
-                                'Order cancelled',
-                              );
-                            } else {
-                              ToastService.showError(
-                                context,
-                                vm.cancelMessage ?? 'Failed to cancel order',
-                              );
-                            }
-                          },
-                          isLoading: vm.cancellingJobId == order.jobId,
+                SizedBox(
+                  width: double.infinity,
+                  child: _buildActionButton(
+                    'VIEW DETAILS',
+                    AppColors.secondaryLight,
+                    Colors.white,
+                    () {
+                      vm.fetchOrderDetails(order.jobId);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetailsView(order: order),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildActionButton(
-                          'ACCEPT',
-                          AppColors.primaryLight,
-                          Colors.black87,
-                          () async {
-                            final success = await vm.acceptOrder(order.jobId);
-                            if (!context.mounted) return;
-                            if (success) {
-                              ToastService.showSuccess(
-                                context,
-                                'Order accepted successfully',
-                              );
-                            } else {
-                              ToastService.showError(
-                                context,
-                                vm.acceptMessage ?? 'Failed to accept order',
-                              );
-                            }
-                          },
-                          isLoading: vm.acceptingJobId == order.jobId,
-                        ),
-                      ),
-                    ],
-                  )
-                else if (isAccepted)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          'VIEW DETAILS',
-                          AppColors.secondaryLight,
-                          Colors.white,
-                          () {
-                            vm.fetchOrderDetails(order.jobId);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OrderDetailsView(order: order),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildActionButton(
-                          'START',
-                          AppColors.primaryLight,
-                          Colors.black87,
-                          () async {
-                            final success = await vm.startOrder(order.jobId);
-                            if (!context.mounted) return;
-                            if (success) {
-                              ToastService.showSuccess(
-                                context,
-                                'Job started successfully',
-                              );
-                              vm.fetchOrderDetails(order.jobId);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      OrderDetailsView(order: order),
-                                ),
-                              );
-                            } else {
-                              ToastService.showError(
-                                context,
-                                vm.startMessage ?? 'Failed to start job',
-                              );
-                            }
-                          },
-                          isLoading: vm.startingJobId == order.jobId,
-                        ),
-                      ),
-                    ],
-                  )
-                else if (isInProgress)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          'VIEW DETAILS',
-                          AppColors.secondaryLight,
-                          Colors.white,
-                          () {
-                            vm.fetchOrderDetails(order.jobId);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OrderDetailsView(order: order),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildActionButton(
-                          'TASK COMPLETE',
-                          AppColors.primaryLight,
-                          Colors.black87,
-                          () async {
-                            final success = await vm.completeOrder(order.jobId);
-                            if (!context.mounted) return;
-                            if (success) {
-                              ToastService.showSuccess(
-                                context,
-                                'Job completed successfully',
-                              );
-                            } else {
-                              ToastService.showError(
-                                context,
-                                vm.completeMessage ?? 'Failed to complete job',
-                              );
-                            }
-                          },
-                          isLoading: vm.completingJobId == order.jobId,
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          'VIEW DETAILS',
-                          AppColors.secondaryLight,
-                          Colors.white,
-                          () {
-                            vm.fetchOrderDetails(order.jobId);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OrderDetailsView(order: order),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
+                ),
               ],
             ),
           ),

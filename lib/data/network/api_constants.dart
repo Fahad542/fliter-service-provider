@@ -1,7 +1,6 @@
 class ApiConstants {
-  // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
-  // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
   static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+  // Local: static const String baseUrl = 'http://localhost:3000';
 
   //// workshop pos ////
   static const String loginEndpoint = '/auth/cashier/login';
@@ -31,6 +30,14 @@ class ApiConstants {
   /// Standard walk-in only (no corporateAccountId): attach customer / vehicle before invoice.
   static String cashierOrderBillingEndpoint(String orderId) =>
       '/cashier/order/$orderId/billing';
+  /// POST — add pending jobs for extra departments (walk_in / walk_in_corporate only).
+  static String cashierOrderJobsEndpoint(String orderId) =>
+      '/cashier/order/$orderId/jobs';
+  /// GET — cashier assign picker; pass [departmentId] as query param.
+  static const String cashierTechniciansEndpoint = '/cashier/technicians';
+  /// PATCH — cancel a single job before invoice.
+  static String cashierJobCancelEndpoint(String jobId) =>
+      '/cashier/job/$jobId/cancel';
   static String editOrderEndpoint(String orderId, String jobId) =>
       '/cashier/order/$orderId/job/$jobId/edit';
   static String invoicedOrdersEndpoint(String customerId) =>

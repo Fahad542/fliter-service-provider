@@ -46,7 +46,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         child: Consumer<TechnicianViewModel>(
           builder: (context, vm, child) {
             if (vm.isLoading && vm.technicians.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
             }
 
             if (vm.errorMessage != null && vm.technicians.isEmpty) {

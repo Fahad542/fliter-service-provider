@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../services/session_service.dart';
+import '../../../models/pos_order_model.dart';
 import '../../../models/pos_technician_model.dart';
 
 class TechnicianViewModel extends ChangeNotifier {
@@ -22,6 +23,7 @@ class TechnicianViewModel extends ChangeNotifier {
   String? _assigningTechnicianId;
   String? _assignmentMessage;
   bool _assignmentSuccess = false;
+  List<JobTechnician> _lastCashierAssignTechnicians = [];
 
   List<PosTechnician> get technicians {
     if (_searchQuery.isEmpty) return _technicians;
@@ -31,22 +33,30 @@ class TechnicianViewModel extends ChangeNotifier {
     ).toList();
   }
 
+  /// Unfiltered cashier catalog (for seeding assign UI from job technicians).
+  List<PosTechnician> get rawTechnicians => List.unmodifiable(_technicians);
+
   // Grouped Technicians (Moved from View)
   Map<String, List<PosTechnician>> get groupedTechnicians {
     final Map<String, List<PosTechnician>> grouped = {};
     for (var tech in technicians) {
-      final type = tech.technicianType ?? 'General';
+      final type =
+          tech.technicianType.isEmpty ? 'General' : tech.technicianType;
       grouped.putIfAbsent(type, () => []).add(tech);
     }
     return grouped;
   }
  
   bool get isLoading => _isLoading;
+  /// True when [fetchCashierTechnicians] / [fetchTechnicians] has populated `_technicians` (not cleared).
+  bool get hasTechnicianList => _technicians.isNotEmpty;
   String? get errorMessage => _errorMessage;
   bool get isAssigning => _isAssigning;
   String? get assigningTechnicianId => _assigningTechnicianId;
   String? get assignmentMessage => _assignmentMessage;
   bool get assignmentSuccess => _assignmentSuccess;
+  List<JobTechnician> get lastCashierAssignTechnicians =>
+      List.unmodifiable(_lastCashierAssignTechnicians);
 
   bool isAssigningTechnician(String id) => _isAssigning && _assigningTechnicianId == id;
 
@@ -58,6 +68,7 @@ class TechnicianViewModel extends ChangeNotifier {
   Future<void> fetchTechnicians() async {
     _isLoading = true;
     _errorMessage = null;
+    _technicians = [];
     notifyListeners();
 
     try {
@@ -67,6 +78,92 @@ class TechnicianViewModel extends ChangeNotifier {
       }
 
       final response = await _posRepository.getTechnicians(token);
+      if (response.success) {
+        _technicians = response.technicians;
+      } else {
+        _errorMessage = 'Failed to fetch technicians';
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// After [refreshTechniciansCatalogQuiet], fixes [slotsUsed] when the list response
+  /// still matches pre-refresh counts for techs that were added/removed on this job.
+  void reconcileSlotsAfterAssign({
+    required Set<String> addedEmployeeIds,
+    required Set<String> removedEmployeeIds,
+    required Map<String, int> slotsBeforeRefresh,
+  }) {
+    if (addedEmployeeIds.isEmpty && removedEmployeeIds.isEmpty) return;
+    _technicians = _technicians.map((t) {
+      final cap = t.totalSlots > 0 ? t.totalSlots : 999;
+      final bef = slotsBeforeRefresh[t.id];
+      var u = t.slotsUsed;
+
+      if (addedEmployeeIds.contains(t.id)) {
+        if (bef != null) {
+          if (u <= bef) u = bef + 1;
+        } else {
+          u += 1;
+        }
+      }
+      if (removedEmployeeIds.contains(t.id)) {
+        if (bef != null) {
+          if (u >= bef) u = (bef - 1).clamp(0, cap);
+        } else if (u > 0) {
+          u -= 1;
+        }
+      }
+
+      u = u.clamp(0, cap);
+      if (u == t.slotsUsed) return t;
+      return t.copyWith(slotsUsed: u);
+    }).toList();
+    notifyListeners();
+  }
+
+  /// Updates slot counts after assign without clearing the list or showing loading.
+  /// Always uses [getCashierTechnicians] so [slotsUsed] / [slots] match the cashier API
+  /// (workshop [getTechnicians] does not return the same slot payload).
+  Future<void> refreshTechniciansCatalogQuiet({String? departmentId}) async {
+    try {
+      final token = await _sessionService.getToken();
+      if (token == null) return;
+      final d = departmentId?.trim() ?? '';
+      final response = await _posRepository.getCashierTechnicians(
+        token,
+        departmentId: d.isNotEmpty ? d : null,
+      );
+      if (response.success) {
+        _technicians = response.technicians;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Keep existing catalog on failure.
+    }
+  }
+
+  /// GET /cashier/technicians?departmentId=… — cashier assign picker (Bearer token).
+  Future<void> fetchCashierTechnicians({String? departmentId}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _technicians = [];
+    notifyListeners();
+
+    try {
+      final token = await _sessionService.getToken();
+      if (token == null) {
+        throw Exception('Token not found');
+      }
+
+      final response = await _posRepository.getCashierTechnicians(
+        token,
+        departmentId: departmentId,
+      );
       if (response.success) {
         _technicians = response.technicians;
       } else {
@@ -96,8 +193,16 @@ class TechnicianViewModel extends ChangeNotifier {
       final response =
           await _posRepository.assignTechnicians(jobId, [employeeId], token);
       _assignmentMessage = response.message;
-      _assignmentSuccess = response.success;
-      return response.success;
+      if (response.isEffectiveAssignFailure([employeeId])) {
+        _assignmentSuccess = false;
+        if (_assignmentMessage == null || _assignmentMessage!.trim().isEmpty) {
+          _assignmentMessage =
+              'Technician was not assigned. The server may still count old assignments on this job.';
+        }
+        return false;
+      }
+      _assignmentSuccess = true;
+      return true;
     } catch (e) {
       _assignmentMessage = e.toString();
       _assignmentSuccess = false;
@@ -113,6 +218,7 @@ class TechnicianViewModel extends ChangeNotifier {
     _assigningTechnicianId = null; // Don't show specific spinner on list items when doing bulk
     _assignmentMessage = null;
     _assignmentSuccess = false;
+    _lastCashierAssignTechnicians = [];
     notifyListeners();
 
     try {
@@ -122,10 +228,23 @@ class TechnicianViewModel extends ChangeNotifier {
       }
 
       final response = await _posRepository.assignTechnicians(jobId, employeeIds, token);
-      
-      _assignmentSuccess = response.success;
+
       _assignmentMessage = response.message;
-      return response.success;
+      if (response.isEffectiveAssignFailure(employeeIds)) {
+        _assignmentSuccess = false;
+        if (_assignmentMessage == null || _assignmentMessage!.trim().isEmpty) {
+          _assignmentMessage =
+              'No technicians were assigned. The server may still count cancelled assignments on this job.';
+        }
+        return false;
+      }
+      _assignmentSuccess = true;
+      if (response.assignedTechnicians.isNotEmpty) {
+        _lastCashierAssignTechnicians = List<JobTechnician>.from(
+          response.assignedTechnicians,
+        );
+      }
+      return true;
     } catch (e) {
       _assignmentMessage = e.toString();
       _assignmentSuccess = false;

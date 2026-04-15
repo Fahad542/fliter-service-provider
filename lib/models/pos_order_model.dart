@@ -93,14 +93,50 @@ class OrderStats {
       );
 }
 
+double _parseJobTotalAmount(Map<String, dynamic> json) {
+  for (final key in [
+    'totalAmount',
+    'total_amount',
+    'grandTotal',
+    'grand_total',
+    'finalTotal',
+    'final_total',
+  ]) {
+    final raw = json[key];
+    if (raw == null) continue;
+    final v = double.tryParse(raw.toString());
+    if (v != null && v > 0) return v;
+  }
+  return double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0.0;
+}
+
+double _parseJobDoubleField(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final raw = json[key];
+    if (raw == null) continue;
+    final v = double.tryParse(raw.toString());
+    if (v != null) return v;
+  }
+  return 0.0;
+}
+
 class PosOrderJob {
   final String id;
   final String status;
   final String department;
+  /// Backend department id when provided (speeds up cashier flows).
+  final String? departmentId;
   final List<PosOrderJobItem> items;
   final List<JobTechnician> technicians;
   
-  // Job-level API pricing
+  // Job-level API pricing (GET /cashier/orders is authoritative).
+  // All amounts are now VAT-exclusive from the backend.
+  /// Gross excl. VAT (before any discounts).
+  final double amountBeforeDiscount;
+  /// After line discounts (excl. VAT).
+  final double amountAfterDiscount;
+  /// Total taxable amount (after all discounts, before VAT).
+  final double amountAfterPromo;
   final double totalAmount;
   final double vatAmount;
   final double vatPercent;
@@ -116,8 +152,12 @@ class PosOrderJob {
     required this.id,
     required this.status,
     required this.department,
+    this.departmentId,
     this.items = const [],
     this.technicians = const [],
+    this.amountBeforeDiscount = 0.0,
+    this.amountAfterDiscount = 0.0,
+    this.amountAfterPromo = 0.0,
     this.totalAmount = 0.0,
     this.vatAmount = 0.0,
     this.vatPercent = 15.0,
@@ -130,14 +170,46 @@ class PosOrderJob {
     this.totalDiscountValue = 0.0,
   });
 
+  /// Technicians still assigned to this job (excludes cancelled / historical rows from API).
+  List<JobTechnician> get activeTechnicians =>
+      technicians.where((t) => t.isActiveAssignment).toList();
+
+  bool get isCancelledJob {
+    final s = status.trim().toLowerCase();
+    return s == 'cancelled' || s == 'canceled';
+  }
+
   factory PosOrderJob.fromJson(Map<String, dynamic> json) {
     final jobId = json['id']?.toString() ?? '';
+    final rawDept = json['department'];
+    final deptObj = rawDept is Map ? Map<String, dynamic>.from(rawDept) : null;
+    final parsedDeptName =
+        deptObj?['name']?.toString() ??
+        json['departmentName']?.toString() ??
+        (rawDept is String ? rawDept : '');
+    final parsedDeptId =
+        deptObj?['id']?.toString() ??
+        json['departmentId']?.toString() ??
+        json['department_id']?.toString();
     return PosOrderJob(
       id: jobId,
       status: json['status'] ?? '',
-      department: json['department'] ?? '',
-      totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0.0,
-      vatAmount: double.tryParse(json['vatAmount']?.toString() ?? '0') ?? 0.0,
+      department: parsedDeptName,
+      departmentId: parsedDeptId,
+      amountBeforeDiscount: _parseJobDoubleField(json, [
+        'amountBeforeDiscount',
+        'amount_before_discount',
+      ]),
+      amountAfterDiscount: _parseJobDoubleField(json, [
+        'amountAfterDiscount',
+        'amount_after_discount',
+      ]),
+      amountAfterPromo: _parseJobDoubleField(json, [
+        'amountAfterPromo',
+        'amount_after_promo',
+      ]),
+      totalAmount: _parseJobTotalAmount(json),
+      vatAmount: double.tryParse(json['vatAmount']?.toString() ?? json['vat_amount']?.toString() ?? '0') ?? 0.0,
       vatPercent: double.tryParse(json['vatPercent']?.toString() ?? '15') ?? 15.0,
       promoCodeId: json['promoCodeId']?.toString(),
       promoCodeName: json['promoCodeName']?.toString(),
@@ -162,7 +234,10 @@ class PosOrderJob {
 }
 
 class JobTechnician {
+  /// Assignment row id when present; may differ from [employeeId].
   final String id;
+  /// Employee id for cashier catalog / POST `employeeIds` (from assign or orders payload).
+  final String? employeeId;
   final String name;
   final double commissionPercent;
   final double commissionAmount;
@@ -170,20 +245,41 @@ class JobTechnician {
 
   JobTechnician({
     required this.id,
+    this.employeeId,
     required this.name,
     required this.commissionPercent,
     required this.commissionAmount,
     this.status,
   });
 
+  /// Id used to match [PosTechnician.id] in the assign-technician picker.
+  String get pickerEmployeeId {
+    final e = employeeId?.trim();
+    if (e != null && e.isNotEmpty) return e;
+    return id.trim();
+  }
+
+  /// `false` when API keeps a row after unassign (e.g. [status] `cancelled`).
+  bool get isActiveAssignment {
+    final s = (status ?? '').trim().toLowerCase();
+    if (s.isEmpty) return true;
+    if (s == 'cancelled' || s == 'canceled') return false;
+    if (s == 'removed' || s == 'rejected') return false;
+    return true;
+  }
+
   factory JobTechnician.fromJson(Map<String, dynamic> json) {
     return JobTechnician(
       id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
+      employeeId: json['employeeId']?.toString() ?? json['employee_id']?.toString(),
+      name: json['name']?.toString() ??
+          json['employeeName']?.toString() ??
+          '',
       commissionPercent:
           double.tryParse(
             json['commissionPercent']?.toString() ??
                 json['commission_percent']?.toString() ??
+                json['commissionPct']?.toString() ??
                 '0',
           ) ??
           0.0,
@@ -195,7 +291,7 @@ class JobTechnician {
                 '0',
           ) ??
           0.0,
-      status: json['status'] ?? json['assignmentStatus'] ?? '',
+      status: json['status']?.toString() ?? json['assignmentStatus']?.toString() ?? '',
     );
   }
 }
@@ -230,13 +326,22 @@ class PosOrderJobItem {
   });
 
   factory PosOrderJobItem.fromJson(Map<String, dynamic> json) {
+    final rawDept = json['department'];
+    final deptObj = rawDept is Map ? Map<String, dynamic>.from(rawDept) : null;
     return PosOrderJobItem(
       id: json['id']?.toString() ?? '',
       itemType: json['itemType'] ?? '',
       productId: json['productId']?.toString() ?? '',
       productName: json['productName'] ?? '',
-      departmentId: json['departmentId']?.toString() ?? '',
-      departmentName: json['departmentName'] ?? '',
+      departmentId:
+          json['departmentId']?.toString() ??
+          json['department_id']?.toString() ??
+          deptObj?['id']?.toString() ??
+          '',
+      departmentName:
+          json['departmentName']?.toString() ??
+          deptObj?['name']?.toString() ??
+          '',
       qty: double.tryParse(json['qty']?.toString() ?? '0') ?? 0.0,
       unitPrice: double.tryParse(json['unitPrice']?.toString() ?? '0') ?? 0.0,
       lineTotal: double.tryParse(json['lineTotal']?.toString() ?? '0') ?? 0.0,
@@ -428,6 +533,12 @@ class PosOrder {
       source.toLowerCase() == 'walk_in_corporate' ||
       (corporateAccountId != null && corporateAccountId!.isNotEmpty);
 
+  /// Order grand total from GET; fall back to Σ job.totalAmount if order rollup missing.
+  double get draftPosOrderTotalDisplay {
+    if (totalAmount > 0) return totalAmount;
+    return jobs.fold<double>(0, (s, j) => s + j.totalAmount);
+  }
+
   String get customerName => customer?.name ?? 'Unknown';
   String get carModel => '${vehicle?.make ?? ""} ${vehicle?.model ?? ""}'.trim();
   String get plateNumber => vehicle?.plateNo ?? '';
@@ -496,12 +607,24 @@ class PosOrder {
     return _latestJobStatus;
   }
 
+  /// All departments done (completed / invoiced) → COMPLETED; any other job state → PENDING; no jobs → DRAFT.
+  String get jobsAggregateBadgeLabel {
+    if (jobs.isEmpty) return 'DRAFT';
+    final active = jobs.where((j) => !j.isCancelledJob).toList();
+    if (active.isEmpty) return 'PENDING';
+    final allDone = active.every((j) {
+      final s = j.status.toLowerCase();
+      return s == 'completed' || s == 'invoiced';
+    });
+    return allDone ? 'COMPLETED' : 'PENDING';
+  }
+
   String get normalizedJobStatus {
     return _normalizeStatus(_latestJobStatus);
   }
 
   String get assignedTechnicianNames {
-    final techs = latestJob?.technicians ?? const <JobTechnician>[];
+    final techs = latestJob?.activeTechnicians ?? const <JobTechnician>[];
     final names = techs
         .map((t) => t.name.trim())
         .where((n) => n.isNotEmpty)
@@ -536,12 +659,13 @@ class PosOrder {
 
   String get statusText {
     final job = latestJob;
-    if (job != null && job.technicians.length > 1) {
-      final completedCount = job.technicians
+    if (job != null && job.activeTechnicians.length > 1) {
+      final completedCount = job.activeTechnicians
           .where((t) => t.status?.toLowerCase() == 'completed')
           .length;
       // If at least one has completed, but not all of them
-      if (completedCount > 0 && completedCount < job.technicians.length) {
+      if (completedCount > 0 &&
+          completedCount < job.activeTechnicians.length) {
         return 'COMPLETED BY $completedCount TECHNICIAN${completedCount > 1 ? 'S' : ''} STILL PENDING';
       }
     }

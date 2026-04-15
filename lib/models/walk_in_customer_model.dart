@@ -105,6 +105,26 @@ class WalkInCustomerRequest {
 
     return data;
   }
+
+  /// First walk-in create: vehicle + departments only (no lines, totals, or customer fields).
+  /// Throws if [vehicleNumber] is missing or [departmentIds] is empty.
+  Map<String, dynamic> toShellCreateJson() {
+    final plate = vehicleNumber?.trim() ?? '';
+    if (plate.isEmpty) {
+      throw StateError('vehicleNumber is required for walk-in shell create');
+    }
+    if (departmentIds.isEmpty) {
+      throw StateError('departmentIds is required for walk-in shell create');
+    }
+    return {
+      'vehicleNumber': plate,
+      'departmentIds': departmentIds,
+      if (make != null && make!.trim().isNotEmpty) 'make': make!.trim(),
+      if (model != null && model!.trim().isNotEmpty) 'model': model!.trim(),
+      if (odometerReading != null) 'odometerReading': odometerReading,
+      if (vinNumber != null && vinNumber!.trim().isNotEmpty) 'vinNumber': vinNumber!.trim(),
+    };
+  }
 }
 
 class RequestedProduct {
@@ -113,8 +133,6 @@ class RequestedProduct {
   final double qty;
   final String? discountType;
   final double? discountValue;
-  final double? beforeDiscountPrice;
-  final double? afterDiscountPrice;
 
   RequestedProduct({
     required this.productId,
@@ -122,8 +140,6 @@ class RequestedProduct {
     required this.qty,
     this.discountType,
     this.discountValue,
-    this.beforeDiscountPrice,
-    this.afterDiscountPrice,
   });
 
   Map<String, dynamic> toJson() {
@@ -134,8 +150,6 @@ class RequestedProduct {
     };
     if (discountType != null) data['discountType'] = discountType;
     if (discountValue != null) data['discountValue'] = discountValue;
-    if (beforeDiscountPrice != null) data['beforeDiscountPrice'] = beforeDiscountPrice;
-    if (afterDiscountPrice != null) data['afterDiscountPrice'] = afterDiscountPrice;
     return data;
   }
 }
@@ -146,8 +160,6 @@ class RequestedService {
   final double qty;
   final String? discountType;
   final double? discountValue;
-  final double? beforeDiscountPrice;
-  final double? afterDiscountPrice;
   /// Sent when service is price-editable; must be > 0 when provided.
   final double? unitPrice;
 
@@ -157,8 +169,6 @@ class RequestedService {
     this.qty = 1.0,
     this.discountType,
     this.discountValue,
-    this.beforeDiscountPrice,
-    this.afterDiscountPrice,
     this.unitPrice,
   });
 
@@ -170,8 +180,6 @@ class RequestedService {
     };
     if (discountType != null) data['discountType'] = discountType;
     if (discountValue != null) data['discountValue'] = discountValue;
-    if (beforeDiscountPrice != null) data['beforeDiscountPrice'] = beforeDiscountPrice;
-    if (afterDiscountPrice != null) data['afterDiscountPrice'] = afterDiscountPrice;
     if (unitPrice != null && unitPrice! > 0) data['unitPrice'] = unitPrice;
     return data;
   }
@@ -241,18 +249,21 @@ class WalkInDepartment {
   final String? jobId;
   final String? departmentId;
   final String? name;
+  final String? status;
 
   WalkInDepartment({
     this.jobId,
     this.departmentId,
     this.name,
+    this.status,
   });
 
   factory WalkInDepartment.fromJson(Map<String, dynamic> json) {
     return WalkInDepartment(
       jobId: json['jobId']?.toString(),
       departmentId: json['departmentId']?.toString(),
-      name: json['name'],
+      name: json['name']?.toString(),
+      status: json['status']?.toString(),
     );
   }
 }

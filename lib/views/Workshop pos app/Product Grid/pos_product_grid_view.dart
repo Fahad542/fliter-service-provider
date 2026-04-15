@@ -16,11 +16,14 @@ import '../Promo/promo_code_dialog.dart';
 import '../../../models/pos_order_model.dart';
 import '../Technician Assignment/pos_technician_assignment_view.dart';
 import '../Department/department_view_model.dart';
+import '../Department/pos_department_view.dart';
 import 'product_grid_view_model.dart';
 
 class PosProductGridView extends StatefulWidget {
   final String? departmentName;
   final String? departmentId;
+  final List<String>? selectedDepartmentIds;
+  final List<String>? selectedDepartmentNames;
   final List<dynamic>? preSelectedItems;
   final String? completingOrderId;
   final PosOrder? completingOrder;
@@ -32,6 +35,8 @@ class PosProductGridView extends StatefulWidget {
     super.key,
     this.departmentName,
     this.departmentId,
+    this.selectedDepartmentIds,
+    this.selectedDepartmentNames,
     this.preSelectedItems,
     this.completingOrderId,
     this.completingOrder,
@@ -46,138 +51,78 @@ class PosProductGridView extends StatefulWidget {
 
 class _PosProductGridViewState extends State<PosProductGridView> {
   // All state moved to ProductGridViewModel and PosViewModel
-  Future<bool> _confirmBackNavigation() async {
-    final vm = context.read<PosViewModel>();
-    final hasInvoiceData =
-        vm.getCartCount(widget.isMainTab) > 0 ||
-        vm.getActiveGlobalDiscount(widget.isMainTab) > 0 ||
-        vm.getTotalIndividualDiscount(widget.isMainTab) > 0 ||
-        vm.getActivePromoCode(widget.isMainTab).isNotEmpty;
+  String? _activeDepartmentTabId;
+  late final bool _isDepartmentSelectionMode;
+  late List<String> _departmentIds;
 
-    if (!hasInvoiceData) return true;
+  /// Cached for [dispose] — do not call [context.read] after the element is deactivated.
+  PosViewModel? _posVmRef;
 
-    final shouldLeave = await showDialog<bool>(
-      context: context,
-      builder: (dialogCtx) {
-        final w = MediaQuery.of(dialogCtx).size.width;
-        final isDialogTablet = w > 600;
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          insetPadding: EdgeInsets.symmetric(
-            horizontal: isDialogTablet ? w * 0.28 : 24,
-            vertical: 24,
-          ),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              isDialogTablet ? 28 : 22,
-              isDialogTablet ? 24 : 20,
-              isDialogTablet ? 28 : 22,
-              isDialogTablet ? 22 : 18,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Go back?',
-                  style: AppTextStyles.h3.copyWith(
-                    fontSize: isDialogTablet ? 26 : 22,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Do you really want to go back?',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.grey.shade800,
-                    fontSize: isDialogTablet ? 17 : 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your invoice data will be refreshed.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.grey.shade600,
-                    fontSize: isDialogTablet ? 16 : 14,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(dialogCtx, false),
-                        style: OutlinedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                            vertical: isDialogTablet ? 16 : 13,
-                          ),
-                          side: BorderSide(color: Colors.grey.shade300),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w700,
-                            fontSize: isDialogTablet ? 16 : 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(dialogCtx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight,
-                          foregroundColor: AppColors.secondaryLight,
-                          elevation: 0,
-                          padding: EdgeInsets.symmetric(
-                            vertical: isDialogTablet ? 16 : 13,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: isDialogTablet ? 16 : 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (shouldLeave == true) {
-      vm.clearCart(isMainTab: widget.isMainTab);
-      vm.clearEditOrderContext(notify: false);
-      try {
-        context.read<DepartmentViewModel>().setSelectedIndex(null);
-      } catch (_) {}
-      return true;
+  List<String> _resolveInitialDepartmentIds() {
+    final ids = (widget.selectedDepartmentIds ?? const [])
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+    if (ids.isNotEmpty) return ids;
+    if (widget.departmentId != null && widget.departmentId!.trim().isNotEmpty) {
+      return [widget.departmentId!];
     }
-    return false;
+    return const [];
+  }
+
+  List<String> get _selectedDepartmentIds => _departmentIds;
+
+  Map<String, String> get _selectedDepartmentNameById {
+    final map = <String, String>{};
+    final ids = widget.selectedDepartmentIds ?? const <String>[];
+    final names = widget.selectedDepartmentNames ?? const <String>[];
+    final count = ids.length < names.length ? ids.length : names.length;
+    for (var i = 0; i < count; i++) {
+      final id = ids[i];
+      if (id.trim().isEmpty) continue;
+      map[id] = names[i];
+    }
+    if (widget.departmentId != null &&
+        widget.departmentId!.trim().isNotEmpty &&
+        widget.departmentName != null &&
+        widget.departmentName!.trim().isNotEmpty) {
+      map.putIfAbsent(widget.departmentId!, () => widget.departmentName!);
+    }
+    return map;
+  }
+
+  bool get _hasMultiSelectedDepartments => _selectedDepartmentIds.length > 1;
+  Future<bool> _confirmBackNavigation() async {
+    return true;
+  }
+
+  List<JobTechnician> _initialAssignedForWalkInTechnicianScreen() {
+    final o = widget.completingOrder;
+    final jid = widget.completingOrderId?.trim();
+    if (o == null || jid == null || jid.isEmpty) return const [];
+    for (final j in o.jobs) {
+      if (j.id == jid) return j.technicians;
+    }
+    return const [];
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _posVmRef = context.read<PosViewModel>();
   }
 
   @override
   void initState() {
     super.initState();
+    _isDepartmentSelectionMode =
+        (widget.selectedDepartmentIds?.isNotEmpty ?? false);
+    _departmentIds = List<String>.from(_resolveInitialDepartmentIds());
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final vm = context.read<PosViewModel>();
+      vm.setPromoContextDepartment(
+        _isDepartmentSelectionMode ? _activeDepartmentTabId : null,
+        isMainTab: widget.isMainTab,
+      );
       
       // Reset product type filters so returning to grid shows all items by default
       vm.setProductType('All');
@@ -189,9 +134,33 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         gridVm.setDepartment(widget.departmentName!);
       }
 
-      if (widget.showBackButton && widget.departmentId != null && widget.departmentId != 'All') {
-        await vm.fetchProducts(departmentId: widget.departmentId);
+      if (_isDepartmentSelectionMode && _selectedDepartmentIds.isNotEmpty) {
+        final d = _selectedDepartmentIds.first.trim();
+        _activeDepartmentTabId = d;
+        vm.setPromoContextDepartment(
+          _activeDepartmentTabId,
+          isMainTab: widget.isMainTab,
+        );
+        final skipFetch =
+            vm.lastFetchedDepartmentId?.trim() == d && vm.allProducts.isNotEmpty;
+        if (!skipFetch) {
+          await vm.fetchProducts(departmentId: d);
+        }
+      } else if (widget.showBackButton && widget.departmentId != null && widget.departmentId != 'All') {
+        final d = widget.departmentId!.trim();
+        _activeDepartmentTabId = widget.departmentId;
+        vm.setPromoContextDepartment(
+          _activeDepartmentTabId,
+          isMainTab: widget.isMainTab,
+        );
+        final skipFetch =
+            vm.lastFetchedDepartmentId?.trim() == d && vm.allProducts.isNotEmpty;
+        if (!skipFetch) {
+          await vm.fetchProducts(departmentId: widget.departmentId);
+        }
       } else if (widget.showBackButton && vm.allProducts.isEmpty) {
+        _activeDepartmentTabId = null;
+        vm.setPromoContextDepartment(null, isMainTab: widget.isMainTab);
         await vm.fetchProducts();
       }
 
@@ -309,6 +278,15 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     });
   }
 
+  @override
+  void dispose() {
+    _posVmRef?.setPromoContextDepartment(
+      null,
+      isMainTab: widget.isMainTab,
+    );
+    super.dispose();
+  }
+
   // Mock departments - REMOVED
   // final List<Map<String, dynamic>> _departments = [
   //   {'name': 'Oil Change', 'icon': Icons.oil_barrel_outlined},
@@ -412,12 +390,81 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     context.read<ProductGridViewModel>().setSubCategory('All');
   }
 
+  List<String> _resolveDepartmentIdsForSave(PosViewModel vm) {
+    final fromWidget = (widget.selectedDepartmentIds ?? const <String>[])
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+    if (fromWidget.isNotEmpty) return fromWidget;
+    final single = widget.departmentId?.trim() ?? '';
+    if (single.isNotEmpty && single != 'All') return [single];
+    final seen = <String>{};
+    for (final i in vm.cartItems) {
+      final d = i.product.departmentId;
+      if (d != null && d.isNotEmpty) seen.add(d);
+    }
+    if (seen.isNotEmpty) return seen.toList();
+    if (_currentProducts.isNotEmpty) {
+      final d = _currentProducts.first.departmentId;
+      if (d != null && d.isNotEmpty) return [d];
+    }
+    if (vm.products.isNotEmpty) {
+      final d = vm.products.first.departmentId;
+      if (d != null && d.isNotEmpty) return [d];
+    }
+    return const ['1'];
+  }
+
+  Future<void> _saveInvoiceFromPanel(BuildContext context) async {
+    final vm = context.read<PosViewModel>();
+    if (vm.isLoading || vm.isInvoicePanelSaveBusy) return;
+    if (widget.isMainTab || widget.isReadOnly) return;
+
+    final deptIds = _resolveDepartmentIdsForSave(vm);
+    final isEdit = vm.editingOrder != null &&
+        vm.editingCompletingOrderId != null &&
+        vm.editingCompletingOrderId!.trim().isNotEmpty;
+
+    if (isEdit) {
+      final ok = await vm.submitEditOrder(
+        deptIds,
+        context,
+        forInvoicePanelSave: true,
+      );
+      if (!context.mounted) return;
+      if (ok && context.mounted) {
+        // Return to Orders tab with this order selected (fetchOrders + preferredOrderId run in submitEditOrder).
+        vm.setShellSelectedIndex(2);
+        Navigator.of(context).pop();
+      }
+    } else {
+      final ok = await vm.submitWalkInOrder(
+        deptIds,
+        context,
+        clearCustomerOnSuccess: true,
+        forInvoicePanelSave: true,
+      );
+      if (!context.mounted) return;
+      if (ok) {
+        vm.setShellSelectedIndex(2);
+        await vm.fetchOrders(silent: true);
+        if (context.mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute<void>(builder: (_) => const PosShell(initialIndex: 2)),
+            (route) => false,
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
-    final vm = Provider.of<PosViewModel>(context);
+    final vm = context.watch<PosViewModel>();
+    final catalogLoading = vm.isLoading && !vm.isInvoicePanelSaveBusy;
 
     return WillPopScope(
       onWillPop: _confirmBackNavigation,
@@ -441,14 +488,29 @@ class _PosProductGridViewState extends State<PosProductGridView> {
             if (canPop && mounted) Navigator.pop(context);
           },
         ),
-        body: wrapPosShellRailBody(
-          context,
-          vm.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _buildProductSection(isTablet),
+        body: Stack(
+          children: [
+            wrapPosShellRailBody(
+              context,
+              isTablet
+                  ? _buildTabletSplitLayout(vm)
+                  : _buildProductSection(false),
+            ),
+            if (vm.isLoading && !vm.isInvoicePanelSaveBusy)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.white,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryLight,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         // ─── Bottom Bar (Cart Summary) ───
-        bottomNavigationBar: (vm.getCartCount(widget.isMainTab) == 0 || widget.isReadOnly)
+        bottomNavigationBar: (isTablet || vm.getCartCount(widget.isMainTab) == 0 || widget.isReadOnly)
             ? const SizedBox.shrink()
             : Container(
               padding: EdgeInsets.fromLTRB(isTablet ? 18 : 16, 12, isTablet ? 18 : 16, MediaQuery.of(context).padding.bottom + 12),
@@ -526,6 +588,353 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               ),
             ),
       ),
+      ),
+    );
+  }
+
+  Widget _buildTabletSplitLayout(PosViewModel vm) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 14, 10),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: _buildProductSection(true),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 360,
+            child: _buildLiveInvoicePanel(vm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveInvoicePanel(PosViewModel vm) {
+    final fullCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+    final activeDeptId = _isDepartmentSelectionMode ? _activeDepartmentTabId : null;
+    final promoContextDeptId = activeDeptId ??
+        (widget.departmentId != null &&
+                widget.departmentId!.trim().isNotEmpty &&
+                widget.departmentId != 'All'
+            ? widget.departmentId!.trim()
+            : null);
+    final activeCart = (activeDeptId == null)
+        ? fullCart
+        : fullCart
+            .where((i) => (i.product.departmentId ?? '') == activeDeptId)
+            .toList();
+
+    final gross = activeCart.fold<double>(0.0, (s, i) => s + i.lineSubtotalExclVat);
+    final itemDiscount = activeCart.fold<double>(0.0, (s, i) => s + i.actualDiscountAmount);
+    final afterItemDiscount = (gross - itemDiscount).clamp(0, double.infinity).toDouble();
+
+    // Allocate order-level discounts proportionally so each department shows its own live invoice.
+    final allAfterItemDiscount = fullCart.fold<double>(
+      0.0,
+      (s, i) => s + i.totalPriceExclVat,
+    ).clamp(0, double.infinity).toDouble();
+    final globalDiscountAll = vm.getTotalGlobalDiscountValue(widget.isMainTab);
+    final globalRatio = allAfterItemDiscount <= 0 ? 0.0 : (afterItemDiscount / allAfterItemDiscount);
+    final globalDiscount = (globalDiscountAll * globalRatio)
+        .clamp(0, afterItemDiscount)
+        .toDouble();
+    final afterGlobal = (afterItemDiscount - globalDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+
+    final afterGlobalAll = vm.getPriceAfterJobDiscount(widget.isMainTab);
+    final promoDiscountAll = vm.getTotalPromoDiscountValue(widget.isMainTab);
+    final promoRatio = afterGlobalAll <= 0 ? 0.0 : (afterGlobal / afterGlobalAll);
+    final fallbackPromoDiscount = (promoDiscountAll * promoRatio)
+        .clamp(0, afterGlobal)
+        .toDouble();
+    final promoDiscount = activeDeptId == null
+        ? fallbackPromoDiscount
+        : vm.getPromoDiscountForBase(
+            afterGlobal,
+            isMainTab: widget.isMainTab,
+            departmentId: activeDeptId,
+          );
+    final taxable = (afterGlobal - promoDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    final vat = taxable * 0.15;
+    final total = taxable + vat;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Order Items',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.secondaryLight,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${activeCart.length}',
+                    style: const TextStyle(
+                      fontSize: 11, 
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E2124),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade200),
+          Expanded(
+            child: activeCart.isEmpty
+                ? Center(
+                    child: Text(
+                      'No items in invoice',
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                    itemCount: activeCart.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) => _buildCartItem(activeCart[index], false),
+                  ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade200),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTotalRow(
+                  'Gross Amount (Excl. VAT)',
+                  'SAR ${gross.toStringAsFixed(2)}',
+                  false,
+                ),
+                const SizedBox(height: 6),
+                _buildTotalRow(
+                  'Line discount',
+                  '-SAR ${itemDiscount.toStringAsFixed(2)}',
+                  false,
+                  color: itemDiscount > 0 ? Colors.green : Colors.grey.shade600,
+                ),
+                const SizedBox(height: 6),
+                _buildTotalRow(
+                  'Price after line discount',
+                  'SAR ${afterItemDiscount.toStringAsFixed(2)}',
+                  false,
+                ),
+                const SizedBox(height: 8),
+                _buildInteractiveTotalDiscountRow(context, vm, false),
+                const SizedBox(height: 6),
+                if (globalDiscount > 0) ...[
+                  _buildTotalRow(
+                    'Total discount applied',
+                    '-SAR ${globalDiscount.toStringAsFixed(2)}',
+                    false,
+                    color: Colors.green,
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                _buildTotalRow(
+                  'Price after total discount',
+                  'SAR ${afterGlobal.toStringAsFixed(2)}',
+                  false,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7E6),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFFC145).withOpacity(0.6)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.local_offer_outlined,
+                        size: 16,
+                        color: Colors.amber.shade700,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: activeCart.isEmpty
+                                ? null
+                                : () {
+                                    vm.setPromoContextDepartment(
+                                      promoContextDeptId,
+                                      isMainTab: widget.isMainTab,
+                                    );
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) =>
+                                          PromoCodeDialog(isMainTab: widget.isMainTab),
+                                    );
+                                  },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 6,
+                              ),
+                              child: Text(
+                                vm.getActivePromoCode(
+                                          widget.isMainTab,
+                                          departmentId: promoContextDeptId,
+                                        )
+                                        .trim()
+                                        .isEmpty
+                                    ? 'Add Promo Code'
+                                    : 'Promo: ${vm.getActivePromoCode(widget.isMainTab, departmentId: promoContextDeptId).trim()}',
+                                style: const TextStyle(
+                                  color: Color(0xFF1E2124),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (vm.getActivePromoCode(
+                            widget.isMainTab,
+                            departmentId: promoContextDeptId,
+                          ).trim().isNotEmpty)
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          icon: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              color: AppColors.secondaryLight,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                          onPressed: () {
+                            vm.clearPromoCode(
+                              isMainTab: widget.isMainTab,
+                              departmentId: promoContextDeptId,
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                if (promoDiscount > 0) ...[
+                  _buildTotalRow(
+                    'Promo discount',
+                    '-SAR ${promoDiscount.toStringAsFixed(2)}',
+                    false,
+                    color: Colors.green,
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                _buildTotalRow(
+                  'Price after promo',
+                  'SAR ${taxable.toStringAsFixed(2)}',
+                  false,
+                ),
+                const SizedBox(height: 6),
+                _buildTotalRow(
+                  'VAT (15%)',
+                  'SAR ${vat.toStringAsFixed(2)}',
+                  false,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text(
+                      'Total',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'SAR ${total.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+                if (!widget.isReadOnly && !widget.isMainTab) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: Consumer<PosViewModel>(
+                      builder: (context, vm, _) {
+                        final saving = vm.isInvoicePanelSaveBusy;
+                        return ElevatedButton(
+                          onPressed: saving ? null : () => _saveInvoiceFromPanel(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondaryLight,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: AppColors.secondaryLight,
+                            disabledForegroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: saving
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Save',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -813,6 +1222,19 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       // ── Totals ──
                       Consumer<PosViewModel>(
                         builder: (context, vm, child) {
+                          final sheetActiveDeptId = _isDepartmentSelectionMode
+                              ? _activeDepartmentTabId
+                              : null;
+                          final sheetPromoContextDeptId = sheetActiveDeptId ??
+                              (widget.departmentId != null &&
+                                      widget.departmentId!.trim().isNotEmpty &&
+                                      widget.departmentId != 'All'
+                                  ? widget.departmentId!.trim()
+                                  : null);
+                          final promoCode = vm.getActivePromoCode(
+                            widget.isMainTab,
+                            departmentId: sheetPromoContextDeptId,
+                          );
                           return Container(
                             margin: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
                             padding: EdgeInsets.all(isTablet ? 24 : 14),
@@ -822,168 +1244,191 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               border: Border.all(color: Colors.grey.shade100),
                             ),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _buildTotalRow('Total Amount Gross', 'SAR ${vm.getSubtotalGross(widget.isMainTab).toStringAsFixed(2)}', isTablet),
-                                SizedBox(height: isTablet ? 8 : 6),
-                                
-                                if (vm.getTotalIndividualDiscount(widget.isMainTab) > 0) ...[
-                                  _buildTotalRow('Item Discounts', '-SAR ${vm.getTotalIndividualDiscount(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.green),
-                                  SizedBox(height: isTablet ? 8 : 6),
-                                ],
-                                
-                                // Interactive Global Discount
-                                Row(
-                                  children: [
-                                    Text('Discount', style: TextStyle(fontSize: isTablet ? 18 : 10, color: Colors.green)),
-                                    const Spacer(),
-                                    SizedBox(
-                                      width: isTablet ? 80 : 60,
-                                      height: isTablet ? 28 : 24,
-                                      child: TextFormField(
-                                        initialValue: vm.getActiveGlobalDiscount(widget.isMainTab) > 0
-                                            ? (vm.getActiveGlobalDiscount(widget.isMainTab) % 1 == 0
-                                                ? vm.getActiveGlobalDiscount(widget.isMainTab).toInt().toString()
-                                                : vm.getActiveGlobalDiscount(widget.isMainTab).toString())
-                                            : '',
-                                        keyboardType: TextInputType.text,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.allow(
-                                            RegExp(r'[0-9.,+\s]'),
-                                          ),
-                                        ],
-                                        onChanged: (val) {
-                                          final discount =
-                                              _parseCombinedDiscountInput(val);
-                                          context.read<PosViewModel>().setGlobalDiscount(discount, vm.getActiveIsGlobalDiscountPercent(widget.isMainTab), isMainTab: widget.isMainTab);
-                                        },
-                                        style: TextStyle(fontSize: isTablet ? 14 : 11, color: Colors.green),
-                                        textAlign: TextAlign.center,
-                                        decoration: InputDecoration(
-                                          contentPadding: EdgeInsets.zero,
-                                          hintText: '0',
-                                          hintStyle: const TextStyle(color: Colors.green),
-                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Colors.green)),
-                                          isDense: true,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    GestureDetector(
-                                      onTap: () {
-                                        context.read<PosViewModel>().setGlobalDiscount(vm.getActiveGlobalDiscount(widget.isMainTab), !vm.getActiveIsGlobalDiscountPercent(widget.isMainTab), isMainTab: widget.isMainTab);
-                                      },
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 6, vertical: isTablet ? 4 : 3),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(4),
-                                          border: Border.all(color: Colors.green.withOpacity(0.3)),
-                                        ),
-                                        child: Text(
-                                          vm.getActiveIsGlobalDiscountPercent(widget.isMainTab) ? '%' : 'SAR',
-                                          style: TextStyle(fontSize: isTablet ? 12 : 9, fontWeight: FontWeight.w700, color: Colors.green),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                _buildTotalRow(
+                                  'Gross Amount (Excl. VAT)',
+                                  'SAR ${vm.getSubtotalGross(widget.isMainTab).toStringAsFixed(2)}',
+                                  isTablet,
                                 ),
                                 SizedBox(height: isTablet ? 8 : 6),
-                                
-                                _buildTotalRow('Price after discount', 'SAR ${vm.getPriceAfterJobDiscount(widget.isMainTab).toStringAsFixed(2)}', isTablet),
+                                _buildTotalRow(
+                                  'Line discount',
+                                  '-SAR ${vm.getTotalIndividualDiscount(widget.isMainTab).toStringAsFixed(2)}',
+                                  isTablet,
+                                  color: vm.getTotalIndividualDiscount(widget.isMainTab) > 0
+                                      ? Colors.green
+                                      : Colors.grey,
+                                ),
+                                SizedBox(height: isTablet ? 8 : 6),
+                                _buildTotalRow(
+                                  'Price after line discount',
+                                  'SAR ${vm.getPriceAfterItemDiscounts(widget.isMainTab).toStringAsFixed(2)}',
+                                  isTablet,
+                                ),
                                 SizedBox(height: isTablet ? 10 : 8),
-                                
-                                if (vm.getTotalPromoDiscountValue(widget.isMainTab) > 0) ...[
-                                  _buildTotalRow('Promo Discount', '-SAR ${vm.getTotalPromoDiscountValue(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.green),
-                                  SizedBox(height: isTablet ? 10 : 8),
-                                  _buildTotalRow('Price after promo', 'SAR ${vm.getTotalTaxableAmountValue(widget.isMainTab).toStringAsFixed(2)}', isTablet),
-                                  SizedBox(height: isTablet ? 10 : 8),
+                                _buildInteractiveTotalDiscountRow(context, vm, isTablet),
+                                SizedBox(height: isTablet ? 8 : 6),
+                                if (vm.getTotalGlobalDiscountValue(widget.isMainTab) > 0) ...[
+                                  _buildTotalRow(
+                                    'Total discount applied',
+                                    '-SAR ${vm.getTotalGlobalDiscountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                    isTablet,
+                                    color: Colors.green,
+                                  ),
+                                  SizedBox(height: isTablet ? 8 : 6),
                                 ],
-
+                                _buildTotalRow(
+                                  'Price after total discount',
+                                  'SAR ${vm.getPriceAfterJobDiscount(widget.isMainTab).toStringAsFixed(2)}',
+                                  isTablet,
+                                ),
+                                SizedBox(height: isTablet ? 12 : 10),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: isTablet ? 8 : 6,
+                                    vertical: isLandscape
+                                        ? (isTablet ? 6 : 4)
+                                        : (isTablet ? 5 : 4),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF7E6),
+                                    border: Border.all(
+                                      color: const Color(0xFFFFC145)
+                                          .withOpacity(0.6),
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.local_offer_outlined,
+                                        size: isTablet ? 18 : 15,
+                                        color: const Color(0xFFFFC145)
+                                            .withOpacity(0.75),
+                                      ),
+                                      SizedBox(width: isTablet ? 8 : 6),
+                                      Expanded(
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () {
+                                              vm.setPromoContextDepartment(
+                                                sheetPromoContextDeptId,
+                                                isMainTab: widget.isMainTab,
+                                              );
+                                              showDialog(
+                                                context: context,
+                                                builder: (_) =>
+                                                    PromoCodeDialog(
+                                                      isMainTab: widget.isMainTab,
+                                                    ),
+                                              );
+                                            },
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            child: Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                vertical: isLandscape
+                                                    ? (isTablet ? 10 : 8)
+                                                    : (isTablet ? 9 : 8),
+                                                horizontal: 4,
+                                              ),
+                                              child: Text(
+                                                promoCode.isEmpty
+                                                    ? 'Add Promo Code'
+                                                    : 'Promo: $promoCode',
+                                                style: TextStyle(
+                                                  fontSize: isTablet ? 17 : 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: promoCode.isEmpty
+                                                      ? const Color(0xFF1E2124)
+                                                      : Colors.green,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      if (promoCode.isNotEmpty)
+                                        IconButton(
+                                          padding: EdgeInsets.zero,
+                                          constraints: BoxConstraints(
+                                            minWidth: isTablet ? 40 : 36,
+                                            minHeight: isTablet ? 40 : 36,
+                                          ),
+                                          icon: Icon(
+                                            Icons.close_rounded,
+                                            size: isTablet ? 22 : 18,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () {
+                                            vm.clearPromoCode(
+                                              isMainTab: widget.isMainTab,
+                                              departmentId:
+                                                  sheetPromoContextDeptId,
+                                            );
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: isTablet ? 10 : 8),
+                                if (vm.getTotalPromoDiscountValue(
+                                      widget.isMainTab,
+                                    ) >
+                                    0) ...[
+                                  _buildTotalRow(
+                                    'Promo discount',
+                                    '-SAR ${vm.getTotalPromoDiscountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                    isTablet,
+                                    color: Colors.green,
+                                  ),
+                                  SizedBox(height: isTablet ? 8 : 6),
+                                ],
+                                _buildTotalRow(
+                                  'Price after promo',
+                                  'SAR ${vm.getTotalTaxableAmountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                  isTablet,
+                                ),
                                 Divider(height: 1, color: Colors.grey.shade200),
                                 SizedBox(height: isTablet ? 10 : 8),
-                                
-                                _buildTotalRow('Tax (15%)', 'SAR ${vm.getTotalTaxValue(widget.isMainTab).toStringAsFixed(2)}', isTablet, color: Colors.grey),
+                                _buildTotalRow(
+                                  'VAT (15%)',
+                                  'SAR ${vm.getTotalTaxValue(widget.isMainTab).toStringAsFixed(2)}',
+                                  isTablet,
+                                  color: Colors.grey,
+                                ),
                                 SizedBox(height: isTablet ? 10 : 8),
-                                
                                 Row(
                                   children: [
-                                    Text('Total amount', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isLandscape ? (isTablet ? 27 : 17) : (isTablet ? 24 : 14), color: const Color(0xFF1E2124))),
+                                    Text(
+                                      'Total amount',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: isLandscape
+                                            ? (isTablet ? 27 : 17)
+                                            : (isTablet ? 24 : 14),
+                                        color: const Color(0xFF1E2124),
+                                      ),
+                                    ),
                                     const Spacer(),
-                                    Text('SAR ${vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: isLandscape ? (isTablet ? 27 : 17) : (isTablet ? 24 : 14), color: const Color(0xFF1E2124))),
+                                    Text(
+                                      'SAR ${vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: isLandscape
+                                            ? (isTablet ? 27 : 17)
+                                            : (isTablet ? 24 : 14),
+                                        color: const Color(0xFF1E2124),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
                             ),
                           );
                         }
-                      ),
-
-                      SizedBox(height: isTablet ? 10 : 8),
-
-                      // ── Promo Code ──
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 14),
-                        child: GestureDetector(
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => PromoCodeDialog(isMainTab: widget.isMainTab),
-                            );
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              vertical: isLandscape
-                                  ? (isTablet ? 12 : 10)
-                                  : (isTablet ? 11 : 10),
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.grey.shade100),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Consumer<PosViewModel>(
-                              builder: (context, vm, child) {
-                                final promoCode = vm.getActivePromoCode(widget.isMainTab);
-                                return Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (promoCode.isNotEmpty)
-                                      SizedBox(width: isTablet ? 36 : 28), // Balance the row
-                                    
-                                    Icon(
-                                      Icons.local_offer_outlined,
-                                      size: isTablet ? 18 : 15,
-                                      color: const Color(0xFFFFC145).withOpacity(0.75),
-                                    ),
-                                    SizedBox(width: isTablet ? 8 : 6),
-                                    Text(
-                                      promoCode.isEmpty ? 'Add Promo Code' : 'Promo: $promoCode',
-                                      style: TextStyle(
-                                        fontSize: isTablet ? 17 : 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: promoCode.isEmpty ? const Color(0xFF1E2124) : Colors.green,
-                                      ),
-                                    ),
-                                    
-                                    if (promoCode.isNotEmpty) ...[
-                                      SizedBox(width: isTablet ? 12 : 10),
-                                      GestureDetector(
-                                        onTap: () {
-                                          vm.clearPromoCode(isMainTab: widget.isMainTab);
-                                        },
-                                        behavior: HitTestBehavior.opaque,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Icon(Icons.close_rounded, size: isTablet ? 22 : 18, color: Colors.red),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ),
                       ),
 
                       SizedBox(height: isTablet ? 10 : 8),
@@ -1001,18 +1446,22 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 height: isTablet ? 60 : 48,
                                 child: Consumer<PosViewModel>(
                                   builder: (context, vm, child) {
+                                    var jobId = widget.completingOrderId!;
+                                    if (widget.completingOrder != null &&
+                                        widget.completingOrder!.jobs.isNotEmpty) {
+                                      jobId = widget.completingOrder!.latestJob!.id;
+                                    }
+                                    final completing = vm.isCashierCompletingJob(jobId);
                                     return ElevatedButton(
-                                      onPressed: vm.isLoading
+                                      onPressed: completing
                                           ? null
                                           : () async {
-                                              String jobId = widget.completingOrderId!;
-                                              if (widget.completingOrder != null && widget.completingOrder!.jobs.isNotEmpty) {
-                                                jobId = widget.completingOrder!.latestJob!.id;
-                                              }
-                                              final response = await vm.completeCashierJob(jobId, isMainTab: widget.isMainTab);
+                                              final response = await vm.completeCashierJob(
+                                                jobId,
+                                                isMainTab: widget.isMainTab,
+                                              );
                                               if (response != null && response.success && context.mounted) {
                                                 vm.setShellSelectedIndex(2); // Orders Tab
-                                                vm.fetchOrders();
                                                 Navigator.pushAndRemoveUntil(
                                                   context,
                                                   MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
@@ -1031,7 +1480,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       ),
-                                      child: vm.isLoading
+                                      child: completing
                                           ? const SizedBox(
                                               height: 18,
                                               width: 18,
@@ -1154,6 +1603,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                                 departmentName: widget.departmentName,
                                                                 departmentId: finalDeptId,
                                                                 isWalkIn: true,
+                                                                initialAssignedTechnicians:
+                                                                    _initialAssignedForWalkInTechnicianScreen(),
                                                               ),
                                                             ),
                                                           );
@@ -1210,6 +1661,12 @@ class _PosProductGridViewState extends State<PosProductGridView> {
   Widget _buildProductSection(bool isTablet) {
     final gridVm = context.watch<ProductGridViewModel>();
     final vm = Provider.of<PosViewModel>(context);
+    final selectedDeptIds = _selectedDepartmentIds;
+    final allowedDeptSet = selectedDeptIds.toSet();
+    final hasDeptRestriction = allowedDeptSet.isNotEmpty;
+    if (_isDepartmentSelectionMode && selectedDeptIds.isEmpty) {
+      return _buildNoDepartmentState(isTablet);
+    }
 
     // Common Filtering Logic
     final filteredProducts = vm.allProducts.where((product) {
@@ -1217,14 +1674,19 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         final isService = vm.selectedProductType == 'Services';
         if (product.isServiceType != isService) return false;
       }
+      final productDeptId = product.departmentId ?? '';
+      if (hasDeptRestriction && !allowedDeptSet.contains(productDeptId)) {
+        return false;
+      }
       final selectedDept = gridVm.selectedDepartment.trim().toLowerCase();
       final productDept = (product.departmentName ?? '').trim().toLowerCase();
-      final matchesDept =
-          selectedDept == 'all' ||
-          productDept == selectedDept ||
-          (widget.departmentId != null &&
-              widget.departmentId != 'All' &&
-              (product.departmentId ?? '') == widget.departmentId);
+      final matchesDept = _isDepartmentSelectionMode
+          ? (_activeDepartmentTabId == null || productDeptId == _activeDepartmentTabId)
+          : (selectedDept == 'all' ||
+              productDept == selectedDept ||
+              (widget.departmentId != null &&
+                  widget.departmentId != 'All' &&
+                  productDeptId == widget.departmentId));
       final matchesCategory =
           gridVm.selectedCategory == 'All' ||
           product.category == gridVm.selectedCategory;
@@ -1253,6 +1715,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 hintText: 'Search products & services...',
               ),
             ),
+            if (_isDepartmentSelectionMode)
+              _buildDepartmentTabs(isTablet, vm, gridVm),
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
               child: Container(
@@ -1299,7 +1763,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             clipBehavior: Clip.hardEdge,
                             padding: const EdgeInsets.fromLTRB(22, 8, 22, 100),
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: isPortrait ? 2 : 4,
+                              crossAxisCount: isPortrait ? 2 : 3,
                               // Match tablet card content + small flex gap; extra height = empty band under qty row.
                               mainAxisExtent: 156,
                               crossAxisSpacing: 12,
@@ -1346,6 +1810,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               hintText: 'Search products & services...',
             ),
           ),
+          if (_isDepartmentSelectionMode)
+            _buildDepartmentTabs(isTablet, vm, gridVm),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
             child: Container(
@@ -1446,7 +1912,11 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         }
 
         // Keep category chips scoped to the currently selected department.
-        if (widget.departmentId != null && widget.departmentId != 'All') {
+        if (_hasMultiSelectedDepartments) {
+          sourceProducts = sourceProducts
+              .where((p) => (_activeDepartmentTabId == null || p.departmentId == _activeDepartmentTabId))
+              .toList();
+        } else if (widget.departmentId != null && widget.departmentId != 'All') {
           sourceProducts = sourceProducts
               .where((p) => p.departmentId == widget.departmentId)
               .toList();
@@ -1518,6 +1988,55 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildDepartmentTabs(
+    bool isTablet,
+    PosViewModel vm,
+    ProductGridViewModel gridVm,
+  ) {
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildNoDepartmentState(bool isTablet) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Department not found',
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: isTablet ? 48 : 44,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PosDepartmentView()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
+                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 18 : 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Add Department'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -2189,6 +2708,94 @@ class _PosProductGridViewState extends State<PosProductGridView> {
   }
 
   // ── Helpers ──
+  Widget _buildInteractiveTotalDiscountRow(
+    BuildContext context,
+    PosViewModel vm,
+    bool isTablet,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Total discount',
+            style: TextStyle(
+              fontSize: isTablet ? 18 : 10,
+              color: Colors.green.shade700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: isTablet ? 80 : 56,
+          height: isTablet ? 28 : 26,
+          child: TextFormField(
+            initialValue: vm.getActiveGlobalDiscount(widget.isMainTab) > 0
+                ? (vm.getActiveGlobalDiscount(widget.isMainTab) % 1 == 0
+                    ? vm.getActiveGlobalDiscount(widget.isMainTab).toInt().toString()
+                    : vm.getActiveGlobalDiscount(widget.isMainTab).toString())
+                : '',
+            keyboardType: TextInputType.text,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.,+\s]')),
+            ],
+            onChanged: (val) {
+              final discount = _parseCombinedDiscountInput(val);
+              context.read<PosViewModel>().setGlobalDiscount(
+                    discount,
+                    vm.getActiveIsGlobalDiscountPercent(widget.isMainTab),
+                    isMainTab: widget.isMainTab,
+                  );
+            },
+            style: TextStyle(
+              fontSize: isTablet ? 14 : 11,
+              color: Colors.green.shade800,
+            ),
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.zero,
+              hintText: '0',
+              hintStyle: TextStyle(color: Colors.green.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(6),
+                borderSide: BorderSide(color: Colors.green.shade400),
+              ),
+              isDense: true,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        GestureDetector(
+          onTap: () {
+            context.read<PosViewModel>().setGlobalDiscount(
+                  vm.getActiveGlobalDiscount(widget.isMainTab),
+                  !vm.getActiveIsGlobalDiscountPercent(widget.isMainTab),
+                  isMainTab: widget.isMainTab,
+                );
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 8 : 6,
+              vertical: isTablet ? 4 : 3,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.green.withOpacity(0.3)),
+            ),
+            child: Text(
+              vm.getActiveIsGlobalDiscountPercent(widget.isMainTab) ? '%' : 'SAR',
+              style: TextStyle(
+                fontSize: isTablet ? 12 : 9,
+                fontWeight: FontWeight.w700,
+                color: Colors.green.shade800,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTotalRow(String label, String value, bool isTablet, {Color? color}) {
     return Row(
       children: [

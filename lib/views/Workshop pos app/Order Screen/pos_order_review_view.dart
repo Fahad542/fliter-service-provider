@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 class ReviewLineItem {
   final String name;
   final String technicianName;
+  /// VAT-inclusive catalog unit price (stored as-is for reference).
   final double unitPrice;
   final int qty;
   final double commissionRate; // e.g. 0.10 = 10%
@@ -32,17 +33,36 @@ class ReviewLineItem {
     this.discountValue = 0.0,
   });
 
-  double get baseTotal => unitPrice * qty;
+  static double _r2(double v) => (v * 100).roundToDouble() / 100;
+
+  /// Unit price excluding VAT.
+  double get unitPriceExclVat => _r2(unitPrice / 1.15);
+
+  /// Gross amount before VAT (unitPriceExclVat × qty).
+  double get grossBeforeVat => unitPriceExclVat * qty;
+
+  /// Discount amount (computed on VAT-exclusive gross).
   double get discountAmount {
     if (discountType == 'amount' || discountType == 'fixed') {
       return discountValue;
     } else if (discountType == 'percentage' || discountType == 'percent') {
-      return baseTotal * (discountValue / 100);
+      return grossBeforeVat * (discountValue / 100);
     }
     return 0.0;
   }
 
-  double get lineTotal => baseTotal - discountAmount;
+  /// Total before VAT (after line discount).
+  double get totalBeforeVat => grossBeforeVat - discountAmount;
+
+  /// VAT on this line item.
+  double get vatOnLine => totalBeforeVat * 0.15;
+
+  /// Total with VAT.
+  double get totalWithVat => totalBeforeVat + vatOnLine;
+
+  // Backward compat aliases
+  double get baseTotal => grossBeforeVat;
+  double get lineTotal => totalBeforeVat;
   double get commission => lineTotal * commissionRate;
 }
 
@@ -435,11 +455,26 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
   // UX state
   bool? _isCorporate; // null = not answered yet
-  PaymentMethod? _selectedPayment;
+  Set<PaymentMethod> _selectedPayments = {};
   bool _isGenerated = false;
   bool _isLoading = false;
   Invoice? _currentInvoice;
   bool _canExit = false;
+
+  // Inline split payment controllers (created/disposed as _selectedPayments changes)
+  final Map<PaymentMethod, TextEditingController> _splitControllers = {};
+
+  // Inline billing + vehicle form (walk-in orders)
+  final _billingFormKey = GlobalKey<FormState>();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _mobileCtrl;
+  late final TextEditingController _vatCtrl;
+  late final TextEditingController _plateCtrl;
+  late final TextEditingController _makeCtrl;
+  late final TextEditingController _modelCtrl;
+  late final TextEditingController _yearCtrl;
+  late final TextEditingController _vinCtrl;
+  late final TextEditingController _odoCtrl;
 
   @override
   void initState() {
@@ -449,6 +484,67 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       _isGenerated = true;
     }
     _buildItems();
+    _initBillingControllers();
+  }
+
+  void _initBillingControllers() {
+    final o = widget.order;
+    final c = o.customer;
+    final v = o.vehicle;
+    final posVm = Provider.of<pvm.PosViewModel>(context, listen: false);
+    _nameCtrl = TextEditingController(text: _pickField(posVm.customerName, c?.name ?? ''));
+    _mobileCtrl = TextEditingController(text: _pickField(posVm.mobile, c?.mobile ?? ''));
+    _vatCtrl = TextEditingController(text: _pickField(posVm.vatNumber, c?.vatNumber ?? ''));
+    _plateCtrl = TextEditingController(text: _pickField(posVm.vehicleNumber, v?.plateNo ?? ''));
+    _makeCtrl = TextEditingController(text: _pickField(posVm.make, v?.make ?? ''));
+    _modelCtrl = TextEditingController(text: _pickField(posVm.model, v?.model ?? ''));
+    _yearCtrl = TextEditingController(text: _pickField(posVm.vehicleYear, v?.year ?? ''));
+    _vinCtrl = TextEditingController(text: _pickField(posVm.vinNumber, v?.vin ?? ''));
+    _odoCtrl = TextEditingController(
+      text: posVm.odometerReading != 0
+          ? '${posVm.odometerReading}'
+          : (o.odometerReading != 0 ? '${o.odometerReading}' : ''),
+    );
+  }
+
+  static String _pickField(String vm, String fallback) {
+    final a = vm.trim();
+    return a.isNotEmpty ? a : fallback.trim();
+  }
+
+  static int _parseOdometer(String s) {
+    final t = s.trim().replaceAll(RegExp(r'[\s,]'), '');
+    if (t.isEmpty) return 0;
+    return int.tryParse(t) ?? 0;
+  }
+
+  void _syncSplitControllers() {
+    final current = Set.of(_splitControllers.keys);
+    final desired = Set.of(_selectedPayments);
+    for (final removed in current.difference(desired)) {
+      _splitControllers[removed]!.dispose();
+      _splitControllers.remove(removed);
+    }
+    for (final added in desired.difference(current)) {
+      _splitControllers[added] = TextEditingController();
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _splitControllers.values) {
+      c.dispose();
+    }
+    _nameCtrl.dispose();
+    _mobileCtrl.dispose();
+    _vatCtrl.dispose();
+    _plateCtrl.dispose();
+    _makeCtrl.dispose();
+    _modelCtrl.dispose();
+    _yearCtrl.dispose();
+    _vinCtrl.dispose();
+    _odoCtrl.dispose();
+    super.dispose();
   }
 
   void _buildItems() {
@@ -481,8 +577,10 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             )
             .toList();
       }
-    } else if (widget.order.jobs.isNotEmpty) {
-      _items = widget.order.jobs.expand((job) {
+    } else if (widget.order.jobs.any((j) => !j.isCancelledJob)) {
+      _items = widget.order.jobs
+          .where((j) => !j.isCancelledJob)
+          .expand((job) {
         return job.items.map((item) {
           return ReviewLineItem(
             name: item.productName,
@@ -503,8 +601,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             : (priceDynamic as double? ?? 0.0);
         return ReviewLineItem(
           name: item['productName'] ?? item['name'] ?? 'Item',
-          technicianName: widget.order.jobs.isNotEmpty
-              ? widget.order.latestJob!.department
+          technicianName: widget.order.jobs.any((j) => !j.isCancelledJob)
+              ? widget.order.jobs.firstWhere((j) => !j.isCancelledJob).department
               : 'Technician',
           unitPrice: price,
           qty: item['quantity'] ?? item['qty'] ?? 1,
@@ -516,132 +614,92 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     }
   }
 
-  // Subtotal AFTER item-level discounts (This is the "Gross Subtotal" for job/promo discounts)
+  List<PosOrderJob> get _activeJobs =>
+      widget.order.jobs.where((j) => !j.isCancelledJob).toList();
+
+  // ── Gross Amount (Excl. VAT) ──
+  // Sum of amountBeforeDiscount across active jobs — backend now stores VAT-exclusive.
   double get _grossSubtotal {
     if (_currentInvoice != null) return _currentInvoice!.subtotal;
-    if (widget.order.subtotal > 0) return widget.order.subtotal;
-    return _items.fold(0.0, (s, i) => s + i.lineTotal);
+    final fromJobs = _activeJobs.fold<double>(
+      0.0,
+      (s, j) => s + j.amountBeforeDiscount,
+    );
+    if (fromJobs > 0) return fromJobs;
+    return _items.fold(0.0, (s, i) => s + i.grossBeforeVat);
   }
 
-  // Total amount of ALL discounts (including Items, Job, and Promo)
-  double get _totalDiscountAmount {
-    if (_currentInvoice != null) {
-      return _currentInvoice!.discountAmount;
+  // ── Item discounts (sum of per-line discounts) ──
+  double get _itemDiscountsTotal =>
+      _items.fold(0.0, (s, i) => s + i.discountAmount);
+
+  // ── Invoice discount (job-level) ──
+  double get _invoiceDiscountTotal {
+    final active = _activeJobs;
+    double total = 0;
+    for (final job in active) {
+      if (job.totalDiscountType == 'percent' || job.totalDiscountType == 'percentage') {
+        total += job.amountAfterDiscount > 0
+            ? job.amountAfterDiscount * (job.totalDiscountValue / 100)
+            : 0;
+      } else {
+        total += job.totalDiscountValue;
+      }
     }
-
-    // Prefer backend aggregate values when order totals are available.
-    if (widget.order.totalAmount > 0 && _grossSubtotal > 0) {
-      final impliedVat = _vatAmount;
-      final backendNet = (widget.order.totalAmount - impliedVat).clamp(
-        0.0,
-        double.infinity,
-      );
-      return max(0, _grossSubtotal - backendNet);
-    }
-
-    // 1. Initial subtotal for job-level discounts (Items are already accounted for in _items.lineTotal)
-    double currentSubtotal = _grossSubtotal;
-
-    // 2. Job-level discount (Overall Discount)
-    double jobDiscount = 0.0;
+    if (total > 0) return total;
+    // Fallback to order-level
     if (widget.order.totalDiscountType == 'percent' ||
         widget.order.totalDiscountType == 'percentage') {
-      jobDiscount =
-          currentSubtotal * ((widget.order.totalDiscountValue ?? 0.0) / 100.0);
-    } else {
-      jobDiscount = widget.order.totalDiscountValue ?? 0.0;
+      final base = _grossSubtotal - _itemDiscountsTotal;
+      return base * ((widget.order.totalDiscountValue ?? 0) / 100);
     }
-    double afterJobDiscount = max(0, currentSubtotal - jobDiscount);
-
-    // 3. Promo-level discount
-    double promoDiscount = 0.0;
-    final isPromoPercent =
-        widget.order.promoDiscountType?.toLowerCase() == 'percent' ||
-        widget.order.promoDiscountType?.toLowerCase() == 'percentage';
-
-    if (isPromoPercent) {
-      promoDiscount =
-          afterJobDiscount * ((widget.order.promoDiscountValue ?? 0.0) / 100.0);
-    } else {
-      // Prioritize the amount if provided by backend, else use the value field as amount
-      promoDiscount =
-          widget.order.promoDiscountAmount != null &&
-              widget.order.promoDiscountAmount! > 0
-          ? widget.order.promoDiscountAmount!
-          : (widget.order.promoDiscountValue ?? 0.0);
-    }
-
-    // Total discount sum displayed in the UI breakdown
-    double totalItemDiscounts = _items.fold(
-      0.0,
-      (s, i) => s + i.discountAmount,
-    );
-    return totalItemDiscounts + jobDiscount + promoDiscount;
+    return widget.order.totalDiscountValue ?? 0;
   }
 
-  // The final base for VAT (Price after all discounts)
+  // ── Promo discount ──
+  double get _promoDiscountTotal {
+    final fromJobs = _activeJobs.fold<double>(
+      0.0,
+      (s, j) => s + j.promoDiscountAmount,
+    );
+    if (fromJobs > 0) return fromJobs;
+    return widget.order.promoDiscountAmount ?? 0;
+  }
+
+  // ── Total of all discounts (for display) ──
+  double get _totalDiscountAmount {
+    if (_currentInvoice != null) return _currentInvoice!.discountAmount;
+    return _itemDiscountsTotal + _invoiceDiscountTotal + _promoDiscountTotal;
+  }
+
+  // ── Total Taxable Amount (after ALL discounts, before VAT) ──
   double get _netSubtotal {
     if (_currentInvoice != null) {
       return max(0, _currentInvoice!.totalAmount - _currentInvoice!.vatAmount);
     }
-    if (widget.order.totalAmount > 0) {
-      return max(0, widget.order.totalAmount - _vatAmount);
-    }
-
-    double currentSubtotal = _grossSubtotal;
-
-    // 1. Calculate Job Discount
-    double jobDiscount = 0;
-    if (widget.order.totalDiscountType == 'percent' ||
-        widget.order.totalDiscountType == 'percentage') {
-      jobDiscount =
-          currentSubtotal * ((widget.order.totalDiscountValue ?? 0.0) / 100.0);
-    } else {
-      jobDiscount = widget.order.totalDiscountValue ?? 0.0;
-    }
-
-    double baseForPromo = max(0, currentSubtotal - jobDiscount);
-
-    // 2. Calculate Promo Discount
-    double promoDiscount = 0;
-    final isPromoPercent =
-        widget.order.promoDiscountType?.toLowerCase() == 'percent' ||
-        widget.order.promoDiscountType?.toLowerCase() == 'percentage';
-
-    if (isPromoPercent) {
-      promoDiscount =
-          baseForPromo * ((widget.order.promoDiscountValue ?? 0.0) / 100.0);
-    } else {
-      promoDiscount =
-          widget.order.promoDiscountAmount != null &&
-              widget.order.promoDiscountAmount! > 0
-          ? widget.order.promoDiscountAmount!
-          : (widget.order.promoDiscountValue ?? 0.0);
-    }
-
-    return max(0, baseForPromo - promoDiscount);
+    final fromJobs = _activeJobs.fold<double>(
+      0.0,
+      (s, j) => s + j.amountAfterPromo,
+    );
+    if (fromJobs > 0) return fromJobs;
+    return max(0, _grossSubtotal - _totalDiscountAmount);
   }
 
-  // Total amount of VAT (15% on the net subtotal)
+  // ── VAT 15% ──
   double get _vatAmount {
     if (_currentInvoice != null) return _currentInvoice!.vatAmount;
-
-    final jobsVat = widget.order.jobs.fold<double>(0.0, (sum, job) {
-      return sum + (job.vatAmount > 0 ? job.vatAmount : 0);
-    });
+    final jobsVat = _activeJobs.fold<double>(0.0, (s, j) => s + j.vatAmount);
     if (jobsVat > 0) return jobsVat;
-
     return _netSubtotal * 0.15;
   }
 
-  // Final Total to be paid (Net + VAT)
+  // ── Final Total (Taxable + VAT) ──
   double get _totalAmount {
     if (_currentInvoice != null) return _currentInvoice!.totalAmount;
-    if (widget.order.totalAmount > 0) return widget.order.totalAmount;
+    final fromJobs = _activeJobs.fold<double>(0.0, (s, j) => s + j.totalAmount);
+    if (fromJobs > 0) return fromJobs;
     return _netSubtotal + _vatAmount;
   }
-
-  double get _vatExclusive => _grossSubtotal;
 
   String? get _promoCode =>
       _currentInvoice?.promoCodeName ?? widget.order.promoCodeName;
@@ -667,7 +725,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
     // Fallback 1: use technician data already present in the order's jobs
     final jobEntries = <_CommissionDisplayEntry>[];
-    for (final job in widget.order.jobs) {
+    for (final job in widget.order.jobs.where((j) => !j.isCancelledJob)) {
       for (final tech in job.technicians) {
         if (tech.name.isEmpty) continue;
         double amount = tech.commissionAmount;
@@ -693,7 +751,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     return [
       _CommissionDisplayEntry(
         technicianName: 'Technician',
-        departmentName: widget.order.jobs.isNotEmpty ? widget.order.jobs.first.department : '',
+        departmentName: widget.order.jobs.any((j) => !j.isCancelledJob)
+            ? widget.order.jobs.firstWhere((j) => !j.isCancelledJob).department
+            : '',
         commissionAmount: _totalAmount * 0.10,
         commissionPercent: 10.0,
       )
@@ -737,7 +797,367 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     return result != null;
   }
 
+  Future<List<Map<String, dynamic>>?> _promptForSplitAmounts() async {
+    if (_selectedPayments.length == 1) {
+      return [{'method': _selectedPayments.first.label, 'amount': _totalAmount}];
+    }
+
+    final controllers = <PaymentMethod, TextEditingController>{};
+    for (final pm in _selectedPayments) {
+      controllers[pm] = TextEditingController();
+    }
+
+    return await showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            double currentSum = 0;
+            for (final c in controllers.values) {
+              currentSum += double.tryParse(c.text.trim()) ?? 0.0;
+            }
+            final remaining = _totalAmount - currentSum;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: AppColors.surfaceLight,
+              title: Text(
+                'Split Payment',
+                style: AppTextStyles.h3.copyWith(color: AppColors.secondaryLight),
+              ),
+              content: SizedBox(
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Invoice Total', style: AppTextStyles.bodyMedium),
+                          Text('${_totalAmount.toStringAsFixed(2)} SAR',
+                              style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ..._selectedPayments.map((pm) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Row(
+                                children: [
+                                  Icon(pm.icon, size: 20, color: Colors.grey.shade600),
+                                  const SizedBox(width: 8),
+                                  Text(pm.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: TextFormField(
+                                controller: controllers[pm],
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                decoration: _walkInInvoiceFieldDecoration('Amount (SAR)'),
+                                onChanged: (_) => setDialogState(() {}),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    if (remaining.abs() > 0.05)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          remaining > 0
+                              ? 'Remaining: ${remaining.toStringAsFixed(2)} SAR'
+                              : 'Exceeds total by ${(remaining.abs()).toStringAsFixed(2)} SAR',
+                          style: TextStyle(
+                            color: remaining > 0 ? Colors.orange.shade700 : Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, null),
+                  child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.secondaryLight)),
+                ),
+                FilledButton(
+                  onPressed: remaining.abs() > 0.05
+                      ? null
+                      : () {
+                          final result = <Map<String, dynamic>>[];
+                          for (final pm in _selectedPayments) {
+                            result.add({
+                              'method': pm.label,
+                              'amount': double.tryParse(controllers[pm]!.text.trim()) ?? 0.0,
+                            });
+                          }
+                          Navigator.pop(ctx, result);
+                        },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primaryLight,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Confirm amounts'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ── Inline Split Payment card ────────────────────────────────────────────
+  Widget _buildInlineSplitPaymentCard() {
+    double currentSum = 0;
+    for (final c in _splitControllers.values) {
+      currentSum += double.tryParse(c.text.trim()) ?? 0.0;
+    }
+    final remaining = _totalAmount - currentSum;
+
+    return _SectionCard(
+      title: 'Split Payment',
+      icon: Icons.call_split_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Invoice Total', style: AppTextStyles.bodyMedium),
+                Text(
+                  '${_totalAmount.toStringAsFixed(2)} SAR',
+                  style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...() {
+            final methods = _selectedPayments.toList();
+            final rows = <Widget>[];
+            for (int i = 0; i < methods.length; i += 2) {
+              final first = methods[i];
+              final hasSecond = i + 1 < methods.length;
+              rows.add(Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(first.icon, size: 18, color: Colors.grey.shade600),
+                              const SizedBox(width: 6),
+                              Text(first.label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _splitControllers[first],
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: _walkInInvoiceFieldDecoration('Amount (SAR)'),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (hasSecond) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(methods[i + 1].icon, size: 18, color: Colors.grey.shade600),
+                                const SizedBox(width: 6),
+                                Text(methods[i + 1].label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            TextFormField(
+                              controller: _splitControllers[methods[i + 1]],
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: _walkInInvoiceFieldDecoration('Amount (SAR)'),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ));
+            }
+            return rows;
+          }(),
+          if (remaining.abs() > 0.05)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                remaining > 0
+                    ? 'Remaining: ${remaining.toStringAsFixed(2)} SAR'
+                    : 'Exceeds total by ${remaining.abs().toStringAsFixed(2)} SAR',
+                style: TextStyle(
+                  color: remaining > 0 ? Colors.orange.shade700 : Colors.red,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Inline Billing + Vehicle form ───────────────────────────────────────
+  Widget _buildInlineBillingForm() {
+    return _SectionCard(
+      title: 'Invoice Details',
+      icon: Icons.receipt_outlined,
+      child: Form(
+        key: _billingFormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _walkInInvoiceSectionHeader('Billing', Icons.person_outline_rounded),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _nameCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('Customer name'),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (s) =>
+                        (s == null || s.trim().isEmpty) ? 'Required' : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _mobileCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('Mobile'),
+                    keyboardType: TextInputType.phone,
+                    validator: (s) =>
+                        (s == null || s.trim().isEmpty) ? 'Required' : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _vatCtrl,
+              decoration: _walkInInvoiceFieldDecoration('VAT', optional: true),
+            ),
+            const SizedBox(height: 22),
+            _walkInInvoiceSectionHeader('Vehicle', Icons.directions_car_outlined),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _plateCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('Plate number'),
+                    textCapitalization: TextCapitalization.characters,
+                    validator: (s) =>
+                        (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _odoCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('Odometer', optional: true),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _makeCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('Make', optional: true),
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _modelCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('Model', optional: true),
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _yearCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('Year', optional: true),
+                    keyboardType: TextInputType.number,
+                    validator: (s) {
+                      if (s == null || s.trim().isEmpty) return null;
+                      final yi = int.tryParse(s.trim());
+                      if (yi == null || yi < 1900 || yi > 2100) {
+                        return 'Invalid year';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _vinCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('VIN', optional: true),
+                    textCapitalization: TextCapitalization.characters,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _generateInvoice() async {
+    // 1. Corporate decision must be made
     if (_isCorporate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -746,27 +1166,82 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       );
       return;
     }
-    if (_isCorporate == false && _selectedPayment == null) {
+
+    // 2. Payment methods required for non-corporate
+    if (_isCorporate == false && _selectedPayments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a payment method.')),
+        const SnackBar(content: Text('Please select at least one payment method.')),
       );
       return;
     }
 
+    // 3. Validate split amounts sum when 2+ methods selected
+    List<Map<String, dynamic>>? paymentSplits;
+    if (_isCorporate != true) {
+      if (_selectedPayments.length == 1) {
+        paymentSplits = [{'method': _selectedPayments.first.label, 'amount': _totalAmount}];
+      } else {
+        double splitSum = 0;
+        for (final c in _splitControllers.values) {
+          splitSum += double.tryParse(c.text.trim()) ?? 0.0;
+        }
+        if ((splitSum - _totalAmount).abs() > 0.05) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Split amounts must equal the total (${_totalAmount.toStringAsFixed(2)} SAR). Currently: ${splitSum.toStringAsFixed(2)} SAR.',
+              ),
+            ),
+          );
+          return;
+        }
+        paymentSplits = _selectedPayments.map((pm) {
+          return {
+            'method': pm.label,
+            'amount': double.tryParse(_splitControllers[pm]?.text.trim() ?? '') ?? 0.0,
+          };
+        }).toList();
+      }
+    }
+
+    // 4. Validate inline billing form for walk-in orders
     final posVm = Provider.of<pvm.PosViewModel>(context, listen: false);
-    final billingOk = await _ensureWalkInBillingContact(posVm);
-    if (!billingOk) return;
+    if (_isStandardWalkInOrder(widget.order)) {
+      if (_billingFormKey.currentState?.validate() != true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill in the required invoice details.')),
+        );
+        return;
+      }
+      final v = widget.order.vehicle;
+      posVm.updateWalkInBillingContact(
+        name: _nameCtrl.text,
+        mobile: _mobileCtrl.text,
+        vat: _vatCtrl.text,
+        vehicleNumber: _plateCtrl.text,
+        vin: _vinCtrl.text,
+        make: _makeCtrl.text,
+        model: _modelCtrl.text,
+        year: _yearCtrl.text,
+        color: _pickField(posVm.vehicleColor, v?.color ?? ''),
+        odometer: _parseOdometer(_odoCtrl.text),
+      );
+    }
 
-    setState(() => _isLoading = true);
-
+    // 5. Submit
     try {
+      setState(() => _isLoading = true);
+
       final response = await posVm.generateInvoice(
         widget.order.id,
         orderForBilling: widget.order,
         isCorporate: _isCorporate,
         paymentMethod: _isCorporate == true
             ? 'Corporate'
-            : _selectedPayment?.label,
+            : (paymentSplits?.length == 1 ? paymentSplits!.first['method'] : null),
+        payments: _isCorporate != true && paymentSplits != null && paymentSplits.length > 1
+            ? paymentSplits
+            : null,
       );
 
       if (response != null && response.success) {
@@ -780,11 +1255,12 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
         posVm.fetchOrders();
       } else {
-        if (mounted)
+        if (mounted) {
           ToastService.showError(
             context,
             response?.message ?? 'Failed to generate invoice',
           );
+        }
       }
     } catch (e) {
       if (mounted) ToastService.showError(context, e.toString());
@@ -794,7 +1270,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   }
 
   Widget _buildDepartmentJobs(bool isTablet) {
-    if (widget.order.jobs.isEmpty) {
+    final visibleJobs =
+        widget.order.jobs.where((j) => !j.isCancelledJob).toList();
+    if (visibleJobs.isEmpty) {
       return Center(
         child: Text(
           'No departmental data found.',
@@ -802,7 +1280,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         ),
       );
     }
-    final sortedJobs = List<PosOrderJob>.from(widget.order.jobs)
+    final sortedJobs = List<PosOrderJob>.from(visibleJobs)
       ..sort((a, b) {
         final aId = int.tryParse(a.id) ?? -1;
         final bId = int.tryParse(b.id) ?? -1;
@@ -969,7 +1447,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          'SAR ${item.unitPrice.toStringAsFixed(2)} / ea',
+                                          'SAR ${((item.unitPrice / 1.15 * 100).roundToDouble() / 100).toStringAsFixed(2)} / ea (Excl. VAT)',
                                           style: AppTextStyles.bodySmall
                                               .copyWith(
                                                 fontWeight: FontWeight.w600,
@@ -987,7 +1465,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                                   if (item.discountValue != null &&
                                       item.discountValue! > 0)
                                     Text(
-                                      'SAR ${(item.qty * item.unitPrice).toStringAsFixed(2)}',
+                                      'SAR ${(item.qty * ((item.unitPrice / 1.15 * 100).roundToDouble() / 100)).toStringAsFixed(2)}',
                                       style: AppTextStyles.bodySmall.copyWith(
                                         color: Colors.grey.shade400,
                                         decoration: TextDecoration.lineThrough,
@@ -1150,15 +1628,22 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       ),
                       Builder(
                         builder: (context) {
-                          final double preItemDiscountJobTotal = job.items.fold(
-                            0.0,
-                            (sum, i) => sum + (i.qty * i.unitPrice),
-                          );
-                          final double postItemDiscountJobTotal = job.items
-                              .fold(0.0, (sum, i) => sum + i.lineTotal);
+                          // Backend now provides VAT-exclusive amounts on the job.
+                          final double jobSubtotalExclusive =
+                              job.amountBeforeDiscount > 0
+                                  ? job.amountBeforeDiscount
+                                  : job.items.fold(0.0, (sum, i) {
+                                      final exclVat = (i.unitPrice / 1.15 * 100).roundToDouble() / 100;
+                                      return sum + exclVat * i.qty;
+                                    });
+
+                          final double postItemDiscountJobTotal =
+                              job.amountAfterDiscount > 0
+                                  ? job.amountAfterDiscount
+                                  : job.items.fold(0.0, (sum, i) => sum + i.lineTotal);
+
                           final double calculatedItemDiscountAmount =
-                              preItemDiscountJobTotal -
-                              postItemDiscountJobTotal;
+                              jobSubtotalExclusive - postItemDiscountJobTotal;
 
                           final double jobTotal = job.totalAmount > 0
                               ? job.totalAmount
@@ -1166,11 +1651,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
                           final double jobVatAmount = job.vatAmount > 0
                               ? job.vatAmount
-                              : jobTotal - (jobTotal / (1 + _vatRate));
-
-                          // The true Total Amount Gross (pre-global-discount AND pre-item-discount)
-                          final double jobSubtotalExclusive =
-                              preItemDiscountJobTotal;
+                              : job.amountAfterPromo > 0
+                                  ? job.amountAfterPromo * 0.15
+                                  : jobTotal - (jobTotal / (1 + _vatRate));
 
                           String? jobPromoLabel =
                               (job.promoCodeName != null &&
@@ -1302,16 +1785,26 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     child: Column(
                       children: [
                         _buildTotalRow(
-                          'Gross Amount',
+                          'Gross Amount (Excl. VAT)',
                           _grossSubtotal.toStringAsFixed(2),
                         ),
                         _buildTotalRow(
-                          'Total Discounts',
-                          '- ${_totalDiscountAmount.toStringAsFixed(2)}',
+                          'Item Discounts',
+                          '- ${_itemDiscountsTotal.toStringAsFixed(2)}',
                           isNegative: true,
                         ),
                         _buildTotalRow(
-                          'Net Amount',
+                          'Invoice Discount',
+                          '- ${_invoiceDiscountTotal.toStringAsFixed(2)}',
+                          isNegative: true,
+                        ),
+                        _buildTotalRow(
+                          'Promo Discount',
+                          '- ${_promoDiscountTotal.toStringAsFixed(2)}',
+                          isNegative: true,
+                        ),
+                        _buildTotalRow(
+                          'Total Taxable Amount',
                           _netSubtotal.toStringAsFixed(2),
                         ),
                         _buildTotalRow(
@@ -1361,15 +1854,24 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 // ── Payment Method (when not corporate) ────────────────────────
                 if (_isCorporate == false) ...[
                   _SectionCard(
-                    title: 'Payment Method',
+                    title: 'Payment Method (Select multiple if splitting)',
                     icon: Icons.payment_rounded,
                     child: _PaymentMethodSelector(
-                      selected: _selectedPayment,
-                      onChanged: (pm) => setState(() => _selectedPayment = pm),
+                      selected: _selectedPayments,
+                      onChanged: (pms) => setState(() {
+                        _selectedPayments = pms;
+                        _syncSplitControllers();
+                      }),
                       isTablet: isTablet,
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // ── Inline Split Payment ────────────────────────────────────
+                  if (_selectedPayments.length >= 2) ...[
+                    _buildInlineSplitPaymentCard(),
+                    const SizedBox(height: 16),
+                  ],
                 ],
 
                 if (_isCorporate == true) ...[
@@ -1378,6 +1880,12 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     message:
                         'Monthly billing — no payment collected at this time.',
                   ),
+                  const SizedBox(height: 16),
+                ],
+
+                // ── Inline Billing + Vehicle Form (walk-in) ──────────────────
+                if (_isStandardWalkInOrder(widget.order)) ...[
+                  _buildInlineBillingForm(),
                   const SizedBox(height: 16),
                 ],
 
@@ -1409,7 +1917,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         invoice: _currentInvoice!,
         requestedPaymentMethod: _isCorporate == true
             ? 'Corporate (Monthly)'
-            : _selectedPayment?.label,
+            : (_selectedPayments.length > 1 ? 'Split (${_selectedPayments.map((p) => p.label).join(' + ')})' : _selectedPayments.firstOrNull?.label),
         onDone: () {
           setState(() {
             _canExit = true;
@@ -1603,60 +2111,78 @@ class _ItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fs = isTablet ? 12.0 : 11.0;
+    final labelStyle = TextStyle(fontSize: fs, color: Colors.grey.shade500);
+    final valStyle = TextStyle(fontSize: fs, fontWeight: FontWeight.w600, color: const Color(0xFF1E2124));
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 5, right: 12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: isTablet ? 15 : 14,
-                    color: const Color(0xFF1E2124),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Tech: ${item.technicianName}',
-                  style: TextStyle(
-                    fontSize: isTablet ? 13 : 12,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
-              Text(
-                'SAR ${currencyFormat.format(item.lineTotal)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: isTablet ? 15 : 14,
-                  color: AppColors.secondaryLight,
+              Container(
+                width: 8, height: 8,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
+              ),
+              Expanded(
+                child: Text(
+                  item.name,
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 15 : 14, color: const Color(0xFF1E2124)),
                 ),
               ),
-              if (item.qty > 1)
-                Text(
-                  'x${item.qty}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
-                ),
+              Text(
+                'SAR ${currencyFormat.format(item.totalWithVat)}',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: isTablet ? 15 : 14, color: AppColors.secondaryLight),
+              ),
             ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 18, top: 4),
+            child: Column(
+              children: [
+                Row(children: [
+                  Expanded(child: Text('Unit (Excl. VAT)', style: labelStyle)),
+                  Text('SAR ${item.unitPriceExclVat.toStringAsFixed(2)}', style: valStyle),
+                ]),
+                const SizedBox(height: 2),
+                Row(children: [
+                  Expanded(child: Text('Qty', style: labelStyle)),
+                  Text('${item.qty}', style: valStyle),
+                ]),
+                const SizedBox(height: 2),
+                Row(children: [
+                  Expanded(child: Text('Gross Before VAT', style: labelStyle)),
+                  Text('SAR ${item.grossBeforeVat.toStringAsFixed(2)}', style: valStyle),
+                ]),
+                if (item.discountAmount > 0) ...[
+                  const SizedBox(height: 2),
+                  Row(children: [
+                    Expanded(child: Text('Discount', style: labelStyle)),
+                    Text('- SAR ${item.discountAmount.toStringAsFixed(2)}', style: valStyle.copyWith(color: Colors.green)),
+                  ]),
+                  const SizedBox(height: 2),
+                  Row(children: [
+                    Expanded(child: Text('Total Before VAT', style: labelStyle)),
+                    Text('SAR ${item.totalBeforeVat.toStringAsFixed(2)}', style: valStyle),
+                  ]),
+                ],
+                const SizedBox(height: 2),
+                Row(children: [
+                  Expanded(child: Text('VAT (15%)', style: labelStyle)),
+                  Text('SAR ${item.vatOnLine.toStringAsFixed(2)}', style: valStyle),
+                ]),
+                if (item.technicianName.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Row(children: [
+                    Expanded(child: Text('Tech', style: labelStyle)),
+                    Text(item.technicianName, style: valStyle),
+                  ]),
+                ],
+              ],
+            ),
           ),
         ],
       ),
@@ -1726,7 +2252,7 @@ class _VatBreakdownWidget extends StatelessWidget {
       children: [
         if (showDetailedBreakdown) ...[
           _PriceRow(
-            label: 'Total Amount Gross',
+            label: 'Gross Amount (Excl. VAT)',
             value: 'SAR ${currencyFormat.format(subtotalExclusive)}',
             valueColor: const Color(0xFF1E2124),
           ),
@@ -2107,8 +2633,8 @@ class _ChoiceChip extends StatelessWidget {
 }
 
 class _PaymentMethodSelector extends StatelessWidget {
-  final PaymentMethod? selected;
-  final ValueChanged<PaymentMethod?> onChanged;
+  final Set<PaymentMethod> selected;
+  final ValueChanged<Set<PaymentMethod>> onChanged;
   final bool isTablet;
   const _PaymentMethodSelector({
     required this.selected,
@@ -2122,9 +2648,17 @@ class _PaymentMethodSelector extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       children: PaymentMethod.values.map((pm) {
-        final isSelected = selected == pm;
+        final isSelected = selected.contains(pm);
         return GestureDetector(
-          onTap: () => onChanged(pm),
+          onTap: () {
+            final newSelection = Set.of(selected);
+            if (isSelected) {
+              newSelection.remove(pm);
+            } else {
+              newSelection.add(pm);
+            }
+            onChanged(newSelection);
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

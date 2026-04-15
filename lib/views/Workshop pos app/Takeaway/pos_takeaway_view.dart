@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,9 +8,14 @@ import '../../../utils/app_colors.dart';
 import '../../../utils/app_formatters.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
+import '../../../models/pos_order_model.dart';
 import '../../../models/takeaway_models.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../Home Screen/pos_view_model.dart';
+import '../Order Screen/pos_order_review_view.dart';
+import '../Promo/promo_code_dialog.dart';
+import '../Promo/promo_view_model.dart';
 import 'takeaway_view_model.dart';
 
 extension _TakeawayStockUi on TakeawayProduct {
@@ -39,11 +46,34 @@ class PosTakeawayView extends StatefulWidget {
 }
 
 class _PosTakeawayViewState extends State<PosTakeawayView> {
+  final ScrollController _departmentScrollController = ScrollController();
+  final ScrollController _categoryScrollController = ScrollController();
+  String? _lastCategoryDeptId;
+
+  @override
+  void dispose() {
+    _departmentScrollController.dispose();
+    _categoryScrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final vm = context.watch<TakeawayViewModel>();
+    final currentDeptId = vm.selectedDepartmentId;
+    if (_lastCategoryDeptId != currentDeptId) {
+      _lastCategoryDeptId = currentDeptId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_departmentScrollController.hasClients) {
+          _departmentScrollController.jumpTo(0);
+        }
+        if (_categoryScrollController.hasClients) {
+          _categoryScrollController.jumpTo(0);
+        }
+      });
+    }
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
@@ -65,7 +95,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                   ? _buildCatalogError(context, vm.catalogError!)
                   : _buildProductSection(context, vm, isTablet),
         ),
-        bottomNavigationBar: vm.cartLineCount == 0
+        bottomNavigationBar: (isTablet || vm.cartLineCount == 0)
             ? const SizedBox.shrink()
             : _buildBottomBar(context, vm, isTablet),
       ),
@@ -108,85 +138,107 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     if (isTablet) {
       final isPortrait =
           MediaQuery.of(context).orientation == Orientation.portrait;
-      return Column(
-        children: [
-          if (vm.catalog != null && vm.catalogHasProducts) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
-              child: Row(
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 14, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: PosSearchBar(
-                      controller: vm.searchController,
-                      onChanged: vm.setSearchQuery,
-                      hintText: 'Search products & services...',
+                  if (vm.catalog != null && vm.catalogHasProducts) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: PosSearchBar(
+                              controller: vm.searchController,
+                              onChanged: vm.setSearchQuery,
+                              hintText: 'Search products & services...',
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          IconButton.filledTonal(
+                            onPressed: () => vm.loadCatalog(),
+                            icon: const Icon(Icons.refresh_rounded),
+                            tooltip: 'Refresh',
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  IconButton.filledTonal(
-                    onPressed: () => vm.loadCatalog(),
-                    icon: const Icon(Icons.refresh_rounded),
-                    tooltip: 'Refresh',
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.shade200),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: SingleChildScrollView(
+                            controller: _departmentScrollController,
+                            scrollDirection: Axis.horizontal,
+                            child: IntrinsicHeight(
+                              child: Row(
+                                children: [
+                                  _buildDeptTab(
+                                    context,
+                                    vm,
+                                    label: 'All',
+                                    departmentId: null,
+                                    isTablet: true,
+                                    minWidth: 88,
+                                  ),
+                                  for (final d in vm.catalog!.departments)
+                                    _buildDeptTab(
+                                      context,
+                                      vm,
+                                      label: d.name,
+                                      departmentId: d.id,
+                                      isTablet: true,
+                                      minWidth: 100,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    _buildCategoryChips(context, vm, true),
+                  ],
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: vm.catalog != null && !vm.catalogHasProducts
+                        ? _buildEmptyState(true)
+                        : _buildListBody(context, vm, isTablet, isPortrait),
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: IntrinsicHeight(
-                    child: Row(
-                      children: [
-                        _buildDeptTab(
-                          context,
-                          vm,
-                          label: 'All',
-                          departmentId: null,
-                          isTablet: true,
-                          minWidth: 88,
-                        ),
-                        for (final d in vm.catalog!.departments)
-                          _buildDeptTab(
-                            context,
-                            vm,
-                            label: d.name,
-                            departmentId: d.id,
-                            isTablet: true,
-                            minWidth: 100,
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 360,
+              child: _buildLiveInvoicePanel(context, vm),
             ),
-            _buildCategoryChips(context, vm, true),
           ],
-          SizedBox(height: isTablet ? 10 : 8),
-          Expanded(
-            child: vm.catalog != null && !vm.catalogHasProducts
-                ? _buildEmptyState(true)
-                : _buildListBody(context, vm, isTablet, isPortrait),
-          ),
-        ],
+        ),
       );
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (vm.catalog != null && vm.catalogHasProducts) ...[
           Padding(
@@ -209,34 +261,38 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildDeptTab(
-                      context,
-                      vm,
-                      label: 'All',
-                      departmentId: null,
-                      isTablet: false,
-                      minWidth: 72,
-                    ),
-                    for (final d in vm.catalog!.departments)
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: SingleChildScrollView(
+                  controller: _departmentScrollController,
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
                       _buildDeptTab(
                         context,
                         vm,
-                        label: d.name,
-                        departmentId: d.id,
+                        label: 'All',
+                        departmentId: null,
                         isTablet: false,
-                        minWidth: 88,
+                        minWidth: 72,
                       ),
-                  ],
+                      for (final d in vm.catalog!.departments)
+                        _buildDeptTab(
+                          context,
+                          vm,
+                          label: d.name,
+                          departmentId: d.id,
+                          isTablet: false,
+                          minWidth: 88,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -251,6 +307,332 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         ),
       ],
     );
+  }
+
+  /// Right column on tablet — mirrors Products tab live invoice (narrow panel + totals).
+  Widget _buildLiveInvoicePanel(BuildContext context, TakeawayViewModel vm) {
+    final currency = vm.catalog?.currency ?? 'SAR';
+    
+    final subtotal = vm.subtotalBeforeOrderDiscount;
+    final orderDiscInput = double.tryParse(vm.orderDiscountValueController.text.trim()) ?? 0.0;
+    final isOrderDiscPercent = vm.orderDiscountType == 'percent' || vm.orderDiscountType == 'percentage';
+    final orderDisc = isOrderDiscPercent
+        ? (subtotal * (orderDiscInput / 100)).clamp(0, subtotal).toDouble()
+        : orderDiscInput.clamp(0, subtotal).toDouble();
+    final afterOrderDiscount = (subtotal - orderDisc).clamp(0, double.infinity).toDouble();
+
+    final promoDiscount = vm.isPromoPercent
+        ? (afterOrderDiscount * (vm.promoDiscountValue / 100))
+            .clamp(0, afterOrderDiscount)
+            .toDouble()
+        : vm.promoDiscountValue.clamp(0, afterOrderDiscount).toDouble();
+    final taxable = (afterOrderDiscount - promoDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+
+    final vatPercent = double.tryParse(vm.vatController.text.trim()) ?? vm.catalog?.vatPercentDefault ?? 0.0;
+    final vatAmount = taxable * (vatPercent / 100);
+    
+    Widget buildRow(String label, String value, {Color? color, FontWeight weight = FontWeight.w500}) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color ?? Colors.grey.shade600,
+              fontWeight: weight,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color ?? const Color(0xFF1E2124),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Order Items',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.secondaryLight,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${vm.cartLineCount}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E2124),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade200),
+          Expanded(
+            child: vm.cart.isEmpty
+                ? Center(
+                    child: Text(
+                      'No items in invoice',
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                    itemCount: vm.cart.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) => _TakeawayCartItemCompactTile(
+                      key: ValueKey(vm.cart[index].product.id),
+                      line: vm.cart[index],
+                      currency: currency,
+                      vm: vm,
+                      isTablet: false,
+                    ),
+                  ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade200),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                buildRow('Gross Amount (Excl. VAT)', '$currency ${subtotal.toStringAsFixed(2)}'),
+                const SizedBox(height: 6),
+                
+                // Interactive Discount Row
+                Row(
+                  children: [
+                    const Text(
+                      'Total discount',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    SizedBox(
+                      width: 50,
+                      height: 22,
+                      child: TextField(
+                        controller: vm.orderDiscountValueController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (val) {
+                          final d = double.tryParse(val) ?? 0;
+                          vm.setOrderDiscountValue(d);
+                        },
+                        style: const TextStyle(fontSize: 11, color: Colors.green),
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.zero,
+                          hintText: '0',
+                          hintStyle: const TextStyle(color: Colors.green),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(4),
+                            borderSide: const BorderSide(color: Colors.green),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(4),
+                            borderSide: const BorderSide(color: Colors.green),
+                          ),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () {
+                        vm.setOrderDiscountType(
+                          isOrderDiscPercent ? 'amount' : 'percent',
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          isOrderDiscPercent ? '%' : currency,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 6),
+                buildRow('Price after total discount', '$currency ${afterOrderDiscount.toStringAsFixed(2)}'),
+                const SizedBox(height: 8),
+                
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7E6),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFFC145).withOpacity(0.6)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.local_offer_outlined,
+                        size: 16,
+                        color: Colors.amber.shade700,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: vm.cart.isEmpty ? null : () => _openTakeawayPromoFromPanel(context),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                              child: Text(
+                                vm.promoCodeController.text.trim().isEmpty
+                                    ? 'Add Promo Code'
+                                    : 'Promo: ${vm.promoCodeController.text.trim()}',
+                                style: const TextStyle(
+                                  color: Color(0xFF1E2124),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (vm.promoCodeController.text.trim().isNotEmpty)
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          icon: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              color: AppColors.secondaryLight,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close, size: 14, color: Colors.white),
+                          ),
+                          onPressed: () {
+                            final posVm = context.read<PosViewModel>();
+                            final promoVm = context.read<PromoViewModel>();
+                            posVm.clearPromoCode(isMainTab: false);
+                            promoVm.promoController.clear();
+                            promoVm.clearPromoError();
+                            vm.clearAppliedPromo();
+                            vm.refreshPreview();
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                if (promoDiscount > 0) ...[
+                  buildRow('Promo discount', '-$currency ${promoDiscount.toStringAsFixed(2)}', color: Colors.green),
+                  const SizedBox(height: 6),
+                ],
+                buildRow('Price after promo', '$currency ${taxable.toStringAsFixed(2)}'),
+                const SizedBox(height: 6),
+                buildRow('VAT ($vatPercent%)', '$currency ${vatAmount.toStringAsFixed(2)}'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text(
+                      'Total',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '$currency ${vm.estimatedDisplayTotal.toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 44,
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: vm.cartLineCount == 0 ? null : () => _openCheckout(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondaryLight,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Generate Invoice',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openTakeawayPromoFromPanel(BuildContext context) async {
+    final vm = context.read<TakeawayViewModel>();
+    await showDialog<void>(
+      context: context,
+      builder: (_) => const PromoCodeDialog(isMainTab: false),
+    );
+    if (!context.mounted) return;
+    final posVm = context.read<PosViewModel>();
+    final code = posVm.getActivePromoCode(false).trim();
+    if (code.isNotEmpty) {
+      vm.setAppliedPromo(
+        code: code,
+        promoId: posVm.activePromoCodeId,
+        discount: posVm.promoDiscount,
+        isPercent: posVm.isPromoPercent,
+      );
+    } else {
+      vm.clearAppliedPromo();
+    }
+    vm.refreshPreview();
   }
 
   Widget _buildDeptTab(
@@ -304,6 +686,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     return SizedBox(
       height: isTablet ? 56 : 44,
       child: ListView.builder(
+        controller: _categoryScrollController,
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
           horizontal: isTablet ? 22 : 12,
@@ -410,9 +793,9 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
-          padding: const EdgeInsets.fromLTRB(22, 8, 22, 100),
+          padding: const EdgeInsets.fromLTRB(22, 8, 22, 16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isPortrait ? 2 : 4,
+            crossAxisCount: isPortrait ? 2 : 3,
             mainAxisExtent: 156,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
@@ -472,10 +855,11 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     double cartQty,
     String currency,
   ) {
+    final canSelect = product.isActive && product.qtyOnHand > 0;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: product.isActive ? () => vm.addProduct(product) : null,
+        onTap: canSelect ? () => vm.addProduct(product) : null,
         borderRadius: BorderRadius.circular(14),
         child: Container(
           decoration: BoxDecoration(
@@ -610,7 +994,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                         color: AppColors.secondaryLight,
                       ),
                     ),
-                    if (product.isActive) ...[
+                    if (canSelect) ...[
                       const SizedBox(height: 6),
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -673,12 +1057,13 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     double cartQty,
     String currency,
   ) {
+    final canSelect = product.isActive && product.qtyOnHand > 0;
     return Stack(
       children: [
         Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: product.isActive ? () => vm.addProduct(product) : null,
+            onTap: canSelect ? () => vm.addProduct(product) : null,
             borderRadius: BorderRadius.circular(14),
             child: Container(
               width: double.infinity,
@@ -776,7 +1161,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                         ),
                       ],
                     ),
-                    if (product.isActive)
+                    if (canSelect)
                       Expanded(
                         child: Align(
                           alignment: Alignment.bottomCenter,
@@ -976,7 +1361,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 size: isTablet ? 20 : 18,
               ),
               label: Text(
-                'Checkout',
+                'Generate Invoice',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: isTablet ? 14 : 13,
@@ -999,11 +1384,149 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 
   void _openCheckout(BuildContext context, bool isTablet) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => _TakeawayCheckoutSheet(isTablet: isTablet),
+    if (context.read<TakeawayViewModel>().cart.isEmpty) return;
+    final vm = context.read<TakeawayViewModel>();
+    final previewOrder = _buildTakeawayPreviewOrder(vm);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PosOrderReviewView(order: previewOrder),
+      ),
     );
   }
+
+  PosOrder _buildTakeawayPreviewOrder(TakeawayViewModel vm) {
+    final now = DateTime.now();
+    double lineDiscountAmount(TakeawayCartLine line) {
+      final gross = line.unitPriceExclVat * line.qty;
+      final type = (line.lineDiscountType ?? '').toLowerCase();
+      if (type == 'percent' || type == 'percentage') {
+        return (gross * (line.lineDiscountValue / 100)).clamp(0, gross);
+      }
+      return line.lineDiscountValue.clamp(0, gross);
+    }
+
+    final grossSubtotal = vm.cart.fold<double>(
+      0,
+      (s, line) => s + (line.unitPriceExclVat * line.qty),
+    );
+    final totalItemDiscount = vm.cart.fold<double>(
+      0,
+      (s, line) => s + lineDiscountAmount(line),
+    );
+    final double subtotalAfterItemDiscount = max(
+      0.0,
+      grossSubtotal - totalItemDiscount,
+    );
+
+    final orderDiscountInput =
+        double.tryParse(vm.orderDiscountValueController.text.trim()) ?? 0;
+    final orderDiscountIsPercent =
+        vm.orderDiscountType == 'percent' ||
+        vm.orderDiscountType == 'percentage';
+    final orderDiscountAmountRaw = orderDiscountIsPercent
+        ? (subtotalAfterItemDiscount * (orderDiscountInput / 100))
+        : orderDiscountInput;
+    final double orderDiscountAmount = min(
+      subtotalAfterItemDiscount,
+      max(0.0, orderDiscountAmountRaw),
+    );
+
+    final double afterOrderDiscount = max(
+      0.0,
+      subtotalAfterItemDiscount - orderDiscountAmount,
+    );
+
+    final promoDiscountAmountRaw = vm.isPromoPercent
+        ? (afterOrderDiscount * (vm.promoDiscountValue / 100))
+        : vm.promoDiscountValue;
+    final double promoDiscountAmount = min(
+      afterOrderDiscount,
+      max(0.0, promoDiscountAmountRaw),
+    );
+    final double netSubtotal = max(0.0, afterOrderDiscount - promoDiscountAmount);
+    final vatPercent = double.tryParse(vm.vatController.text.trim()) ?? 15.0;
+    final vatAmount = netSubtotal * (vatPercent / 100);
+    final totalAmount = netSubtotal + vatAmount;
+
+    final items = vm.cart
+        .map((line) {
+          final gross = line.unitPriceExclVat * line.qty;
+          final lineDisc = lineDiscountAmount(line);
+          final lineNet = max(0.0, gross - lineDisc);
+          return PosOrderJobItem(
+            id: 'takeaway-${line.product.id}',
+            itemType: 'product',
+            productId: line.product.id,
+            productName: line.product.name,
+            departmentId: line.product.department.id,
+            departmentName: line.product.department.name,
+            qty: line.qty,
+            unitPrice: line.unitPrice,
+            lineTotal: lineNet,
+            discountType: line.lineDiscountType,
+            discountValue: line.lineDiscountValue,
+          );
+        })
+        .toList();
+
+    final jobs = <PosOrderJob>[
+      PosOrderJob(
+        id: 'takeaway-preview-job',
+        status: 'draft',
+        department: 'Takeaway',
+        items: items,
+        totalAmount: totalAmount,
+        vatAmount: vatAmount,
+        vatPercent: vatPercent,
+        totalDiscountType:
+            orderDiscountAmount > 0 ? vm.orderDiscountType : null,
+        totalDiscountValue: orderDiscountAmount > 0
+            ? (orderDiscountIsPercent ? orderDiscountInput : orderDiscountAmount)
+            : 0.0,
+        promoCodeId: vm.appliedPromoCodeId,
+        promoCodeName: vm.appliedPromoCode.isEmpty ? null : vm.appliedPromoCode,
+        promoDiscountType: vm.isPromoPercent ? 'percent' : 'amount',
+        promoDiscountValue: vm.isPromoPercent ? vm.promoDiscountValue : 0.0,
+        promoDiscountAmount: promoDiscountAmount,
+      ),
+    ];
+
+    return PosOrder(
+      id: 'takeaway-preview',
+      status: 'draft',
+      source: 'takeaway',
+      odometerReading: 0,
+      createdAt: now.toIso8601String(),
+      orderDate: now.toIso8601String().split('T').first,
+      orderDateTime: now.toIso8601String(),
+      customer: OrderCustomer(
+        id: 'walkin',
+        name: 'Walk-in Customer',
+        mobile: '',
+      ),
+      vehicle: OrderVehicle(
+        id: 'na',
+        plateNo: '',
+        make: '',
+        model: '',
+      ),
+      jobsCount: jobs.length,
+      jobs: jobs,
+      items: items,
+      subtotal: subtotalAfterItemDiscount,
+      totalAmount: totalAmount,
+      totalDiscountType: orderDiscountAmount > 0 ? vm.orderDiscountType : null,
+      totalDiscountValue: orderDiscountAmount > 0
+          ? (orderDiscountIsPercent ? orderDiscountInput : orderDiscountAmount)
+          : 0.0,
+      promoCodeId: vm.appliedPromoCodeId,
+      promoCodeName: vm.appliedPromoCode.isEmpty ? null : vm.appliedPromoCode,
+      promoDiscountType: vm.isPromoPercent ? 'percent' : 'amount',
+      promoDiscountValue: vm.isPromoPercent ? vm.promoDiscountValue : 0.0,
+      promoDiscountAmount: promoDiscountAmount,
+    );
+  }
+
 
   void _showQtyDialog(
     BuildContext context,
@@ -1091,537 +1614,6 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 }
 
-/// Checkout sheet (unchanged flow; kept at bottom of file).
-class _TakeawayCheckoutSheet extends StatefulWidget {
-  const _TakeawayCheckoutSheet({required this.isTablet});
-
-  final bool isTablet;
-
-  @override
-  State<_TakeawayCheckoutSheet> createState() => _TakeawayCheckoutSheetState();
-}
-
-class _TakeawayCheckoutSheetState extends State<_TakeawayCheckoutSheet> {
-  double _parse(TextEditingController c) => double.tryParse(c.text.trim()) ?? 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final vm = context.watch<TakeawayViewModel>();
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final currency = vm.catalog?.currency ?? 'SAR';
-    final subtotal = vm.subtotalBeforeOrderDiscount;
-    final orderDisc = _parse(vm.orderDiscountValueController);
-    final vatPercent = _parse(vm.vatController);
-    final vatAmount = ((subtotal - orderDisc).clamp(0, double.infinity)) * (vatPercent / 100);
-    final grandTotal = ((subtotal - orderDisc).clamp(0, double.infinity)) + vatAmount;
-
-    return Dialog(
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: widget.isTablet ? 40 : 16,
-        vertical: widget.isTablet ? 24 : 16,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: widget.isTablet ? 900 : double.infinity,
-        height: MediaQuery.of(context).size.height * 0.92,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFBF9F6),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-              // Handle bar sits at the very top, outside the main padding but inside the dialog.
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(top: 10, bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: widget.isTablet ? 20 : 12),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                      iconSize: widget.isTablet ? 24 : 20,
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.grey.shade700,
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (vm.checkoutError != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Material(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              vm.checkoutError!,
-                              style: TextStyle(
-                                color: Colors.red.shade900,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  children: [
-                    Container(
-                      margin: EdgeInsets.fromLTRB(widget.isTablet ? 16 : 0, 6, widget.isTablet ? 16 : 0, 0),
-                      padding: EdgeInsets.symmetric(horizontal: widget.isTablet ? 16 : 14, vertical: widget.isTablet ? 14 : 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF3F4F6),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  '#NEW-ORDER',
-                                  style: TextStyle(
-                                    fontSize: widget.isTablet ? 16 : 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF1E2124),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  vm.customerNameController.text.isNotEmpty
-                                      ? vm.customerNameController.text
-                                      : 'Walk-in Customer',
-                                  style: TextStyle(
-                                    fontSize: widget.isTablet ? 22 : 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF1E2124),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  'Draft',
-                                  style: TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: widget.isTablet ? 17 : 11,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const Icon(Icons.directions_car_outlined, size: 22, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'No Vehicle Details',
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: widget.isTablet ? 17 : 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Icon(Icons.phone_outlined, size: 22, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Text(
-                                vm.customerMobileController.text.isNotEmpty
-                                    ? vm.customerMobileController.text
-                                    : 'No Phone',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: widget.isTablet ? 19 : 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(widget.isTablet ? 24 : 16, widget.isTablet ? 12 : 10, widget.isTablet ? 24 : 16, widget.isTablet ? 6 : 8),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Order Items',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: widget.isTablet ? 20 : 14,
-                              color: const Color(0xFF1E2124),
-                            ),
-                          ),
-                          const Spacer(),
-                          if (vm.cartLineCount > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3F4F6),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${vm.cartLineCount}',
-                                style: TextStyle(
-                                  fontSize: widget.isTablet ? 16 : 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF1E2124),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-                        final useTwoCols = widget.isTablet || isLandscape;
-                        final gap = widget.isTablet ? 10.0 : 8.0;
-                        final hPad = widget.isTablet ? 16.0 : 0.0;
-                        
-                        if (useTwoCols) {
-                          final innerWidth = constraints.maxWidth - (2 * hPad);
-                          final itemWidth = (innerWidth - gap) / 2;
-                          return Padding(
-                            padding: EdgeInsets.symmetric(horizontal: hPad),
-                            child: Wrap(
-                              spacing: gap,
-                              runSpacing: gap,
-                              children: [
-                                for (final line in vm.cart)
-                                  SizedBox(
-                                    width: itemWidth,
-                                    child: _TakeawayCartItemCompactTile(
-                                      key: ValueKey(line.product.id),
-                                      line: line,
-                                      currency: currency,
-                                      vm: vm,
-                                      isTablet: widget.isTablet,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: vm.cart.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
-                          itemBuilder: (context, index) {
-                            return _TakeawayCartItemCompactTile(
-                              key: ValueKey(vm.cart[index].product.id),
-                              line: vm.cart[index],
-                              currency: currency,
-                              vm: vm,
-                              isTablet: widget.isTablet,
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      margin: EdgeInsets.symmetric(horizontal: widget.isTablet ? 16 : 0),
-                      padding: EdgeInsets.all(widget.isTablet ? 24 : 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildTotalRow('Total Amount Gross', '$currency ${subtotal.toStringAsFixed(2)}', widget.isTablet),
-                          const SizedBox(height: 8),
-                          
-                          // Interactive Discount Row
-                          Row(
-                            children: [
-                              Text(
-                                'Discount',
-                                style: TextStyle(
-                                  fontSize: widget.isTablet ? 18 : 10,
-                                  color: Colors.green,
-                                ),
-                              ),
-                              const Spacer(),
-                              SizedBox(
-                                width: widget.isTablet ? 80 : 60,
-                                height: widget.isTablet ? 28 : 24,
-                                child: TextFormField(
-                                  initialValue: orderDisc > 0 ? (orderDisc % 1 == 0 ? orderDisc.toInt().toString() : orderDisc.toString()) : '',
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (val) {
-                                    final d = double.tryParse(val) ?? 0;
-                                    vm.setOrderDiscountValue(d);
-                                  },
-                                  style: TextStyle(fontSize: widget.isTablet ? 14 : 11, color: Colors.green),
-                                  textAlign: TextAlign.center,
-                                  decoration: InputDecoration(
-                                    contentPadding: EdgeInsets.zero,
-                                    hintText: '0',
-                                    hintStyle: const TextStyle(color: Colors.green),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                      borderSide: const BorderSide(color: Colors.green),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                      borderSide: const BorderSide(color: Colors.green),
-                                    ),
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: widget.isTablet ? 8 : 6, vertical: widget.isTablet ? 4 : 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                                ),
-                                child: Text(
-                                  'SAR', // For now keep SAR as takeaway uses simpler discount
-                                  style: TextStyle(
-                                    fontSize: widget.isTablet ? 12 : 9,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.green,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          
-                          _buildTotalRow('Tax ($vatPercent%)', '$currency ${vatAmount.toStringAsFixed(2)}', widget.isTablet, color: Colors.grey),
-                          const SizedBox(height: 10),
-                          
-                          Divider(height: 1, color: Colors.grey.shade200),
-                          const SizedBox(height: 10),
-                          
-                          Row(
-                            children: [
-                              Text(
-                                'Total amount',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: widget.isTablet ? 24 : 14,
-                                  color: const Color(0xFF1E2124),
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                '$currency ${grandTotal.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: widget.isTablet ? 24 : 14,
-                                  color: const Color(0xFF1E2124),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.local_offer_outlined, color: Colors.amber.shade700, size: 18),
-                          const SizedBox(width: 6),
-                          Text('Add Promo Code', style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: vm.customerNameController,
-                      decoration: const InputDecoration(labelText: 'Customer Name *', border: OutlineInputBorder(), isDense: true),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: vm.customerMobileController,
-                            keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(labelText: 'Mobile', border: OutlineInputBorder(), isDense: true),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: vm.vatController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(labelText: 'VAT %', border: OutlineInputBorder(), isDense: true),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: vm.paymentMethod,
-                      decoration: const InputDecoration(
-                        labelText: 'Payment method *',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      items: [
-                        for (final m in TakeawayViewModel.paymentMethods)
-                          DropdownMenuItem(value: m, child: Text(m)),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) vm.setPaymentMethod(v);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 46,
-                            child: ElevatedButton(
-                              onPressed: vm.checkoutLoading ? null : () => Navigator.pop(context),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF23262D),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: const Text('Save Draft'),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: SizedBox(
-                            height: 46,
-                            child: ElevatedButton(
-                              onPressed: vm.checkoutLoading
-                                  ? null
-                                  : () async {
-                                      vm.clearCheckoutError();
-                                      final res = await vm.submitCheckout();
-                                      if (!context.mounted) return;
-                                      final invoice = vm.lastInvoice;
-                                      if (res?.success == true && invoice != null) {
-                                        Navigator.pop(context);
-                                        await Future<void>.delayed(const Duration(milliseconds: 150));
-                                        if (!context.mounted) return;
-                                        showDialog<void>(
-                                          context: context,
-                                          builder: (dCtx) => InvoiceDialog(
-                                            invoice: invoice,
-                                            requestedPaymentMethod: vm.paymentMethod,
-                                          ),
-                                        );
-                                      }
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFCC247),
-                                foregroundColor: const Color(0xFF23262D),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: vm.checkoutLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87),
-                                    )
-                                  : const Text('Forward to Technician'),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              )],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTotalRow(String label, String value, bool isTablet, {Color? color}) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isTablet ? 18 : 10,
-            color: color ?? Colors.grey.shade600,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isTablet ? 18 : 10,
-            fontWeight: FontWeight.w600,
-            color: color ?? const Color(0xFF1E2124),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _TakeawayCartItemCompactTile extends StatefulWidget {
   const _TakeawayCartItemCompactTile({
     super.key,
@@ -1680,11 +1672,19 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
   Widget build(BuildContext context) {
     final line = widget.line;
     final isTablet = widget.isTablet;
+    final isPercent = (line.lineDiscountType ?? '') == 'percent' ||
+        (line.lineDiscountType ?? '') == 'percentage';
+    final grossLineTotal = line.unitPriceExclVat * line.qty;
+    final lineDiscountAmount = isPercent
+        ? (grossLineTotal * (line.lineDiscountValue / 100))
+        : line.lineDiscountValue;
+    final safeDiscount = min(grossLineTotal, max(0.0, lineDiscountAmount));
+    final discountedLineTotal = max(0.0, grossLineTotal - safeDiscount);
     
     return Container(
       padding: EdgeInsets.only(
         left: isTablet ? 14 : 12,
-        right: isTablet ? 44 : 38,
+        right: isTablet ? 12 : 10,
         top: isTablet ? 12 : 10,
         bottom: isTablet ? 12 : 12,
       ),
@@ -1717,13 +1717,59 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '${widget.currency} ${(line.unitPrice * line.qty).toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: isTablet ? 18 : 13,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF1E2124),
-                      height: 1.2,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (safeDiscount > 0)
+                        Text(
+                          '${widget.currency} ${grossLineTotal.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: isTablet ? 13 : 10,
+                            color: Colors.grey.shade400,
+                            decoration: TextDecoration.lineThrough,
+                            fontWeight: FontWeight.w600,
+                            height: 1.1,
+                          ),
+                        ),
+                      Text(
+                        '${widget.currency} ${discountedLineTotal.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: isTablet ? 18 : 13,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1E2124),
+                          height: 1.2,
+                        ),
+                      ),
+                      if (safeDiscount > 0)
+                        Text(
+                          '-${widget.currency} ${safeDiscount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: isTablet ? 11 : 9,
+                            color: Colors.green.shade600,
+                            fontWeight: FontWeight.w700,
+                            height: 1.05,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () => widget.vm.removeLine(line.product.id),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: isTablet ? 22 : 20,
+                      height: isTablet ? 22 : 20,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        size: isTablet ? 13 : 12,
+                        color: Colors.red.shade400,
+                      ),
                     ),
                   ),
                 ],
@@ -1764,7 +1810,11 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       onChanged: (val) {
                         final d = double.tryParse(val) ?? 0;
-                        widget.vm.updateLineDiscount(line.product.id, discountType: 'amount', discountValue: d);
+                        widget.vm.updateLineDiscount(
+                          line.product.id,
+                          discountType: isPercent ? 'percent' : 'amount',
+                          discountValue: d,
+                        );
                       },
                       style: const TextStyle(fontSize: 12),
                       textAlign: TextAlign.center,
@@ -1780,18 +1830,27 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFC145).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                    child: const Text(
-                      'SAR',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E2124),
+                  GestureDetector(
+                    onTap: () {
+                      widget.vm.updateLineDiscount(
+                        line.product.id,
+                        discountType: isPercent ? 'amount' : 'percent',
+                        discountValue: line.lineDiscountValue,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFC145).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Text(
+                        isPercent ? '%' : 'SAR',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E2124),
+                        ),
                       ),
                     ),
                   ),
@@ -1799,30 +1858,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
               ),
             ],
           ),
-          Positioned(
-            top: -4,
-            right: -34,
-            child: GestureDetector(
-              onTap: () => widget.vm.removeLine(line.product.id),
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white, width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Icon(Icons.close, size: isTablet ? 17 : 15, color: Colors.red.shade400),
-              ),
-            ),
-          ),
+          
         ],
       ),
     );

@@ -217,10 +217,26 @@ class TechnicianRepository {
     }
   }
 
-  Future<CommissionHistoryResponse> getCommissionHistory(String token, int month, int year, {int limit = 50, int offset = 0}) async {
+  static String _commissionQueryDate(DateTime d) {
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
+
+  /// Query by inclusive date range (`from` / `to` as `yyyy-MM-dd`).
+  Future<CommissionHistoryResponse> getCommissionHistory(
+    String token, {
+    required DateTime from,
+    required DateTime to,
+    int limit = 50,
+    int offset = 0,
+  }) async {
     try {
+      final fromStr = _commissionQueryDate(from);
+      final toStr = _commissionQueryDate(to);
       final response = await _apiService.get(
-        '${ApiConstants.technicianCommissionHistoryEndpoint}?month=$month&year=$year&limit=$limit&offset=$offset',
+        '${ApiConstants.technicianCommissionHistoryEndpoint}?from=$fromStr&to=$toStr&limit=$limit&offset=$offset',
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

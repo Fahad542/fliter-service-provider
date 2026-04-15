@@ -3,6 +3,7 @@ class CreateInvoiceRequest {
   final double discountAmount;
   final String invoiceDate;
   final String? paymentMethod;
+  final List<Map<String, dynamic>>? payments;
   final bool? isCorporate;
 
   CreateInvoiceRequest({
@@ -10,6 +11,7 @@ class CreateInvoiceRequest {
     this.discountAmount = 0,
     required this.invoiceDate,
     this.paymentMethod,
+    this.payments,
     this.isCorporate,
   });
 
@@ -19,6 +21,7 @@ class CreateInvoiceRequest {
       'discountAmount': discountAmount,
       'invoiceDate': invoiceDate,
       if (paymentMethod != null) 'paymentMethod': paymentMethod,
+      if (payments != null) 'payments': payments,
       if (isCorporate != null) 'isCorporate': isCorporate,
     };
   }

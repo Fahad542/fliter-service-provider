@@ -62,10 +62,14 @@ class AssignedOrder {
   });
 
   factory AssignedOrder.fromJson(Map<String, dynamic> json) {
+    final rawStatus = json['status'] ??
+        json['orderStatus'] ??
+        json['jobStatus'] ??
+        json['invoiceStatus'];
     return AssignedOrder(
       jobId: json['jobId']?.toString() ?? '',
       orderId: json['orderId']?.toString() ?? '',
-      status: json['status'] ?? '',
+      status: rawStatus?.toString() ?? '',
       customerName: json['customerName'] ?? '',
       vehicle: json['vehicle'] ?? '',
       plateNo: json['plateNo'] ?? '',
@@ -91,6 +95,34 @@ class AssignedOrder {
     } catch (_) {
       return iso.split('T')[0];
     }
+  }
+
+  /// Technician app only lists jobs after the cashier has invoiced (or legacy completed states).
+  bool get isEligibleForPostInvoiceAssignedList {
+    final s = status.toLowerCase().replaceAll(RegExp(r'[\s\-]+'), '_');
+    if (s.isEmpty) return false;
+    if (s.contains('cancel')) return false;
+    // Exclude only clear pre-invoice / active states (substring "pending" would wrongly exclude unrelated words).
+    if (s == 'pending' ||
+        s.startsWith('pending_') ||
+        s.endsWith('_pending') ||
+        s == 'assigned' ||
+        s == 'accepted' ||
+        s == 'in_progress' ||
+        s == 'inprogress') {
+      return false;
+    }
+    if (s.contains('technician') && s.contains('complete')) return false;
+    // Do not treat "ready for invoice" style states as invoiced yet.
+    if (s.contains('invoice') &&
+        (s.contains('ready') || s.contains('pending') || s.contains('draft'))) {
+      return false;
+    }
+    return s.contains('invoice') ||
+        s == 'paid' ||
+        s == 'completed' ||
+        s == 'success' ||
+        s == 'complete';
   }
 
   String get displayTime {

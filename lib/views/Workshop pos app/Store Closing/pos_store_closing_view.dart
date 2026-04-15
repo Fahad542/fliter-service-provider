@@ -25,7 +25,12 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final vm = context.read<StoreClosingViewModel>();
-      vm.reset();
+      // After a successful close, [PosShell] swaps the body subtree (rail + inner
+      // IndexedStack vs plain IndexedStack). That can remount this widget; do not
+      // reset here or the reconciliation / difference UI vanishes immediately.
+      if (!vm.isReconciled) {
+        vm.reset();
+      }
       vm.loadSummary();
     });
   }
@@ -742,7 +747,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           if (!closingVm.isReconciled)
             Expanded(
               child: ElevatedButton(
-                onPressed: (closingVm.physicalTotal > 0 && !closingVm.isReconciling)
+                onPressed: (!closingVm.isReconciling)
                     ? () => closingVm.reconcile(
                           posVm.branchName,
                           posVm.cashierName,
@@ -826,7 +831,8 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 0,
         backgroundColor: Colors.white,
-        child: Padding(
+        child: Container(
+          width: 400,
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,

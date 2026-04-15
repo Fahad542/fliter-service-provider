@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../widgets/widgets.dart';
@@ -6,6 +7,7 @@ import '../technician_shell.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../services/session_service.dart';
 import '../../../utils/toast_service.dart';
+import '../technician_view_model.dart';
 
 class TechLoginView extends StatefulWidget {
   const TechLoginView({super.key});
@@ -54,7 +56,11 @@ class _TechLoginViewState extends State<TechLoginView> {
       final session = SessionService();
       await session.saveSession(response, role: 'tech');
       await session.saveLastPortal('tech');
-      
+
+      if (mounted) {
+        await context.read<TechAppViewModel>().init();
+      }
+
       if (mounted) {
         ToastService.showSuccess(context, 'Login Successful');
         Navigator.pushReplacement(

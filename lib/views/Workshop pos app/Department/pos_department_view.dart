@@ -6,18 +6,30 @@ import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart';
-import '../Product Grid/pos_product_grid_view.dart';
-import '../Technician Assignment/pos_technician_assignment_view.dart';
+import '../Navbar/pos_shell.dart';
 import 'department_view_model.dart';
+
+String _normalizeDeptKeyForExclude(String value) =>
+    value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 
 class PosDepartmentView extends StatefulWidget {
   final List<String>? preSelectedProducts;
   final String? initialDepartmentId;
 
+  /// When set, the primary action adds jobs to this existing walk-in draft (POST …/jobs) and pops.
+  final String? addJobsToOrderId;
+
+  /// Departments already represented on that order (by id or normalized name) — not selectable.
+  final List<String> excludedDepartmentIds;
+  final List<String> excludedNormalizedNameKeys;
+
   const PosDepartmentView({
     super.key,
     this.preSelectedProducts,
     this.initialDepartmentId,
+    this.addJobsToOrderId,
+    this.excludedDepartmentIds = const [],
+    this.excludedNormalizedNameKeys = const [],
   });
 
   @override
@@ -26,6 +38,13 @@ class PosDepartmentView extends StatefulWidget {
 
 class _PosDepartmentViewState extends State<PosDepartmentView> {
   bool _autoSelectionDone = false;
+  bool _placingOrder = false;
+
+  bool _departmentExcluded(Department d) {
+    if (widget.excludedDepartmentIds.contains(d.id)) return true;
+    final k = _normalizeDeptKeyForExclude(d.name);
+    return widget.excludedNormalizedNameKeys.contains(k);
+  }
 
   @override
   void initState() {
@@ -53,9 +72,14 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
+    final isAddToExisting =
+        (widget.addJobsToOrderId ?? '').trim().isNotEmpty;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F6),
-      appBar: PosScreenAppBar(title: 'Select Depart'),
+      appBar: PosScreenAppBar(
+        title: isAddToExisting ? 'Add Department' : 'Select Depart',
+      ),
       body: Consumer<DepartmentViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
@@ -79,9 +103,10 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
           }
 
           final departments = viewModel.departments;
-          final preferredDepartmentId =
-              widget.initialDepartmentId ??
-              context.read<PosViewModel>().editDepartmentId;
+          final preferredDepartmentId = isAddToExisting
+              ? widget.initialDepartmentId
+              : (widget.initialDepartmentId ??
+                  context.read<PosViewModel>().editDepartmentId);
 
           if (departments.isEmpty) {
             return const Center(child: Text('No departs found'));
@@ -103,14 +128,16 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
 
           return Column(
             children: [
-              SizedBox(height: isTablet ? 24 : 20),
+              SizedBox(height: isTablet ? 12 : 10),
 
-              // Department Grid
+              // Department grid (shrink-wrap + scroll — avoids large empty gap under few cards)
               Expanded(
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(horizontal: isTablet ? 14 : 10),
                   child: GridView.builder(
                     itemCount: departments.length,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: isTablet ? 6 : 4,
                       childAspectRatio: isTablet ? 1.1 : 1.1,
@@ -119,17 +146,28 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                     ),
                     itemBuilder: (context, index) {
                       final dept = departments[index];
-                      final isSelected = viewModel.selectedIndex == index;
+                      final isSelected = viewModel.selectedIndices.contains(index);
+                      final excluded = _departmentExcluded(dept);
 
                       return GestureDetector(
-                        onTap: () {
-                          viewModel.setSelectedIndex(index);
-                        },
-                        child: AnimatedContainer(
+                        onTap: excluded
+                            ? () {
+                                ToastService.showError(
+                                  context,
+                                  'This department is already on this order.',
+                                );
+                              }
+                            : () {
+                                viewModel.toggleSelectedIndex(index);
+                              },
+                        child: AnimatedOpacity(
+                          opacity: excluded ? 0.42 : 1,
+                          duration: const Duration(milliseconds: 200),
+                          child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            gradient: isSelected
+                            gradient: isSelected && !excluded
                                 ? LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -142,17 +180,19 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                             borderRadius:
                                 BorderRadius.circular(isTablet ? 18 : 14),
                             border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primaryLight.withOpacity(0.6)
-                                  : Colors.grey.shade200.withOpacity(0.8),
-                              width: isSelected ? 2 : 1,
+                              color: excluded
+                                  ? Colors.grey.shade300
+                                  : isSelected
+                                      ? AppColors.primaryLight.withOpacity(0.6)
+                                      : Colors.grey.shade200.withOpacity(0.8),
+                              width: isSelected && !excluded ? 2 : 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: isSelected
+                                color: isSelected && !excluded
                                     ? AppColors.primaryLight.withOpacity(0.08)
                                     : Colors.black.withOpacity(0.03),
-                                blurRadius: isSelected ? 10 : 6,
+                                blurRadius: isSelected && !excluded ? 10 : 6,
                                 offset: const Offset(0, 3),
                               ),
                             ],
@@ -175,7 +215,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                                     color: AppColors.primaryLight,
                                   ),
                                 ),
-                                SizedBox(height: isTablet ? 2 : 2),
+                                SizedBox(height: isTablet ? 12 : 10),
                                 Text(
                                   dept.name,
                                   style: AppTextStyles.bodyMedium.copyWith(
@@ -195,6 +235,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                             ),
                           ),
                         ),
+                        ),
                       );
                     },
                   ),
@@ -202,7 +243,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
               ),
 
               // Bottom Action
-              if (viewModel.selectedIndex != null)
+              if (viewModel.selectedIndices.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.fromLTRB(
                     isTablet ? 32 : 20,
@@ -232,7 +273,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                               ),
                               child: Icon(
                                 _getIconForDepartment(
-                                  departments[viewModel.selectedIndex!].name,
+                                  viewModel.selectedDepartments.first.name,
                                 ),
                                 size: isTablet ? 16 : 14,
                                 color: AppColors.primaryLight,
@@ -240,7 +281,9 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                             ),
                             SizedBox(width: isTablet ? 12 : 8),
                             Text(
-                              departments[viewModel.selectedIndex!].name,
+                              viewModel.selectedIndices.length == 1
+                                  ? viewModel.selectedDepartments.first.name
+                                  : '${viewModel.selectedIndices.length} departments selected',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w700,
                                 fontSize: isTablet ? 15 : 13,
@@ -252,41 +295,16 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                       ),
                       SizedBox(height: isTablet ? 16 : 12),
 
-                      // Action Buttons
-                      if (isTablet)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 52,
-                                child: _buildProductsButton(context, departments[viewModel.selectedIndex!], isTablet),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: SizedBox(
-                                height: 52,
-                                child: _buildTechnicianButton(context, departments[viewModel.selectedIndex!], isTablet),
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Column(
-                          children: [
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: _buildProductsButton(context, departments[viewModel.selectedIndex!], isTablet),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: _buildTechnicianButton(context, departments[viewModel.selectedIndex!], isTablet),
-                            ),
-                          ],
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: _buildOrderPlacedButton(
+                          context,
+                          viewModel.selectedDepartments,
+                          isTablet,
+                          _placingOrder,
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -297,229 +315,248 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
     );
   }
 
-  Widget _buildProductsButton(BuildContext context, Department dept, bool isTablet) {
+  Widget _buildOrderPlacedButton(
+    BuildContext context,
+    List<Department> selectedDepartments,
+    bool isTablet,
+    bool isPlacing,
+  ) {
     return Consumer<PosViewModel>(
       builder: (context, posViewModel, child) {
-        final editPreSelectedItems = posViewModel.editPreSelectedItems;
+        final selectedDeptIds = selectedDepartments.map((d) => d.id).toList();
+        final busy = isPlacing || posViewModel.isLoading;
+        final addToExistingOrderId = widget.addJobsToOrderId?.trim() ?? '';
+        final isAddToExistingFlow = addToExistingOrderId.isNotEmpty;
         return ElevatedButton(
-          onPressed: posViewModel.isLoading
+          onPressed: busy
               ? null
               : () async {
-                  if (posViewModel.vehicleNumber.trim().isEmpty) {
-                    ToastService.showError(
-                      context,
-                      'Please add vehicle number first (Add Customer)',
-                    );
-                    return;
-                  }
+            if (isAddToExistingFlow) {
+              final validIds = selectedDepartments
+                  .where((d) => !_departmentExcluded(d))
+                  .map((d) => d.id.trim())
+                  .where((id) => id.isNotEmpty)
+                  .toList();
+              if (validIds.isEmpty) {
+                ToastService.showError(
+                  context,
+                  'Select at least one department to add.',
+                );
+                return;
+              }
+              setState(() => _placingOrder = true);
+              try {
+                final ok = await posViewModel.addDepartmentsToWalkInOrder(
+                  context,
+                  addToExistingOrderId,
+                  validIds,
+                );
+                if (!context.mounted || !ok) return;
+                Navigator.of(context).pop();
+              } finally {
+                if (mounted) {
+                  setState(() => _placingOrder = false);
+                }
+              }
+              return;
+            }
 
-                  final previousDeptId = posViewModel.editDepartmentId;
-                  final isDeptChanged =
-                      posViewModel.editingOrder != null &&
-                      previousDeptId != null &&
-                      previousDeptId.isNotEmpty &&
-                      previousDeptId != dept.id;
-
-                  if (isDeptChanged) {
-                    final shouldContinue = await showDialog<bool>(
-                      context: context,
-                      builder: (dialogCtx) {
-                        final w = MediaQuery.of(dialogCtx).size.width;
-                        final isDialogTablet = w > 600;
-                        return Dialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          insetPadding: EdgeInsets.symmetric(
-                            horizontal: isDialogTablet ? w * 0.28 : 24,
-                            vertical: 24,
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              isDialogTablet ? 28 : 22,
-                              isDialogTablet ? 24 : 20,
-                              isDialogTablet ? 28 : 22,
-                              isDialogTablet ? 22 : 18,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Change Department?',
-                                  style: AppTextStyles.h3.copyWith(
-                                    fontSize: isDialogTablet ? 26 : 22,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                Text(
-                                  'Do you really want to change your department?',
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: Colors.grey.shade800,
-                                    fontSize: isDialogTablet ? 17 : 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Your invoice data will be refreshed.',
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: Colors.grey.shade600,
-                                    fontSize: isDialogTablet ? 16 : 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed:
-                                            () => Navigator.pop(dialogCtx, false),
-                                        style: OutlinedButton.styleFrom(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: isDialogTablet ? 16 : 13,
-                                          ),
-                                          side: BorderSide(
-                                            color: Colors.grey.shade300,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Cancel',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade700,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: isDialogTablet ? 16 : 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        onPressed:
-                                            () => Navigator.pop(dialogCtx, true),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primaryLight,
-                                          foregroundColor: AppColors.secondaryLight,
-                                          elevation: 0,
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: isDialogTablet ? 16 : 13,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Continue',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: isDialogTablet ? 16 : 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-
-                    if (shouldContinue != true) return;
-
-                    // Reset current invoice/cart state so user can rebuild
-                    // order against the newly selected department.
-                    posViewModel.clearCart(isMainTab: false);
-                  }
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PosProductGridView(
-                        departmentName: dept.name,
-                        departmentId: dept.id,
-                        preSelectedItems: isDeptChanged
-                            ? null
-                            : (editPreSelectedItems ??
-                                widget.preSelectedProducts
-                                    ?.map((id) => {'productId': id})
-                                    .toList()),
-                        completingOrder: posViewModel.editingOrder,
-                        completingOrderId: posViewModel.editingCompletingOrderId,
-                      ),
-                    ),
-                  );
-                },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryLight,
-            foregroundColor: AppColors.secondaryLight,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
-            ),
-          ),
-          child: Text(
-            'Continue to Products',
-            style: AppTextStyles.button.copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: isTablet ? 15 : 13,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTechnicianButton(BuildContext context, Department dept, bool isTablet) {
-    return Consumer<PosViewModel>(
-      builder: (context, posViewModel, child) {
-        return ElevatedButton(
-          onPressed: () {
-            if (posViewModel.vehicleNumber.trim().isEmpty) {
+            if (posViewModel.vehicleNumber
+                .trim()
+                .isEmpty) {
               ToastService.showError(
                 context,
                 'Please add vehicle number first (Add Customer)',
               );
               return;
             }
-            // Navigate directly — walk-in API will be called on "Assign to Technician"
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PosTechnicianAssignmentView(
-                  jobId: '', // empty = walk-in mode (API not called yet)
-                  departmentName: dept.name,
-                  departmentId: dept.id,
-                  isWalkIn: true,
+
+            setState(() => _placingOrder = true);
+            try {
+              if (posViewModel.editingOrder == null) {
+                final placed = await posViewModel.placeWalkInShellOrder(
+                  selectedDeptIds,
+                  context,
+                );
+                if (!context.mounted || !placed) return;
+              }
+              final createdOrderId = posViewModel.lastCreatedWalkInOrderId;
+
+              final previousDeptId = posViewModel.editDepartmentId;
+              final isDeptChanged =
+                  posViewModel.editingOrder != null &&
+                      previousDeptId != null &&
+                      previousDeptId.isNotEmpty &&
+                      !selectedDeptIds.contains(previousDeptId);
+
+              if (isDeptChanged) {
+                final shouldContinue = await showDialog<bool>(
+                  context: context,
+                  builder: (dialogCtx) {
+                    final w = MediaQuery
+                        .of(dialogCtx)
+                        .size
+                        .width;
+                    final isDialogTablet = w > 600;
+                    return Dialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      insetPadding: EdgeInsets.symmetric(
+                        horizontal: isDialogTablet ? w * 0.28 : 24,
+                        vertical: 24,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          isDialogTablet ? 28 : 22,
+                          isDialogTablet ? 24 : 20,
+                          isDialogTablet ? 28 : 22,
+                          isDialogTablet ? 22 : 18,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Change Department?',
+                              style: AppTextStyles.h3.copyWith(
+                                fontSize: isDialogTablet ? 26 : 22,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'Do you really want to change your department?',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: Colors.grey.shade800,
+                                fontSize: isDialogTablet ? 17 : 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Your invoice data will be refreshed.',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: Colors.grey.shade600,
+                                fontSize: isDialogTablet ? 16 : 14,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed:
+                                        () => Navigator.pop(dialogCtx, false),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: isDialogTablet ? 16 : 13,
+                                      ),
+                                      side: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Cancel',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: isDialogTablet ? 16 : 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed:
+                                        () => Navigator.pop(dialogCtx, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primaryLight,
+                                      foregroundColor: AppColors.secondaryLight,
+                                      elevation: 0,
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: isDialogTablet ? 16 : 13,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Continue',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: isDialogTablet ? 16 : 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+
+                if (shouldContinue != true) return;
+
+                // Reset current invoice/cart state so user can rebuild
+                // order against the newly selected department.
+                posViewModel.clearCart(isMainTab: false);
+              }
+
+              if (!context.mounted) return;
+              await posViewModel.fetchOrders(
+                silent: false,
+                preferredOrderId: createdOrderId,
+              );
+              if (!context.mounted) return;
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute<void>(
+                  builder: (_) => const PosShell(initialIndex: 2),
                 ),
-              ),
-            );
+                    (route) => false,
+              );
+            } finally {
+              if (mounted) {
+                setState(() => _placingOrder = false);
+              }
+            }
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.secondaryLight,
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primaryLight,
+            foregroundColor: AppColors.secondaryLight,
+            disabledBackgroundColor: AppColors.primaryLight.withValues(
+                alpha: 0.85),
+            disabledForegroundColor: AppColors.secondaryLight,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
             ),
           ),
-          child: Text(
-            'Continue to Technician',
+          child: busy
+              ? const SizedBox(
+            height: 24,
+            width: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: AppColors.secondaryLight,
+            ),
+          )
+              : Text(
+            isAddToExistingFlow ? 'Add to order' : 'Order Placed',
             style: AppTextStyles.button.copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: isTablet ? 15 : 13,
-              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: isTablet ? 16 : 14,
             ),
           ),
         );
-      },
-    );
+      } );
   }
 }
 

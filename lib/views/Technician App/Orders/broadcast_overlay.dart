@@ -30,6 +30,7 @@ class BroadcastOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TechAppViewModel>(
       builder: (context, vm, child) {
+        if (!vm.showBroadcastAcceptanceUi) return const SizedBox.shrink();
         if (!vm.hasActiveBroadcast) return const SizedBox();
 
         final b = vm.primaryBroadcast!;

@@ -73,8 +73,6 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                         _buildCommissionCard(order),
                         const SizedBox(height: 16),
                       ],
-                      const SizedBox(height: 32),
-                      _buildActionButtons(context, vm, order),
                     ],
                   ),
                 ),
@@ -274,80 +272,4 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
   }
 
   Widget _buildDivider() => Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Divider(color: Colors.black.withOpacity(0.05), height: 1));
-
-  Widget _buildActionButtons(BuildContext context, TechAppViewModel vm, TechOrder order) {
-    final status = order.assignmentStatus.toLowerCase();
-    final bool isInProgress = status == 'in progress' || status == 'in_progress';
-    
-    if (!isInProgress) return const SizedBox.shrink();
-
-    // In Progress => Only show Mark as Completed
-    if (isInProgress) {
-      return Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            height: 64,
-            child: ElevatedButton(
-              onPressed: vm.completingJobId == order.jobId ? null : () => _showCompleteConfirmation(context, vm, order),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryLight,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                elevation: 0,
-              ),
-              child: vm.completingJobId == order.jobId
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.secondaryLight, strokeWidth: 2))
-                  : const Text('TASK COMPLETE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1, color: AppColors.secondaryLight)),
-            ),
-          ),
-        ],
-      );
-    }
-    
-    // Default fallback (e.g., if there's an unforeseen state, we can hide or show default buttons)
-    return const SizedBox.shrink();
-  }
-
-  void _showCompleteConfirmation(BuildContext context, TechAppViewModel vm, TechOrder order) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Job Completed?', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900)),
-        content: const Text('Are you sure the job is done? This will send the order back to the cashier.', style: TextStyle(color: Colors.black54)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL', style: TextStyle(color: Colors.black38, fontWeight: FontWeight.w700)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              final success = await vm.completeOrder(order.jobId);
-              if (mounted) {
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Job Completed Successfully!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to mark job as completed.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('YES, COMPLETED', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w900)),
-          ),
-        ],
-      ),
-    );
-  }
 }

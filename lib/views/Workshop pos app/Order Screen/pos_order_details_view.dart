@@ -269,7 +269,7 @@ class PosOrderDetailsView extends StatelessWidget {
   }
 
   Widget _buildJobsSection(bool isTablet) {
-    final jobs = order.jobs;
+    final jobs = order.jobs.where((j) => !j.isCancelledJob).toList();
     if (jobs.isEmpty) {
       return _buildSectionCard(
         isTablet: isTablet,
@@ -282,7 +282,7 @@ class PosOrderDetailsView extends StatelessWidget {
       children: jobs.asMap().entries.map((entry) {
         final i = entry.key;
         final job = entry.value;
-        final techNames = job.technicians
+        final techNames = job.activeTechnicians
             .map((t) => t.name)
             .where((n) => n.trim().isNotEmpty)
             .join(', ');

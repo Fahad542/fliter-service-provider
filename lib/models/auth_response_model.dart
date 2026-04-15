@@ -126,12 +126,19 @@ class Cashier {
 class TechnicianData {
   final String? employeeId;
   final String? technicianType;
+  /// Persisted from login/profile so cold start matches server before GET profile.
+  final String? dutyMode;
+  final bool? workshopDuty;
+  final bool? onCallDuty;
   final int? commissionPercent;
   final List<Department>? departments;
 
   TechnicianData({
     this.employeeId,
     this.technicianType,
+    this.dutyMode,
+    this.workshopDuty,
+    this.onCallDuty,
     this.commissionPercent,
     this.departments,
   });
@@ -139,7 +146,10 @@ class TechnicianData {
   factory TechnicianData.fromJson(Map<String, dynamic> json) {
     return TechnicianData(
       employeeId: json['employeeId']?.toString(),
-      technicianType: json['technicianType'],
+      technicianType: json['technicianType']?.toString(),
+      dutyMode: json['dutyMode']?.toString(),
+      workshopDuty: json['workshopDuty'] is bool ? json['workshopDuty'] as bool : null,
+      onCallDuty: json['onCallDuty'] is bool ? json['onCallDuty'] as bool : null,
       commissionPercent: json['commissionPercent'] is int ? json['commissionPercent'] : int.tryParse(json['commissionPercent']?.toString() ?? ''),
       departments: json['departments'] != null
           ? (json['departments'] as List).map((i) => Department.fromJson(i)).toList()
@@ -151,6 +161,9 @@ class TechnicianData {
     return {
       'employeeId': employeeId,
       'technicianType': technicianType,
+      if (dutyMode != null) 'dutyMode': dutyMode,
+      if (workshopDuty != null) 'workshopDuty': workshopDuty,
+      if (onCallDuty != null) 'onCallDuty': onCallDuty,
       'commissionPercent': commissionPercent,
       'departments': departments?.map((e) => e.toJson()).toList(),
     };

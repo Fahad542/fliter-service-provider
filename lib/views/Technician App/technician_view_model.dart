@@ -9,6 +9,7 @@ import '../../models/technician_today_performance_model.dart';
 import '../../models/technician_profile_model.dart';
 import '../../models/technician_commission_history_model.dart';
 import '../../models/technician_broadcast_model.dart';
+import '../../models/auth_response_model.dart';
 import '../../utils/toast_service.dart';
 
 class TechAppViewModel extends ChangeNotifier {
@@ -96,6 +97,15 @@ class TechAppViewModel extends ChangeNotifier {
   bool _isOnlineUpdating = false;
   bool _cachedWorkshopDutyBeforeOffline = false;
   bool _cachedOnCallDutyBeforeOffline = false;
+
+  /// From login payload; profile may omit `technicianType` so we keep this for duty defaults.
+  String? _sessionTechnicianType;
+
+  /// So pull-to-refresh / re-init does not override duty toggles the user already changed.
+  bool _initialDutyDefaultsApplied = false;
+
+  /// When this changes (new login), duty defaults run again for the new account.
+  String? _lastBootstrappedUserId;
 
   bool get isWorkshopDuty => _isWorkshopDuty;
   bool get isOnCallDuty => _isOnCallDuty;
@@ -235,6 +245,20 @@ class TechAppViewModel extends ChangeNotifier {
 
   // --- Real-time Stats ---
   String technicianName = '';
+
+  /// Shown under "Welcome Back," — prefers profile, then session name / email local-part.
+  String get dashboardGreetingName {
+    String? pick(String? s) {
+      final t = s?.trim();
+      return (t != null && t.isNotEmpty) ? t : null;
+    }
+
+    return pick(profile?.name) ??
+        pick(technicianName) ??
+        pick(profile?.email?.split('@').first) ??
+        pick(profile?.mobile) ??
+        'Technician';
+  }
   int todayCompletedJobs = 0;
   double todayRevenue = 0.0;
   double todayCommission = 0.0;
@@ -245,29 +269,87 @@ class TechAppViewModel extends ChangeNotifier {
   // --- Commission History ---
   List<CommissionEntry> commissionHistory = [];
   bool isLoadingCommission = false;
-  DateTime selectedCommissionMonth = DateTime.now();
+  /// From last successful `/technician/commission-history` response (IANA id).
+  String? commissionHistoryBusinessTimeZone;
 
-  List<DateTime> get availableCommissionMonths {
-    final now = DateTime.now();
-    return List.generate(3, (index) => DateTime(now.year, now.month - index));
+  DateTime _commissionHistoryFrom = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
+  DateTime _commissionHistoryTo = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
+
+  DateTime get commissionHistoryFrom => _commissionHistoryFrom;
+  DateTime get commissionHistoryTo => _commissionHistoryTo;
+
+  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// `yyyy-MM-dd` for range query / post-filter (matches API inclusive date bounds).
+  static String _commissionRangeYmd(DateTime d) {
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
   }
 
-  void selectCommissionMonth(DateTime month) {
-    selectedCommissionMonth = month;
-    fetchCommissionHistory(month: month.month, year: month.year);
+  /// Post-filter: `from <= displayYmd <= to` as ISO date strings (calendar order).
+  bool _commissionEntryInSelectedRange(CommissionEntry e) {
+    final ymd = e.displayYmd.trim();
+    if (ymd.length != 10) return false;
+    final from = _commissionRangeYmd(_commissionHistoryFrom);
+    final to = _commissionRangeYmd(_commissionHistoryTo);
+    return from.compareTo(ymd) <= 0 && ymd.compareTo(to) <= 0;
   }
 
-  Future<void> fetchCommissionHistory({int? month, int? year}) async {
+  static int _compareCommissionEntriesDescending(CommissionEntry a, CommissionEntry b) {
+    final byYmd = b.displayYmd.compareTo(a.displayYmd);
+    if (byYmd != 0) return byYmd;
+    final da = DateTime.tryParse(a.date);
+    final db = DateTime.tryParse(b.date);
+    if (da != null && db != null) return db.compareTo(da);
+    return b.date.compareTo(a.date);
+  }
+
+  void setCommissionHistoryFrom(DateTime d) {
+    var next = _dateOnly(d);
+    if (next.isAfter(_commissionHistoryTo)) {
+      _commissionHistoryTo = next;
+    }
+    _commissionHistoryFrom = next;
+    notifyListeners();
+  }
+
+  void setCommissionHistoryTo(DateTime d) {
+    var next = _dateOnly(d);
+    if (next.isBefore(_commissionHistoryFrom)) {
+      _commissionHistoryFrom = next;
+    }
+    _commissionHistoryTo = next;
+    notifyListeners();
+  }
+
+  Future<void> fetchCommissionHistory() async {
     isLoadingCommission = true;
     notifyListeners();
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
-        final m = month ?? selectedCommissionMonth.month;
-        final y = year ?? selectedCommissionMonth.year;
-        final response = await _repository.getCommissionHistory(token, m, y);
+        final response = await _repository.getCommissionHistory(
+          token,
+          from: _commissionHistoryFrom,
+          to: _commissionHistoryTo,
+        );
         if (response.success) {
-          commissionHistory = response.entries;
+          commissionHistoryBusinessTimeZone = response.businessTimeZone;
+          final list = response.entries
+              .where(_commissionEntryInSelectedRange)
+              .toList()
+            ..sort(_compareCommissionEntriesDescending);
+          commissionHistory = list;
         }
       }
     } catch (e) {
@@ -281,6 +363,18 @@ class TechAppViewModel extends ChangeNotifier {
   // --- Orders ---
   List<TechOrder> _assignedOrders = [];
   List<TechOrder> get assignedOrders => _assignedOrders;
+
+  /// True while GET assigned-orders is in flight (including `affectLoading: false` from init).
+  bool _assignedOrdersRequestInFlight = false;
+  bool get isAssignedOrdersRequestInFlight => _assignedOrdersRequestInFlight;
+
+  /// Home dashboard (header + body) only after init finished and we have enough to avoid the "Technician" placeholder.
+  bool get isTechDashboardReady =>
+      _isBootstrapped &&
+      !_isLoading &&
+      (technicianName.trim().isNotEmpty ||
+          (profile?.name?.trim().isNotEmpty ?? false) ||
+          profile != null);
 
   TechOrder? _currentOrderDetail;
   TechOrder? get currentOrderDetail => _currentOrderDetail;
@@ -313,6 +407,9 @@ class TechAppViewModel extends ChangeNotifier {
       _broadcasts.isEmpty ? null : _broadcasts.first;
 
   bool get hasActiveBroadcast => _broadcasts.isNotEmpty;
+
+  /// Accept/decline broadcast UI is disabled: assignments are handled on POS; jobs appear after invoice.
+  bool get showBroadcastAcceptanceUi => false;
   int get broadcastTimerSeconds => _broadcastTimerSeconds;
   int get broadcastRingTotalSecs =>
       _broadcastRingTotalSecs <= 0 ? 300 : _broadcastRingTotalSecs;
@@ -413,19 +510,44 @@ class TechAppViewModel extends ChangeNotifier {
         final response = await _repository.getTechnicianProfile(token);
         if (response.success == true) {
           profile = response.profile;
-          technicianName = profile?.name ?? technicianName;
-          
-          // Sync duty status switches - prioritize dutyMode if booleans are null
-          if (profile?.workshopDuty != null) {
-            _isWorkshopDuty = profile!.workshopDuty!;
-          } else {
-            _isWorkshopDuty = profile?.dutyMode == 'workshop';
+          final fromProfile = profile?.name?.trim();
+          if (fromProfile != null && fromProfile.isNotEmpty) {
+            technicianName = fromProfile;
+          } else if (technicianName.trim().isEmpty) {
+            final emailLocal = profile?.email?.split('@').first.trim();
+            if (emailLocal != null && emailLocal.isNotEmpty) {
+              technicianName = emailLocal;
+            } else {
+              final mobile = profile?.mobile?.trim();
+              if (mobile != null && mobile.isNotEmpty) {
+                technicianName = mobile;
+              }
+            }
           }
           
-          if (profile?.onCallDuty != null) {
-            _isOnCallDuty = profile!.onCallDuty!;
+          // Duty toggles: `dutyMode` is the source of truth when the API sends it.
+          final dm =
+              profile?.dutyMode?.toString().toLowerCase().trim() ?? '';
+          if (dm == 'workshop') {
+            _isWorkshopDuty = true;
+            _isOnCallDuty = false;
+          } else if (dm == 'on_call') {
+            _isWorkshopDuty = false;
+            _isOnCallDuty = true;
+          } else if (dm == 'offline') {
+            _isWorkshopDuty = false;
+            _isOnCallDuty = false;
           } else {
-            _isOnCallDuty = profile?.dutyMode == 'on_call';
+            if (profile?.workshopDuty != null) {
+              _isWorkshopDuty = profile!.workshopDuty!;
+            } else {
+              _isWorkshopDuty = false;
+            }
+            if (profile?.onCallDuty != null) {
+              _isOnCallDuty = profile!.onCallDuty!;
+            } else {
+              _isOnCallDuty = false;
+            }
           }
 
           final status = profile?.onlineStatus?.toLowerCase();
@@ -446,6 +568,67 @@ class TechAppViewModel extends ChangeNotifier {
       debugPrint('Error fetching profile: $e');
     } finally {
       if (affectLoading) _setLoading(false);
+    }
+  }
+
+  /// Workshop-only (or on-call / both) accounts should show the matching duty ON when online.
+  /// The profile API often returns `workshopDuty: false` while `technicianType` is `workshop`, which hid the toggle.
+  void _applyDefaultDutyForTechnicianType() {
+    if (!_isOnline) return;
+    final dm =
+        profile?.dutyMode?.toString().toLowerCase().trim() ?? '';
+    if (dm == 'workshop') {
+      _isOnCallDuty = false;
+      _isWorkshopDuty = true;
+      notifyListeners();
+      return;
+    }
+    if (dm == 'on_call') {
+      _isWorkshopDuty = false;
+      _isOnCallDuty = true;
+      notifyListeners();
+      return;
+    }
+    if (dm == 'offline') {
+      _isWorkshopDuty = false;
+      _isOnCallDuty = false;
+      notifyListeners();
+      return;
+    }
+
+    final type = (profile?.technicianType ?? _sessionTechnicianType)
+        ?.toLowerCase()
+        .trim();
+    if (type == null || type.isEmpty) return;
+
+    if (type == 'workshop') {
+      _isOnCallDuty = false;
+      _isWorkshopDuty = true;
+    } else if (type == 'on_call') {
+      _isWorkshopDuty = false;
+      _isOnCallDuty = true;
+    } else if (type == 'both') {
+      if (!_isWorkshopDuty && !_isOnCallDuty) {
+        _isWorkshopDuty = true;
+        _isOnCallDuty = false;
+      }
+    }
+    notifyListeners();
+  }
+
+  /// Keeps server duty mode aligned when we default the toggles from `technicianType`.
+  Future<void> _syncDutyStateToBackendAfterInitialDefault() async {
+    if (!_isOnline) return;
+    try {
+      final token = await _sessionService.getToken(role: 'tech');
+      if (token == null) return;
+      if (_isWorkshopDuty && !_isOnCallDuty) {
+        await _repository.updateDutyStatus(token, 'workshop');
+      } else if (_isOnCallDuty && !_isWorkshopDuty) {
+        await _repository.updateDutyStatus(token, 'on_call');
+      }
+    } catch (e) {
+      debugPrint('Initial duty backend sync: $e');
     }
   }
 
@@ -474,18 +657,24 @@ class TechAppViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchAssignedOrders({bool affectLoading = true}) async {
+    _assignedOrdersRequestInFlight = true;
+    notifyListeners();
     if (affectLoading) _setLoading(true);
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
         final response = await _repository.getAssignedOrders(token);
         if (response.success) {
-          _assignedOrders = response.orders.map((o) => TechOrder.fromAssignedOrder(o)).toList();
+          _assignedOrders = response.orders
+              .where((o) => o.isEligibleForPostInvoiceAssignedList)
+              .map((o) => TechOrder.fromAssignedOrder(o))
+              .toList();
         }
       }
     } catch (e) {
       debugPrint('Error fetching assigned orders: $e');
     } finally {
+      _assignedOrdersRequestInFlight = false;
       if (affectLoading) _setLoading(false);
       notifyListeners();
     }
@@ -627,33 +816,90 @@ class TechAppViewModel extends ChangeNotifier {
     }
   }
 
+  /// Duty toggles from persisted login payload (before GET profile).
+  void _applySessionTechnicianDutyFromUser(User? user) {
+    final t = user?.technician;
+    final dm = t?.dutyMode?.toLowerCase().trim();
+    if (dm != null && dm.isNotEmpty) {
+      switch (dm) {
+        case 'workshop':
+          _isWorkshopDuty = true;
+          _isOnCallDuty = false;
+          return;
+        case 'on_call':
+          _isWorkshopDuty = false;
+          _isOnCallDuty = true;
+          return;
+        case 'offline':
+          _isWorkshopDuty = false;
+          _isOnCallDuty = false;
+          return;
+      }
+    }
+    if (t?.workshopDuty == true && t?.onCallDuty != true) {
+      _isWorkshopDuty = true;
+      _isOnCallDuty = false;
+      return;
+    }
+    if (t?.onCallDuty == true) {
+      _isWorkshopDuty = false;
+      _isOnCallDuty = true;
+      return;
+    }
+    final type = t?.technicianType?.toLowerCase();
+    if (type == 'workshop') {
+      _isWorkshopDuty = true;
+      _isOnCallDuty = false;
+    } else if (type == 'on_call') {
+      _isOnCallDuty = true;
+      _isWorkshopDuty = false;
+    } else if (type == 'both') {
+      _isWorkshopDuty = true;
+      _isOnCallDuty = false;
+    }
+  }
+
   // --- Initialize Logged In User ---
   Future<void> init() async {
     _isBootstrapped = false;
     _setLoading(true);
     final user = await _sessionService.getUser(role: 'tech');
-    if (user != null) {
-      technicianName = user.name ?? '';
-      
-      // Set initial duty status based on technician type
-      if (user.technician?.technicianType == 'workshop') {
-        _isWorkshopDuty = true;
-        _isOnCallDuty = false;
-      } else if (user.technician?.technicianType == 'on_call') {
-        _isOnCallDuty = true;
-        _isWorkshopDuty = false;
-      } else if (user.technician?.technicianType == 'both') {
-        _isWorkshopDuty = true;
-        _isOnCallDuty = false;
-      }
+    final uid = user?.id?.toString();
+    if (uid != null && uid != _lastBootstrappedUserId) {
+      _initialDutyDefaultsApplied = false;
+      _lastBootstrappedUserId = uid;
+    } else if (user == null) {
+      _lastBootstrappedUserId = null;
     }
+    if (user != null) {
+      final n = user.name?.trim();
+      if (n != null && n.isNotEmpty) {
+        technicianName = n;
+      } else {
+        final email = user.email?.trim();
+        if (email != null && email.isNotEmpty) {
+          final local = email.split('@').first.trim();
+          technicianName = local.isNotEmpty ? local : '';
+        } else {
+          technicianName = '';
+        }
+      }
+      _applySessionTechnicianDutyFromUser(user);
+      _sessionTechnicianType = user.technician?.technicianType;
+    } else {
+      _sessionTechnicianType = null;
+    }
+    notifyListeners();
 
-    // 1) Critical APIs first (faster first paint)
-    await Future.wait([
-      fetchProfile(affectLoading: false),
-      fetchOnlineStatus(),
-      fetchTodayPerformance(affectLoading: false),
-    ]);
+    // 1) Critical APIs — online status before profile so duty flags are not overwritten by a race.
+    await fetchOnlineStatus();
+    await fetchProfile(affectLoading: false);
+    await fetchTodayPerformance(affectLoading: false);
+    if (!_initialDutyDefaultsApplied) {
+      _applyDefaultDutyForTechnicianType();
+      _initialDutyDefaultsApplied = true;
+      unawaited(_syncDutyStateToBackendAfterInitialDefault());
+    }
 
     _isBootstrapped = true;
     _setLoading(false);
@@ -677,6 +923,9 @@ class TechAppViewModel extends ChangeNotifier {
   }
 
   void clearSession() {
+    _sessionTechnicianType = null;
+    _lastBootstrappedUserId = null;
+    _initialDutyDefaultsApplied = false;
     _isWorkshopDuty = false;
     _isOnCallDuty = false;
     _isOnline = true;
@@ -692,7 +941,12 @@ class TechAppViewModel extends ChangeNotifier {
     weeklyOverview = [];
     profile = null;
     commissionHistory = [];
+    commissionHistoryBusinessTimeZone = null;
+    final now = DateTime.now();
+    _commissionHistoryFrom = DateTime(now.year, now.month, 1);
+    _commissionHistoryTo = DateTime(now.year, now.month, now.day);
     _assignedOrders = [];
+    _assignedOrdersRequestInFlight = false;
     _currentOrderDetail = null;
     _notifications = [];
     _broadcasts = [];

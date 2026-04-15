@@ -262,7 +262,8 @@ class OwnerShellState extends State<OwnerShell> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 0,
         backgroundColor: Colors.white,
-        child: Padding(
+        child: Container(
+          width: 400,
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,

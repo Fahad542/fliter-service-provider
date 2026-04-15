@@ -5,6 +5,8 @@ class CommissionHistoryResponse {
   final int total;
   final int limit;
   final int offset;
+  /// Workshop/business IANA zone for calendar semantics (same as server `displayYmd`).
+  final String? businessTimeZone;
   final List<CommissionEntry> entries;
 
   CommissionHistoryResponse({
@@ -14,6 +16,7 @@ class CommissionHistoryResponse {
     required this.total,
     required this.limit,
     required this.offset,
+    this.businessTimeZone,
     required this.entries,
   });
 
@@ -25,6 +28,8 @@ class CommissionHistoryResponse {
       total: json['total'] ?? 0,
       limit: json['limit'] ?? 50,
       offset: json['offset'] ?? 0,
+      businessTimeZone: json['businessTimeZone']?.toString() ??
+          json['business_time_zone']?.toString(),
       entries: (json['entries'] as List<dynamic>?)
               ?.map((e) => CommissionEntry.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -40,6 +45,8 @@ class CommissionEntry {
   final String status;
   final String? invoiceId;
   final String? paidAt;
+  /// Parsed from API; may be null after hot reload or if server omits it (use [displayYmd] getter).
+  final String? _displayYmd;
 
   CommissionEntry({
     required this.orderId,
@@ -48,14 +55,65 @@ class CommissionEntry {
     required this.status,
     this.invoiceId,
     this.paidAt,
-  });
+    String? displayYmd,
+  }) : _displayYmd = displayYmd;
+
+  /// Single calendar key for range + list: paid → invoice day; pending → completion day in workshop zone.
+  /// Never null (empty string if nothing could be derived).
+  String get displayYmd {
+    final raw = _displayYmd?.trim();
+    if (raw != null &&
+        raw.length >= 10 &&
+        RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(raw)) {
+      return raw.substring(0, 10);
+    }
+    final src = isPaid
+        ? (paidAt?.trim().isNotEmpty == true ? paidAt!.trim() : date.trim())
+        : date.trim();
+    return _normalizeIsoDatePrefix(src) ?? '';
+  }
 
   bool get isPaid => status.toLowerCase() == 'paid';
 
   /// Returns paidAt for paid entries, falls back to date
   String get displayDate => (isPaid && (paidAt?.isNotEmpty ?? false)) ? paidAt! : date;
 
+  static String? _normalizeIsoDatePrefix(String? s) {
+    if (s == null) return null;
+    final t = s.trim();
+    if (t.length < 10) return null;
+    if (!RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(t)) return null;
+    return t.substring(0, 10);
+  }
+
+  static String _deriveDisplayYmd(Map<String, dynamic> json) {
+    final direct = _normalizeIsoDatePrefix(
+      json['displayYmd']?.toString() ?? json['display_ymd']?.toString(),
+    );
+    if (direct != null) return direct;
+
+    final status = (json['status'] ?? '').toString().toLowerCase();
+    final paid = status == 'paid';
+    if (paid) {
+      return _normalizeIsoDatePrefix(
+            json['invoiceDate']?.toString() ??
+                json['invoice_date']?.toString() ??
+                json['paidAt']?.toString() ??
+                json['paid_at']?.toString() ??
+                json['date']?.toString(),
+          ) ??
+          '';
+    }
+    return _normalizeIsoDatePrefix(
+          json['dateYmd']?.toString() ??
+              json['date_ymd']?.toString() ??
+              json['date']?.toString(),
+        ) ??
+        '';
+  }
+
   factory CommissionEntry.fromJson(Map<String, dynamic> json) {
+    final derived = _deriveDisplayYmd(json);
     return CommissionEntry(
       orderId: 'ORD-${json['orderId']?.toString().replaceAll(RegExp(r'^ORD-'), '') ?? ''}',
       commission: (json['commission'] ?? 0.0).toDouble(),
@@ -63,6 +121,7 @@ class CommissionEntry {
       status: json['status'] as String? ?? 'pending',
       invoiceId: json['invoiceId']?.toString(),
       paidAt: json['paidAt']?.toString(),
+      displayYmd: derived.isEmpty ? null : derived,
     );
   }
 }

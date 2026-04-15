@@ -8,12 +8,83 @@ import '../Home Screen/pos_view_model.dart';
 import '../Technician Screen/technician_view_model.dart';
 import 'technician_assignment_view_model.dart';
 import '../../../utils/toast_service.dart';
+import '../../../models/pos_order_model.dart';
+import '../../../models/pos_technician_model.dart';
+
+List<JobTechnician> _jobTechniciansFromSelection(
+  Set<String> selectedIds,
+  List<PosTechnician> catalog,
+) {
+  final out = <JobTechnician>[];
+  for (final t in catalog) {
+    if (!selectedIds.contains(t.id)) continue;
+    final pct = double.tryParse(t.commissionPercent) ?? 0;
+    out.add(
+      JobTechnician(
+        id: t.id,
+        employeeId: t.id,
+        name: t.name,
+        commissionPercent: pct,
+        commissionAmount: 0,
+      ),
+    );
+  }
+  return out;
+}
+
+/// Runs under [ChangeNotifierProvider]<[TechnicianAssignmentViewModel]> so
+/// [context.read] for the assignment VM is valid (parent [State] context is above the provider).
+class _AssignmentCatalogBootstrap extends StatefulWidget {
+  final String? departmentId;
+  final List<JobTechnician> initialAssignedTechnicians;
+  final Widget child;
+
+  const _AssignmentCatalogBootstrap({
+    required this.departmentId,
+    required this.initialAssignedTechnicians,
+    required this.child,
+  });
+
+  @override
+  State<_AssignmentCatalogBootstrap> createState() =>
+      _AssignmentCatalogBootstrapState();
+}
+
+class _AssignmentCatalogBootstrapState extends State<_AssignmentCatalogBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCatalogAndSeed());
+  }
+
+  Future<void> _loadCatalogAndSeed() async {
+    if (!mounted) return;
+    final dept = widget.departmentId?.trim() ?? '';
+    final techVm = context.read<TechnicianViewModel>();
+    final assignVm = context.read<TechnicianAssignmentViewModel>();
+    if (dept.isNotEmpty) {
+      await techVm.fetchCashierTechnicians(departmentId: dept);
+    } else {
+      await techVm.fetchCashierTechnicians();
+    }
+    if (!mounted) return;
+    assignVm.applyInitialSelectionFromJob(
+      widget.initialAssignedTechnicians,
+      techVm.rawTechnicians,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
 
 class PosTechnicianAssignmentView extends StatefulWidget {
   final String jobId;
   final String? departmentName;
   final String? departmentId; // needed for walk-in order API
   final bool isWalkIn; // true = walk-in flow, call walk-in API on assign
+  /// Technicians already on this job (pre-checks rows after catalog loads).
+  final List<JobTechnician> initialAssignedTechnicians;
 
   const PosTechnicianAssignmentView({
     super.key,
@@ -21,6 +92,7 @@ class PosTechnicianAssignmentView extends StatefulWidget {
     this.departmentName,
     this.departmentId,
     this.isWalkIn = false,
+    this.initialAssignedTechnicians = const [],
   });
 
   @override
@@ -40,26 +112,26 @@ class _PosTechnicianAssignmentViewState
   /// After first save in walk-in mode, reuse this job for another broadcast tap (avoid duplicate POST).
   String? _cachedJobIdFromSave;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TechnicianViewModel>().fetchTechnicians();
-    });
-  }
+  /// True from tap through walk-in/edit save, assign API, refresh, orders fetch, until orders shell is pushed (or flow fails).
+  bool _saveFlowInProgress = false;
+
+  bool _saveFlowBusy(TechnicianViewModel vm) =>
+      vm.isAssigning || _saveFlowInProgress;
 
   void _handleMultiAssign(
     BuildContext context,
     TechnicianAssignmentViewModel assignVm,
   ) async {
-    if (assignVm.selectedTechnicianIds.isEmpty) return;
-
     final vm = context.read<TechnicianViewModel>();
     final posVm = context.read<PosViewModel>();
     final navigator = Navigator.of(context);
 
+    setState(() => _saveFlowInProgress = true);
+    var didNavigateToOrders = false;
+
     String jobIdToUse = widget.jobId;
 
+    try {
     // Walk-in / Edit-order flow: call appropriate API first
     if (widget.isWalkIn) {
       final deptId = widget.departmentId ?? '';
@@ -96,6 +168,11 @@ class _PosTechnicianAssignmentViewState
       }
     }
 
+    if (jobIdToUse.trim().isEmpty) {
+      ToastService.showError(context, 'Job not found for this assignment.');
+      return;
+    }
+
     final success = await vm.assignMultipleTechnicians(
       jobIdToUse,
       assignVm.selectedTechnicianIds.toList(),
@@ -104,8 +181,60 @@ class _PosTechnicianAssignmentViewState
     if (!mounted) return;
 
     if (success) {
-      ToastService.showSuccess(context, 'Technicians assigned successfully');
-      // Navigate back to orders view
+      final oid = (posVm.selectedOrder?.id ?? posVm.editingOrder?.id)?.trim();
+      final List<JobTechnician> techs;
+      if (assignVm.selectedTechnicianIds.isEmpty) {
+        techs = [];
+      } else {
+        var merged = List<JobTechnician>.from(vm.lastCashierAssignTechnicians);
+        if (merged.isEmpty) {
+          merged = _jobTechniciansFromSelection(
+            assignVm.selectedTechnicianIds,
+            vm.rawTechnicians,
+          );
+        }
+        techs = merged;
+      }
+      if (oid != null && oid.isNotEmpty) {
+        posVm.applyJobTechniciansFromAssign(
+          orderId: oid,
+          jobId: jobIdToUse,
+          technicians: techs,
+        );
+      }
+      final initialIds = widget.initialAssignedTechnicians
+          .map((jt) => jt.pickerEmployeeId.trim())
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final selectedIds = Set<String>.from(assignVm.selectedTechnicianIds);
+      final addedIds = selectedIds.difference(initialIds);
+      final removedIds = initialIds.difference(selectedIds);
+      final slotsBeforeRefresh = <String, int>{
+        for (final t in vm.rawTechnicians) t.id: t.slotsUsed,
+      };
+      await vm.refreshTechniciansCatalogQuiet(
+        departmentId: widget.departmentId,
+      );
+      if (!mounted) return;
+      vm.reconcileSlotsAfterAssign(
+        addedEmployeeIds: addedIds,
+        removedEmployeeIds: removedIds,
+        slotsBeforeRefresh: slotsBeforeRefresh,
+      );
+      if (!mounted) return;
+      ToastService.showSuccess(
+        context,
+        assignVm.selectedTechnicianIds.isEmpty
+            ? 'All technicians removed from this job'
+            : 'Technicians assigned successfully',
+      );
+      if (oid != null && oid.isNotEmpty) {
+        await posVm.fetchOrders(silent: true, preferredOrderId: oid);
+      } else {
+        await posVm.fetchOrders(silent: true);
+      }
+      if (!mounted) return;
+      didNavigateToOrders = true;
       navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => PosShell(initialIndex: 2)),
         (route) => false,
@@ -115,6 +244,11 @@ class _PosTechnicianAssignmentViewState
         context,
         vm.assignmentMessage ?? 'Failed to assign technicians',
       );
+    }
+    } finally {
+      if (mounted && !didNavigateToOrders) {
+        setState(() => _saveFlowInProgress = false);
+      }
     }
   }
 
@@ -175,10 +309,13 @@ class _PosTechnicianAssignmentViewState
         create: (_) =>
             TechnicianAssignmentViewModel()
               ..setDepartmentName(widget.departmentName),
-        child: Builder(
-          builder: (context) {
-            final assignVm = context.watch<TechnicianAssignmentViewModel>();
-            return Scaffold(
+        child: _AssignmentCatalogBootstrap(
+          departmentId: widget.departmentId,
+          initialAssignedTechnicians: widget.initialAssignedTechnicians,
+          child: Builder(
+            builder: (context) {
+              final assignVm = context.watch<TechnicianAssignmentViewModel>();
+              return Scaffold(
               backgroundColor: const Color(0xFFFBF9F6),
               appBar: PosScreenAppBar(
                 title: 'Technician Assignment ',
@@ -205,13 +342,17 @@ class _PosTechnicianAssignmentViewState
                   //   ),
                 ],
               ),
-              body: Consumer<TechnicianViewModel>(
-                builder: (context, vm, child) {
-                  if (vm.isLoading && vm.technicians.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+              body: Stack(
+                children: [
+                  Consumer<TechnicianViewModel>(
 
-                  if (vm.errorMessage != null && vm.technicians.isEmpty) {
+                builder: (context, vm, child) {
+                  final listLoading =
+                      vm.isLoading && !vm.hasTechnicianList;
+
+                  if (vm.errorMessage != null &&
+                      !vm.isLoading &&
+                      !vm.hasTechnicianList) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -219,7 +360,14 @@ class _PosTechnicianAssignmentViewState
                           Text('Error: ${vm.errorMessage}'),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            onPressed: () => vm.fetchTechnicians(),
+                            onPressed: () {
+                              final d = widget.departmentId?.trim() ?? '';
+                              if (d.isNotEmpty) {
+                                vm.fetchCashierTechnicians(departmentId: d);
+                              } else {
+                                vm.fetchCashierTechnicians();
+                              }
+                            },
                             child: const Text('Retry'),
                           ),
                         ],
@@ -227,29 +375,42 @@ class _PosTechnicianAssignmentViewState
                     );
                   }
 
-                  // Filter by search query and department
-                  final technicians = vm.technicians.where((tech) {
-                    // Search Filter
-                    final query = assignVm.searchQuery.toLowerCase();
-                    final matchesSearch =
-                        tech.name.toLowerCase().contains(query) ||
-                        (tech.employeeType).toLowerCase().contains(query);
+                  // Filter by search + department + online toggle. Selected techs
+                  // must stay visible so the user can always uncheck them (otherwise
+                  // they vanish under "Online only" or dept mismatch).
+                  final query = assignVm.searchQuery.toLowerCase();
+                  bool matchesSearch(PosTechnician tech) {
+                    if (query.isEmpty) return true;
+                    return tech.name.toLowerCase().contains(query) ||
+                        tech.employeeType.toLowerCase().contains(query);
+                  }
 
-                    if (!matchesSearch) return false;
-
-                    // Department Filter
-                    if (assignVm.showAll ||
-                        assignVm.departmentName == null ||
-                        assignVm.departmentName!.isEmpty) {
-                      return true;
+                  bool passesDeptAndOnline(PosTechnician tech) {
+                    final deptName = assignVm.departmentName?.trim() ?? '';
+                    if (deptName.isNotEmpty) {
+                      final inDept = tech.departments.any(
+                        (d) => d.name.toLowerCase() == deptName.toLowerCase(),
+                      );
+                      if (!inDept) return false;
                     }
+                    if (assignVm.onlineOnly && !tech.isOnline) return false;
+                    return true;
+                  }
 
-                    return tech.departments.any(
-                      (d) =>
-                          d.name.toLowerCase() ==
-                          assignVm.departmentName!.toLowerCase(),
-                    );
-                  }).toList();
+                  final selectedIds = assignVm.selectedTechnicianIds;
+                  final seen = <String>{};
+                  final technicians = <PosTechnician>[];
+                  for (final tech in vm.rawTechnicians) {
+                    if (!selectedIds.contains(tech.id)) continue;
+                    if (!matchesSearch(tech)) continue;
+                    if (seen.add(tech.id)) technicians.add(tech);
+                  }
+                  for (final tech in vm.rawTechnicians) {
+                    if (selectedIds.contains(tech.id)) continue;
+                    if (!matchesSearch(tech)) continue;
+                    if (!passesDeptAndOnline(tech)) continue;
+                    if (seen.add(tech.id)) technicians.add(tech);
+                  }
 
                   return Column(
                     children: [
@@ -294,44 +455,69 @@ class _PosTechnicianAssignmentViewState
                               ),
                             ),
                           ),
-                          if (widget.departmentName != null &&
-                              widget.departmentName!.isNotEmpty)
-                            GestureDetector(
-                              onTap: () =>
-                                  assignVm.setShowAll(!assignVm.showAll),
-
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  right: isTablet ? 24.0 : 16,
+                          GestureDetector(
+                            onTap: () =>
+                                assignVm.setOnlineOnly(!assignVm.onlineOnly),
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                right: isTablet ? 24.0 : 16,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryLight.withValues(
+                                    alpha: 0.25,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryLight.withValues(
-                                      alpha: 0.25,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    assignVm.showAll ? 'Show Dept' : 'Show All',
-                                    style: const TextStyle(
-                                      color: AppColors.secondaryLight,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                    ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  assignVm.onlineOnly
+                                      ? 'Show all'
+                                      : 'Online only',
+                                  style: const TextStyle(
+                                    color: AppColors.secondaryLight,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ),
                             ),
+                          ),
                         ],
                       ),
                       Expanded(
-                        child: technicians.isEmpty
-                            ? const Center(child: Text('No technicians found'))
-                            : GridView.builder(
+                        child: listLoading
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(
+                                      width: 36,
+                                      height: 36,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Loading technicians…',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : technicians.isEmpty
+                                ? const Center(
+                                    child: Text('No technicians found'),
+                                  )
+                                : GridView.builder(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: isTablet ? 24 : 16,
                                   vertical: 8,
@@ -351,14 +537,17 @@ class _PosTechnicianAssignmentViewState
                                   final isSelected = assignVm
                                       .selectedTechnicianIds
                                       .contains(tech.id);
+                                  // Full slots / not assignable still allow deselecting a checked tech.
+                                  final canPickNew = tech.assignable &&
+                                      tech.slotsUsed < tech.totalSlots;
+                                  final canInteract = !_saveFlowBusy(vm) &&
+                                      (canPickNew || isSelected);
 
                                   return InkWell(
-                                    onTap:
-                                        (vm.isAssigning ||
-                                            tech.slotsUsed >= tech.totalSlots ||
-                                            !tech.isOnline)
-                                        ? null
-                                        : () => assignVm.toggleSelection(tech),
+                                    onTap: canInteract
+                                        ? () =>
+                                            assignVm.toggleSelection(tech)
+                                        : null,
                                     borderRadius: BorderRadius.circular(12),
                                     child: Opacity(
                                       opacity: tech.isEligible ? 1.0 : 0.5,
@@ -538,17 +727,15 @@ class _PosTechnicianAssignmentViewState
                                                 ],
                                               ),
                                             ),
-                                            if (tech.isOnline &&
-                                                tech.slotsUsed <
-                                                    tech.totalSlots)
+                                            if (canPickNew || isSelected)
                                               Checkbox(
                                                 value: isSelected,
-                                                onChanged: vm.isAssigning
+                                                onChanged: _saveFlowBusy(vm)
                                                     ? null
-                                                    : (val) => assignVm
-                                                          .toggleSelection(
-                                                            tech,
-                                                          ),
+                                                    : (_) => assignVm
+                                                        .toggleSelection(
+                                                          tech,
+                                                        ),
                                                 activeColor:
                                                     AppColors.secondaryLight,
                                                 checkColor:
@@ -571,6 +758,20 @@ class _PosTechnicianAssignmentViewState
                   );
                 },
               ),
+              if (context.watch<TechnicianViewModel>().isLoading)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.white,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryLight,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
               bottomNavigationBar: SafeArea(
                 child: Container(
                   padding: const EdgeInsets.all(16),
@@ -587,206 +788,99 @@ class _PosTechnicianAssignmentViewState
                       ),
                     ],
                   ),
-                  child: assignVm.selectedTechnicianIds.isEmpty
-                      ? Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: (_canTapBroadcast &&
-                                        _broadcastingDuty == null)
-                                    ? () => _broadcastWorkshop(context)
-                                    : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.secondaryLight,
-                                  foregroundColor: Colors.white,
-                                  disabledBackgroundColor:
-                                      Colors.grey.shade300,
-                                  disabledForegroundColor:
-                                      Colors.grey.shade500,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                    horizontal: 10,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (_broadcastingDuty == 'workshop')
-                                      const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    else
-                                      const Icon(
-                                        Icons.campaign_outlined,
-                                        size: 18,
-                                      ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        'Broadcast to Workshop',
-                                        style: TextStyle(
-                                          fontSize: isTablet ? 15 : 13,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: (_canTapBroadcast &&
-                                        _broadcastingDuty == null)
-                                    ? () => _broadcastOnCall(context)
-                                    : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryLight,
-                                  foregroundColor: AppColors.secondaryLight,
-                                  disabledBackgroundColor:
-                                      AppColors.primaryLight.withOpacity(0.5),
-                                  disabledForegroundColor:
-                                      AppColors.secondaryLight.withOpacity(0.5),
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                    horizontal: 10,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (_broadcastingDuty == 'on_call')
-                                      SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: AppColors.secondaryLight,
-                                        ),
-                                      )
-                                    else
-                                      const Icon(
-                                        Icons.online_prediction,
-                                        size: 18,
-                                      ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        'Broadcast to On-Call',
-                                        style: TextStyle(
-                                          fontSize: isTablet ? 15 : 13,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Consumer<TechnicianViewModel>(
-                          builder: (context, vm, child) => Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Consumer<TechnicianViewModel>(
+                        builder: (context, vm, _) {
+                          final busy = _saveFlowBusy(vm);
+                          return Row(
                             children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: vm.isAssigning
-                                      ? null
-                                      : () => _handleMultiAssign(
-                                          context,
-                                          assignVm,
-                                        ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.secondaryLight,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                      horizontal: 10,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      if (vm.isAssigning)
-                                        const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      else
-                                        const Icon(
-                                          Icons.assignment_ind,
-                                          size: 18,
-                                        ),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          vm.isAssigning
-                                              ? 'Assigning...'
-                                              : 'Assign to ${assignVm.selectedTechnicianIds.length} Technician${assignVm.selectedTechnicianIds.length > 1 ? 's' : ''}',
-                                          style: TextStyle(
-                                            fontSize: isTablet ? 15 : 13,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                              if (_canTapBroadcast) ...[
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 50,
+                                    child: ElevatedButton(
+                                      onPressed: (_broadcastingDuty == null && !busy)
+                                          ? () => _broadcastOnCall(context)
+                                          : null,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primaryLight,
+                                        foregroundColor: AppColors.secondaryLight,
+                                        disabledBackgroundColor: AppColors.primaryLight.withOpacity(0.5),
+                                        disabledForegroundColor: AppColors.secondaryLight.withOpacity(0.5),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
                                         ),
                                       ),
-                                    ],
+                                      child: (_broadcastingDuty == 'on_call') ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.secondaryLight,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      ) : const Text(
+                                        'Broadcast',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              Expanded(
+                                child: SizedBox(
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    onPressed: busy
+                                        ? null
+                                        : () => _handleMultiAssign(context, assignVm),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.secondaryLight,
+                                      foregroundColor: Colors.white,
+                                      disabledBackgroundColor: Colors.grey.shade300,
+                                      disabledForegroundColor: Colors.grey.shade500,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    child: busy ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    ) : const Text(
+                                      'Save Technicians',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-                        ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
           },
         ),
+        ),
       ),
     );
-  }
-
-  Future<void> _broadcastWorkshop(BuildContext context) async {
-    if (!_canTapBroadcast || _broadcastingDuty != null) return;
-    setState(() => _broadcastingDuty = 'workshop');
-    try {
-      final jobId = await _resolveJobIdForBroadcast(context);
-      if (!mounted) return;
-      if (jobId == null || jobId.isEmpty) return;
-      await context.read<PosViewModel>().broadcastJob(
-            context,
-            jobId,
-            dutyMode: 'workshop',
-          );
-    } finally {
-      if (mounted) setState(() => _broadcastingDuty = null);
-    }
   }
 
   Future<void> _broadcastOnCall(BuildContext context) async {

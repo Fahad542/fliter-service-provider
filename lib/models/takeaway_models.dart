@@ -25,7 +25,10 @@ class TakeawayProduct {
   final String id;
   final String name;
   final String? unit;
+  /// VAT-inclusive sale price.
   final double salePrice;
+  /// VAT-exclusive sale price from backend; falls back to salePrice / 1.15.
+  final double salePriceBeforeVat;
   final double purchasePrice;
   final bool allowDecimalQty;
   final bool isActive;
@@ -33,25 +36,30 @@ class TakeawayProduct {
   final TakeawayRef department;
   final TakeawayRef? category;
 
-  const TakeawayProduct({
+  TakeawayProduct({
     required this.id,
     required this.name,
     this.unit,
     required this.salePrice,
+    double? salePriceBeforeVat,
     required this.purchasePrice,
     required this.allowDecimalQty,
     required this.isActive,
     required this.qtyOnHand,
     required this.department,
     this.category,
-  });
+  }) : salePriceBeforeVat = salePriceBeforeVat ?? ((salePrice / 1.15 * 100).roundToDouble() / 100);
 
   factory TakeawayProduct.fromJson(Map<String, dynamic> json) {
+    final exclVat = json['salePriceBeforeVat'] != null
+        ? _takeawayDouble(json['salePriceBeforeVat'])
+        : null;
     return TakeawayProduct(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       unit: json['unit']?.toString(),
       salePrice: _takeawayDouble(json['salePrice']),
+      salePriceBeforeVat: exclVat,
       purchasePrice: _takeawayDouble(json['purchasePrice']),
       allowDecimalQty: json['allowDecimalQty'] == true,
       isActive: json['isActive'] != false,
@@ -181,6 +189,8 @@ class TakeawayCheckoutLinePayload {
   final String? discountType;
   final double discountValue;
   final double? unitPrice;
+  final double? beforeDiscountPrice;
+  final double? afterDiscountPrice;
 
   const TakeawayCheckoutLinePayload({
     required this.productId,
@@ -188,14 +198,15 @@ class TakeawayCheckoutLinePayload {
     this.discountType,
     this.discountValue = 0,
     this.unitPrice,
+    this.beforeDiscountPrice,
+    this.afterDiscountPrice,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'productId': productId,
       'qty': qty,
-      if (discountType != null && discountType!.isNotEmpty)
-        'discountType': discountType,
+      'discountType': (discountType ?? '').toString(),
       if (discountValue > 0) 'discountValue': discountValue,
       if (unitPrice != null) 'unitPrice': unitPrice,
     };
@@ -212,7 +223,12 @@ class TakeawayCheckoutRequest {
   final String? promoCode;
   final String? promoCodeId;
   final double? vatPercent;
-  final String paymentMethod;
+  final double? amountBeforeDiscount;
+  final double? amountAfterDiscount;
+  final double? amountAfterPromo;
+  final double? totalAmount;
+  final String? paymentMethod;
+  final List<Map<String, dynamic>>? payments;
   final String? invoiceDate;
   final double discountAmount;
 
@@ -226,7 +242,12 @@ class TakeawayCheckoutRequest {
     this.promoCode,
     this.promoCodeId,
     this.vatPercent,
-    required this.paymentMethod,
+    this.amountBeforeDiscount,
+    this.amountAfterDiscount,
+    this.amountAfterPromo,
+    this.totalAmount,
+    this.paymentMethod,
+    this.payments,
     this.invoiceDate,
     this.discountAmount = 0,
   });
@@ -234,23 +255,68 @@ class TakeawayCheckoutRequest {
   Map<String, dynamic> toJson() {
     return {
       'customerName': customerName,
-      if (customerMobile != null && customerMobile!.isNotEmpty)
-        'customerMobile': customerMobile,
-      if (customerTaxId != null && customerTaxId!.isNotEmpty)
-        'customerTaxId': customerTaxId,
+      // Keep optional string keys present to avoid undefined.trim() on backend.
+      'customerMobile': (customerMobile ?? '').toString(),
+      'customerTaxId': (customerTaxId ?? '').toString(),
       'items': items.map((e) => e.toJson()).toList(),
-      if (totalDiscountType != null && totalDiscountType!.isNotEmpty)
-        'totalDiscountType': totalDiscountType,
+      'totalDiscountType': (totalDiscountType ?? '').toString(),
       if (totalDiscountValue > 0) 'totalDiscountValue': totalDiscountValue,
-      if (promoCode != null && promoCode!.isNotEmpty) 'promoCode': promoCode,
-      if (promoCodeId != null && promoCodeId!.isNotEmpty)
-        'promoCodeId': promoCodeId,
+      'promoCode': (promoCode ?? '').toString(),
+      'promoCodeId': (promoCodeId ?? '').toString(),
+      if (amountBeforeDiscount != null)
+        'amountBeforeDiscount': amountBeforeDiscount,
+      if (amountAfterDiscount != null) 'amountAfterDiscount': amountAfterDiscount,
+      if (amountAfterPromo != null) 'amountAfterPromo': amountAfterPromo,
       if (vatPercent != null) 'VAT': vatPercent,
-      'paymentMethod': paymentMethod,
+      if (totalAmount != null) ...{
+        // Keep both key variants for backend compatibility.
+        'TotalAmount': totalAmount,
+        'totalAmount': totalAmount,
+      },
+      if (paymentMethod != null) 'paymentMethod': paymentMethod,
+      if (payments != null) 'payments': payments,
       if (invoiceDate != null && invoiceDate!.isNotEmpty)
         'invoiceDate': invoiceDate,
       if (discountAmount > 0) 'discountAmount': discountAmount,
     };
+  }
+}
+
+class TakeawayCheckoutPricing {
+  final double amountBeforeDiscount;
+  final double amountAfterDiscount;
+  final double amountAfterPromo;
+  final double promoDiscountAmount;
+  final double vatAmount;
+  final double finalAmount;
+  final double vatPercent;
+  final String? totalDiscountType;
+  final double totalDiscountValue;
+
+  const TakeawayCheckoutPricing({
+    this.amountBeforeDiscount = 0,
+    this.amountAfterDiscount = 0,
+    this.amountAfterPromo = 0,
+    this.promoDiscountAmount = 0,
+    this.vatAmount = 0,
+    this.finalAmount = 0,
+    this.vatPercent = 0,
+    this.totalDiscountType,
+    this.totalDiscountValue = 0,
+  });
+
+  factory TakeawayCheckoutPricing.fromJson(Map<String, dynamic> json) {
+    return TakeawayCheckoutPricing(
+      amountBeforeDiscount: _takeawayDouble(json['amountBeforeDiscount']),
+      amountAfterDiscount: _takeawayDouble(json['amountAfterDiscount']),
+      amountAfterPromo: _takeawayDouble(json['amountAfterPromo']),
+      promoDiscountAmount: _takeawayDouble(json['promoDiscountAmount']),
+      vatAmount: _takeawayDouble(json['vatAmount']),
+      finalAmount: _takeawayDouble(json['finalAmount']),
+      vatPercent: _takeawayDouble(json['vatPercent']),
+      totalDiscountType: json['totalDiscountType']?.toString(),
+      totalDiscountValue: _takeawayDouble(json['totalDiscountValue']),
+    );
   }
 }
 
@@ -259,12 +325,14 @@ class TakeawayCheckoutResponse {
   final String message;
   final String? orderId;
   final Invoice? invoice;
+  final TakeawayCheckoutPricing? pricing;
 
   const TakeawayCheckoutResponse({
     required this.success,
     required this.message,
     this.orderId,
     this.invoice,
+    this.pricing,
   });
 
   factory TakeawayCheckoutResponse.fromJson(Map<String, dynamic> json) {
@@ -274,6 +342,11 @@ class TakeawayCheckoutResponse {
       orderId: json['orderId']?.toString(),
       invoice: json['invoice'] != null
           ? Invoice.fromJson(Map<String, dynamic>.from(json['invoice'] as Map))
+          : null,
+      pricing: json['pricing'] is Map
+          ? TakeawayCheckoutPricing.fromJson(
+              Map<String, dynamic>.from(json['pricing'] as Map),
+            )
           : null,
     );
   }

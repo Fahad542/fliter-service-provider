@@ -856,34 +856,36 @@ class SearchHistoryItem extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onContinue ?? () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryLight,
-                    foregroundColor: AppColors.secondaryLight,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              if (onContinue != null) ...[
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onContinue,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryLight,
+                      foregroundColor: AppColors.secondaryLight,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'Continue Order',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                    child: const Text(
+                      'Continue Order',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
+              ],
               Expanded(
                 child: ElevatedButton(
                   onPressed: onViewHistory ?? () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondaryLight,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primaryLight,
+                    foregroundColor: AppColors.secondaryLight,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
@@ -1204,7 +1206,6 @@ class _OrderItemCardState extends State<OrderItemCard> {
 
   @override
   Widget build(BuildContext context) {
-    final displayStatus = widget.order.displayJobStatus.toLowerCase();
     final isInvoiced = widget.order.status.toLowerCase() == 'invoiced';
 
     return Container(
@@ -1618,20 +1619,22 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (_) =>
-                                                PosTechnicianAssignmentView(
-                                                  jobId:
-                                                      widget.order.jobs.isNotEmpty
-                                                      ? _getHighestJobById()!.id
-                                                      : widget.order.id,
-                                                  departmentName: widget
-                                                      .order
-                                                      .jobs
-                                                      .isNotEmpty
-                                                      ? _getHighestJobById()!.department
-                                                      : widget.order.latestJob
-                                                      ?.department,
-                                                ),
+                                            builder: (_) {
+                                              final j = widget
+                                                      .order.jobs.isNotEmpty
+                                                  ? _getHighestJobById()
+                                                  : null;
+                                              return PosTechnicianAssignmentView(
+                                                jobId: j?.id ?? widget.order.id,
+                                                departmentName: j?.department ??
+                                                    widget.order.latestJob
+                                                        ?.department,
+                                                departmentId: j?.departmentId,
+                                                initialAssignedTechnicians:
+                                                    j?.activeTechnicians ??
+                                                        const [],
+                                              );
+                                            },
                                           ),
                                         );
                                       },
@@ -2427,7 +2430,7 @@ void _showOrderDetailsSheet(
                                           }),
 
                                         // Render Technicians if any
-                                        if (job.technicians.isNotEmpty) ...[
+                                        if (job.activeTechnicians.isNotEmpty) ...[
                                           const Padding(
                                             padding: EdgeInsets.symmetric(
                                               vertical: 12,
@@ -2458,7 +2461,7 @@ void _showOrderDetailsSheet(
                                             ],
                                           ),
                                           const SizedBox(height: 12),
-                                          ...job.technicians.map(
+                                          ...job.activeTechnicians.map(
                                             (tech) => Padding(
                                               padding: const EdgeInsets.only(
                                                 bottom: 8,
@@ -2637,6 +2640,9 @@ void _showCompletionBottomSheet(
     }
   }
 
+  final String jobIdForComplete =
+      highestJob != null ? highestJob.id : order.id;
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -2644,7 +2650,6 @@ void _showCompletionBottomSheet(
     builder: (ctx) {
       return StatefulBuilder(
         builder: (ctx, setSheetState) {
-          bool isLoading = false;
           return Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
@@ -2936,76 +2941,73 @@ void _showCompletionBottomSheet(
                         Expanded(
                           child: SizedBox(
                             height: isTablet ? 56 : 48,
-                            child: ElevatedButton(
-                              onPressed: isLoading
-                                  ? null
-                                  : () async {
-                                      setSheetState(() => isLoading = true);
-                                      try {
-                                        final String jobIdToComplete =
-                                            order.jobs.isNotEmpty
-                                            ? highestJob!.id
-                                            : order.id;
-                                        final response = await posVm
-                                            .completeCashierJob(
-                                              jobIdToComplete,
+                            child: Consumer<pvm.PosViewModel>(
+                              builder: (context, vm, _) {
+                                final busy =
+                                    vm.isCashierCompletingJob(jobIdForComplete);
+                                return ElevatedButton(
+                                  onPressed: busy
+                                      ? null
+                                      : () async {
+                                          try {
+                                            final response =
+                                                await vm.completeCashierJob(
+                                              jobIdForComplete,
                                               sourceOrder: order,
                                             );
-                                        if (response != null &&
-                                            response.success) {
-                                          posVm.fetchOrders();
-                                          if (ctx.mounted) {
-                                            Navigator.of(ctx).pop();
-                                            ToastService.showSuccess(
-                                              ctx,
-                                              'Order marked as completed successfully',
-                                            );
+                                            if (response != null &&
+                                                response.success) {
+                                              if (ctx.mounted) {
+                                                Navigator.of(ctx).pop();
+                                                ToastService.showSuccess(
+                                                  ctx,
+                                                  'Order marked as completed successfully',
+                                                );
+                                              }
+                                            } else {
+                                              if (ctx.mounted) {
+                                                ToastService.showError(
+                                                  ctx,
+                                                  response?.message ??
+                                                      'Failed to complete job',
+                                                );
+                                              }
+                                            }
+                                          } catch (e) {
+                                            if (ctx.mounted) {
+                                              ToastService.showError(
+                                                ctx,
+                                                e.toString(),
+                                              );
+                                            }
                                           }
-                                        } else {
-                                          if (ctx.mounted)
-                                            ToastService.showError(
-                                              ctx,
-                                              response?.message ??
-                                                  'Failed to complete job',
-                                            );
-                                        }
-                                      } catch (e) {
-                                        if (ctx.mounted)
-                                          ToastService.showError(
-                                            ctx,
-                                            e.toString(),
-                                          );
-                                      } finally {
-                                        if (ctx.mounted)
-                                          setSheetState(
-                                            () => isLoading = false,
-                                          );
-                                      }
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFC145),
-                                foregroundColor: const Color(0xFF1E2124),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        color: Color(0xFF1E2124),
-                                      ),
-                                    )
-                                  : Text(
-                                      'Confirm Completion',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: isTablet ? 16 : 14,
-                                      ),
+                                        },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFC145),
+                                    foregroundColor: const Color(0xFF1E2124),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
+                                  ),
+                                  child: busy
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            color: Color(0xFF1E2124),
+                                          ),
+                                        )
+                                      : Text(
+                                          'Confirm Completion',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: isTablet ? 16 : 14,
+                                          ),
+                                        ),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -3023,6 +3025,38 @@ void _showCompletionBottomSheet(
 }
 
 Widget _buildStatusPill(PosOrder order) {
+  if (order.jobs.isNotEmpty) {
+    final label = order.jobsAggregateBadgeLabel;
+    final Color textColor;
+    final Color bgColor;
+    if (label == 'DRAFT') {
+      textColor = const Color(0xFF64748B);
+      bgColor = const Color(0xFFF1F5F9);
+    } else if (label == 'COMPLETED') {
+      textColor = const Color(0xFF15803D);
+      bgColor = const Color(0xFFDCFCE7);
+    } else {
+      textColor = Colors.white;
+      bgColor = AppColors.secondaryLight;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 8,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   String statusStr = order.displayJobStatus.replaceAll('_', ' ').toUpperCase();
 
   String status = statusStr.toLowerCase();
@@ -3616,48 +3650,44 @@ class InvoiceDialog extends StatelessWidget {
     );
   }
 
+  static double _r2(double v) => (v * 100).roundToDouble() / 100;
+
   Widget _buildItemsTaxTable(NumberFormat currencyFormat) {
     final rows = <Map<String, String>>[];
-    final departments = invoice.departments;
-    if (departments.isNotEmpty) {
-      for (final dept in departments) {
+
+    void addItem(InvoiceItem item) {
+      final unitExclVat = _r2(item.unitPrice / 1.15);
+      final grossBeforeVat = _r2(unitExclVat * item.qty);
+      double discount = 0;
+      if (item.discountType == 'percent' || item.discountType == 'percentage') {
+        discount = _r2(grossBeforeVat * ((item.discountValue ?? 0) / 100));
+      } else if ((item.discountValue ?? 0) > 0) {
+        discount = item.discountValue ?? 0;
+      }
+      final totalBeforeVat = _r2(grossBeforeVat - discount);
+      final vat = _r2(totalBeforeVat * 0.15);
+      final totalWithVat = _r2(totalBeforeVat + vat);
+      rows.add({
+        'name': item.productName,
+        'unit': currencyFormat.format(unitExclVat),
+        'qty': item.qty % 1 == 0 ? item.qty.toInt().toString() : item.qty.toStringAsFixed(2),
+        'gross': currencyFormat.format(grossBeforeVat),
+        'discount': currencyFormat.format(discount),
+        'beforeVat': currencyFormat.format(totalBeforeVat),
+        'vat': currencyFormat.format(vat),
+        'withVat': currencyFormat.format(totalWithVat),
+      });
+    }
+
+    if (invoice.departments.isNotEmpty) {
+      for (final dept in invoice.departments) {
         for (final item in dept.items) {
-          final before = item.beforeDiscountPrice > 0
-              ? item.beforeDiscountPrice
-              : item.unitPrice * item.qty;
-          final discount = (before - item.lineTotal) > 0 ? (before - item.lineTotal) : 0;
-          final beforeTax = item.lineTotal;
-          final vat = beforeTax * 0.15;
-          final withVat = beforeTax + vat;
-          rows.add({
-            'name': item.productName,
-            'unit': currencyFormat.format(item.unitPrice),
-            'qty': item.qty % 1 == 0 ? item.qty.toInt().toString() : item.qty.toStringAsFixed(2),
-            'discount': currencyFormat.format(discount),
-            'beforeTax': currencyFormat.format(beforeTax),
-            'vat': currencyFormat.format(vat),
-            'withVat': currencyFormat.format(withVat),
-          });
+          addItem(item);
         }
       }
     } else {
       for (final item in invoice.items) {
-        final before = item.beforeDiscountPrice > 0
-            ? item.beforeDiscountPrice
-            : item.unitPrice * item.qty;
-        final discount = (before - item.lineTotal) > 0 ? (before - item.lineTotal) : 0;
-        final beforeTax = item.lineTotal;
-        final vat = beforeTax * 0.15;
-        final withVat = beforeTax + vat;
-        rows.add({
-          'name': item.productName,
-          'unit': currencyFormat.format(item.unitPrice),
-          'qty': item.qty % 1 == 0 ? item.qty.toInt().toString() : item.qty.toStringAsFixed(2),
-          'discount': currencyFormat.format(discount),
-          'beforeTax': currencyFormat.format(beforeTax),
-          'vat': currencyFormat.format(vat),
-          'withVat': currencyFormat.format(withVat),
-        });
+        addItem(item);
       }
     }
 
@@ -3665,15 +3695,16 @@ class InvoiceDialog extends StatelessWidget {
       return Expanded(
         flex: flex,
         child: Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           decoration: BoxDecoration(
             color: bg,
-            border: Border.all(color: const Color(0xFF1E2124), width: 0.6),
+            border: Border.all(color: const Color(0xFF1E2124), width: 0.5),
           ),
+          alignment: Alignment.centerLeft,
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 9,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -3683,28 +3714,36 @@ class InvoiceDialog extends StatelessWidget {
 
     return Column(
       children: [
-        Row(
-          children: [
-            cell('Goods/Services', flex: 4, bold: true, bg: AppColors.primaryLight),
-            cell('Unit Price', flex: 2, bold: true, bg: AppColors.primaryLight),
-            cell('Qty', flex: 1, bold: true, bg: AppColors.primaryLight),
-            cell('Discount', flex: 2, bold: true, bg: AppColors.primaryLight),
-            cell('Total Before Tax', flex: 3, bold: true, bg: AppColors.primaryLight),
-            cell('VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
-            cell('Total With VAT', flex: 3, bold: true, bg: AppColors.primaryLight),
-          ],
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              cell('Goods/Services', flex: 4, bold: true, bg: AppColors.primaryLight),
+              cell('Unit Price (Excl. VAT)', flex: 2, bold: true, bg: AppColors.primaryLight),
+              cell('Qty', flex: 1, bold: true, bg: AppColors.primaryLight),
+              cell('Gross Amt Before VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
+              cell('Discount', flex: 2, bold: true, bg: AppColors.primaryLight),
+              cell('Total Before VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
+              cell('VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
+              cell('Total With VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
+            ],
+          ),
         ),
         ...rows.map(
-          (r) => Row(
-            children: [
-              cell(r['name']!, flex: 4),
-              cell(r['unit']!, flex: 2),
-              cell(r['qty']!, flex: 1),
-              cell(r['discount']!, flex: 2),
-              cell(r['beforeTax']!, flex: 3),
-              cell(r['vat']!, flex: 2),
-              cell(r['withVat']!, flex: 3),
-            ],
+          (r) => IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                cell(r['name']!, flex: 4),
+                cell(r['unit']!, flex: 2),
+                cell(r['qty']!, flex: 1),
+                cell(r['gross']!, flex: 2),
+                cell(r['discount']!, flex: 2),
+                cell(r['beforeVat']!, flex: 2),
+                cell(r['vat']!, flex: 2),
+                cell(r['withVat']!, flex: 2),
+              ],
+            ),
           ),
         ),
       ],
@@ -3760,7 +3799,54 @@ class InvoiceDialog extends StatelessWidget {
       );
     }
 
-    final taxable = invoice.subtotal - invoice.discountAmount;
+    // Compute per-item totals from the items table (VAT-exclusive).
+    double grossAmountExclVat = 0;
+    double itemDiscountsTotal = 0;
+    void accumulate(InvoiceItem item) {
+      final unitExcl = _r2(item.unitPrice / 1.15);
+      final gross = _r2(unitExcl * item.qty);
+      double disc = 0;
+      if (item.discountType == 'percent' || item.discountType == 'percentage') {
+        disc = _r2(gross * ((item.discountValue ?? 0) / 100));
+      } else if ((item.discountValue ?? 0) > 0) {
+        disc = item.discountValue ?? 0;
+      }
+      grossAmountExclVat += gross;
+      itemDiscountsTotal += disc;
+    }
+    if (invoice.departments.isNotEmpty) {
+      for (final dept in invoice.departments) {
+        for (final item in dept.items) {
+          accumulate(item);
+        }
+      }
+    } else {
+      for (final item in invoice.items) {
+        accumulate(item);
+      }
+    }
+
+    // Job-level discounts from departments.
+    double invoiceDiscount = 0;
+    double promoDiscount = 0;
+    if (invoice.departments.isNotEmpty) {
+      for (final dept in invoice.departments) {
+        final afterLine = dept.amountAfterDiscount > 0
+            ? dept.amountAfterDiscount
+            : (grossAmountExclVat - itemDiscountsTotal);
+        if (dept.totalDiscountType == 'percent' || dept.totalDiscountType == 'percentage') {
+          invoiceDiscount += _r2(afterLine * (dept.totalDiscountValue / 100));
+        } else {
+          invoiceDiscount += dept.totalDiscountValue;
+        }
+        promoDiscount += dept.promoDiscountAmount;
+      }
+    }
+
+    final totalTaxableAmount = _r2(grossAmountExclVat - itemDiscountsTotal - invoiceDiscount - promoDiscount);
+    final vatAmount = _r2(totalTaxableAmount * 0.15);
+    final totalInvoiceAmount = _r2(totalTaxableAmount + vatAmount);
+
     return Column(
       children: [
         Container(
@@ -3772,11 +3858,15 @@ class InvoiceDialog extends StatelessWidget {
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
           ),
         ),
-        row('Total (Excluding VAT)', currencyFormat.format(invoice.subtotal)),
-        row('Discount', currencyFormat.format(invoice.discountAmount)),
-        row('Total Taxable Amount (Excluding VAT)', currencyFormat.format(taxable)),
-        row('Total VAT', currencyFormat.format(invoice.vatAmount)),
-        row('Total Amount Due', currencyFormat.format(invoice.totalAmount), total: true),
+        row('Gross Amount (Excluding VAT)', currencyFormat.format(grossAmountExclVat)),
+        row('Item Discounts', currencyFormat.format(itemDiscountsTotal)),
+        if (invoiceDiscount > 0)
+          row('Invoice Discount', currencyFormat.format(invoiceDiscount)),
+        if (promoDiscount > 0)
+          row('Promo Discount', currencyFormat.format(promoDiscount)),
+        row('Total Taxable Amount', currencyFormat.format(totalTaxableAmount)),
+        row('VAT 15%', currencyFormat.format(vatAmount)),
+        row('Total Invoice Amount', currencyFormat.format(totalInvoiceAmount), total: true),
       ],
     );
   }

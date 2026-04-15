@@ -9,7 +9,9 @@ import '../../models/customer_search_model.dart';
 import '../../models/pos_product_model.dart';
 import '../../models/create_invoice_model.dart';
 import '../../models/promo_code_model.dart';
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/expense_category_model.dart';
 import '../../models/cashier_expense_models.dart';
@@ -27,18 +29,159 @@ import '../../models/takeaway_models.dart';
 class PosRepository {
   final BaseApiService _apiService = BaseApiService();
 
+  String _safeEncode(Object? data) {
+    try {
+      return const JsonEncoder.withIndent('  ').convert(data);
+    } catch (_) {
+      return data.toString();
+    }
+  }
+
+  void _logWalkInRequest(String endpoint, Object? body) {
+    debugPrint('[WALKIN][REQUEST] $endpoint');
+    if (body != null) {
+      debugPrint(_safeEncode(body));
+    }
+  }
+
+  void _logWalkInResponse(String endpoint, Object? response) {
+    debugPrint('[WALKIN][RESPONSE] $endpoint');
+    debugPrint(_safeEncode(response));
+  }
+
+  void _logWalkInError(String endpoint, Object error) {
+    debugPrint('[WALKIN][ERROR] $endpoint');
+    debugPrint(error.toString());
+  }
+
   Future<WalkInCustomerResponse> createWalkInOrder(WalkInCustomerRequest request, String token) async {
+    const endpoint = ApiConstants.walkInCustomerEndpoint;
+    final body = request.toJson();
+    _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.post(
-        ApiConstants.walkInCustomerEndpoint,
-        request.toJson(),
+        endpoint,
+        body,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return WalkInCustomerResponse.fromJson(response);
     } catch (e) {
+      _logWalkInError(endpoint, e);
+      rethrow;
+    }
+  }
+
+  /// POST /cashier/walk-in-order with an explicit JSON body (e.g. shell create: vehicle + departmentIds only).
+  Future<WalkInCustomerResponse> postWalkInOrder(
+    Map<String, dynamic> body,
+    String token,
+  ) async {
+    const endpoint = ApiConstants.walkInCustomerEndpoint;
+    _logWalkInRequest(endpoint, body);
+    try {
+      final response = await _apiService.post(
+        endpoint,
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      _logWalkInResponse(endpoint, response);
+      return WalkInCustomerResponse.fromJson(response);
+    } catch (e) {
+      _logWalkInError(endpoint, e);
+      rethrow;
+    }
+  }
+
+  /// POST /cashier/order/:orderId/jobs — append departments as new pending jobs.
+  Future<Map<String, dynamic>> addJobsToCashierOrder(
+    String orderId,
+    List<String> departmentIds,
+    String token,
+  ) async {
+    final endpoint = ApiConstants.cashierOrderJobsEndpoint(orderId);
+    final body = {'departmentIds': departmentIds};
+    _logWalkInRequest(endpoint, body);
+    try {
+      final response = await _apiService.post(
+        endpoint,
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      _logWalkInResponse(endpoint, response);
+      return response;
+    } catch (e) {
+      _logWalkInError(endpoint, e);
+      rethrow;
+    }
+  }
+
+  /// GET /cashier/technicians?departmentId=…
+  Future<PosTechnicianResponse> getCashierTechnicians(
+    String token, {
+    String? departmentId,
+  }) async {
+    final endpoint = ApiConstants.cashierTechniciansEndpoint;
+    _logWalkInRequest(endpoint, {'departmentId': departmentId});
+    try {
+      final Map<String, String> qp = {};
+      if (departmentId != null && departmentId.trim().isNotEmpty) {
+        qp['departmentId'] = departmentId.trim();
+      }
+      final dynamic response = qp.isEmpty
+          ? await _apiService.get(
+              ApiConstants.cashierTechniciansEndpoint,
+              headers: {'Authorization': 'Bearer $token'},
+            )
+          : await _apiService.getWithQueryParams(
+              ApiConstants.cashierTechniciansEndpoint,
+              qp,
+              token,
+            );
+      if (kDebugMode) {
+        final m = response as Map<String, dynamic>;
+        final list = m['technicians'];
+        final n = list is List ? list.length : 0;
+        debugPrint('[POS] GET $endpoint → $n technicians');
+      }
+      return PosTechnicianResponse.fromJson(response as Map<String, dynamic>);
+    } catch (e) {
+      _logWalkInError(endpoint, e);
+      rethrow;
+    }
+  }
+
+  /// PATCH /cashier/job/:jobId/cancel
+  Future<Map<String, dynamic>> cancelCashierJob(
+    String jobId,
+    String reason,
+    String token,
+  ) async {
+    final endpoint = ApiConstants.cashierJobCancelEndpoint(jobId);
+    final body = {'reason': reason};
+    _logWalkInRequest(endpoint, body);
+    try {
+      final response = await _apiService.patch(
+        endpoint,
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      _logWalkInResponse(endpoint, response);
+      return response;
+    } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
@@ -59,17 +202,22 @@ class PosRepository {
 
   Future<AssignTechnicianResponse> assignTechnicians(
       String jobId, List<String> employeeIds, String token) async {
+    final endpoint = ApiConstants.assignTechnicianEndpoint(jobId);
+    final body = {'employeeIds': employeeIds};
+    _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.post(
-        ApiConstants.assignTechnicianEndpoint(jobId),
-        {'employeeIds': employeeIds},
+        endpoint,
+        body,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return AssignTechnicianResponse.fromJson(response);
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
@@ -110,17 +258,22 @@ class PosRepository {
   }
 
   Future<CashierCompleteJobResponse> completeCashierJob(String jobId, String token, {Map<String, dynamic>? body}) async {
+    final endpoint = ApiConstants.cashierCompleteJobEndpoint(jobId);
+    final reqBody = body ?? {};
+    _logWalkInRequest(endpoint, reqBody);
     try {
       final response = await _apiService.post(
-        ApiConstants.cashierCompleteJobEndpoint(jobId),
-        body ?? {},
+        endpoint,
+        reqBody,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return CashierCompleteJobResponse.fromJson(response);
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
@@ -130,17 +283,21 @@ class PosRepository {
     Map<String, dynamic> body,
     String token,
   ) async {
+    final endpoint = ApiConstants.cashierJobPricingEndpoint(jobId);
+    _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.post(
-        ApiConstants.cashierJobPricingEndpoint(jobId),
+        endpoint,
         body,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return response;
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
@@ -170,6 +327,8 @@ class PosRepository {
     int? limit,
     int? offset,
   }) async {
+    final endpoint = ApiConstants.cashierOrdersEndpoint;
+    _logWalkInRequest(endpoint, {'status': status, 'limit': limit, 'offset': offset});
     try {
       final Map<String, String> qp = {};
       if (status != null && status.trim().isNotEmpty) {
@@ -188,24 +347,36 @@ class PosRepository {
               qp,
               token,
             );
+      // Do not _logWalkInResponse here: payload is large and JsonEncoder blocks the UI isolate.
+      if (kDebugMode) {
+        final m = response as Map<String, dynamic>;
+        final raw = m['orders'];
+        final n = raw is List ? raw.length : 0;
+        debugPrint('[POS] GET $endpoint → $n orders');
+      }
       return CashierOrdersResponse.fromJson(response as Map<String, dynamic>);
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
 
   /// GET /cashier/order/:orderId — jobs, pendingDepartments, corporate fields.
   Future<Map<String, dynamic>> getCashierOrderDetail(String orderId, String token) async {
+    final endpoint = ApiConstants.cashierOrderDetailEndpoint(orderId);
+    _logWalkInRequest(endpoint, null);
     try {
       final response = await _apiService.get(
-        ApiConstants.cashierOrderDetailEndpoint(orderId),
+        endpoint,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return response as Map<String, dynamic>;
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
@@ -266,17 +437,21 @@ class PosRepository {
   }
 
   Future<Map<String, dynamic>> editOrder(String orderId, String jobId, Map<String, dynamic> body, String token) async {
+    final endpoint = ApiConstants.editOrderEndpoint(orderId, jobId);
+    _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.patch(
-        ApiConstants.editOrderEndpoint(orderId, jobId),
+        endpoint,
         body,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return response as Map<String, dynamic>;
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
@@ -287,33 +462,42 @@ class PosRepository {
     Map<String, dynamic> body,
     String token,
   ) async {
+    final endpoint = ApiConstants.cashierOrderBillingEndpoint(orderId);
+    _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.patch(
-        ApiConstants.cashierOrderBillingEndpoint(orderId),
+        endpoint,
         body,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return response as Map<String, dynamic>;
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
 
   Future<Map<String, dynamic>> cancelOrder(String orderId, String reason, String token) async {
+    final endpoint = ApiConstants.cancelOrderEndpoint(orderId);
+    final body = {'reason': reason};
+    _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.post(
-        ApiConstants.cancelOrderEndpoint(orderId),
-        {'reason': reason},
+        endpoint,
+        body,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return response as Map<String, dynamic>;
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }
@@ -690,6 +874,23 @@ class PosRepository {
         token,
       );
       return StoreClosingApiResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Raw JSON variant so callers can access fields the typed model doesn't parse.
+  Future<Map<String, dynamic>> getStoreClosingRaw(String token, String date, String workshopId) async {
+    try {
+      final response = await _apiService.getWithQueryParams(
+        ApiConstants.storeClosingEndpoint,
+        {
+          'date': date,
+          if (workshopId.isNotEmpty) 'workshopId': workshopId,
+        },
+        token,
+      );
+      return response;
     } catch (e) {
       rethrow;
     }

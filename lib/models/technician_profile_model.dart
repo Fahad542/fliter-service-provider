@@ -45,7 +45,9 @@ class TechnicianProfile {
 
   TechnicianProfile.fromJson(Map<String, dynamic> json) {
     id = json['id'].toString();
-    name = json['name'];
+    name = json['name']?.toString() ??
+        json['fullName']?.toString() ??
+        json['technicianName']?.toString();
     email = json['email'];
     mobile = json['mobile'];
     employeeId = json['employeeId'].toString();

@@ -15,7 +15,6 @@ import '../../../utils/pos_tablet_layout.dart';
 import '../Product Grid/pos_product_grid_view.dart';
 import '../Sales Return/sales_return_view_model.dart';
 import '../Sales Return/pos_sales_return_view.dart';
-import '../Department/pos_department_view.dart';
 import 'pos_view_model.dart';
 import 'pos_customer_history_view.dart';
 import '../Corporate Bookings/pos_corporate_bookings_view.dart';
@@ -215,24 +214,6 @@ class PosHomeView extends StatelessWidget {
                         orderNumber: latestOrder?.id,
                         isCorporate:
                             customer.customerType.toLowerCase() == 'corporate',
-                        onContinue: () {
-                          context.read<PosViewModel>().setCustomerData(
-                            name: customer.name,
-                            vat: customer.taxId ?? '',
-                            mobile: customer.mobile,
-                            vehicleNumber: vehicle?.plateNo ?? '',
-                            make: vehicle?.make ?? '',
-                            model: vehicle?.model ?? '',
-                            odometer: latestOrder?.odometerReading ?? 0,
-                          );
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const PosDepartmentView(),
-                            ),
-                          );
-                        },
                         onViewHistory: () {
                           Navigator.push(
                             context,

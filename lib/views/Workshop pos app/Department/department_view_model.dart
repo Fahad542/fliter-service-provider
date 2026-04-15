@@ -28,9 +28,27 @@ class DepartmentViewModel extends ChangeNotifier {
 
   int? _selectedIndex;
   int? get selectedIndex => _selectedIndex;
+  final Set<int> _selectedIndices = {};
+  Set<int> get selectedIndices => Set.unmodifiable(_selectedIndices);
+  List<Department> get selectedDepartments => _selectedIndices
+      .where((i) => i >= 0 && i < _departments.length)
+      .map((i) => _departments[i])
+      .toList();
 
   void setSelectedIndex(int? index) {
     _selectedIndex = index;
+    _selectedIndices.clear();
+    if (index != null) _selectedIndices.add(index);
+    notifyListeners();
+  }
+
+  void toggleSelectedIndex(int index) {
+    if (_selectedIndices.contains(index)) {
+      _selectedIndices.remove(index);
+    } else {
+      _selectedIndices.add(index);
+    }
+    _selectedIndex = _selectedIndices.isEmpty ? null : _selectedIndices.first;
     notifyListeners();
   }
 
@@ -46,6 +64,7 @@ class DepartmentViewModel extends ChangeNotifier {
 
   Future<void> fetchDepartments() async {
     _selectedIndex = null; // Reset selection every time screen loads fresh
+    _selectedIndices.clear();
     _setLoading(true);
     _setErrorMessage(null);
 

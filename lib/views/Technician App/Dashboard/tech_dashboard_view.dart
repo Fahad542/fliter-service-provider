@@ -14,6 +14,28 @@ class TechDashboardView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TechAppViewModel>(
       builder: (context, vm, child) {
+        if (!vm.isTechDashboardReady) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFF8F9FD),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: AppColors.primaryLight),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Loading your dashboard…',
+                    style: TextStyle(
+                      color: Colors.black.withOpacity(0.45),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         return Scaffold(
               backgroundColor: const Color(0xFFF8F9FD),
               appBar: AppBar(
@@ -50,14 +72,18 @@ class TechDashboardView extends StatelessWidget {
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
                 ),
                 title: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Welcome Back,',
                       style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      vm.technicianName,
+                      vm.dashboardGreetingName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: AppColors.secondaryLight, fontSize: 20, fontWeight: FontWeight.w900),
                     ),
                   ],
@@ -91,9 +117,7 @@ class TechDashboardView extends StatelessWidget {
                 ],
               ),
               body: SafeArea(
-                child: vm.isLoading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
-                    : RefreshIndicator(
+                child: RefreshIndicator(
                         color: AppColors.secondaryLight,
                         backgroundColor: Colors.white,
                         onRefresh: () async {

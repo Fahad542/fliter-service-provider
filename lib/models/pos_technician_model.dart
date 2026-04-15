@@ -33,6 +33,8 @@ class PosTechnician {
   final PosTechnicianStatus status;
   final int slotsUsed;
   final int totalSlots;
+  /// Cashier API: only [true] when technician may be assigned (typically online).
+  final bool assignable;
 
   // Compatibility getters
   String get serviceCategory => technicianType;
@@ -74,9 +76,113 @@ class PosTechnician {
     this.status = const PosTechnicianStatus(status: 'offline', lastSeenAt: ''),
     this.slotsUsed = 0,
     this.totalSlots = 3,
+    this.assignable = true,
   });
 
+  PosTechnician copyWith({
+    int? slotsUsed,
+    int? totalSlots,
+  }) {
+    return PosTechnician(
+      id: id,
+      name: name,
+      mobile: mobile,
+      employeeType: employeeType,
+      technicianType: technicianType,
+      commissionPercent: commissionPercent,
+      basicSalary: basicSalary,
+      workshopId: workshopId,
+      branchId: branchId,
+      userId: userId,
+      isActive: isActive,
+      isEligible: isEligible,
+      departments: departments,
+      status: status,
+      slotsUsed: slotsUsed ?? this.slotsUsed,
+      totalSlots: totalSlots ?? this.totalSlots,
+      assignable: assignable,
+    );
+  }
+
+  static int _firstInt(Map<String, dynamic> map, List<String> keys) {
+    for (final key in keys) {
+      final v = map[key];
+      if (v == null) continue;
+      final n = int.tryParse(v.toString());
+      if (n != null) return n;
+    }
+    return -1;
+  }
+
+  static int _parseSlotsUsed(Map<String, dynamic> json) {
+    // Cashier API exposes root slotsUsed (same as slots.active); prefer it.
+    final rootUsed = json['slotsUsed'];
+    if (rootUsed != null) {
+      final n = int.tryParse(rootUsed.toString());
+      if (n != null) return n;
+    }
+    final slots = json['slots'];
+    if (slots is Map) {
+      final m = Map<String, dynamic>.from(slots as Map);
+      final n = _firstInt(m, [
+        'active',
+        'used',
+        'inUse',
+        'in_use',
+        'assigned',
+        'current',
+        'count',
+        'busy',
+      ]);
+      if (n >= 0) return n;
+    }
+    for (final key in ['activeSlots', 'assignedJobs', 'activeJobs']) {
+      final v = json[key];
+      if (v != null) {
+        final n = int.tryParse(v.toString());
+        if (n != null) return n;
+      }
+    }
+    return 0;
+  }
+
+  static int _parseTotalSlots(Map<String, dynamic> json) {
+    final rootTotal = json['totalSlots'];
+    if (rootTotal != null) {
+      final n = int.tryParse(rootTotal.toString());
+      if (n != null && n > 0) return n;
+    }
+    final slots = json['slots'];
+    if (slots is Map) {
+      final m = Map<String, dynamic>.from(slots as Map);
+      final n = _firstInt(m, ['total', 'max', 'capacity', 'limit', 'maxSlots']);
+      if (n > 0) return n;
+    }
+    return 3;
+  }
+
   factory PosTechnician.fromJson(Map<String, dynamic> json) {
+    final parsedStatus = PosTechnicianStatus.fromJson(
+      (json['technicianStatus'] is Map<String, dynamic>)
+          ? json['technicianStatus'] as Map<String, dynamic>
+          : (json['status'] is Map<String, dynamic>)
+              ? json['status'] as Map<String, dynamic>
+              : {
+                  'status': json['onlineStatus'] ?? json['status'] ?? 'offline',
+                  'lastSeenAt': json['lastSeenAt'] ?? '',
+                },
+    );
+    final online =
+        parsedStatus.status.toLowerCase() == 'online';
+    final assignableRaw = json['assignable'];
+    final assignable = assignableRaw is bool
+        ? assignableRaw
+        : (assignableRaw?.toString().toLowerCase() == 'true')
+            ? true
+            : (assignableRaw?.toString().toLowerCase() == 'false')
+                ? false
+                : online;
+
     return PosTechnician(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
@@ -95,22 +201,10 @@ class PosTechnician {
               ?.map((d) => PosDepartmentInfo.fromJson(d))
               .toList() ??
           [],
-      status: PosTechnicianStatus.fromJson(
-        (json['technicianStatus'] is Map<String, dynamic>)
-            ? json['technicianStatus']
-            : (json['status'] is Map<String, dynamic>)
-            ? json['status']
-            : {
-                'status': json['onlineStatus'] ?? json['status'] ?? 'offline',
-                'lastSeenAt': json['lastSeenAt'] ?? '',
-              },
-      ),
-      slotsUsed: (json['slots'] != null && json['slots'] is Map)
-          ? int.tryParse(json['slots']['active']?.toString() ?? '') ?? 0
-          : int.tryParse(json['slotsUsed']?.toString() ?? '') ?? 0,
-      totalSlots: (json['slots'] != null && json['slots'] is Map)
-          ? int.tryParse(json['slots']['total']?.toString() ?? '') ?? 3
-          : int.tryParse(json['totalSlots']?.toString() ?? '') ?? 3,
+      status: parsedStatus,
+      assignable: assignable,
+      slotsUsed: _parseSlotsUsed(json),
+      totalSlots: _parseTotalSlots(json),
     );
   }
 }

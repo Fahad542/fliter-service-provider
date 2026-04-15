@@ -19,6 +19,20 @@ import '../../../models/expense_category_model.dart'; // Added
 import '../../../models/cashier_complete_job_model.dart'; // Added
 import '../../../models/cashier_corporate_accounts_api_model.dart';
 
+class _DepartmentPromoState {
+  final String code;
+  final String? promoCodeId;
+  final double discount;
+  final bool isPercent;
+
+  const _DepartmentPromoState({
+    required this.code,
+    required this.promoCodeId,
+    required this.discount,
+    required this.isPercent,
+  });
+}
+
 class PosViewModel extends ChangeNotifier {
   final PosRepository posRepository;
   final SessionService sessionService;
@@ -54,7 +68,16 @@ class PosViewModel extends ChangeNotifier {
   }
 
   void _onOrdersUpdated(Map<String, dynamic> payload) {
-    fetchOrders(silent: true);
+    _ordersRealtimeDebounce?.cancel();
+    _ordersRealtimeDebounce = Timer(const Duration(milliseconds: 400), () {
+      _ordersRealtimeDebounce = null;
+      final last = _lastCashierOrdersFetchedAt;
+      if (last != null &&
+          DateTime.now().difference(last) < const Duration(milliseconds: 800)) {
+        return;
+      }
+      fetchOrders(silent: true);
+    });
   }
 
   List<CashierCorporateAccount> _corporateAccounts = [];
@@ -99,6 +122,12 @@ class PosViewModel extends ChangeNotifier {
   String _vehicleYear = '';
   String _vehicleColor = '';
   String? _previousOrderId;
+  /// Last order returned from a successful walk-in shell / create (for jobId lookup by department).
+  WalkInOrder? _lastPlacedWalkInOrder;
+  /// Tracks the latest created walk-in order id for post-create redirect selection.
+  String? _lastCreatedWalkInOrderId;
+  /// Fallback selector when backend create response omits order.id.
+  String? _lastCreatedWalkInVehicleNumber;
   /// Set when cashier saves a walk-in under Corporate Customer tab (submit-for-approval flow).
   String? _corporateAccountId;
   String? _editDepartmentId;
@@ -121,11 +150,33 @@ class PosViewModel extends ChangeNotifier {
   PosOrder? get editingOrder => _editingOrder;
   String? get editingCompletingOrderId => _editingCompletingOrderId;
   String? get corporateAccountId => _corporateAccountId;
+  WalkInOrder? get lastPlacedWalkInOrder => _lastPlacedWalkInOrder;
+  String? get lastCreatedWalkInOrderId => _lastCreatedWalkInOrderId;
+  String? get lastCreatedWalkInVehicleNumber => _lastCreatedWalkInVehicleNumber;
+
+  /// Job id for a department on the last successful walk-in create response (shell).
+  String? jobIdForPlacedDepartment(String departmentId) {
+    final o = _lastPlacedWalkInOrder;
+    if (o == null || departmentId.trim().isEmpty) return null;
+    final want = departmentId.trim();
+    for (final d in o.departments) {
+      if ((d.departmentId ?? '').trim() == want) {
+        final jid = d.jobId?.trim();
+        if (jid != null && jid.isNotEmpty) return jid;
+      }
+    }
+    return null;
+  }
 
   bool _isLoading = false;
+  /// True after [fetchOrders] finishes (success or error), including `silent` calls.
+  bool _ordersApiFetchCompleted = false;
+  /// True while Save on the product-grid invoice panel is running (pricing / walk-in from panel).
+  bool _invoicePanelSaveBusy = false;
   String? _errorMessage;
   String? _currentJobId;
   List<PosOrder> _orders = [];
+  PosOrder? _selectedOrder;
   OrderStats _orderStats = OrderStats.empty();
   List<SearchedCustomer> _searchedCustomers = [];
   bool _isSearchingCustomer = false;
@@ -137,12 +188,19 @@ class PosViewModel extends ChangeNotifier {
 
   bool _isInvoiceLoading = false;
   String? _loadingOrderId;
+  /// Cashier "Mark complete" API in flight for this job (orders list, product grid, sheets).
+  String? _cashierCompletingJobId;
 
   bool get isLoading => _isLoading;
+  bool get ordersApiFetchCompleted => _ordersApiFetchCompleted;
+  bool get isInvoicePanelSaveBusy => _invoicePanelSaveBusy;
   bool get isInvoiceLoading => _isInvoiceLoading;
   String? get loadingOrderId => _loadingOrderId;
+  bool isCashierCompletingJob(String jobId) =>
+      jobId.isNotEmpty && _cashierCompletingJobId == jobId;
   String? get errorMessage => _errorMessage;
   String? get currentJobId => _currentJobId;
+  PosOrder? get selectedOrder => _selectedOrder;
   OrderStats get orderStats => _orderStats;
   List<SearchedCustomer> get searchedCustomers => _searchedCustomers;
   bool get isSearchingCustomer => _isSearchingCustomer;
@@ -150,6 +208,52 @@ class PosViewModel extends ChangeNotifier {
 
   void setShellSelectedIndex(int index) {
     _shellSelectedIndex = index;
+    notifyListeners();
+  }
+
+  void selectOrder(PosOrder? order) {
+    _selectedOrder = order;
+    notifyListeners();
+  }
+
+  /// Merge technicians from POST /cashier/job/:id/assign before [fetchOrders] returns.
+  void applyJobTechniciansFromAssign({
+    required String orderId,
+    required String jobId,
+    required List<JobTechnician> technicians,
+  }) {
+    if (orderId.trim().isEmpty || jobId.trim().isEmpty) return;
+    final oi = _orders.indexWhere((o) => o.id == orderId.trim());
+    if (oi < 0) return;
+    final order = _orders[oi];
+    final ji = order.jobs.indexWhere((j) => j.id == jobId.trim());
+    if (ji < 0) return;
+    final job = order.jobs[ji];
+    final updatedJob = PosOrderJob(
+      id: job.id,
+      status: job.status,
+      department: job.department,
+      departmentId: job.departmentId,
+      items: job.items,
+      technicians: technicians,
+      amountBeforeDiscount: job.amountBeforeDiscount,
+      totalAmount: job.totalAmount,
+      vatAmount: job.vatAmount,
+      vatPercent: job.vatPercent,
+      promoCodeId: job.promoCodeId,
+      promoCodeName: job.promoCodeName,
+      promoDiscountType: job.promoDiscountType,
+      promoDiscountValue: job.promoDiscountValue,
+      promoDiscountAmount: job.promoDiscountAmount,
+      totalDiscountType: job.totalDiscountType,
+      totalDiscountValue: job.totalDiscountValue,
+    );
+    final newJobs = List<PosOrderJob>.from(order.jobs);
+    newJobs[ji] = updatedJob;
+    _orders[oi] = order.copyWith(jobs: newJobs);
+    if (_selectedOrder?.id == orderId.trim()) {
+      _selectedOrder = _orders[oi];
+    }
     notifyListeners();
   }
 
@@ -171,6 +275,7 @@ class PosViewModel extends ChangeNotifier {
     _homeSearchController.dispose();
     _homeSearchFocusNode.dispose();
     _searchDebounce?.cancel();
+    _ordersRealtimeDebounce?.cancel();
     super.dispose();
   }
 
@@ -180,6 +285,11 @@ class PosViewModel extends ChangeNotifier {
 
   // Search Debounce (Moved from View)
   Timer? _searchDebounce;
+
+  /// Coalesce rapid socket events (e.g. multiple job updates) into one list refresh.
+  Timer? _ordersRealtimeDebounce;
+
+  DateTime? _lastCashierOrdersFetchedAt;
 
   void handleSearchDebounce(String query) {
     if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
@@ -284,6 +394,7 @@ class PosViewModel extends ChangeNotifier {
     _vehicleYear = '';
     _vehicleColor = '';
     _previousOrderId = null;
+    _lastPlacedWalkInOrder = null;
     _corporateAccountId = null;
     clearEditOrderContext(notify: false);
     _cartItems.clear();
@@ -362,12 +473,298 @@ class PosViewModel extends ChangeNotifier {
     onSuccess();
   }
 
-  Future<bool> submitWalkInOrder(
+  static const double _kCashierVatPercent = 15.0;
+
+  /// Active walk-in draft order id after a successful create/append (for debugging / UI).
+  String? get walkInDraftOrderId => _previousOrderId;
+
+  Map<String, String> _departmentJobMapFromWalkInOrder(WalkInOrder? order) {
+    final map = <String, String>{};
+    if (order == null) return map;
+    for (final d in order.departments) {
+      final did = d.departmentId?.trim() ?? '';
+      final jid = d.jobId?.trim() ?? '';
+      if (did.isNotEmpty && jid.isNotEmpty) {
+        map[did] = jid;
+      }
+    }
+    return map;
+  }
+
+  Map<String, List<CartItem>> _groupCartItemsByDepartment(List<String> fallbackDepartmentIds) {
+    final fallback =
+        fallbackDepartmentIds.isNotEmpty ? fallbackDepartmentIds.first.trim() : '';
+    final map = <String, List<CartItem>>{};
+    for (final item in _cartItems) {
+      final d = item.product.departmentId?.trim() ?? '';
+      final key = d.isNotEmpty ? d : fallback;
+      if (key.isEmpty) continue;
+      map.putIfAbsent(key, () => []).add(item);
+    }
+    return map;
+  }
+
+  /// Body for POST /cashier/job/:jobId/pricing (replace-all lines for that job).
+  Map<String, dynamic> _buildCashierJobPricingPayload({
+    required List<CartItem> items,
+    required String defaultDepartmentId,
+    required bool applyJobDiscountAndPromo,
+    bool isMainTab = false,
+    PosOrderJob? sourceJob,
+    PosOrder? sourceOrder,
+  }) {
+    final products = <Map<String, dynamic>>[];
+    final services = <Map<String, dynamic>>[];
+
+    for (final item in items) {
+      final lineDept = item.product.departmentId?.trim().isNotEmpty == true
+          ? item.product.departmentId!.trim()
+          : defaultDepartmentId;
+      if (item.product.isService) {
+        final m = <String, dynamic>{
+          'serviceId': item.product.id,
+          'departmentId': lineDept,
+          'qty': item.quantity,
+        };
+        if (item.discount > 0) {
+          m['discountType'] = item.isDiscountPercent ? 'percent' : 'amount';
+          m['discountValue'] = item.discount;
+        }
+        if (item.product.isPriceEditable) {
+          m['unitPrice'] = item.effectiveUnitPrice;
+        }
+        services.add(m);
+      } else {
+        final m = <String, dynamic>{
+          'productId': item.product.id,
+          'departmentId': lineDept,
+          'qty': item.quantity,
+        };
+        if (item.discount > 0) {
+          m['discountType'] = item.isDiscountPercent ? 'percent' : 'amount';
+          m['discountValue'] = item.discount;
+        }
+        products.add(m);
+      }
+    }
+
+    // Only fall back to existing job items for NEW orders (submitWalkInOrder)
+    // where the user hasn't touched the cart at all. For edits, an empty cart
+    // means the user intentionally removed everything.
+    if (products.isEmpty && services.isEmpty && sourceJob != null && sourceOrder == null) {
+      for (final item in sourceJob.items) {
+        final lineDept = item.departmentId.trim().isNotEmpty
+            ? item.departmentId.trim()
+            : defaultDepartmentId;
+        if (item.itemType == 'service') {
+          services.add({
+            'serviceId': item.productId,
+            'departmentId': lineDept,
+            'qty': item.qty,
+            'discountType': (item.discountType ?? '').isNotEmpty ? item.discountType : 'amount',
+            'discountValue': item.discountValue ?? 0,
+          });
+        } else {
+          final m = <String, dynamic>{
+            'productId': item.productId,
+            'departmentId': lineDept,
+            'qty': item.qty,
+          };
+          if ((item.discountType ?? '').isNotEmpty) {
+            m['discountType'] = item.discountType;
+          }
+          if ((item.discountValue ?? 0) > 0) {
+            m['discountValue'] = item.discountValue;
+          }
+          products.add(m);
+        }
+      }
+    }
+
+    final hasLiveCartData = products.isNotEmpty || services.isNotEmpty;
+
+    final activeGlobal = getActiveGlobalDiscount(isMainTab);
+    final activeGlobalIsPct = getActiveIsGlobalDiscountPercent(isMainTab);
+    final fallbackGlobalValue =
+        sourceJob?.totalDiscountValue ?? sourceOrder?.totalDiscountValue ?? 0.0;
+    final rawGlobalType =
+        sourceJob?.totalDiscountType ?? sourceOrder?.totalDiscountType ?? 'amount';
+    final fallbackGlobalType =
+        rawGlobalType.toLowerCase().contains('percent') ? 'percent' : 'amount';
+
+    double effectiveGlobalValue = 0.0;
+    String effectiveGlobalType = 'amount';
+    if (applyJobDiscountAndPromo) {
+      if (hasLiveCartData) {
+        // Cart / invoice panel is authoritative — do not resurrect cleared job-level discount.
+        effectiveGlobalValue = activeGlobal;
+        effectiveGlobalType = activeGlobalIsPct ? 'percent' : 'amount';
+      } else {
+        effectiveGlobalValue = activeGlobal > 0 ? activeGlobal : fallbackGlobalValue;
+        effectiveGlobalType = activeGlobal > 0
+            ? (activeGlobalIsPct ? 'percent' : 'amount')
+            : fallbackGlobalType;
+      }
+    }
+
+    String? promoCodeStr;
+    String? promoId;
+    var explicitClearPromo = false;
+    if (applyJobDiscountAndPromo) {
+      final promo = _resolvePromoState(isMainTab, departmentId: _editDepartmentId);
+      final code = promo.code.trim();
+      if (code.isNotEmpty) {
+        promoCodeStr = code;
+        final pid = promo.promoCodeId?.trim();
+        if (pid != null && pid.isNotEmpty) promoId = pid;
+      } else if (hasLiveCartData) {
+        // Omitting promo keys leaves the server's stored promo unchanged; null clears it.
+        explicitClearPromo = true;
+      } else {
+        final sid = sourceJob?.promoCodeId ?? sourceOrder?.promoCodeId;
+        if (sid != null && sid.trim().isNotEmpty) {
+          promoId = sid.trim();
+        }
+      }
+    }
+
+    return <String, dynamic>{
+      'products': products,
+      'services': services,
+      'totalDiscountType': effectiveGlobalType,
+      'totalDiscountValue': effectiveGlobalValue,
+      'VAT': _kCashierVatPercent,
+      if (promoCodeStr != null && promoCodeStr.isNotEmpty) 'promoCode': promoCodeStr,
+      if (promoId != null && promoId.isNotEmpty) 'promoCodeId': promoId,
+      if (explicitClearPromo) 'promoCode': null,
+      if (explicitClearPromo) 'promoCodeId': null,
+    };
+  }
+
+  void _applyWalkInOrderSuccess(
+    WalkInCustomerResponse response, {
+    required bool isCorporateFlow,
+    required bool clearCustomerOnSuccess,
+  }) {
+    String? maxJobId;
+    if (response.order?.departments.isNotEmpty == true) {
+      final sorted = [...response.order!.departments]
+        ..sort(
+          (a, b) => (int.tryParse(a.jobId ?? '') ?? 0).compareTo(
+                int.tryParse(b.jobId ?? '') ?? 0,
+              ),
+        );
+      maxJobId = sorted.last.jobId;
+    }
+
+    _previousOrderId = response.order?.id ?? _previousOrderId;
+    _lastPlacedWalkInOrder = response.order;
+    _lastCreatedWalkInOrderId = response.order?.id ?? _lastCreatedWalkInOrderId;
+    final plate = response.order?.vehicle?.plateNo.trim() ?? '';
+    if (plate.isNotEmpty) {
+      _lastCreatedWalkInVehicleNumber = plate;
+    }
+    if (isCorporateFlow) {
+      final jid = maxJobId ?? response.order?.jobId;
+      _currentJobId = (jid != null && jid.isNotEmpty) ? jid : null;
+    } else {
+      _currentJobId = maxJobId ?? response.order?.jobId ?? response.order?.id;
+    }
+    _isLoading = false;
+    if (clearCustomerOnSuccess) {
+      clearCustomerData();
+    }
+    notifyListeners();
+  }
+
+  /// POST /cashier/walk-in-order — new order + empty jobs (vehicle + departmentIds only).
+  /// Corporate accounts use the existing submit-for-approval path instead.
+  Future<bool> placeWalkInShellOrder(
     List<String> departmentIds,
     BuildContext context,
-    {bool clearCustomerOnSuccess = true}
   ) async {
+    if (departmentIds.isEmpty) {
+      if (context.mounted) {
+        ToastService.showError(context, 'Select at least one department');
+      }
+      return false;
+    }
+
+    final isCorp =
+        _corporateAccountId != null && _corporateAccountId!.trim().isNotEmpty;
+    if (isCorp) {
+      return submitWalkInOrder(departmentIds, context, clearCustomerOnSuccess: false);
+    }
+
     _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+      if (_vehicleNumber.trim().isEmpty) {
+        _errorMessage = 'Vehicle plate is required';
+        _isLoading = false;
+        notifyListeners();
+        if (context.mounted) ToastService.showError(context, _errorMessage!);
+        return false;
+      }
+      final createdVehicle = _vehicleNumber.trim();
+
+      final shellReq = WalkInCustomerRequest(
+        vehicleNumber: _vehicleNumber,
+        vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
+        make: _make.trim().isNotEmpty ? _make.trim() : null,
+        model: _model.trim().isNotEmpty ? _model.trim() : null,
+        odometerReading: _odometerReading > 0 ? _odometerReading : null,
+        departmentIds: departmentIds,
+      );
+      final res = await posRepository.postWalkInOrder(
+        shellReq.toShellCreateJson(),
+        token,
+      );
+      if (res.success) {
+        if ((res.order?.id ?? '').trim().isEmpty && createdVehicle.isNotEmpty) {
+          _lastCreatedWalkInVehicleNumber = createdVehicle;
+        }
+        _applyWalkInOrderSuccess(
+          res,
+          isCorporateFlow: false,
+          clearCustomerOnSuccess: true,
+        );
+        if (context.mounted) {
+          ToastService.showSuccess(
+            context,
+            res.message.isNotEmpty ? res.message : 'Order created',
+          );
+        }
+        return true;
+      }
+      _errorMessage = res.message;
+      _isLoading = false;
+      notifyListeners();
+      if (context.mounted) ToastService.showError(context, res.message);
+      return false;
+    } catch (e) {
+      _errorMessage = _extractErrorMessage(e.toString());
+      _isLoading = false;
+      notifyListeners();
+      if (context.mounted) ToastService.showError(context, _errorMessage!);
+      return false;
+    }
+  }
+
+  Future<bool> submitWalkInOrder(
+    List<String> departmentIds,
+    BuildContext context, {
+    bool clearCustomerOnSuccess = true,
+    bool forInvoicePanelSave = false,
+  }) async {
+    _isLoading = true;
+    if (forInvoicePanelSave) _invoicePanelSaveBusy = true;
     _errorMessage = null;
     notifyListeners();
 
@@ -408,8 +805,6 @@ class PosViewModel extends ChangeNotifier {
             return false;
           }
         }
-        final beforeDiscountPrice = item.lineSubtotalGross;
-        final afterDiscountPrice = beforeDiscountPrice - item.actualDiscountAmount;
         if (item.product.isService) {
           services.add(
             RequestedService(
@@ -418,8 +813,6 @@ class PosViewModel extends ChangeNotifier {
               qty: item.quantity,
               discountType: item.discount > 0 ? (item.isDiscountPercent ? 'percent' : 'amount') : null,
               discountValue: item.discount > 0 ? item.discount : null,
-              beforeDiscountPrice: beforeDiscountPrice,
-              afterDiscountPrice: afterDiscountPrice,
               unitPrice: item.product.isPriceEditable ? item.effectiveUnitPrice : null,
             ),
           );
@@ -431,18 +824,10 @@ class PosViewModel extends ChangeNotifier {
               qty: item.quantity,
               discountType: item.discount > 0 ? (item.isDiscountPercent ? 'percent' : 'amount') : null,
               discountValue: item.discount > 0 ? item.discount : null,
-              beforeDiscountPrice: beforeDiscountPrice,
-              afterDiscountPrice: afterDiscountPrice,
             ),
           );
         }
       }
-
-      final amountBeforeDiscount = getSubtotalGross(false);
-      final amountAfterDiscount = getPriceAfterJobDiscount(false);
-      final amountAfterPromo = getTotalTaxableAmountValue(false);
-      const vatPercent = 15.0;
-      final totalAmount = getTotalAmountValue(false);
 
       // Combine the passed departmentIds with any departmentIds from the selected products
       final Set<String> allDepartmentIds = {...departmentIds};
@@ -455,6 +840,189 @@ class PosViewModel extends ChangeNotifier {
         if (service.departmentId.isNotEmpty) {
           allDepartmentIds.add(service.departmentId);
         }
+      }
+
+      final amountBeforeDiscount = getSubtotalGross(false);
+      final amountAfterDiscount = getPriceAfterJobDiscount(false);
+      final amountAfterPromo = getTotalTaxableAmountValue(false);
+      const vatPercent = 15.0;
+      final totalAmount = getTotalAmountValue(false);
+
+      if (isCorpSubmit) {
+        final request = WalkInCustomerRequest(
+          orderId: _previousOrderId,
+          customerName: _customerName,
+          vatNumber: _vatNumber,
+          mobile: _mobile,
+          vehicleNumber: _vehicleNumber,
+          vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
+          make: _make,
+          model: _model,
+          odometerReading: _odometerReading,
+          departmentIds: allDepartmentIds.toList(),
+          products: products.isNotEmpty ? products : null,
+          services: services.isNotEmpty ? services : null,
+          totalDiscountType: _globalDiscount > 0 ? (_isGlobalDiscountPercent ? 'percent' : 'amount') : null,
+          totalDiscountValue: _globalDiscount > 0 ? _globalDiscount : null,
+          promoCode: _promoDiscount > 0 ? _activePromoCode : null,
+          promoCodeId: _promoDiscount > 0 ? _activePromoCodeId : null,
+          amountBeforeDiscount: amountBeforeDiscount,
+          amountAfterDiscount: amountAfterDiscount,
+          amountAfterPromo: amountAfterPromo,
+          vat: vatPercent,
+          totalAmount: totalAmount,
+          corporateAccountId: _corporateAccountId!.trim(),
+        );
+
+        final corpRes = await posRepository.submitWalkInCorporateForApproval(request, token);
+        if (corpRes.success) {
+          _applyWalkInOrderSuccess(
+            corpRes,
+            isCorporateFlow: true,
+            clearCustomerOnSuccess: clearCustomerOnSuccess,
+          );
+          if (context.mounted) {
+            ToastService.showSuccess(context, corpRes.message);
+          }
+          return true;
+        }
+        _errorMessage = corpRes.message;
+        _isLoading = false;
+        notifyListeners();
+        if (context.mounted) {
+          ToastService.showError(context, corpRes.message);
+        }
+        return false;
+      }
+
+      // Standard cashier walk-in (Nest: shell create + per-job pricing).
+      if (_previousOrderId == null) {
+        if (products.isEmpty && services.isEmpty) {
+          if (allDepartmentIds.isEmpty) {
+            _errorMessage = 'Select at least one department';
+            _isLoading = false;
+            notifyListeners();
+            if (context.mounted) ToastService.showError(context, _errorMessage!);
+            return false;
+          }
+          final shellReq = WalkInCustomerRequest(
+            vehicleNumber: _vehicleNumber,
+            vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
+            make: _make,
+            model: _model,
+            odometerReading: _odometerReading,
+            departmentIds: allDepartmentIds.toList(),
+          );
+          final shellRes =
+              await posRepository.postWalkInOrder(shellReq.toShellCreateJson(), token);
+          if (shellRes.success) {
+            _applyWalkInOrderSuccess(
+              shellRes,
+              isCorporateFlow: false,
+              clearCustomerOnSuccess: clearCustomerOnSuccess,
+            );
+            if (context.mounted) {
+              ToastService.showSuccess(context, shellRes.message);
+            }
+            return true;
+          }
+          _errorMessage = shellRes.message;
+          _isLoading = false;
+          notifyListeners();
+          if (context.mounted) {
+            ToastService.showError(context, shellRes.message);
+          }
+          return false;
+        }
+
+        if (allDepartmentIds.isEmpty) {
+          _errorMessage = 'Each line needs a department';
+          _isLoading = false;
+          notifyListeners();
+          if (context.mounted) ToastService.showError(context, _errorMessage!);
+          return false;
+        }
+
+        final shellReq = WalkInCustomerRequest(
+          vehicleNumber: _vehicleNumber,
+          vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
+          make: _make,
+          model: _model,
+          odometerReading: _odometerReading,
+          departmentIds: allDepartmentIds.toList(),
+        );
+        final shellRes =
+            await posRepository.postWalkInOrder(shellReq.toShellCreateJson(), token);
+        if (!shellRes.success || shellRes.order == null) {
+          _errorMessage = shellRes.message;
+          _isLoading = false;
+          notifyListeners();
+          if (context.mounted) {
+            ToastService.showError(context, shellRes.message);
+          }
+          return false;
+        }
+
+        _previousOrderId = shellRes.order!.id;
+        final deptJob = _departmentJobMapFromWalkInOrder(shellRes.order);
+        final grouped = _groupCartItemsByDepartment(allDepartmentIds.toList());
+        final keys = grouped.keys.toList()..sort();
+        if (keys.isEmpty) {
+          _errorMessage = 'No line items to save';
+          _isLoading = false;
+          notifyListeners();
+          if (context.mounted) ToastService.showError(context, _errorMessage!);
+          return false;
+        }
+
+        for (var i = 0; i < keys.length; i++) {
+          final deptId = keys[i];
+          final jid = deptJob[deptId];
+          if (jid == null || jid.isEmpty) {
+            _errorMessage =
+                'No job for department $deptId. Use “Add departments” or refresh orders.';
+            _isLoading = false;
+            notifyListeners();
+            if (context.mounted) ToastService.showError(context, _errorMessage!);
+            return false;
+          }
+          final payload = _buildCashierJobPricingPayload(
+            items: grouped[deptId]!,
+            defaultDepartmentId: deptId,
+            applyJobDiscountAndPromo: i == 0,
+            isMainTab: false,
+          );
+          final pr = await posRepository.updateJobPricing(jid, payload, token);
+          if (pr['success'] == false) {
+            _errorMessage =
+                pr['message']?.toString() ?? 'Failed to save pricing for department $deptId';
+            _isLoading = false;
+            notifyListeners();
+            if (context.mounted) ToastService.showError(context, _errorMessage!);
+            return false;
+          }
+        }
+
+        String? maxJobId;
+        if (shellRes.order!.departments.isNotEmpty) {
+          final sorted = [...shellRes.order!.departments]
+            ..sort(
+              (a, b) => (int.tryParse(a.jobId ?? '') ?? 0).compareTo(
+                    int.tryParse(b.jobId ?? '') ?? 0,
+                  ),
+            );
+          maxJobId = sorted.last.jobId;
+        }
+        _currentJobId = maxJobId ?? shellRes.order?.jobId ?? shellRes.order?.id;
+        _isLoading = false;
+        if (clearCustomerOnSuccess) {
+          clearCustomerData();
+        }
+        notifyListeners();
+        if (context.mounted) {
+          ToastService.showSuccess(context, shellRes.message);
+        }
+        return true;
       }
 
       final request = WalkInCustomerRequest(
@@ -479,53 +1047,28 @@ class PosViewModel extends ChangeNotifier {
         amountAfterPromo: amountAfterPromo,
         vat: vatPercent,
         totalAmount: totalAmount,
-        corporateAccountId:
-            (_corporateAccountId != null && _corporateAccountId!.isNotEmpty) ? _corporateAccountId : null,
       );
 
-      final WalkInCustomerResponse response = (_corporateAccountId != null && _corporateAccountId!.isNotEmpty)
-          ? await posRepository.submitWalkInCorporateForApproval(request, token)
-          : await posRepository.createWalkInOrder(request, token);
+      final response = await posRepository.createWalkInOrder(request, token);
 
       if (response.success) {
-        // Pick greatest numeric jobId when departments already have jobs (normal walk-in).
-        String? maxJobId;
-        if (response.order?.departments.isNotEmpty == true) {
-          final sorted = [...response.order!.departments]
-            ..sort(
-              (a, b) => (int.tryParse(a.jobId ?? '') ?? 0).compareTo(
-                int.tryParse(b.jobId ?? '') ?? 0,
-              ),
-            );
-          maxJobId = sorted.last.jobId;
-        }
-
-        _previousOrderId = response.order?.id ?? _previousOrderId;
-        final isCorpSubmit = _corporateAccountId != null && _corporateAccountId!.isNotEmpty;
-        if (isCorpSubmit) {
-          final jid = maxJobId ?? response.order?.jobId;
-          _currentJobId = (jid != null && jid.isNotEmpty) ? jid : null;
-        } else {
-          _currentJobId = maxJobId ?? response.order?.jobId ?? response.order?.id;
-        }
-        _isLoading = false;
-        if (clearCustomerOnSuccess) {
-          clearCustomerData(); // Reset for next order
-        }
-        notifyListeners();
+        _applyWalkInOrderSuccess(
+          response,
+          isCorporateFlow: false,
+          clearCustomerOnSuccess: clearCustomerOnSuccess,
+        );
         if (context.mounted) {
           ToastService.showSuccess(context, response.message);
         }
         return true;
-      } else {
-        _errorMessage = response.message;
-        _isLoading = false;
-        notifyListeners();
-        if (context.mounted) {
-          ToastService.showError(context, response.message);
-        }
-        return false;
       }
+      _errorMessage = response.message;
+      _isLoading = false;
+      notifyListeners();
+      if (context.mounted) {
+        ToastService.showError(context, response.message);
+      }
+      return false;
     } catch (e) {
       _errorMessage = _extractErrorMessage(e.toString());
       _isLoading = false;
@@ -534,13 +1077,19 @@ class PosViewModel extends ChangeNotifier {
         ToastService.showError(context, _errorMessage!);
       }
       return false;
+    } finally {
+      if (forInvoicePanelSave) {
+        _invoicePanelSaveBusy = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<bool> submitEditOrder(
     List<String> departmentIds,
-    BuildContext context,
-  ) async {
+    BuildContext context, {
+    bool forInvoicePanelSave = false,
+  }) async {
     final orderId = _editingOrder?.id ?? '';
     final jobId = _editingCompletingOrderId ?? '';
 
@@ -552,6 +1101,7 @@ class PosViewModel extends ChangeNotifier {
     }
 
     _isLoading = true;
+    if (forInvoicePanelSave) _invoicePanelSaveBusy = true;
     _errorMessage = null;
     notifyListeners();
 
@@ -559,77 +1109,50 @@ class PosViewModel extends ChangeNotifier {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Authentication token not found');
 
-      final List<Map<String, dynamic>> products = [];
-      final List<Map<String, dynamic>> services = [];
-
       for (var item in _cartItems) {
         if (item.product.isService && item.product.isPriceEditable && item.effectiveUnitPrice <= 0) {
           if (context.mounted) {
             ToastService.showError(context, 'Enter a valid unit price for ${item.product.name}');
           }
-          _isLoading = false;
-          notifyListeners();
           return false;
-        }
-        final beforeDiscountPrice = item.lineSubtotalGross;
-        final afterDiscountPrice = beforeDiscountPrice - item.actualDiscountAmount;
-        if (item.product.isService) {
-          services.add({
-            'serviceId': item.product.id,
-            'departmentId': item.product.departmentId ?? (departmentIds.isNotEmpty ? departmentIds.first : ''),
-            'qty': item.quantity,
-            if (item.discount > 0) 'discountType': item.isDiscountPercent ? 'percent' : 'amount',
-            if (item.discount > 0) 'discountValue': item.discount,
-            'beforeDiscountPrice': beforeDiscountPrice,
-            'afterDiscountPrice': afterDiscountPrice,
-            if (item.product.isPriceEditable) 'unitPrice': item.effectiveUnitPrice,
-          });
-        } else {
-          products.add({
-            'productId': item.product.id,
-            'departmentId': item.product.departmentId ?? (departmentIds.isNotEmpty ? departmentIds.first : ''),
-            'qty': item.quantity,
-            if (item.discount > 0) 'discountType': item.isDiscountPercent ? 'percent' : 'amount',
-            if (item.discount > 0) 'discountValue': item.discount,
-            'beforeDiscountPrice': beforeDiscountPrice,
-            'afterDiscountPrice': afterDiscountPrice,
-          });
         }
       }
 
-      final Set<String> allDeptIds = {...departmentIds};
-      for (var p in products) { final d = p['departmentId']?.toString(); if (d != null && d.isNotEmpty) allDeptIds.add(d); }
-      for (var s in services) { final d = s['departmentId']?.toString(); if (d != null && d.isNotEmpty) allDeptIds.add(d); }
+      final deptId = (_editDepartmentId ?? '').trim();
+      final fallbackDept =
+          departmentIds.isNotEmpty ? departmentIds.first.trim() : deptId;
+      final defaultDept = deptId.isNotEmpty ? deptId : fallbackDept;
 
-      const vatPercent = 15.0;
-      final body = <String, dynamic>{
-        'customerName': _customerName,
-        'mobile': _mobile,
-        'vatNumber': _vatNumber,
-        'vehicleNumber': _vehicleNumber,
-        if (_vinNumber.isNotEmpty) 'vinNumber': _vinNumber,
-        'make': _make,
-        'model': _model,
-        'odometerReading': _odometerReading,
-        'departmentId': allDeptIds.isNotEmpty ? allDeptIds.first : departmentIds.firstOrNull ?? '',
-        if (products.isNotEmpty) 'products': products,
-        if (services.isNotEmpty) 'services': services,
-        if (_globalDiscount > 0) 'totalDiscountType': _isGlobalDiscountPercent ? 'percent' : 'amount',
-        if (_globalDiscount > 0) 'totalDiscountValue': _globalDiscount,
-        if (_promoDiscount > 0 && _activePromoCode != null) 'promoCode': _activePromoCode,
-        if (_promoDiscount > 0 && _activePromoCodeId != null) 'promoCodeId': _activePromoCodeId,
-        'vat': vatPercent,
-        'amountBeforeDiscount': getSubtotalGross(false),
-        'amountAfterDiscount': getPriceAfterJobDiscount(false),
-        'amountAfterPromo': getTotalTaxableAmountValue(false),
-        'totalAmount': getTotalAmountValue(false),
-      };
+      final itemsForJob = _cartItems.where((c) {
+        if (deptId.isEmpty) return true;
+        final pd = c.product.departmentId?.trim() ?? '';
+        return pd.isEmpty || pd == deptId;
+      }).toList();
 
-      final response = await posRepository.editOrder(orderId, jobId, body, token);
-      final success = response['success'] == true;
+      PosOrderJob? jobMeta;
+      for (final j in _editingOrder?.jobs ?? const <PosOrderJob>[]) {
+        if (j.id == jobId) {
+          jobMeta = j;
+          break;
+        }
+      }
 
-      _isLoading = false;
-      notifyListeners();
+      final body = _buildCashierJobPricingPayload(
+        items: itemsForJob,
+        defaultDepartmentId: defaultDept.isNotEmpty ? defaultDept : '0',
+        applyJobDiscountAndPromo: true,
+        isMainTab: false,
+        sourceJob: jobMeta,
+        sourceOrder: _editingOrder,
+      );
+
+      final response = await posRepository.updateJobPricing(jobId, body, token);
+      final success = response['success'] != false;
+
+      if (success) {
+        // GET /cashier/orders is authoritative for draft rows; no merge of POST …/pricing body.
+        await fetchOrders(silent: true, preferredOrderId: orderId);
+      }
 
       if (context.mounted) {
         if (success) {
@@ -643,12 +1166,14 @@ class PosViewModel extends ChangeNotifier {
       return success;
     } catch (e) {
       _errorMessage = _extractErrorMessage(e.toString());
-      _isLoading = false;
-      notifyListeners();
       if (context.mounted) {
         ToastService.showError(context, _errorMessage!);
       }
       return false;
+    } finally {
+      _isLoading = false;
+      if (forInvoicePanelSave) _invoicePanelSaveBusy = false;
+      notifyListeners();
     }
   }
 
@@ -704,14 +1229,19 @@ class PosViewModel extends ChangeNotifier {
   String? _activePromoCodeId;
   double _promoDiscount = 0.0;
   bool _isPromoPercent = false;
+  final Map<String, _DepartmentPromoState> _departmentPromoById = {};
+  String? _promoContextDepartmentId;
   double _globalDiscount = 0.0;
   bool _isGlobalDiscountPercent = false;
 
   // Secondary cart state for main navigation tab
   final List<CartItem> _mainTabCartItems = [];
   String _mainTabActivePromoCode = '';
+  String? _mainTabActivePromoCodeId;
   double _mainTabPromoDiscount = 0.0;
   bool _mainTabIsPromoPercent = false;
+  final Map<String, _DepartmentPromoState> _mainTabDepartmentPromoById = {};
+  String? _mainTabPromoContextDepartmentId;
   double _mainTabGlobalDiscount = 0.0;
   bool _mainTabIsGlobalDiscountPercent = false;
 
@@ -756,7 +1286,10 @@ class PosViewModel extends ChangeNotifier {
   // Context-aware getters for discounts
   double getActiveGlobalDiscount(bool isMainTab) => isMainTab ? _mainTabGlobalDiscount : _globalDiscount;
   bool getActiveIsGlobalDiscountPercent(bool isMainTab) => isMainTab ? _mainTabIsGlobalDiscountPercent : _isGlobalDiscountPercent;
-  String getActivePromoCode(bool isMainTab) => isMainTab ? _mainTabActivePromoCode : _activePromoCode;
+  String getActivePromoCode(bool isMainTab, {String? departmentId}) {
+    final promo = _resolvePromoState(isMainTab, departmentId: departmentId);
+    return promo.code;
+  }
 
   List<String> get uniqueCategories {
     final cats = _allProducts
@@ -798,9 +1331,10 @@ class PosViewModel extends ChangeNotifier {
   double get totalTax => getTotalTaxValue(false);
   double get totalAmount => getTotalAmountValue(false);
 
+  /// Gross amount VAT-exclusive (sum of unit price excl. VAT × qty).
   double getSubtotalGross(bool isMainTab) => _getActiveCart(isMainTab).fold(
     0,
-    (sum, item) => sum + item.lineSubtotalGross,
+    (sum, item) => sum + item.lineSubtotalExclVat,
   );
 
   double getSubtotalExclVat(bool isMainTab) => getSubtotalGross(isMainTab);
@@ -825,8 +1359,13 @@ class PosViewModel extends ChangeNotifier {
   double getPriceAfterJobDiscount(bool isMainTab) => 
       getPriceAfterItemDiscounts(isMainTab) - getTotalGlobalDiscountValue(isMainTab);
 
-  double getTotalPromoDiscountValue(bool isMainTab) {
+  double getTotalPromoDiscountValue(bool isMainTab, {String? departmentId}) {
     final baseForPromo = getPriceAfterJobDiscount(isMainTab);
+    final promo = _resolvePromoState(isMainTab, departmentId: departmentId);
+    if (promo.code.isNotEmpty) {
+      if (promo.isPercent) return baseForPromo * (promo.discount / 100);
+      return promo.discount;
+    }
     if (isMainTab) {
       if (_mainTabIsPromoPercent) return baseForPromo * (_mainTabPromoDiscount / 100);
       return _mainTabPromoDiscount;
@@ -834,6 +1373,16 @@ class PosViewModel extends ChangeNotifier {
       if (_isPromoPercent) return baseForPromo * (_promoDiscount / 100);
       return _promoDiscount;
     }
+  }
+
+  double getPromoDiscountForBase(
+    double baseForPromo, {
+    bool isMainTab = false,
+    String? departmentId,
+  }) {
+    final promo = _resolvePromoState(isMainTab, departmentId: departmentId);
+    final raw = promo.isPercent ? baseForPromo * (promo.discount / 100) : promo.discount;
+    return raw.clamp(0, baseForPromo).toDouble();
   }
 
   double getTotalTaxableAmountValue(bool isMainTab) =>
@@ -1010,8 +1559,11 @@ class PosViewModel extends ChangeNotifier {
     _getActiveCart(isMainTab).clear();
     if (isMainTab) {
       _mainTabActivePromoCode = '';
+      _mainTabActivePromoCodeId = null;
       _mainTabPromoDiscount = 0.0;
       _mainTabIsPromoPercent = false;
+      _mainTabDepartmentPromoById.clear();
+      _mainTabPromoContextDepartmentId = null;
       _mainTabGlobalDiscount = 0.0;
       _mainTabIsGlobalDiscountPercent = false;
     } else {
@@ -1019,10 +1571,42 @@ class PosViewModel extends ChangeNotifier {
       _activePromoCodeId = null;
       _promoDiscount = 0.0;
       _isPromoPercent = false;
+      _departmentPromoById.clear();
+      _promoContextDepartmentId = null;
       _globalDiscount = 0.0;
       _isGlobalDiscountPercent = false;
     }
     notifyListeners();
+  }
+
+  void removeDepartmentItemsFromCart(
+    String departmentId, {
+    bool isMainTab = false,
+  }) {
+    final depId = departmentId.trim();
+    if (depId.isEmpty) return;
+    final activeCart = _getActiveCart(isMainTab);
+    activeCart.removeWhere((item) => (item.product.departmentId ?? '') == depId);
+    if (isMainTab) {
+      _mainTabDepartmentPromoById.remove(depId);
+      if (_mainTabPromoContextDepartmentId == depId) {
+        _mainTabPromoContextDepartmentId = null;
+      }
+    } else {
+      _departmentPromoById.remove(depId);
+      if (_promoContextDepartmentId == depId) {
+        _promoContextDepartmentId = null;
+      }
+    }
+    notifyListeners();
+  }
+
+  void setPromoContextDepartment(String? departmentId, {bool isMainTab = false}) {
+    if (isMainTab) {
+      _mainTabPromoContextDepartmentId = departmentId;
+    } else {
+      _promoContextDepartmentId = departmentId;
+    }
   }
 
   void applyPromoCode(
@@ -1031,9 +1615,24 @@ class PosViewModel extends ChangeNotifier {
     bool isPercent, {
     bool isMainTab = false,
     String? promoCodeId,
+    String? departmentId,
   }) {
+    final targetDepartmentId = (departmentId ?? _getPromoContextDepartmentId(isMainTab))
+        ?.trim();
+    if (targetDepartmentId != null && targetDepartmentId.isNotEmpty) {
+      final map = isMainTab ? _mainTabDepartmentPromoById : _departmentPromoById;
+      map[targetDepartmentId] = _DepartmentPromoState(
+        code: code,
+        promoCodeId: promoCodeId,
+        discount: discount,
+        isPercent: isPercent,
+      );
+      notifyListeners();
+      return;
+    }
     if (isMainTab) {
       _mainTabActivePromoCode = code;
+      _mainTabActivePromoCodeId = promoCodeId;
       _mainTabPromoDiscount = discount;
       _mainTabIsPromoPercent = isPercent;
     } else {
@@ -1045,9 +1644,20 @@ class PosViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearPromoCode({bool isMainTab = false}) {
+  void clearPromoCode({bool isMainTab = false, String? departmentId}) {
+    final targetDepartmentId = (departmentId ?? _getPromoContextDepartmentId(isMainTab))
+        ?.trim();
+    if (targetDepartmentId != null && targetDepartmentId.isNotEmpty) {
+      final map = isMainTab ? _mainTabDepartmentPromoById : _departmentPromoById;
+      final removed = map.remove(targetDepartmentId);
+      if (removed != null) {
+        notifyListeners();
+        return;
+      }
+    }
     if (isMainTab) {
       _mainTabActivePromoCode = '';
+      _mainTabActivePromoCodeId = null;
       _mainTabPromoDiscount = 0.0;
       _mainTabIsPromoPercent = false;
     } else {
@@ -1057,6 +1667,36 @@ class PosViewModel extends ChangeNotifier {
       _isPromoPercent = false;
     }
     notifyListeners();
+  }
+
+  String? _getPromoContextDepartmentId(bool isMainTab) =>
+      isMainTab ? _mainTabPromoContextDepartmentId : _promoContextDepartmentId;
+
+  _DepartmentPromoState _resolvePromoState(
+    bool isMainTab, {
+    String? departmentId,
+  }) {
+    final targetDepartmentId = (departmentId ?? _getPromoContextDepartmentId(isMainTab))
+        ?.trim();
+    if (targetDepartmentId != null && targetDepartmentId.isNotEmpty) {
+      final map = isMainTab ? _mainTabDepartmentPromoById : _departmentPromoById;
+      final byDepartment = map[targetDepartmentId];
+      if (byDepartment != null) return byDepartment;
+    }
+    if (isMainTab) {
+      return _DepartmentPromoState(
+        code: _mainTabActivePromoCode,
+        promoCodeId: _mainTabActivePromoCodeId,
+        discount: _mainTabPromoDiscount,
+        isPercent: _mainTabIsPromoPercent,
+      );
+    }
+    return _DepartmentPromoState(
+      code: _activePromoCode,
+      promoCodeId: _activePromoCodeId,
+      discount: _promoDiscount,
+      isPercent: _isPromoPercent,
+    );
   }
 
   String _orderSearchQuery = '';
@@ -1122,6 +1762,7 @@ class PosViewModel extends ChangeNotifier {
     String? statusQuery,
     int? limit,
     int? offset,
+    String? preferredOrderId,
   }) async {
     if (!silent) {
       _isLoading = true;
@@ -1144,6 +1785,59 @@ class PosViewModel extends ChangeNotifier {
       if (response.success) {
         _orders = response.orders;
         _orderStats = response.stats;
+        _lastCashierOrdersFetchedAt = DateTime.now();
+
+        final preferredId = (preferredOrderId?.trim().isNotEmpty == true)
+            ? preferredOrderId!.trim()
+            : ((_lastCreatedWalkInOrderId ?? '').trim().isNotEmpty
+                ? _lastCreatedWalkInOrderId!.trim()
+                : null);
+
+        // Always prioritize a caller-requested order selection.
+        if (preferredId != null) {
+          try {
+            _selectedOrder = _orders.firstWhere((o) => o.id == preferredId);
+          } catch (_) {
+            _selectedOrder = null;
+          }
+        }
+
+        // Fallback: when create response didn't include order id, select by latest matching vehicle plate.
+        if (_selectedOrder == null &&
+            (_lastCreatedWalkInVehicleNumber ?? '').trim().isNotEmpty) {
+          final targetPlate = _lastCreatedWalkInVehicleNumber!.trim().toLowerCase();
+          final matches = _orders.where(
+            (o) => o.plateNumber.trim().toLowerCase() == targetPlate,
+          ).toList();
+          if (matches.isNotEmpty) {
+            matches.sort((a, b) {
+              final bi = int.tryParse(b.id) ?? 0;
+              final ai = int.tryParse(a.id) ?? 0;
+              return bi.compareTo(ai);
+            });
+            _selectedOrder = matches.first;
+          }
+        } else if (_selectedOrder != null) {
+          // Re-select order if it already exists
+          try {
+            _selectedOrder = _orders.firstWhere((o) => o.id == _selectedOrder!.id);
+          } catch (_) {
+            _selectedOrder = null;
+          }
+        }
+        
+        // If no order selected and list not empty, select first
+        if (_selectedOrder == null && _orders.isNotEmpty) {
+          _selectedOrder = _orders.first;
+        }
+
+        // We only need these hints right after creation.
+        if (_selectedOrder != null) {
+          _lastCreatedWalkInOrderId = _selectedOrder!.id;
+          _lastCreatedWalkInVehicleNumber = null;
+        }
+
+        notifyListeners();
       } else {
         _errorMessage = 'Failed to fetch orders';
       }
@@ -1153,6 +1847,7 @@ class PosViewModel extends ChangeNotifier {
       if (!silent) {
         _isLoading = false;
       }
+      _ordersApiFetchCompleted = true;
       notifyListeners();
     }
   }
@@ -1454,6 +2149,7 @@ class PosViewModel extends ChangeNotifier {
   Future<CreateInvoiceResponse?> generateInvoice(
     String orderId, {
     String? paymentMethod,
+    List<Map<String, dynamic>>? payments,
     bool? isCorporate,
     PosOrder? orderForBilling,
   }) async {
@@ -1532,6 +2228,7 @@ class PosViewModel extends ChangeNotifier {
         discountAmount: 0.0,
         invoiceDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
         paymentMethod: paymentMethod,
+        payments: payments,
         isCorporate: isCorporate,
       );
 
@@ -1607,6 +2304,7 @@ class PosViewModel extends ChangeNotifier {
     bool isMainTab = false,
     PosOrder? sourceOrder,
   }) async {
+    _cashierCompletingJobId = jobId;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -1615,11 +2313,8 @@ class PosViewModel extends ChangeNotifier {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Token not found');
 
-      // 1) Build pricing payload from current cart/discount state
+      // 1) Build pricing payload (per-job replace-all snapshot for POST /cashier/job/:id/pricing)
       final activeCart = isMainTab ? _mainTabCartItems : _cartItems;
-      final List<Map<String, dynamic>> products = [];
-      final List<Map<String, dynamic>> services = [];
-
       for (var item in activeCart) {
         if (item.product.isService && item.product.isPriceEditable && item.effectiveUnitPrice <= 0) {
           _errorMessage = 'Enter a valid unit price for ${item.product.name}';
@@ -1627,90 +2322,53 @@ class PosViewModel extends ChangeNotifier {
           notifyListeners();
           return CashierCompleteJobResponse(success: false, message: _errorMessage!);
         }
-        final lineBefore = item.lineSubtotalGross;
-        final lineAfter = lineBefore - item.actualDiscountAmount;
-        final map = <String, dynamic>{
-          item.product.isService ? 'serviceId' : 'productId': item.product.id,
-          'qty': item.quantity,
-          'discountType': item.discount > 0
-              ? (item.isDiscountPercent ? 'percent' : 'amount')
-              : 'amount',
-          'discountValue': item.discount > 0 ? item.discount : 0,
-        };
-        if (item.product.isService) {
-          map['beforeDiscountPrice'] = lineBefore;
-          map['afterDiscountPrice'] = lineAfter;
-          if (item.product.isPriceEditable) {
-            map['unitPrice'] = item.effectiveUnitPrice;
-          }
-          services.add(map);
-        } else {
-          products.add(map);
-        }
       }
 
-      // If cart is empty (common from complete sheet), prefill pricing from current order job data.
-      final sourceJob = sourceOrder?.latestJob;
-      if (products.isEmpty && services.isEmpty && sourceJob != null) {
-        for (final item in sourceJob.items) {
-          final lineBefore = item.unitPrice * item.qty;
-          final map = <String, dynamic>{
-            item.itemType == 'service' ? 'serviceId' : 'productId': item.productId,
-            'qty': item.qty,
-            'discountType': (item.discountType ?? '').isNotEmpty
-                ? item.discountType
-                : 'amount',
-            'discountValue': item.discountValue ?? 0,
-            'beforeDiscountPrice': lineBefore,
-            'afterDiscountPrice': item.lineTotal,
-          };
-          if (item.itemType == 'service') {
-            map['unitPrice'] = item.unitPrice;
-            services.add(map);
-          } else {
-            products.add(map);
+      PosOrderJob? sourceJob;
+      if (sourceOrder != null) {
+        for (final j in sourceOrder.jobs) {
+          if (j.id == jobId) {
+            sourceJob = j;
+            break;
           }
         }
       }
+      sourceJob ??= sourceOrder?.latestJob;
 
-      final activeGlobalDiscount = getActiveGlobalDiscount(isMainTab);
-      final activeGlobalType = getActiveIsGlobalDiscountPercent(isMainTab)
-          ? 'percent'
-          : 'amount';
-      final fallbackGlobalValue =
-          sourceJob?.totalDiscountValue ?? sourceOrder?.totalDiscountValue ?? 0;
-      final fallbackGlobalType =
-          sourceJob?.totalDiscountType ?? sourceOrder?.totalDiscountType ?? 'amount';
+      var deptId = '';
+      if (sourceJob != null) {
+        final did = sourceJob.departmentId?.trim() ?? '';
+        if (did.isNotEmpty) {
+          deptId = did;
+        } else if (sourceJob.items.isNotEmpty) {
+          final fd = sourceJob.items.first.departmentId.trim();
+          if (fd.isNotEmpty) deptId = fd;
+        }
+      }
 
-      final effectiveGlobalValue =
-          activeGlobalDiscount > 0 ? activeGlobalDiscount : fallbackGlobalValue;
-      final effectiveGlobalType =
-          activeGlobalDiscount > 0 ? activeGlobalType : fallbackGlobalType;
-      final hasLiveCartData = products.isNotEmpty || services.isNotEmpty;
-      final effectivePromoId = hasLiveCartData
-          ? (_activePromoCodeId ??
-              sourceJob?.promoCodeId ??
-              sourceOrder?.promoCodeId)
-          : (sourceJob?.promoCodeId ?? sourceOrder?.promoCodeId);
-      final normalizedPromoId =
-          (effectivePromoId != null && effectivePromoId.trim().isNotEmpty)
-              ? effectivePromoId.trim()
-              : null;
-      final effectiveVat = sourceJob?.vatPercent ?? 15.0;
+      final itemsForJob = activeCart.where((c) {
+        if (deptId.isEmpty) return true;
+        final pd = c.product.departmentId?.trim() ?? '';
+        return pd.isEmpty || pd == deptId;
+      }).toList();
 
-      final pricingBody = <String, dynamic>{
-        'products': products,
-        'services': services,
-        'totalDiscountType': effectiveGlobalType,
-        'totalDiscountValue': effectiveGlobalValue,
-        'VAT': effectiveVat,
-        'promoCodeId': (!isMainTab && normalizedPromoId != null)
-            ? normalizedPromoId
-            : null,
-      };
+      final defaultDept = deptId.isNotEmpty ? deptId : '0';
+      final pricingBody = _buildCashierJobPricingPayload(
+        items: itemsForJob,
+        defaultDepartmentId: defaultDept,
+        applyJobDiscountAndPromo: true,
+        isMainTab: isMainTab,
+        sourceJob: sourceJob,
+        sourceOrder: sourceOrder,
+      );
 
-      // 2) Persist/refresh job-level pricing
-      await posRepository.updateJobPricing(jobId, pricingBody, token);
+      // 2) Persist/refresh job-level pricing — skip if the cart is empty
+      //    but the job already has items (user is completing from Orders screen
+      //    without going through the Product Grid).
+      final jobAlreadyHasItems = sourceJob != null && sourceJob.items.isNotEmpty;
+      if (itemsForJob.isNotEmpty || !jobAlreadyHasItems) {
+        await posRepository.updateJobPricing(jobId, pricingBody, token);
+      }
 
       // 3) Check readiness before completion
       final readyResponse = await posRepository.checkJobCompleteReady(jobId, token);
@@ -1726,15 +2384,15 @@ class PosViewModel extends ChangeNotifier {
         );
       }
 
-      // 4) Complete cashier job (API allows optional pricing updates in body)
+      // 4) Complete cashier job — only send pricing body when we actually have cart items
       final response = await posRepository.completeCashierJob(
         jobId,
         token,
-        body: pricingBody,
+        body: itemsForJob.isNotEmpty ? pricingBody : <String, dynamic>{},
       );
       if (response.success) {
-        // Refresh orders to reflect updated statuses implicitly
-        await fetchOrders(silent: true);
+        // Refresh orders — keep the same order selected
+        await fetchOrders(silent: true, preferredOrderId: sourceOrder?.id ?? _selectedOrder?.id);
         _isLoading = false;
         notifyListeners();
         return response;
@@ -1752,6 +2410,11 @@ class PosViewModel extends ChangeNotifier {
         success: false,
         message: _errorMessage!,
       );
+    } finally {
+      if (_cashierCompletingJobId == jobId) {
+        _cashierCompletingJobId = null;
+      }
+      notifyListeners();
     }
   }
 
@@ -1835,6 +2498,77 @@ class PosViewModel extends ChangeNotifier {
             ? 'Cancellation reason is required'
             : 'Failed to cancel order';
         ToastService.showError(context, msg);
+      }
+      return false;
+    }
+  }
+
+  /// PATCH /cashier/job/:jobId/cancel — single job, before invoice.
+  Future<bool> cancelCashierJob(
+    BuildContext context,
+    String jobId, [
+    String reason = 'Cancelled by cashier',
+  ]) async {
+    if (jobId.trim().isEmpty) return false;
+    final trimmed = reason.trim().isEmpty ? 'Cancelled by cashier' : reason.trim();
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) throw Exception('Token not found');
+      final res = await posRepository.cancelCashierJob(jobId, trimmed, token);
+      final ok = res['success'] != false;
+      if (context.mounted) {
+        if (ok) {
+          ToastService.showSuccess(
+            context,
+            res['message']?.toString() ?? 'Job cancelled',
+          );
+        } else {
+          ToastService.showError(
+            context,
+            res['message']?.toString() ?? 'Failed to cancel job',
+          );
+        }
+      }
+      if (ok) await fetchOrders(silent: true, preferredOrderId: _selectedOrder?.id);
+      return ok;
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, _extractErrorMessage(e.toString()));
+      }
+      return false;
+    }
+  }
+
+  /// POST /cashier/order/:orderId/jobs — add departments to an existing walk-in draft.
+  Future<bool> addDepartmentsToWalkInOrder(
+    BuildContext context,
+    String orderId,
+    List<String> departmentIds,
+  ) async {
+    if (orderId.trim().isEmpty || departmentIds.isEmpty) return false;
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) throw Exception('Token not found');
+      final res = await posRepository.addJobsToCashierOrder(orderId, departmentIds, token);
+      final ok = res['success'] != false;
+      if (context.mounted) {
+        if (ok) {
+          ToastService.showSuccess(
+            context,
+            res['message']?.toString() ?? 'Departments added',
+          );
+        } else {
+          ToastService.showError(
+            context,
+            res['message']?.toString() ?? 'Failed to add departments',
+          );
+        }
+      }
+      if (ok) await fetchOrders(silent: true);
+      return ok;
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, _extractErrorMessage(e.toString()));
       }
       return false;
     }

@@ -337,7 +337,7 @@ class _MyAppState extends State<MyApp> {
           create: (context) => TechAppViewModel(
             repository: context.read<TechnicianRepository>(),
             sessionService: context.read<SessionService>(),
-          )..init(),
+          ),
         ),
         ChangeNotifierProvider<LockerViewModel>(
           create: (_) => LockerViewModel()..init(),

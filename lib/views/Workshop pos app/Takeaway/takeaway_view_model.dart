@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 import '../../../../data/network/base_api_service.dart';
 import '../../../../data/repositories/pos_repository.dart';
@@ -17,19 +18,33 @@ class TakeawayCartLine {
 
   final TakeawayProduct product;
   double qty;
+  /// VAT-inclusive unit price.
   double unitPrice;
   String? lineDiscountType;
   double lineDiscountValue;
+
+  /// VAT-exclusive unit price.
+  double get unitPriceExclVat =>
+      ((unitPrice / 1.15) * 100).roundToDouble() / 100;
 }
 
 class TakeawayViewModel extends ChangeNotifier {
   TakeawayViewModel({
     required this.posRepository,
     required this.sessionService,
-  });
+  }) {
+    // Keep invoice preview sheet reactive for every field edit.
+    vatController.addListener(_onPreviewInputChanged);
+    orderDiscountValueController.addListener(_onPreviewInputChanged);
+    promoCodeController.addListener(_onPreviewInputChanged);
+  }
 
   final PosRepository posRepository;
   final SessionService sessionService;
+  
+  void _onPreviewInputChanged() {
+    notifyListeners();
+  }
 
   TakeawayCatalogData? _catalog;
   bool _catalogLoading = false;
@@ -46,6 +61,10 @@ class TakeawayViewModel extends ChangeNotifier {
   String? _checkoutError;
   Invoice? _lastInvoice;
   String? _lastOrderId;
+  String _appliedPromoCode = '';
+  String? _appliedPromoCodeId;
+  double _promoDiscountValue = 0;
+  bool _isPromoPercent = false;
 
   final TextEditingController customerNameController = TextEditingController();
   final TextEditingController customerMobileController =
@@ -61,7 +80,8 @@ class TakeawayViewModel extends ChangeNotifier {
       TextEditingController();
 
   String _orderDiscountType = '';
-  String _paymentMethod = 'Cash';
+  String? _paymentMethod = 'Cash';
+  List<Map<String, dynamic>>? _payments;
 
   TakeawayCatalogData? get catalog => _catalog;
   bool get catalogLoading => _catalogLoading;
@@ -95,7 +115,12 @@ class TakeawayViewModel extends ChangeNotifier {
   String? get lastOrderId => _lastOrderId;
 
   String get orderDiscountType => _orderDiscountType;
-  String get paymentMethod => _paymentMethod;
+  String? get paymentMethod => _paymentMethod;
+  List<Map<String, dynamic>>? get payments => _payments;
+  String get appliedPromoCode => _appliedPromoCode;
+  String? get appliedPromoCodeId => _appliedPromoCodeId;
+  double get promoDiscountValue => _promoDiscountValue;
+  bool get isPromoPercent => _isPromoPercent;
 
   static const List<String> paymentMethods = [
     'Cash',
@@ -126,13 +151,43 @@ class TakeawayViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPaymentMethod(String m) {
+  void setPaymentMethod(String? m) {
     _paymentMethod = m;
+    _payments = null;
+    notifyListeners();
+  }
+
+  void setPayments(List<Map<String, dynamic>> p) {
+    _paymentMethod = null;
+    _payments = p;
+    notifyListeners();
+  }
+
+  void setAppliedPromo({
+    required String code,
+    String? promoId,
+    required double discount,
+    required bool isPercent,
+  }) {
+    _appliedPromoCode = code;
+    _appliedPromoCodeId = promoId;
+    _promoDiscountValue = discount;
+    _isPromoPercent = isPercent;
+    promoCodeController.text = code;
+    notifyListeners();
+  }
+
+  void clearAppliedPromo() {
+    _appliedPromoCode = '';
+    _appliedPromoCodeId = null;
+    _promoDiscountValue = 0;
+    _isPromoPercent = false;
+    promoCodeController.clear();
     notifyListeners();
   }
 
   void setOrderDiscountValue(double v) {
-    orderDiscountValueController.text = v > 0 ? v.toString() : '';
+    // Controller already holds latest typed value from the field.
     notifyListeners();
   }
 
@@ -140,6 +195,8 @@ class TakeawayViewModel extends ChangeNotifier {
     _checkoutError = null;
     notifyListeners();
   }
+
+  void refreshPreview() => notifyListeners();
 
   Future<void> loadCatalog() async {
     if (_catalogLoading) return;
@@ -241,6 +298,7 @@ class TakeawayViewModel extends ChangeNotifier {
 
   void bumpProductQuantity(TakeawayProduct product, double delta) {
     if (!product.isActive) return;
+    if (product.qtyOnHand <= 0) return;
     final line = _lineForProduct(product.id);
     final cur = line?.qty ?? 0;
     applyProductQuantity(product, cur + delta);
@@ -248,11 +306,14 @@ class TakeawayViewModel extends ChangeNotifier {
 
   void applyProductQuantity(TakeawayProduct product, double qty) {
     if (!product.isActive && qty > 0) return;
+    if (product.qtyOnHand <= 0 && qty > 0) return;
     if (qty <= 0) {
       removeLine(product.id);
       return;
     }
-    final q = product.allowDecimalQty ? qty : qty.roundToDouble();
+    final requested = product.allowDecimalQty ? qty : qty.roundToDouble();
+    final q = requested > product.qtyOnHand ? product.qtyOnHand : requested;
+    if (q <= 0) return;
     final existing = _lineForProduct(product.id);
     if (existing == null) {
       _cart.add(TakeawayCartLine(
@@ -312,10 +373,11 @@ class TakeawayViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Subtotal VAT-exclusive: sum of (unitPriceExclVat × qty - line discount).
   double get subtotalBeforeOrderDiscount {
     double sum = 0;
     for (final line in _cart) {
-      final gross = line.unitPrice * line.qty;
+      final gross = line.unitPriceExclVat * line.qty;
       final type = line.lineDiscountType?.toLowerCase() ?? '';
       if (type == 'amount') {
         sum += (gross - line.lineDiscountValue).clamp(0, double.infinity);
@@ -328,12 +390,34 @@ class TakeawayViewModel extends ChangeNotifier {
     return sum;
   }
 
-  /// Shown in bottom bar (subtotal + VAT%, same spirit as product grid grand total).
+  /// Shown in bottom bar. Must match checkout sheet total:
+  /// item-level discounts -> order discount -> promo -> VAT.
   double get estimatedDisplayTotal {
     final sub = subtotalBeforeOrderDiscount;
-    final vatStr = vatController.text.trim();
-    final vat = double.tryParse(vatStr) ?? _catalog?.vatPercentDefault ?? 0;
-    return sub * (1 + vat / 100);
+
+    final orderDiscInput =
+        double.tryParse(orderDiscountValueController.text.trim()) ?? 0.0;
+    final isOrderDiscPercent =
+        _orderDiscountType == 'percent' || _orderDiscountType == 'percentage';
+    final orderDisc = isOrderDiscPercent
+        ? (sub * (orderDiscInput / 100)).clamp(0, sub).toDouble()
+        : orderDiscInput.clamp(0, sub).toDouble();
+    final afterOrderDiscount = (sub - orderDisc).clamp(0, double.infinity).toDouble();
+
+    final promoDiscount = _isPromoPercent
+        ? (afterOrderDiscount * (_promoDiscountValue / 100))
+            .clamp(0, afterOrderDiscount)
+            .toDouble()
+        : _promoDiscountValue.clamp(0, afterOrderDiscount).toDouble();
+    final taxable = (afterOrderDiscount - promoDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+
+    final vat = double.tryParse(vatController.text.trim()) ??
+        _catalog?.vatPercentDefault ??
+        0;
+    final vatAmount = taxable * (vat / 100);
+    return taxable + vatAmount;
   }
 
   Future<TakeawayCheckoutResponse?> submitCheckout() async {
@@ -345,32 +429,70 @@ class TakeawayViewModel extends ChangeNotifier {
       notifyListeners();
       return null;
     }
-    final name = customerNameController.text.trim();
-    if (name.isEmpty) {
-      _checkoutError = 'Customer name is required';
-      notifyListeners();
-      return null;
+    final name = customerNameController.text.trim().isEmpty
+        ? 'Walk-in Customer'
+        : customerNameController.text.trim();
+
+    double _lineDiscountAmount(TakeawayCartLine line) {
+      final gross = line.unitPriceExclVat * line.qty;
+      final type = (line.lineDiscountType ?? '').toLowerCase();
+      if (type == 'percent' || type == 'percentage') {
+        return (gross * (line.lineDiscountValue / 100)).clamp(0, gross);
+      }
+      if (type == 'amount') {
+        return line.lineDiscountValue.clamp(0, gross);
+      }
+      return 0.0;
     }
 
-    final items = _cart
-        .map(
-          (line) => TakeawayCheckoutLinePayload(
-            productId: line.product.id,
-            qty: line.qty,
-            discountType: line.lineDiscountType,
-            discountValue: line.lineDiscountValue,
-            unitPrice: line.unitPrice != line.product.salePrice
-                ? line.unitPrice
-                : null,
-          ),
-        )
-        .toList();
+    final amountBeforeDiscount = _cart.fold<double>(
+      0.0,
+      (sum, line) => sum + (line.unitPriceExclVat * line.qty),
+    );
+
+    final items = _cart.map((line) {
+      final beforeDiscountPrice = line.unitPriceExclVat * line.qty;
+      final lineDiscount = _lineDiscountAmount(line);
+      final double afterDiscountPrice =
+          (beforeDiscountPrice - lineDiscount).clamp(0, double.infinity).toDouble();
+      return TakeawayCheckoutLinePayload(
+        productId: line.product.id,
+        qty: line.qty,
+        discountType: line.lineDiscountType,
+        discountValue: line.lineDiscountValue,
+        unitPrice: line.unitPrice != line.product.salePrice ? line.unitPrice : null,
+        beforeDiscountPrice: beforeDiscountPrice,
+        afterDiscountPrice: afterDiscountPrice,
+      );
+    }).toList();
 
     final odType = _orderDiscountType.trim();
     final odVal =
         double.tryParse(orderDiscountValueController.text.trim()) ?? 0;
 
-    final vatParsed = double.tryParse(vatController.text.trim());
+    final amountAfterLineDiscount = items.fold<double>(
+      0.0,
+      (sum, line) => sum + (line.afterDiscountPrice ?? 0.0),
+    );
+    final isOrderDiscountPercent =
+        odType == 'percent' || odType == 'percentage';
+    final double orderDiscountAmount = isOrderDiscountPercent
+        ? (amountAfterLineDiscount * (odVal / 100)).clamp(0, amountAfterLineDiscount)
+        : odVal.clamp(0, amountAfterLineDiscount);
+    final double amountAfterDiscount =
+        (amountAfterLineDiscount - orderDiscountAmount).clamp(0, double.infinity).toDouble();
+
+    final double promoDiscountAmount = _isPromoPercent
+        ? (amountAfterDiscount * (_promoDiscountValue / 100)).clamp(0, amountAfterDiscount)
+        : _promoDiscountValue.clamp(0, amountAfterDiscount);
+    final double amountAfterPromo =
+        (amountAfterDiscount - promoDiscountAmount).clamp(0, double.infinity).toDouble();
+
+    final vatParsed = double.tryParse(vatController.text.trim()) ??
+        _catalog?.vatPercentDefault;
+    final vatPercent = vatParsed ?? 0.0;
+    final vatAmount = amountAfterPromo * (vatPercent / 100.0);
+    final totalAmount = amountAfterPromo + vatAmount;
     final discAmt =
         double.tryParse(discountAmountController.text.trim()) ?? 0;
 
@@ -386,16 +508,28 @@ class TakeawayViewModel extends ChangeNotifier {
       totalDiscountType:
           odType.isEmpty || odVal <= 0 ? null : odType,
       totalDiscountValue: odVal > 0 ? odVal : 0,
-      promoCode: promoCodeController.text.trim().isEmpty
-          ? null
-          : promoCodeController.text.trim(),
-      vatPercent: vatParsed,
+      promoCode: _appliedPromoCode.isEmpty ? null : _appliedPromoCode,
+      promoCodeId: _appliedPromoCodeId,
+      amountBeforeDiscount: amountBeforeDiscount,
+      amountAfterDiscount: amountAfterDiscount,
+      amountAfterPromo: amountAfterPromo,
+      vatPercent: vatPercent,
+      totalAmount: totalAmount,
       paymentMethod: _paymentMethod,
+      payments: _payments,
       invoiceDate: invoiceDateController.text.trim().isEmpty
           ? null
           : invoiceDateController.text.trim(),
       discountAmount: discAmt > 0 ? discAmt : 0,
     );
+
+    // Dev trace: verify contract payload sent to takeaway checkout API.
+    assert(() {
+      debugPrint(
+        '[Takeaway] Checkout payload: ${jsonEncode(request.toJson())}',
+      );
+      return true;
+    }());
 
     _checkoutLoading = true;
     notifyListeners();
@@ -410,13 +544,9 @@ class TakeawayViewModel extends ChangeNotifier {
       final res = await posRepository.postTakeawayCheckout(request, token);
       if (res.success) {
         _lastOrderId = res.orderId;
-
-        Invoice? resolvedInvoice = res.invoice;
-        if (resolvedInvoice == null &&
-            res.orderId != null &&
-            res.orderId!.isNotEmpty) {
-          // Keep takeaway print payload consistent with Add Products flow:
-          // fetch exact invoice shape using shared by-order endpoint.
+        Invoice? resolvedInvoice;
+        if (res.orderId != null && res.orderId!.isNotEmpty) {
+          // Always use same by-order invoice call as product flow.
           final invoiceByOrder = await posRepository.getInvoiceByOrder(
             res.orderId!,
             token,
@@ -437,6 +567,7 @@ class TakeawayViewModel extends ChangeNotifier {
           orderDiscountValueController.clear();
           discountAmountController.clear();
           _orderDiscountType = '';
+          clearAppliedPromo();
         } else {
           _checkoutError =
               res.message.isNotEmpty ? res.message : 'No invoice in response';
@@ -469,6 +600,9 @@ class TakeawayViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    vatController.removeListener(_onPreviewInputChanged);
+    orderDiscountValueController.removeListener(_onPreviewInputChanged);
+    promoCodeController.removeListener(_onPreviewInputChanged);
     searchController.dispose();
     customerNameController.dispose();
     customerMobileController.dispose();

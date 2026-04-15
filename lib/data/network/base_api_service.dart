@@ -1,14 +1,31 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'api_constants.dart';
 import 'api_response.dart';
 
 class BaseApiService {
+  static const int _maxResponseBodyLogChars = 4096;
+
+  void _debugLogResponse(http.Response response) {
+    if (!kDebugMode) return;
+    debugPrint('Response Status Code: ${response.statusCode}');
+    final b = response.body;
+    if (b.length <= _maxResponseBodyLogChars) {
+      debugPrint('Response Body: $b');
+    } else {
+      debugPrint(
+        'Response Body: <${_maxResponseBodyLogChars} of ${b.length} chars>',
+      );
+      debugPrint('${b.substring(0, _maxResponseBodyLogChars)}…');
+    }
+  }
+
   Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
     try {
       final url = '${ApiConstants.baseUrl}$endpoint';
-      print('GET Request URL: $url');
+      if (kDebugMode) debugPrint('GET Request URL: $url');
       final response = await http.get(Uri.parse(url), headers: headers);
       return _returnResponse(response);
     } catch (e) {
@@ -22,7 +39,7 @@ class BaseApiService {
   Future<dynamic> getWithQueryParams(String endpoint, Map<String, String> queryParams, String token) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint').replace(queryParameters: queryParams);
-      print('GET Request URL with Params: $uri');
+      if (kDebugMode) debugPrint('GET Request URL with Params: $uri');
       final response = await http.get(
         uri,
         headers: {
@@ -42,8 +59,10 @@ class BaseApiService {
   Future<dynamic> getWithBody(String endpoint, dynamic data, {Map<String, String>? headers}) async {
     try {
       final url = '${ApiConstants.baseUrl}$endpoint';
-      print('GET(body) Request URL: $url');
-      print('GET(body) Request Body: ${jsonEncode(data)}');
+      if (kDebugMode) {
+        debugPrint('GET(body) Request URL: $url');
+        debugPrint('GET(body) Request Body: ${jsonEncode(data)}');
+      }
       
       final request = http.Request('GET', Uri.parse(url));
       if (headers != null) {
@@ -73,8 +92,10 @@ class BaseApiService {
   ) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-      print('POST Multipart URL: $uri');
-      print('POST Multipart fields: $fields');
+      if (kDebugMode) {
+        debugPrint('POST Multipart URL: $uri');
+        debugPrint('POST Multipart fields: $fields');
+      }
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
       request.fields.addAll(fields);
@@ -93,8 +114,10 @@ class BaseApiService {
   Future<dynamic> post(String endpoint, dynamic data, {Map<String, String>? headers}) async {
     try {
       final url = '${ApiConstants.baseUrl}$endpoint';
-      print('POST Request URL: $url');
-      print('POST Request Body: ${jsonEncode(data)}');
+      if (kDebugMode) {
+        debugPrint('POST Request URL: $url');
+        debugPrint('POST Request Body: ${jsonEncode(data)}');
+      }
       final response = await http.post(
         Uri.parse(url),
         body: jsonEncode(data),
@@ -112,8 +135,10 @@ class BaseApiService {
   Future<dynamic> patch(String endpoint, dynamic data, {Map<String, String>? headers}) async {
     try {
       final url = '${ApiConstants.baseUrl}$endpoint';
-      print('PATCH Request URL: $url');
-      print('PATCH Request Body: ${jsonEncode(data)}');
+      if (kDebugMode) {
+        debugPrint('PATCH Request URL: $url');
+        debugPrint('PATCH Request Body: ${jsonEncode(data)}');
+      }
       final response = await http.patch(
         Uri.parse(url),
         body: jsonEncode(data),
@@ -131,7 +156,7 @@ class BaseApiService {
   Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
     try {
       final url = '${ApiConstants.baseUrl}$endpoint';
-      print('DELETE Request URL: $url');
+      if (kDebugMode) debugPrint('DELETE Request URL: $url');
       final response = await http.delete(
         Uri.parse(url),
         headers: headers ?? {'Content-Type': 'application/json'},
@@ -146,9 +171,8 @@ class BaseApiService {
   }
 
   dynamic _returnResponse(http.Response response) {
-    print('Response Status Code: ${response.statusCode}');
-    print('Response Body: ${response.body}');
-    
+    _debugLogResponse(response);
+
     String errorMessage = response.body;
     try {
       final json = jsonDecode(response.body);

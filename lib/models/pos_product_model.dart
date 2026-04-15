@@ -4,7 +4,11 @@ class PosProduct {
   final String id;
   final String name;
   final String? unit;
+  /// VAT-inclusive catalog price (salePrice / sellingPrice from backend).
   final double price;
+  final double? _priceBeforeVat;
+  /// VAT-exclusive catalog price; from backend or computed as price / 1.15.
+  double get priceBeforeVat => _priceBeforeVat ?? _round2(price / 1.15);
   final double? purchasePrice;
   final int stock;
   String? categoryName;
@@ -23,6 +27,7 @@ class PosProduct {
     required this.name,
     this.unit,
     required this.price,
+    double? priceBeforeVat,
     this.purchasePrice,
     required this.stock,
     this.categoryName,
@@ -34,14 +39,23 @@ class PosProduct {
     this.criticalStockPoint = 0,
     this.allowDecimalQty = false,
     this.isPriceEditable = false,
-  });
+  }) : _priceBeforeVat = priceBeforeVat;
+
+  static double _round2(double v) => (v * 100).roundToDouble() / 100;
 
   factory PosProduct.fromJson(Map<String, dynamic> json) {
+    final inclVat = double.tryParse(json['salePrice']?.toString() ?? json['sellingPrice']?.toString() ?? '0.0') ?? 0.0;
+    final exclVat = double.tryParse(
+      json['salePriceBeforeVat']?.toString() ??
+      json['sellingPriceBeforeVat']?.toString() ??
+      '',
+    );
     final product = PosProduct(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       unit: json['unit'],
-      price: double.tryParse(json['salePrice']?.toString() ?? json['sellingPrice']?.toString() ?? '0.0') ?? 0.0,
+      price: inclVat,
+      priceBeforeVat: exclVat,
       purchasePrice: double.tryParse(json['purchasePrice']?.toString() ?? '0.0'),
       stock: int.tryParse(json['qtyOnHand']?.toString() ?? json['openingQty']?.toString() ?? '0') ?? 0,
       categoryName: json['categoryName'],
@@ -58,13 +72,10 @@ class PosProduct {
     return product;
   }
 
-  // To keep compatibility with existing code that uses .category
   String get category => categoryName ?? 'Uncategorized';
-  
-  // To keep compatibility with existing code that uses .subtitle
   String get subtitle => unit ?? '';
 
-  double get priceInclVat => price * (1 + vatRate);
+  double get priceInclVat => price;
 
   bool isServiceType = false;
 
@@ -251,6 +262,7 @@ class CartItem {
     this.serviceUnitPrice,
   });
 
+  /// VAT-inclusive unit price (catalog price or cashier override).
   double get effectiveUnitPrice {
     if (product.isService && product.isPriceEditable) {
       final u = serviceUnitPrice;
@@ -259,14 +271,39 @@ class CartItem {
     return product.price;
   }
 
+  /// VAT-exclusive unit price.
+  double get effectiveUnitPriceExclVat {
+    if (product.isService && product.isPriceEditable) {
+      final u = serviceUnitPrice;
+      if (u != null && u > 0) return PosProduct._round2(u / 1.15);
+    }
+    return product.priceBeforeVat;
+  }
+
+  /// Gross amount VAT-inclusive (kept for backward compat / display).
   double get lineSubtotalGross => effectiveUnitPrice * quantity;
 
+  /// Gross amount VAT-exclusive.
+  double get lineSubtotalExclVat => effectiveUnitPriceExclVat * quantity;
+
+  /// Line discount amount (computed on VAT-exclusive gross).
   double get actualDiscountAmount {
+    if (isDiscountPercent) {
+      return lineSubtotalExclVat * (discount / 100);
+    }
+    return discount;
+  }
+
+  /// Line total VAT-exclusive (after line discount).
+  double get totalPriceExclVat => lineSubtotalExclVat - actualDiscountAmount;
+
+  /// Line total VAT-inclusive (for backward compat / display).
+  double get totalPrice => lineSubtotalGross - _discountInclVat;
+
+  double get _discountInclVat {
     if (isDiscountPercent) {
       return lineSubtotalGross * (discount / 100);
     }
     return discount;
   }
-
-  double get totalPrice => lineSubtotalGross - actualDiscountAmount;
 }

@@ -225,7 +225,7 @@ class _PosShellState extends State<PosShell> {
       gridVm.clearSearch();
     } else if (index == 2) {
       final vm = context.read<PosViewModel>();
-      if (vm.orders.isEmpty) {
+      if (!vm.ordersApiFetchCompleted) {
         vm.fetchOrders();
       }
     } else if (index == 6) {
