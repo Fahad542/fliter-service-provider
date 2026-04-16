@@ -614,7 +614,7 @@ class PosOrder {
     if (active.isEmpty) return 'PENDING';
     final allDone = active.every((j) {
       final s = j.status.toLowerCase();
-      return s == 'completed' || s == 'invoiced';
+      return s == 'completed' || s == 'invoiced' || s == 'edited';
     });
     return allDone ? 'COMPLETED' : 'PENDING';
   }
@@ -639,6 +639,8 @@ class PosOrder {
       case 'invoiced':
       case 'completed':
         return const Color(0xFF27AE60);
+      case 'edited':
+        return const Color(0xFF3949AB);
       case 'draft':
       case 'pending':
       case 'waiting_for_technician_acception':
@@ -687,6 +689,9 @@ class PosOrder {
     if (status == 'waiting for technician acceptance' ||
         status == 'waiting_for_technician_acceptance') {
       return 'waiting for technician';
+    }
+    if (status == 'edited' || status == 'job_edited') {
+      return 'edited';
     }
     return raw;
   }

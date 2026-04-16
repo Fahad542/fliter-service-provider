@@ -167,7 +167,7 @@ class _LoginViewState extends State<LoginView> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
-    final horizontalPadding = isTablet ? screenWidth * 0.1 : 24.0;
+    final horizontalPadding = isTablet ? screenWidth * 0.18 : 40.0;
     
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
@@ -192,12 +192,12 @@ class _LoginViewState extends State<LoginView> {
                   Padding(
                     padding: EdgeInsets.only(
                       top: MediaQuery.of(context).size.height *
-                          (isTablet ? 0.26 : 0.27),
+                          (isTablet ? 0.31 : 0.34),
                       left: horizontalPadding,
                       right: horizontalPadding,
                     ),
                     child: Container(
-                      padding: EdgeInsets.all(isTablet ? 60 : 24),
+                      padding: EdgeInsets.all(isTablet ? 44 : 18),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),

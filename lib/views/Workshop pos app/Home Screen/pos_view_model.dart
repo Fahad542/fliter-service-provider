@@ -1739,7 +1739,7 @@ class PosViewModel extends ChangeNotifier {
           case 'Tech Completed':
             return status == 'completed by technician';
           case 'Completed':
-            return status == 'completed';
+            return status == 'completed' || status == 'edited';
           case 'Cancelled':
             return status.contains('rejected') || status.contains('cancelled');
           case 'Corp. pending approval':

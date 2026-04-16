@@ -429,7 +429,7 @@ bool _canAddDepartmentToOrder(PosOrder order) {
   final src = order.source.toLowerCase().replaceAll('-', '_');
   if (!src.contains('walk')) return false;
   final st = order.status.toLowerCase();
-  if (st == 'invoiced' || st == 'cancelled' || st == 'completed') return false;
+  if (st == 'invoiced' || st == 'cancelled' || st == 'completed' || st == 'edited') return false;
   if ((order.invoiceNo ?? '').trim().isNotEmpty) return false;
   return true;
 }
@@ -930,9 +930,11 @@ class _JobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final st = job.status.toLowerCase();
-    final isComplete = st == 'completed' || st == 'invoiced';
+    final isInvoiced = st == 'invoiced';
+    final isComplete = st == 'completed';
+    final isEdited = st == 'edited';
     final isCancelled = job.isCancelledJob;
-    final isLocked = isComplete || isCancelled;
+    final isLocked = isInvoiced || isCancelled;
 
     final jobLineItems = job.items;
     final hasLineItems = jobLineItems.isNotEmpty;
@@ -1061,7 +1063,7 @@ class _JobCard extends StatelessWidget {
                 final completing = posVm.isCashierCompletingJob(job.id);
                 return Row(
                   children: [
-                    if (!isComplete) ...[
+                    if (!isInvoiced && !isComplete && !isEdited) ...[
                       Expanded(
                         child: _JobFooterButton(
                           label: 'Cancel',
@@ -1076,30 +1078,32 @@ class _JobCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                       ],
+                    if (!isInvoiced)
                       Expanded(
                         child: _JobFooterButton(
-                          label: isComplete
-                              ? 'Reset Status'
+                          label: (isComplete || isEdited)
+                              ? 'Edit'
                               : isCancelled
                                   ? 'Cancelled'
                                   : 'Mark Complete',
-                          backgroundColor: isComplete
+                          backgroundColor: (isComplete || isEdited)
                               ? const Color(0xFF23262D)
                               : isCancelled
                                   ? const Color(0xFFD32F2F)
                                   : const Color(0xFFFCC247),
-                          textColor: isComplete
+                          textColor: (isComplete || isEdited)
                               ? Colors.white
                               : isCancelled
                                   ? Colors.white
                                   : const Color(0xFF23262D),
-                          isBusy: completing && !isComplete && !isCancelled,
+                          isBusy: completing &&
+                              !isInvoiced &&
+                              !isComplete &&
+                              !isEdited &&
+                              !isCancelled,
                           enabled: !completing,
-                        onTap: isComplete
-                            ? () => ToastService.showError(
-                                  context,
-                                  'Reset status is not available from the app yet.',
-                                )
+                          onTap: (isComplete || isEdited)
+                              ? () => _openJobProductGrid(context, order, job)
                             : isCancelled
                                 ? () {}
                                 : () => _onMarkJobComplete(context, order, job),
@@ -1119,6 +1123,7 @@ class _JobCard extends StatelessWidget {
   Widget _buildStatusBadge(String statusRaw) {
     final s = statusRaw.toLowerCase().replaceAll(' ', '_');
     final isComplete = s == 'completed' || s == 'invoiced';
+    final isEdited = s == 'edited';
     final isCancelled = s == 'cancelled' || s == 'canceled';
     final isInProgress =
         s == 'in_progress' || s == 'inprogress' || statusRaw.toLowerCase() == 'in progress';
@@ -1140,6 +1145,12 @@ class _JobCard extends StatelessWidget {
       bg = const Color(0xFF4CAF50).withOpacity(0.1);
       border = const Color(0xFF4CAF50).withOpacity(0.2);
       label = 'COMPLETE';
+    } else if (isEdited) {
+      dot = const Color(0xFF3949AB);
+      fg = const Color(0xFF3949AB);
+      bg = const Color(0xFF3949AB).withOpacity(0.1);
+      border = const Color(0xFF3949AB).withOpacity(0.2);
+      label = 'EDITED';
     } else if (isInProgress) {
       dot = const Color(0xFF2196F3);
       fg = const Color(0xFF1976D2);
@@ -1329,7 +1340,7 @@ class _OrderSummaryPanel extends StatelessWidget {
     final completedJobs = activeJobs
         .where((j) {
           final s = j.status.toLowerCase();
-          return s == 'completed' || s == 'invoiced';
+          return s == 'completed' || s == 'invoiced' || s == 'edited';
         })
         .length;
     final progress = totalJobs > 0 ? completedJobs / totalJobs : 0.0;
@@ -1531,7 +1542,7 @@ class _HorizontalOrderTile extends StatelessWidget {
     final completedActive = activeJobs
         .where((j) {
           final s = j.status.toLowerCase();
-          return s == 'completed' || s == 'invoiced';
+          return s == 'completed' || s == 'invoiced' || s == 'edited';
         })
         .length;
     final jobProgressLabel = '$completedActive/${activeJobs.length}';
