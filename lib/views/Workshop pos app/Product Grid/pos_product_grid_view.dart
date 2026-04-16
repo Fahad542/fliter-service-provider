@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -103,6 +105,138 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       if (j.id == jid) return j.technicians;
     }
     return const [];
+  }
+
+  void _openTechniciansPage() {
+    final vm = context.read<PosViewModel>();
+
+    String deptId = widget.departmentId?.trim() ?? '';
+    String? deptName = widget.departmentName;
+    if (deptId.isEmpty) {
+      final cart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+      if (cart.isNotEmpty) {
+        final p = cart.first.product;
+        deptId = (p.departmentId ?? '').trim();
+        final dn = (p.departmentName ?? '').trim();
+        if (dn.isNotEmpty) deptName = dn;
+      }
+      if (deptId.isEmpty && vm.products.isNotEmpty) {
+        final p = vm.products.first;
+        deptId = (p.departmentId ?? '').trim();
+        if ((deptName ?? '').trim().isEmpty) {
+          final dn = (p.departmentName ?? '').trim();
+          if (dn.isNotEmpty) deptName = dn;
+        }
+      }
+      if (deptId.isEmpty) deptId = '1';
+    }
+
+    String jobId = '';
+    List<JobTechnician> initial = const [];
+    bool isWalkIn = true;
+
+    final completingId = widget.completingOrderId?.trim();
+    final completingOrder = widget.completingOrder;
+    if (completingOrder != null &&
+        completingId != null &&
+        completingId.isNotEmpty) {
+      PosOrderJob? job;
+      for (final j in completingOrder.jobs) {
+        if (j.id == completingId) {
+          job = j;
+          break;
+        }
+      }
+      if (job != null && job.id.trim().isNotEmpty) {
+        jobId = job.id.trim();
+        initial = job.activeTechnicians;
+        isWalkIn = false;
+      } else {
+        initial = _initialAssignedForWalkInTechnicianScreen();
+      }
+    } else {
+      final placed = vm.jobIdForPlacedDepartment(deptId);
+      if (placed != null && placed.trim().isNotEmpty) {
+        jobId = placed.trim();
+        isWalkIn = false;
+        final sel = vm.selectedOrder;
+        if (sel != null) {
+          for (final j in sel.jobs) {
+            if (j.id == jobId) {
+              initial = j.activeTechnicians;
+              break;
+            }
+          }
+        }
+      } else {
+        final cur = vm.currentJobId?.trim() ?? '';
+        if (cur.isNotEmpty) {
+          jobId = cur;
+          isWalkIn = false;
+          final sel = vm.selectedOrder;
+          if (sel != null) {
+            for (final j in sel.jobs) {
+              if (j.id == jobId) {
+                initial = j.activeTechnicians;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => PosTechnicianAssignmentView(
+          jobId: jobId,
+          departmentName: deptName,
+          departmentId: deptId,
+          isWalkIn: isWalkIn,
+          initialAssignedTechnicians: initial,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddTechnicianButton(bool isTablet) {
+    final child = Material(
+      color: AppColors.secondaryLight,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: _openTechniciansPage,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 16 : 10,
+            vertical: isTablet ? 14 : 12,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.person_add_alt_1_rounded,
+                color: Colors.white,
+                size: isTablet ? 20 : 18,
+              ),
+              if (isTablet) ...[
+                const SizedBox(width: 8),
+                Text(
+                  'Add Technician',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+    if (isTablet) return child;
+    return Tooltip(message: 'Add Technician', child: child);
   }
 
   @override
@@ -385,6 +519,15 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     }
   }
 
+  /// + button / card tap: block out-of-stock products and service already at qty 1.
+  bool _canIncrementProduct(PosProduct product, double cartQty) {
+    if (widget.isReadOnly) return false;
+    if (!product.isService && product.stock <= 0) return false;
+    if (product.isService && cartQty >= 1) return false;
+    if (!product.isService && cartQty >= product.stock) return false;
+    return true;
+  }
+
   void _onCategorySelected(PosViewModel vm, String cat) {
     vm.setCategory(cat);
     context.read<ProductGridViewModel>().setSubCategory('All');
@@ -425,17 +568,12 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         vm.editingCompletingOrderId!.trim().isNotEmpty;
 
     if (isEdit) {
-      final ok = await vm.submitEditOrder(
+      await vm.submitEditOrder(
         deptIds,
         context,
         forInvoicePanelSave: true,
       );
       if (!context.mounted) return;
-      if (ok && context.mounted) {
-        // Return to Orders tab with this order selected (fetchOrders + preferredOrderId run in submitEditOrder).
-        vm.setShellSelectedIndex(2);
-        Navigator.of(context).pop();
-      }
     } else {
       final ok = await vm.submitWalkInOrder(
         deptIds,
@@ -445,15 +583,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       );
       if (!context.mounted) return;
       if (ok) {
-        vm.setShellSelectedIndex(2);
+        // Stay on this screen — do not switch shell to Orders or replace the route stack.
         await vm.fetchOrders(silent: true);
-        if (context.mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute<void>(builder: (_) => const PosShell(initialIndex: 2)),
-            (route) => false,
-          );
-        }
       }
     }
   }
@@ -1124,12 +1255,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                           children: [
                             Text('Order Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 20 : 14, color: const Color(0xFF1E2124))),
                             const Spacer(),
-                            if (context.read<PosViewModel>().cartItems.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10)),
-                                child: Text('${context.read<PosViewModel>().cartItems.length}', style: TextStyle(fontSize: isTablet ? 16 : 11, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124))),
-                              ),
+                            Consumer<PosViewModel>(
+                              builder: (context, vm, _) {
+                                final c = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+                                if (c.isEmpty) return const SizedBox.shrink();
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10)),
+                                  child: Text(
+                                    '${c.length}',
+                                    style: TextStyle(fontSize: isTablet ? 16 : 11, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
+                                  ),
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -1709,10 +1848,19 @@ class _PosProductGridViewState extends State<PosProductGridView> {
             // ─── FIXED HEADERS: Search, Tabs & Categories ───
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
-              child: PosSearchBar(
-                controller: gridVm.searchController,
-                onChanged: (v) => gridVm.setSearchQuery(v),
-                hintText: 'Search products & services...',
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: PosSearchBar(
+                      controller: gridVm.searchController,
+                      onChanged: (v) => gridVm.setSearchQuery(v),
+                      hintText: 'Search products & services...',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildAddTechnicianButton(true),
+                ],
               ),
             ),
             if (_isDepartmentSelectionMode)
@@ -1804,10 +1952,19 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         if (vm.allProducts.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-            child: PosSearchBar(
-              controller: gridVm.searchController,
-              onChanged: (v) => gridVm.setSearchQuery(v),
-              hintText: 'Search products & services...',
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: PosSearchBar(
+                    controller: gridVm.searchController,
+                    onChanged: (v) => gridVm.setSearchQuery(v),
+                    hintText: 'Search products & services...',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildAddTechnicianButton(false),
+              ],
             ),
           ),
           if (_isDepartmentSelectionMode)
@@ -2057,11 +2214,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
   }
 
   Widget _buildProductCard(PosProduct product, double cartQty, bool isTablet) {
+    final outOfStock = !product.isService && product.stock <= 0;
     if (!isTablet) {
       return Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: widget.isReadOnly ? null : () => _addToCart(product),
+          onTap: widget.isReadOnly || !_canIncrementProduct(product, cartQty)
+              ? null
+              : () => _addToCart(product),
           borderRadius: BorderRadius.circular(14),
           child: Container(
             decoration: BoxDecoration(
@@ -2190,28 +2350,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 _buildQtyButton(Icons.remove, isTablet, onTap: cartQty > 0
                                     ? () => _updateQty(product, -1)
                                     : null),
-                                GestureDetector(
-                                  onTap: () => _showQtyDialog(product, isTablet),
-                                  child: Container(
-                                    height: 24,
-                                    width: 28,
-                                    alignment: Alignment.center,
-                                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.grey.shade200),
-                                    ),
-                                    child: Text(
-                                      (!product.allowDecimalQty || cartQty % 1 == 0) ? '${cartQty.toInt()}' : cartQty.toStringAsFixed(1),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
+                                _InlineGridQtyField(
+                                  product: product,
+                                  cartQty: cartQty,
+                                  isMainTab: widget.isMainTab,
+                                  isTablet: isTablet,
+                                  outOfStock: outOfStock,
                                 ),
-                                _buildQtyButton(Icons.add, isTablet, onTap: () => _addToCart(product)),
+                                _buildQtyButton(
+                                  Icons.add,
+                                  isTablet,
+                                  onTap: _canIncrementProduct(product, cartQty)
+                                      ? () => _addToCart(product)
+                                      : null,
+                                ),
                               ],
                             ),
                           ],
@@ -2231,7 +2383,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: widget.isReadOnly ? null : () => _addToCart(product),
+            onTap: widget.isReadOnly || !_canIncrementProduct(product, cartQty)
+                ? null
+                : () => _addToCart(product),
             borderRadius: BorderRadius.circular(14),
             child: Container(
               width: double.infinity,
@@ -2338,29 +2492,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               _buildQtyButton(Icons.remove, true, onTap: cartQty > 0
                                   ? () => _updateQty(product, -1)
                                   : null),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => _showQtyDialog(product, true),
-                                  child: Container(
-                                    height: 28,
-                                    alignment: Alignment.center,
-                                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
-                                      borderRadius: BorderRadius.circular(7),
-                                      border: Border.all(color: Colors.grey.shade200),
-                                    ),
-                                    child: Text(
-                                      (!product.allowDecimalQty || cartQty % 1 == 0) ? '${cartQty.toInt()}' : cartQty.toStringAsFixed(1),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              _InlineGridQtyField(
+                                product: product,
+                                cartQty: cartQty,
+                                isMainTab: widget.isMainTab,
+                                isTablet: true,
+                                outOfStock: outOfStock,
                               ),
-                              _buildQtyButton(Icons.add, true, onTap: () => _addToCart(product)),
+                              _buildQtyButton(
+                                Icons.add,
+                                true,
+                                onTap: _canIncrementProduct(product, cartQty)
+                                    ? () => _addToCart(product)
+                                    : null,
+                              ),
                             ],
                           ),
                         ),
@@ -2822,63 +2967,224 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     return total;
   }
 
-  void _showQtyDialog(PosProduct product, bool isTablet) {
-    final vm = context.read<PosViewModel>();
-    final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
-    final currentQty = activeCart.firstWhere((item) => item.product.id == product.id, orElse: () => CartItem(product: product, quantity: 0, isDiscountPercent: false)).quantity;
+}
 
-    final controller = TextEditingController(
-      text: (!product.allowDecimalQty || currentQty % 1 == 0) ? currentQty.toInt().toString() : currentQty.toString(),
+/// Clamps typed quantity so services never exceed 1.
+class _ServiceQtyCapFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) return newValue;
+    final d = double.tryParse(newValue.text.replaceAll(',', ''));
+    if (d == null) return oldValue;
+    if (d > 1) {
+      const t = '1';
+      return const TextEditingValue(
+        text: t,
+        selection: TextSelection.collapsed(offset: 1),
+      );
+    }
+    return newValue;
+  }
+}
+
+/// Inline quantity on product grid cards (replaces "Enter Quantity" dialog).
+class _InlineGridQtyField extends StatefulWidget {
+  final PosProduct product;
+  final double cartQty;
+  final bool isMainTab;
+  final bool isTablet;
+  final bool outOfStock;
+
+  const _InlineGridQtyField({
+    required this.product,
+    required this.cartQty,
+    required this.isMainTab,
+    required this.isTablet,
+    required this.outOfStock,
+  });
+
+  @override
+  State<_InlineGridQtyField> createState() => _InlineGridQtyFieldState();
+}
+
+class _InlineGridQtyFieldState extends State<_InlineGridQtyField> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+  /// Apply typed quantity while the field still has focus (blur-only commit is easy to miss on tablet).
+  Timer? _typingCommitDebounce;
+
+  static String _formatQty(PosProduct product, double q) {
+    if (q <= 0) return '0';
+    if (!product.allowDecimalQty || q % 1 == 0) {
+      return q.toInt().toString();
+    }
+    return q.toStringAsFixed(1);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: _formatQty(widget.product, widget.cartQty),
     );
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Enter Quantity', style: TextStyle(fontSize: isTablet ? 22 : 16, fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(product.name, style: TextStyle(color: Colors.grey, fontSize: isTablet ? 16 : 12)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.numberWithOptions(decimal: product.allowDecimalQty),
-              inputFormatters: [
-                if (!product.allowDecimalQty) FilteringTextInputFormatter.digitsOnly,
-                if (product.allowDecimalQty) EnglishNumberFormatter(),
-              ],
-              autofocus: true,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: isTablet ? 22 : 18, fontWeight: FontWeight.w700),
-              decoration: InputDecoration(
-                hintText: '0',
-                suffixText: product.unit,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final qty = double.tryParse(controller.text) ?? 0;
-              final error = context.read<PosViewModel>().setSpecificQuantity(product, qty, isMainTab: widget.isMainTab);
-              if (error != null) {
-                ToastService.showError(context, error);
-              } else {
-                Navigator.pop(ctx);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryLight,
-              foregroundColor: AppColors.secondaryLight,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Confirm'),
-          ),
-        ],
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _InlineGridQtyField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.outOfStock != widget.outOfStock ||
+        oldWidget.product.id != widget.product.id) {
+      _controller.text = _formatQty(widget.product, widget.cartQty);
+      return;
+    }
+    if (!_focusNode.hasFocus) {
+      final next = _formatQty(widget.product, widget.cartQty);
+      if (_controller.text != next) {
+        _controller.text = next;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _typingCommitDebounce?.cancel();
+    _focusNode.removeListener(_onFocusChanged);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _scheduleCommitFromTyping() {
+    _typingCommitDebounce?.cancel();
+    _typingCommitDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      _commit();
+    });
+  }
+
+  void _onFocusChanged() {
+    if (!_focusNode.hasFocus) {
+      _typingCommitDebounce?.cancel();
+      _commit();
+    }
+  }
+
+  double _qtyInCart(PosViewModel vm) {
+    final activeCart = widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+    final idx = activeCart.indexWhere(
+      (i) =>
+          i.product.id == widget.product.id &&
+          i.product.isServiceType == widget.product.isServiceType &&
+          (i.product.departmentId ?? '') == (widget.product.departmentId ?? ''),
+    );
+    if (idx < 0) return 0;
+    return activeCart[idx].quantity;
+  }
+
+  void _commit() {
+    if (widget.outOfStock) return;
+    final raw = _controller.text.trim();
+    var qty = double.tryParse(raw) ?? 0;
+    if (widget.product.isService && qty > 1) {
+      qty = 1;
+      _controller.text = _formatQty(widget.product, qty);
+    }
+    final vm = context.read<PosViewModel>();
+    final err = vm.setSpecificQuantity(
+      widget.product,
+      qty,
+      isMainTab: widget.isMainTab,
+    );
+    if (!mounted) return;
+    if (err != null) {
+      ToastService.showError(context, err);
+      _controller.text = _formatQty(widget.product, widget.cartQty);
+      return;
+    }
+    _controller.text = _formatQty(widget.product, _qtyInCart(vm));
+  }
+
+  InputDecoration _decoration({required bool disabled}) {
+    final r = BorderRadius.circular(widget.isTablet ? 7 : 6);
+    final base = OutlineInputBorder(
+      borderRadius: r,
+      borderSide: BorderSide(color: Colors.grey.shade200),
+    );
+    final fill = disabled ? Colors.grey.shade200 : Colors.grey.shade50;
+    return InputDecoration(
+      isDense: true,
+      filled: true,
+      fillColor: fill,
+      border: base,
+      enabledBorder: base,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.5),
       ),
+      disabledBorder: base,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 4,
+        vertical: widget.isTablet ? 8 : 4,
+      ),
+      hintText: '0',
+      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: widget.isTablet ? 12 : 11),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = widget.outOfStock;
+    final field = TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      enabled: !disabled,
+      textAlign: TextAlign.center,
+      keyboardType: TextInputType.numberWithOptions(decimal: widget.product.allowDecimalQty),
+      inputFormatters: [
+        if (widget.product.isService) ...[
+          if (!widget.product.allowDecimalQty) FilteringTextInputFormatter.digitsOnly,
+          if (widget.product.allowDecimalQty) EnglishNumberFormatter(),
+          _ServiceQtyCapFormatter(),
+        ] else ...[
+          if (!widget.product.allowDecimalQty) FilteringTextInputFormatter.digitsOnly,
+          if (widget.product.allowDecimalQty) EnglishNumberFormatter(),
+        ],
+      ],
+      style: TextStyle(
+        fontSize: widget.isTablet ? 12 : 11,
+        fontWeight: FontWeight.w600,
+        color: disabled ? Colors.grey.shade600 : const Color(0xFF1E2124),
+      ),
+      decoration: _decoration(disabled: disabled),
+      onChanged: (_) => _scheduleCommitFromTyping(),
+      onEditingComplete: () {
+        _typingCommitDebounce?.cancel();
+        _commit();
+      },
+      onSubmitted: (_) {
+        _typingCommitDebounce?.cancel();
+        _commit();
+        _focusNode.unfocus();
+      },
+    );
+
+    if (widget.isTablet) {
+      return Expanded(
+        child: SizedBox(
+          height: 28,
+          child: field,
+        ),
+      );
+    }
+    return SizedBox(
+      height: 24,
+      width: 40,
+      child: field,
     );
   }
 }

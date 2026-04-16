@@ -10,7 +10,16 @@ import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 
 class PosTechnicianView extends StatefulWidget {
-  const PosTechnicianView({super.key});
+  /// When embedded in [PosShell], keep drawer + no back. When pushed from another
+  /// flow (e.g. department product grid), show back and hide the drawer control.
+  final bool showBackButton;
+  final bool showHamburger;
+
+  const PosTechnicianView({
+    super.key,
+    this.showBackButton = false,
+    this.showHamburger = true,
+  });
 
   @override
   State<PosTechnicianView> createState() => _PosTechnicianViewState();
@@ -33,9 +42,11 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
       backgroundColor: const Color(0xFFFBF9F6),
       appBar: PosScreenAppBar(
         title: 'Technicians',
-        showBackButton: false,
-        showHamburger: true,
-        onMenuPressed: () => Scaffold.of(context).openDrawer(),
+        showBackButton: widget.showBackButton,
+        showHamburger: widget.showHamburger,
+        onMenuPressed: widget.showHamburger
+            ? () => Scaffold.of(context).openDrawer()
+            : null,
       ),
       body: wrapPosShellRailBody(
         context,

@@ -1269,7 +1269,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     }
   }
 
-  Widget _buildDepartmentJobs(bool isTablet) {
+  Widget _buildDepartmentJobs(bool isTablet, NumberFormat currencyFormat) {
     final visibleJobs =
         widget.order.jobs.where((j) => !j.isCancelledJob).toList();
     if (visibleJobs.isEmpty) {
@@ -1289,403 +1289,297 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         return b.id.compareTo(a.id);
       });
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: sortedJobs.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
-      itemBuilder: (context, index) {
-        final job = sortedJobs[index];
-        final hasItems = job.items.isNotEmpty;
+    final table = _buildDepartmentsDataTable(sortedJobs, isTablet, currencyFormat);
 
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    final sidePanels = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ReviewAssignTechniciansCard(
+          isTablet: isTablet,
+          jobs: sortedJobs,
+        ),
+        SizedBox(height: isTablet ? 12 : 14),
+        _ReviewDraftOrderSummaryCard(
+          isTablet: isTablet,
+          currencyFormat: currencyFormat,
+          grossSubtotal: _grossSubtotal,
+          itemDiscountsTotal: _itemDiscountsTotal,
+          invoiceDiscountTotal: _invoiceDiscountTotal,
+          promoDiscountTotal: _promoDiscountTotal,
+          netSubtotal: _netSubtotal,
+          vatAmount: _vatAmount,
+          totalAmount: _totalAmount,
+        ),
+      ],
+    );
+
+    if (isTablet) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: table),
+          const SizedBox(width: 16),
+          SizedBox(width: 312, child: sidePanels),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 640),
+            child: table,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        const SizedBox(height: 16),
+        sidePanels,
+      ],
+    );
+  }
+
+  static const Color _kReviewTableBorder = Color(0xFFE4E6EB);
+
+  TableBorder _reviewTableBorder() => TableBorder.all(
+        color: _kReviewTableBorder,
+        width: 1,
+      );
+
+  /// Review table cell padding (departments grid).
+  EdgeInsets _reviewTablePaddingHeader(bool isTablet) => EdgeInsets.symmetric(
+        horizontal: isTablet ? 12 : 8,
+        vertical: isTablet ? 11 : 9,
+      );
+
+  EdgeInsets _reviewTablePaddingBody(bool isTablet) => EdgeInsets.symmetric(
+        horizontal: isTablet ? 12 : 8,
+        vertical: isTablet ? 9 : 7,
+      );
+
+  /// Department line items only (no technician column).
+  Map<int, TableColumnWidth> _reviewDeptColumnWidths() => {
+        0: const IntrinsicColumnWidth(flex: 1.1),
+        1: const IntrinsicColumnWidth(),
+        2: const IntrinsicColumnWidth(flex: 0.55),
+        3: const FlexColumnWidth(2.4),
+        4: const IntrinsicColumnWidth(),
+        5: const IntrinsicColumnWidth(),
+      };
+
+  TableCell _reviewHeaderCell(String text, bool isTablet, {TextAlign align = TextAlign.start}) {
+    final pad = _reviewTablePaddingHeader(isTablet);
+    return TableCell(
+      child: Container(
+        color: const Color(0xFFF5F6FA),
+        padding: pad,
+        alignment: _alignmentFor(align),
+        child: Text(
+          text,
+          textAlign: align,
+          style: TextStyle(
+            fontSize: isTablet ? 12.5 : 10.5,
+            fontWeight: FontWeight.w800,
+            color: AppColors.secondaryLight,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Alignment _alignmentFor(TextAlign a) {
+    switch (a) {
+      case TextAlign.end:
+      case TextAlign.right:
+        return Alignment.centerRight;
+      case TextAlign.center:
+        return Alignment.center;
+      default:
+        return Alignment.centerLeft;
+    }
+  }
+
+  TableCell _reviewBodyCell(
+    String text,
+    bool isTablet, {
+    TextAlign align = TextAlign.start,
+    FontWeight weight = FontWeight.w500,
+    Color? color,
+    int maxLines = 4,
+  }) {
+    final pad = _reviewTablePaddingBody(isTablet);
+    return TableCell(
+      child: Padding(
+        padding: pad,
+        child: Align(
+          alignment: _alignmentFor(align),
+          child: Text(
+            text,
+            textAlign: align,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isTablet ? 13 : 11,
+              fontWeight: weight,
+              color: color ?? const Color(0xFF1E2124),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDepartmentsDataTable(
+    List<PosOrderJob> jobs,
+    bool isTablet,
+    NumberFormat currencyFormat,
+  ) {
+    final rows = <TableRow>[
+      TableRow(
+        children: [
+          _reviewHeaderCell('Department', isTablet),
+          _reviewHeaderCell('Job ID', isTablet),
+          _reviewHeaderCell('Status', isTablet),
+          _reviewHeaderCell('Product / Service', isTablet),
+          _reviewHeaderCell('Qty', isTablet, align: TextAlign.end),
+          _reviewHeaderCell('Amount (SAR)', isTablet, align: TextAlign.end),
+        ],
+      ),
+    ];
+
+    for (final job in jobs) {
+      final items = job.items;
+      if (items.isEmpty) {
+        rows.add(TableRow(
+          children: [
+            _reviewBodyCell(job.department, isTablet, weight: FontWeight.w700),
+            _reviewBodyCell(job.id, isTablet),
+            _reviewBodyCell(job.status.toUpperCase(), isTablet, maxLines: 2),
+            _reviewBodyCell('No line items', isTablet, color: Colors.grey.shade500),
+            _reviewBodyCell('—', isTablet, align: TextAlign.end),
+            _reviewBodyCell('—', isTablet, align: TextAlign.end),
+          ],
+        ));
+      } else {
+        for (var i = 0; i < items.length; i++) {
+          final item = items[i];
+          final qtyStr = item.qty % 1 == 0
+              ? item.qty.toInt().toString()
+              : item.qty.toStringAsFixed(1);
+          rows.add(TableRow(
             children: [
-              // Department Header Background Fill
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withOpacity(0.05),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade100),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.business_center_rounded,
-                        size: 16,
-                        color: AppColors.secondaryLight,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            job.department,
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.secondaryLight,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Job ID: ${job.id}',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w800,
-                              fontSize: isTablet ? 14 : 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildStatusBadge(job.status),
-                  ],
-                ),
-              ),
-              // Items Body
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!hasItems)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            'No items bound to this department.',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.grey.shade400,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      ...job.items.map((item) {
-                        final isLast = job.items.last == item;
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.productName,
-                                      style: AppTextStyles.bodyMedium.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.secondaryLight,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade100,
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            "Qty: ${item.qty.toInt()}",
-                                            style: AppTextStyles.bodySmall
-                                                .copyWith(
-                                                  fontWeight: FontWeight.w800,
-                                                  color: Colors.grey.shade600,
-                                                  fontSize: 10,
-                                                ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'SAR ${((item.unitPrice / 1.15 * 100).roundToDouble() / 100).toStringAsFixed(2)} / ea (Excl. VAT)',
-                                          style: AppTextStyles.bodySmall
-                                              .copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.grey.shade500,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  if (item.discountValue != null &&
-                                      item.discountValue! > 0)
-                                    Text(
-                                      'SAR ${(item.qty * ((item.unitPrice / 1.15 * 100).roundToDouble() / 100)).toStringAsFixed(2)}',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: Colors.grey.shade400,
-                                        decoration: TextDecoration.lineThrough,
-                                      ),
-                                    ),
-                                  Text(
-                                    'SAR ${item.lineTotal.toStringAsFixed(2)}',
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.secondaryLight,
-                                    ),
-                                  ),
-                                  if (item.discountValue != null &&
-                                      item.discountValue! > 0)
-                                    Text(
-                                      item.discountType == 'percentage' ||
-                                              item.discountType == 'percent'
-                                          ? '(-${item.discountValue}%)'
-                                          : '(-SAR ${item.discountValue})',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: Colors.green.shade600,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-
-                    // Render Technicians if any
-                    if (job.technicians.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Divider(height: 1, color: Color(0xFFEEEBE6)),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.handyman_rounded,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Assigned Technicians',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      ...job.technicians.map(
-                        (tech) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryLight.withOpacity(
-                                    0.15,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 14,
-                                  color: AppColors.primaryLight,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      tech.name,
-                                      style: AppTextStyles.bodyMedium.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.secondaryLight,
-                                      ),
-                                    ),
-                                    Text(
-                                      tech.commissionAmount > 0 ||
-                                              tech.commissionPercent == 0
-                                          ? 'Commission: SAR ${tech.commissionAmount.toStringAsFixed(2)}'
-                                          : 'Commission: ${tech.commissionPercent.toStringAsFixed(0)}%',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: Colors.green.shade600,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Builder(
-                                builder: (context) {
-                                  final s = tech.status?.toLowerCase() ?? '';
-                                  Color bgColor = Colors.orange.withOpacity(
-                                    0.1,
-                                  );
-                                  Color textColor = Colors.orange.shade700;
-                                  String displayText = s.isEmpty
-                                      ? 'PENDING'
-                                      : tech.status!.toUpperCase();
-
-                                  if (displayText == 'ACCEPTED_BY_TECHNICIAN') {
-                                    displayText = 'ACCEPTED';
-                                  } else if (displayText == 'IN_PROGRESS' ||
-                                      displayText == 'IN PROGRESS') {
-                                    displayText = 'IN PROGRESS';
-                                  }
-
-                                  if (s.contains('completed') ||
-                                      s.contains('accepted')) {
-                                    bgColor = Colors.green.withOpacity(0.1);
-                                    textColor = Colors.green.shade700;
-                                  } else if (s.contains('progress')) {
-                                    bgColor = Colors.purple.withOpacity(0.1);
-                                    textColor = Colors.purple.shade700;
-                                  }
-
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: bgColor,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      displayText,
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        color: textColor,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                    // Render Job Breakdown
-                    if (job.items.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Divider(height: 1, color: Color(0xFFEEEBE6)),
-                      ),
-                      Builder(
-                        builder: (context) {
-                          // Backend now provides VAT-exclusive amounts on the job.
-                          final double jobSubtotalExclusive =
-                              job.amountBeforeDiscount > 0
-                                  ? job.amountBeforeDiscount
-                                  : job.items.fold(0.0, (sum, i) {
-                                      final exclVat = (i.unitPrice / 1.15 * 100).roundToDouble() / 100;
-                                      return sum + exclVat * i.qty;
-                                    });
-
-                          final double postItemDiscountJobTotal =
-                              job.amountAfterDiscount > 0
-                                  ? job.amountAfterDiscount
-                                  : job.items.fold(0.0, (sum, i) => sum + i.lineTotal);
-
-                          final double calculatedItemDiscountAmount =
-                              jobSubtotalExclusive - postItemDiscountJobTotal;
-
-                          final double jobTotal = job.totalAmount > 0
-                              ? job.totalAmount
-                              : postItemDiscountJobTotal;
-
-                          final double jobVatAmount = job.vatAmount > 0
-                              ? job.vatAmount
-                              : job.amountAfterPromo > 0
-                                  ? job.amountAfterPromo * 0.15
-                                  : jobTotal - (jobTotal / (1 + _vatRate));
-
-                          String? jobPromoLabel =
-                              (job.promoCodeName != null &&
-                                  job.promoCodeName!.isNotEmpty)
-                              ? job.promoCodeName
-                              : null;
-
-                          return _VatBreakdownWidget(
-                            subtotalExclusive: jobSubtotalExclusive,
-                            itemDiscountAmount: calculatedItemDiscountAmount,
-                            vatAmount: jobVatAmount,
-                            vatRate: _vatRate,
-                            globalDiscountValue: job.totalDiscountValue,
-                            globalDiscountType: job.totalDiscountType,
-                            promoDiscountAmount: job.promoDiscountAmount,
-                            promoDiscountValue: job.promoDiscountValue,
-                            promoDiscountType: job.promoDiscountType,
-                            promoCode: jobPromoLabel,
-                            total: jobTotal,
-                            currencyFormat: NumberFormat('#,##0.00'),
-                            isTablet: isTablet,
-                          );
-                        },
-                      ),
-                    ],
-                  ], // Children of the Items Body Column
-                ),
-              ),
+              _reviewBodyCell(i == 0 ? job.department : '', isTablet,
+                  weight: i == 0 ? FontWeight.w800 : FontWeight.w500),
+              _reviewBodyCell(i == 0 ? job.id : '', isTablet),
+              _reviewBodyCell(i == 0 ? job.status.toUpperCase() : '', isTablet, maxLines: 2),
+              _reviewBodyCell(item.productName, isTablet, weight: FontWeight.w600),
+              _reviewBodyCell(qtyStr, isTablet, align: TextAlign.end),
+              _reviewBodyCell(item.lineTotal.toStringAsFixed(2), isTablet,
+                  align: TextAlign.end, weight: FontWeight.w800),
             ],
+          ));
+        }
+      }
+
+      if (job.items.isNotEmpty) {
+        final jobSubtotalExclusive = job.amountBeforeDiscount > 0
+            ? job.amountBeforeDiscount
+            : job.items.fold(0.0, (sum, i) {
+                final exclVat = (i.unitPrice / 1.15 * 100).roundToDouble() / 100;
+                return sum + exclVat * i.qty;
+              });
+        final postItemDiscountJobTotal = job.amountAfterDiscount > 0
+            ? job.amountAfterDiscount
+            : job.items.fold(0.0, (sum, i) => sum + i.lineTotal);
+        final itemDisc = jobSubtotalExclusive - postItemDiscountJobTotal;
+        final jobTotal = job.totalAmount > 0 ? job.totalAmount : postItemDiscountJobTotal;
+        final jobVatAmount = job.vatAmount > 0
+            ? job.vatAmount
+            : job.amountAfterPromo > 0
+                ? job.amountAfterPromo * 0.15
+                : jobTotal - (jobTotal / (1 + _vatRate));
+
+        rows.add(TableRow(
+          decoration: const BoxDecoration(color: Color(0xFFFAFAFC)),
+          children: [
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('Gross (Excl. VAT)', isTablet, weight: FontWeight.w700),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell(jobSubtotalExclusive.toStringAsFixed(2), isTablet,
+                align: TextAlign.end, weight: FontWeight.w700),
+          ],
+        ));
+        if (itemDisc > 0.009) {
+          rows.add(TableRow(
+            decoration: const BoxDecoration(color: Color(0xFFFAFAFC)),
+            children: [
+              _reviewBodyCell('', isTablet),
+              _reviewBodyCell('', isTablet),
+              _reviewBodyCell('', isTablet),
+              _reviewBodyCell('Item / line discounts', isTablet, weight: FontWeight.w600),
+              _reviewBodyCell('', isTablet),
+              _reviewBodyCell('- ${itemDisc.toStringAsFixed(2)}', isTablet,
+                  align: TextAlign.end,
+                  weight: FontWeight.w700,
+                  color: Colors.green.shade700),
+            ],
+          ));
+        }
+        rows.add(TableRow(
+          decoration: const BoxDecoration(color: Color(0xFFFAFAFC)),
+          children: [
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('VAT (${(_vatRate * 100).toStringAsFixed(0)}%)', isTablet, weight: FontWeight.w700),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell(jobVatAmount.toStringAsFixed(2), isTablet,
+                align: TextAlign.end, weight: FontWeight.w700),
+          ],
+        ));
+        rows.add(TableRow(
+          decoration: BoxDecoration(color: AppColors.primaryLight.withOpacity(0.12)),
+          children: [
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell('Department total', isTablet, weight: FontWeight.w900),
+            _reviewBodyCell('', isTablet),
+            _reviewBodyCell(currencyFormat.format(jobTotal), isTablet,
+                align: TextAlign.end,
+                weight: FontWeight.w900,
+                color: AppColors.secondaryLight),
+          ],
+        ));
+      }
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-        );
-      },
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Table(
+          columnWidths: _reviewDeptColumnWidths(),
+          defaultColumnWidth: const FlexColumnWidth(1),
+          border: _reviewTableBorder(),
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: rows,
+        ),
+      ),
     );
   }
 
@@ -1770,117 +1664,127 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 const SizedBox(height: 20),
               ] else ...[
                 // ── Department Jobs List ──────────────────────────────────────
-                _buildDepartmentJobs(isTablet),
+                _buildDepartmentJobs(isTablet, currencyFormat),
                 const SizedBox(height: 16),
 
-                // ── VAT Breakdown ─────────────────────────────────────────────
-                _SectionCard(
-                  title: 'Order Grand Total',
-                  icon: Icons.receipt_long_rounded,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: Column(
+                // ── Corporate + Payment (tablet: same row when individual) ───
+                if (isTablet) ...[
+                  if (_isCorporate == false)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTotalRow(
-                          'Gross Amount (Excl. VAT)',
-                          _grossSubtotal.toStringAsFixed(2),
-                        ),
-                        _buildTotalRow(
-                          'Item Discounts',
-                          '- ${_itemDiscountsTotal.toStringAsFixed(2)}',
-                          isNegative: true,
-                        ),
-                        _buildTotalRow(
-                          'Invoice Discount',
-                          '- ${_invoiceDiscountTotal.toStringAsFixed(2)}',
-                          isNegative: true,
-                        ),
-                        _buildTotalRow(
-                          'Promo Discount',
-                          '- ${_promoDiscountTotal.toStringAsFixed(2)}',
-                          isNegative: true,
-                        ),
-                        _buildTotalRow(
-                          'Total Taxable Amount',
-                          _netSubtotal.toStringAsFixed(2),
-                        ),
-                        _buildTotalRow(
-                          'VAT (15%)',
-                          _vatAmount.toStringAsFixed(2),
-                        ),
-                        const Divider(height: 24, thickness: 1),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total Amount',
-                              style: TextStyle(
-                                fontSize: isTablet ? 18 : 16,
-                                fontWeight: FontWeight.w900,
-                                color: const Color(0xFF1E2124),
-                                letterSpacing: 0.5,
-                              ),
+                        Expanded(
+                          child: _SectionCard(
+                            title: 'Corporate Customer?',
+                            icon: Icons.business_rounded,
+                            child: _CorporatePrompt(
+                              isCorporate: _isCorporate,
+                              onChanged: (val) => setState(() => _isCorporate = val),
                             ),
-                            Text(
-                              'SAR ${currencyFormat.format(_totalAmount)}',
-                              style: TextStyle(
-                                fontSize: isTablet ? 21 : 19,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.secondaryLight,
-                              ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _SectionCard(
+                            title: 'Payment Method (Select multiple if splitting)',
+                            icon: Icons.payment_rounded,
+                            child: _PaymentMethodSelector(
+                              selected: _selectedPayments,
+                              onChanged: (pms) => setState(() {
+                                _selectedPayments = pms;
+                                _syncSplitControllers();
+                              }),
+                              isTablet: isTablet,
                             ),
-                          ],
+                          ),
                         ),
                       ],
+                    )
+                  else if (_isCorporate == true)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _SectionCard(
+                            title: 'Corporate Customer?',
+                            icon: Icons.business_rounded,
+                            child: _CorporatePrompt(
+                              isCorporate: _isCorporate,
+                              onChanged: (val) => setState(() => _isCorporate = val),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _SectionCard(
+                            title: 'Payment Method',
+                            icon: Icons.payment_rounded,
+                            child: _PaymentMethodSelector(
+                              selected: _selectedPayments,
+                              onChanged: (_) {},
+                              isTablet: isTablet,
+                              corporateMonthlyOnly: true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    _SectionCard(
+                      title: 'Corporate Customer?',
+                      icon: Icons.business_rounded,
+                      child: _CorporatePrompt(
+                        isCorporate: _isCorporate,
+                        onChanged: (val) => setState(() => _isCorporate = val),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Corporate Prompt ──────────────────────────────────────────
-                _SectionCard(
-                  title: 'Corporate Customer?',
-                  icon: Icons.business_rounded,
-                  child: _CorporatePrompt(
-                    isCorporate: _isCorporate,
-                    onChanged: (val) => setState(() => _isCorporate = val),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Payment Method (when not corporate) ────────────────────────
-                if (_isCorporate == false) ...[
-                  _SectionCard(
-                    title: 'Payment Method (Select multiple if splitting)',
-                    icon: Icons.payment_rounded,
-                    child: _PaymentMethodSelector(
-                      selected: _selectedPayments,
-                      onChanged: (pms) => setState(() {
-                        _selectedPayments = pms;
-                        _syncSplitControllers();
-                      }),
-                      isTablet: isTablet,
-                    ),
-                  ),
                   const SizedBox(height: 16),
-
-                  // ── Inline Split Payment ────────────────────────────────────
-                  if (_selectedPayments.length >= 2) ...[
+                  if (_isCorporate == false && _selectedPayments.length >= 2) ...[
                     _buildInlineSplitPaymentCard(),
                     const SizedBox(height: 16),
                   ],
-                ],
-
-                if (_isCorporate == true) ...[
-                  _InfoBanner(
-                    icon: Icons.info_outline_rounded,
-                    message:
-                        'Monthly billing — no payment collected at this time.',
+                ] else ...[
+                  _SectionCard(
+                    title: 'Corporate Customer?',
+                    icon: Icons.business_rounded,
+                    child: _CorporatePrompt(
+                      isCorporate: _isCorporate,
+                      onChanged: (val) => setState(() => _isCorporate = val),
+                    ),
                   ),
                   const SizedBox(height: 16),
+                  if (_isCorporate == false) ...[
+                    _SectionCard(
+                      title: 'Payment Method (Select multiple if splitting)',
+                      icon: Icons.payment_rounded,
+                      child: _PaymentMethodSelector(
+                        selected: _selectedPayments,
+                        onChanged: (pms) => setState(() {
+                          _selectedPayments = pms;
+                          _syncSplitControllers();
+                        }),
+                        isTablet: isTablet,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_selectedPayments.length >= 2) ...[
+                      _buildInlineSplitPaymentCard(),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
+                  if (_isCorporate == true) ...[
+                    _SectionCard(
+                      title: 'Payment Method',
+                      icon: Icons.payment_rounded,
+                      child: _PaymentMethodSelector(
+                        selected: _selectedPayments,
+                        onChanged: (_) {},
+                        isTablet: isTablet,
+                        corporateMonthlyOnly: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ],
 
                 // ── Inline Billing + Vehicle Form (walk-in) ──────────────────
@@ -1927,42 +1831,6 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             if (context.mounted) Navigator.pop(context); // Exit the view
           });
         },
-      ),
-    );
-  }
-
-  Widget _buildTotalRow(
-    String label,
-    String value, {
-    bool isNegative = false,
-    bool isBold = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isBold ? 16 : 14,
-              fontWeight: isBold ? FontWeight.w900 : FontWeight.w500,
-              color: isBold ? const Color(0xFF1E2124) : Colors.grey.shade600,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isBold ? 17 : 15,
-              fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
-              color: isNegative
-                  ? Colors.red.shade700
-                  : (isBold
-                        ? AppColors.secondaryLight
-                        : const Color(0xFF1E2124)),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -2636,14 +2504,115 @@ class _PaymentMethodSelector extends StatelessWidget {
   final Set<PaymentMethod> selected;
   final ValueChanged<Set<PaymentMethod>> onChanged;
   final bool isTablet;
+  /// Corporate invoice: show monthly billing as active; counter methods greyed (not used).
+  final bool corporateMonthlyOnly;
   const _PaymentMethodSelector({
     required this.selected,
     required this.onChanged,
     required this.isTablet,
+    this.corporateMonthlyOnly = false,
   });
+
+  Widget _methodChip(PaymentMethod pm, {required bool isSelected}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.primaryLight : const Color(0xFFF5F6FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? AppColors.primaryLight : Colors.grey.shade200,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            pm.icon,
+            size: 16,
+            color: isSelected ? Colors.black : Colors.grey.shade400,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            pm.label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isSelected ? Colors.black : Colors.grey.shade500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (corporateMonthlyOnly) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.secondaryLight, width: 1.5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_month_rounded, size: 18, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  'Monthly billing (Corporate)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withOpacity(0.98),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Monthly billing — no payment collected at this time.',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Counter methods (Cash, Card, …) do not apply to this invoice.',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          IgnorePointer(
+            child: Opacity(
+              opacity: 0.42,
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: PaymentMethod.values
+                    .map((pm) => _methodChip(pm, isSelected: false))
+                    .toList(),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -2659,77 +2628,9 @@ class _PaymentMethodSelector extends StatelessWidget {
             }
             onChanged(newSelection);
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primaryLight
-                  : const Color(0xFFF5F6FA),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? AppColors.primaryLight
-                    : Colors.grey.shade200,
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  pm.icon,
-                  size: 16,
-                  color: isSelected ? Colors.black : Colors.grey.shade400,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  pm.label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected ? Colors.black : Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: _methodChip(pm, isSelected: isSelected),
         );
       }).toList(),
-    );
-  }
-}
-
-class _InfoBanner extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  const _InfoBanner({required this.icon, required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE3F2FD),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF90CAF9)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFF1565C0), size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1565C0),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -3201,6 +3102,265 @@ class _MockInvoicePrintDialog extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Draft-style order totals beside the final-review table (`pos_orders_view` DRAFT TOTALS).
+class _ReviewDraftOrderSummaryCard extends StatelessWidget {
+  final bool isTablet;
+  final NumberFormat currencyFormat;
+  final double grossSubtotal;
+  final double itemDiscountsTotal;
+  final double invoiceDiscountTotal;
+  final double promoDiscountTotal;
+  final double netSubtotal;
+  final double vatAmount;
+  final double totalAmount;
+
+  const _ReviewDraftOrderSummaryCard({
+    required this.isTablet,
+    required this.currencyFormat,
+    required this.grossSubtotal,
+    required this.itemDiscountsTotal,
+    required this.invoiceDiscountTotal,
+    required this.promoDiscountTotal,
+    required this.netSubtotal,
+    required this.vatAmount,
+    required this.totalAmount,
+  });
+
+  static const _border = Color(0xFFE8ECF3);
+
+  @override
+  Widget build(BuildContext context) {
+    final pad = EdgeInsets.all(isTablet ? 18.0 : 16.0);
+    final labelStyle = TextStyle(
+      fontSize: isTablet ? 13.0 : 12.0,
+      fontWeight: FontWeight.w600,
+      color: Colors.grey.shade600,
+    );
+    final valueStyle = TextStyle(
+      fontSize: isTablet ? 13.0 : 12.0,
+      fontWeight: FontWeight.w800,
+      color: const Color(0xFF1E2124),
+    );
+
+    Widget line(String label, String value, {bool negative = false}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Text(label, style: labelStyle)),
+            Text(
+              value,
+              style: valueStyle.copyWith(
+                color: negative ? Colors.red.shade700 : const Color(0xFF1E2124),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: pad,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'ORDER SUMMARY',
+            style: TextStyle(
+              fontSize: isTablet ? 13 : 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 14),
+          line('Gross Amount (Excl. VAT)', grossSubtotal.toStringAsFixed(2)),
+          line('Item Discounts', '- ${itemDiscountsTotal.toStringAsFixed(2)}', negative: true),
+          line('Invoice Discount', '- ${invoiceDiscountTotal.toStringAsFixed(2)}', negative: true),
+          line('Promo Discount', '- ${promoDiscountTotal.toStringAsFixed(2)}', negative: true),
+          line('Total Taxable Amount', netSubtotal.toStringAsFixed(2)),
+          line('VAT (15%)', vatAmount.toStringAsFixed(2)),
+          const Divider(height: 20, thickness: 1, color: _border),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryLight,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'TOTAL',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isTablet ? 14 : 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  'SAR ${currencyFormat.format(totalAmount)}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isTablet ? 16 : 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Department-wise assigned technicians (active assignments only).
+class _ReviewAssignTechniciansCard extends StatelessWidget {
+  final bool isTablet;
+  final List<PosOrderJob> jobs;
+
+  const _ReviewAssignTechniciansCard({
+    required this.isTablet,
+    required this.jobs,
+  });
+
+  static const _border = Color(0xFFE8ECF3);
+
+  String _commissionLabel(JobTechnician tech) {
+    if (tech.commissionAmount > 0 || tech.commissionPercent == 0) {
+      return 'SAR ${tech.commissionAmount.toStringAsFixed(2)}';
+    }
+    return '${tech.commissionPercent.toStringAsFixed(0)}%';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pad = EdgeInsets.all(isTablet ? 18.0 : 16.0);
+    final deptStyle = TextStyle(
+      fontSize: isTablet ? 14 : 13,
+      fontWeight: FontWeight.w800,
+      color: const Color(0xFF1E2124),
+    );
+    final jobIdStyle = TextStyle(
+      fontSize: isTablet ? 11.5 : 10.5,
+      fontWeight: FontWeight.w600,
+      color: Colors.grey.shade600,
+    );
+    final nameStyle = TextStyle(
+      fontSize: isTablet ? 13 : 12,
+      fontWeight: FontWeight.w700,
+      color: const Color(0xFF1E2124),
+    );
+    final commStyle = TextStyle(
+      fontSize: isTablet ? 11.5 : 10.5,
+      fontWeight: FontWeight.w600,
+      color: Colors.grey.shade700,
+    );
+
+    return Container(
+      padding: pad,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'ASSIGNED TECHNICIANS',
+            style: TextStyle(
+              fontSize: isTablet ? 13 : 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...jobs.expand((job) {
+            final techs = job.activeTechnicians;
+            return [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(job.department.toUpperCase(), style: deptStyle),
+                    Text('Job #${job.id}', style: jobIdStyle),
+                    const SizedBox(height: 8),
+                    if (techs.isEmpty)
+                      Text(
+                        'No technician assigned',
+                        style: TextStyle(
+                          fontSize: isTablet ? 12.5 : 11.5,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey.shade500,
+                        ),
+                      )
+                    else
+                      ...techs.map(
+                        (t) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.engineering_outlined,
+                                size: isTablet ? 20 : 18,
+                                color: AppColors.secondaryLight,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(t.name, style: nameStyle),
+                                    Text(
+                                      'Commission: ${_commissionLabel(t)}',
+                                      style: commStyle,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (job != jobs.last)
+                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+            ];
+          }),
+        ],
       ),
     );
   }
