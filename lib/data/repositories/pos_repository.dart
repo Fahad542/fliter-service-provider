@@ -200,10 +200,15 @@ class PosRepository {
     }
   }
 
+  /// POST body includes `{ employeeIds: [...], sync: true }` when [ApiConstants.cashierAssignSendSyncReplace].
+  /// Response may include `sync`, `removedCount`, and a detailed `message` (roster synced / unchanged).
   Future<AssignTechnicianResponse> assignTechnicians(
       String jobId, List<String> employeeIds, String token) async {
     final endpoint = ApiConstants.assignTechnicianEndpoint(jobId);
-    final body = {'employeeIds': employeeIds};
+    final body = <String, dynamic>{'employeeIds': employeeIds};
+    if (ApiConstants.cashierAssignSendSyncReplace) {
+      body['sync'] = true;
+    }
     _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.post(
@@ -278,6 +283,9 @@ class PosRepository {
     }
   }
 
+  /// POST body replaces line items for that job when the backend implements replace-all semantics.
+  /// If the server **merges** lines instead, clearing/removing products from the cashier cart
+  /// may not remove old lines — confirm with backend.
   Future<Map<String, dynamic>> updateJobPricing(
     String jobId,
     Map<String, dynamic> body,
@@ -297,6 +305,50 @@ class PosRepository {
       _logWalkInResponse(endpoint, response);
       return response;
     } catch (e) {
+      _logWalkInError(endpoint, e);
+      rethrow;
+    }
+  }
+
+  /// Unlocks a **completed** job for pricing/technician edits (`completed` → `edited`).
+  ///
+  /// Tries **PATCH** first (contract); if production only registered **POST** (common mismatch),
+  /// retries once with POST on the same path. A **404** on both means the route is not deployed
+  /// on that server — backend must expose `/cashier/job/:jobId/mark-edited`.
+  Future<Map<String, dynamic>> markCashierJobEdited(String jobId, String token) async {
+    final endpoint = ApiConstants.cashierJobMarkEditedEndpoint(jobId);
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+    try {
+      final response = await _apiService.patch(
+        endpoint,
+        <String, dynamic>{},
+        headers: headers,
+      );
+      _logWalkInResponse(endpoint, response);
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      final lower = e.toString().toLowerCase();
+      // Express: "Cannot PATCH /cashier/job/…/mark-edited" when no PATCH handler exists.
+      if (lower.contains('cannot patch')) {
+        try {
+          if (kDebugMode) {
+            debugPrint('[WALKIN] mark-edited: PATCH unavailable, retrying POST $endpoint');
+          }
+          final response = await _apiService.post(
+            endpoint,
+            <String, dynamic>{},
+            headers: headers,
+          );
+          _logWalkInResponse('$endpoint (POST)', response);
+          return response as Map<String, dynamic>;
+        } catch (e2) {
+          _logWalkInError('$endpoint (POST fallback)', e2);
+          rethrow;
+        }
+      }
       _logWalkInError(endpoint, e);
       rethrow;
     }

@@ -43,6 +43,34 @@ class PosProduct {
 
   static double _round2(double v) => (v * 100).roundToDouble() / 100;
 
+  /// Handles bool, int, and common string forms from APIs (`"true"`, `"1"`).
+  static bool _parseAllowDecimalQty(Map<String, dynamic> json) {
+    final v = json['allowDecimalQty'] ?? json['allow_decimal_qty'];
+    if (v == true) return true;
+    if (v == false) return false;
+    if (v is num) return v != 0;
+    if (v is String) {
+      final s = v.trim().toLowerCase();
+      if (s == 'true' || s == '1' || s == 'yes') return true;
+      if (s == 'false' || s == '0' || s == 'no') return false;
+    }
+    // Backend sometimes omits the flag for volume/weight UOM — allow decimals for those.
+    final u = json['unit']?.toString().toLowerCase().trim() ?? '';
+    if (u.isEmpty) return false;
+    const decimalUnits = <String>{
+      'liter',
+      'litre',
+      'l',
+      'ml',
+      'kg',
+      'g',
+      'gallon',
+      'gal',
+      'oz',
+    };
+    return decimalUnits.contains(u);
+  }
+
   factory PosProduct.fromJson(Map<String, dynamic> json) {
     final inclVat = double.tryParse(json['salePrice']?.toString() ?? json['sellingPrice']?.toString() ?? '0.0') ?? 0.0;
     final exclVat = double.tryParse(
@@ -64,7 +92,7 @@ class PosProduct {
       departmentName: json['departmentName'],
       imageUrl: json['imageUrl'],
       criticalStockPoint: int.tryParse(json['criticalStockPoint']?.toString() ?? '0') ?? 0,
-      allowDecimalQty: json['allowDecimalQty'] == true || json['allowDecimalQty'] == 'true',
+      allowDecimalQty: _parseAllowDecimalQty(json),
       isPriceEditable: json['isPriceEditable'] == true ||
           json['is_price_editable'] == true,
     );

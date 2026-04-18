@@ -173,6 +173,55 @@ class _PosTechnicianAssignmentViewState
       return;
     }
 
+    PosOrderJob? jobSnapshotPreAssign;
+    if (!widget.isWalkIn) {
+      final ordPre = posVm.selectedOrder ?? posVm.editingOrder;
+      if (ordPre != null) {
+        for (final j in ordPre.jobs) {
+          if (j.id == jobIdToUse) {
+            jobSnapshotPreAssign = j;
+            break;
+          }
+        }
+      }
+    }
+
+    // POST /assign on a **completed** job often fails or behaves as "add-only" (→ "No new
+    // assignments" when removing someone). Unlock first: completed → edited via mark-edited.
+    if (!widget.isWalkIn && jobSnapshotPreAssign != null) {
+      final catalog = vm.rawTechnicians;
+      final initialIds = catalogIdsForJobTechnicians(
+        widget.initialAssignedTechnicians,
+        catalog,
+      );
+      final selectedIds = Set<String>.from(assignVm.selectedTechnicianIds);
+      final techsChanged = initialIds.length != selectedIds.length ||
+          initialIds.difference(selectedIds).isNotEmpty ||
+          selectedIds.difference(initialIds).isNotEmpty;
+      final st =
+          PosViewModel.normalizeCashierJobStatus(jobSnapshotPreAssign.status);
+      if (techsChanged && st == 'completed') {
+        final oid = (posVm.selectedOrder?.id ?? posVm.editingOrder?.id)?.trim();
+        if (oid != null && oid.isNotEmpty) {
+          final marked = await posVm.tryMarkCashierJobEditedAfterMeaningfulChange(
+            context,
+            jobId: jobIdToUse,
+            orderId: oid,
+            refreshOrdersOnSuccess: false,
+          );
+          if (!mounted) return;
+          if (!marked) {
+            ToastService.showError(
+              context,
+              posVm.errorMessage ??
+                  'Could not unlock job to change technicians. Try again.',
+            );
+            return;
+          }
+        }
+      }
+    }
+
     final success = await vm.assignMultipleTechnicians(
       jobIdToUse,
       assignVm.selectedTechnicianIds.toList(),
@@ -182,18 +231,29 @@ class _PosTechnicianAssignmentViewState
 
     if (success) {
       final oid = (posVm.selectedOrder?.id ?? posVm.editingOrder?.id)?.trim();
+      final catalog = vm.rawTechnicians;
+      final initialIds = catalogIdsForJobTechnicians(
+        widget.initialAssignedTechnicians,
+        catalog,
+      );
+      final selectedIds = Set<String>.from(assignVm.selectedTechnicianIds);
       final List<JobTechnician> techs;
       if (assignVm.selectedTechnicianIds.isEmpty) {
         techs = [];
       } else {
-        var merged = List<JobTechnician>.from(vm.lastCashierAssignTechnicians);
-        if (merged.isEmpty) {
-          merged = _jobTechniciansFromSelection(
-            assignVm.selectedTechnicianIds,
-            vm.rawTechnicians,
-          );
+        final fromSelection = _jobTechniciansFromSelection(
+          assignVm.selectedTechnicianIds,
+          vm.rawTechnicians,
+        );
+        final fromServer = vm.lastCashierAssignTechnicians;
+        // POST may echo only a delta in `assigned` while sync applied the full roster — if counts
+        // disagree, trust the picker selection so Jabbar + Taha both show after re-adding someone.
+        if (fromServer.isNotEmpty &&
+            fromServer.length == fromSelection.length) {
+          techs = List<JobTechnician>.from(fromServer);
+        } else {
+          techs = fromSelection;
         }
-        techs = merged;
       }
       if (oid != null && oid.isNotEmpty) {
         posVm.applyJobTechniciansFromAssign(
@@ -202,11 +262,6 @@ class _PosTechnicianAssignmentViewState
           technicians: techs,
         );
       }
-      final initialIds = widget.initialAssignedTechnicians
-          .map((jt) => jt.pickerEmployeeId.trim())
-          .where((id) => id.isNotEmpty)
-          .toSet();
-      final selectedIds = Set<String>.from(assignVm.selectedTechnicianIds);
       final addedIds = selectedIds.difference(initialIds);
       final removedIds = initialIds.difference(selectedIds);
       final slotsBeforeRefresh = <String, int>{
@@ -222,16 +277,42 @@ class _PosTechnicianAssignmentViewState
         slotsBeforeRefresh: slotsBeforeRefresh,
       );
       if (!mounted) return;
+      final serverMsg = vm.assignmentMessage?.trim() ?? '';
       ToastService.showSuccess(
         context,
-        assignVm.selectedTechnicianIds.isEmpty
-            ? 'All technicians removed from this job'
-            : 'Technicians assigned successfully',
+        serverMsg.isNotEmpty
+            ? serverMsg
+            : (assignVm.selectedTechnicianIds.isEmpty
+                ? 'All technicians removed from this job'
+                : 'Technicians assigned successfully'),
       );
       if (oid != null && oid.isNotEmpty) {
         await posVm.fetchOrders(silent: true, preferredOrderId: oid);
       } else {
         await posVm.fetchOrders(silent: true);
+      }
+      if (!mounted) return;
+      // GET /cashier/orders can still include old assignments briefly (or if the server lags behind
+      // POST assign). Re-apply the list we just persisted so removals / empty state show correctly.
+      if (oid != null && oid.isNotEmpty) {
+        posVm.applyJobTechniciansFromAssign(
+          orderId: oid,
+          jobId: jobIdToUse,
+          technicians: techs,
+        );
+      }
+      // Realtime debounce refetches ~400ms later and can restore stale technicians; re-apply once more.
+      if (oid != null && oid.isNotEmpty) {
+        final oidDelayed = oid;
+        final jid = jobIdToUse;
+        final techsDelayed = List<JobTechnician>.from(techs);
+        Future<void>.delayed(const Duration(milliseconds: 550), () {
+          posVm.applyJobTechniciansFromAssign(
+            orderId: oidDelayed,
+            jobId: jid,
+            technicians: techsDelayed,
+          );
+        });
       }
       if (!mounted) return;
       didNavigateToOrders = true;

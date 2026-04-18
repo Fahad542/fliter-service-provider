@@ -170,9 +170,96 @@ class PosOrderJob {
     this.totalDiscountValue = 0.0,
   });
 
-  /// Technicians still assigned to this job (excludes cancelled / historical rows from API).
+  /// Rows that are not clearly terminated (cancelled / removed). May still include many
+  /// historical `completed` slices — use [distinctActiveTechnicians] for cashier UI counts.
   List<JobTechnician> get activeTechnicians =>
       technicians.where((t) => t.isActiveAssignment).toList();
+
+  /// One row per employee for cashier UI / assign picker. GET /cashier/orders returns full
+  /// **assignments** history (`completed`, `cancelled`, `in progress`, …). We pick the **best
+  /// current** row per employee: prefer `in progress` over `completed`, then latest `assignedAt`.
+  List<JobTechnician> get distinctActiveTechnicians {
+    final candidates =
+        technicians.where((t) => _assignmentRowNotTerminated(t)).toList();
+    if (candidates.isEmpty) return [];
+    final byEmployee = <String, List<JobTechnician>>{};
+    for (final t in candidates) {
+      final key = t.pickerEmployeeId.trim().isNotEmpty
+          ? t.pickerEmployeeId.trim()
+          : t.id.trim();
+      if (key.isEmpty) continue;
+      byEmployee.putIfAbsent(key, () => []).add(t);
+    }
+    final out = <JobTechnician>[];
+    for (final list in byEmployee.values) {
+      if (list.isEmpty) continue;
+      var best = list.first;
+      for (var i = 1; i < list.length; i++) {
+        best = _preferCurrentAssignmentRow(best, list[i]);
+      }
+      out.add(best);
+    }
+    // Same person often appears twice when one row has [employeeId] and another only assignment [id].
+    return _dedupeActiveTechniciansByName(out);
+  }
+
+  /// When the API omits [JobTechnician.employeeId] on some rows, [pickerEmployeeId] falls back to
+  /// assignment [id] and the same person becomes multiple buckets — merge by normalized [name].
+  static List<JobTechnician> _dedupeActiveTechniciansByName(List<JobTechnician> rows) {
+    if (rows.length <= 1) return rows;
+    final byName = <String, List<JobTechnician>>{};
+    var unnamed = 0;
+    for (final t in rows) {
+      final k = t.name.trim().toLowerCase();
+      byName.putIfAbsent(k.isEmpty ? '__noname_${unnamed++}' : k, () => []).add(t);
+    }
+    final out = <JobTechnician>[];
+    for (final list in byName.values) {
+      if (list.isEmpty) continue;
+      if (list.length == 1) {
+        out.add(list.first);
+        continue;
+      }
+      var best = list.first;
+      for (var i = 1; i < list.length; i++) {
+        best = _preferCurrentAssignmentRow(best, list[i]);
+      }
+      out.add(best);
+    }
+    return out;
+  }
+
+  static bool _assignmentRowNotTerminated(JobTechnician t) {
+    final s = (t.status ?? '').trim().toLowerCase();
+    if (s == 'cancelled' || s == 'canceled') return false;
+    if (s == 'removed' || s == 'rejected') return false;
+    return true;
+  }
+
+  /// Higher = more "current" for roster purposes.
+  static int _assignmentStatusRank(String? status) {
+    var s = (status ?? '').trim().toLowerCase();
+    if (s == 'in progress' || s == 'in_progress') return 5;
+    if (s == 'accepted' || s == 'accepted_by_technician') return 4;
+    if (s == 'pending' || s == 'assigned') return 3;
+    if (s.isEmpty) return 2;
+    if (s == 'completed') return 1;
+    return 2;
+  }
+
+  static JobTechnician _preferCurrentAssignmentRow(JobTechnician a, JobTechnician b) {
+    final ra = _assignmentStatusRank(a.status);
+    final rb = _assignmentStatusRank(b.status);
+    if (ra != rb) return ra > rb ? a : b;
+    final da = DateTime.tryParse(a.assignedAt ?? '') ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+    final db = DateTime.tryParse(b.assignedAt ?? '') ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+    if (da != db) return da.isAfter(db) ? a : b;
+    final ida = int.tryParse(a.id) ?? 0;
+    final idb = int.tryParse(b.id) ?? 0;
+    return ida >= idb ? a : b;
+  }
 
   bool get isCancelledJob {
     final s = status.trim().toLowerCase();
@@ -224,12 +311,29 @@ class PosOrderJob {
               .where((item) => item.jobId == null || item.jobId == jobId)
               .toList() ??
           [],
-      technicians:
-          (json['technicians'] as List?)
-              ?.map((t) => JobTechnician.fromJson(t))
-              .toList() ??
-          [],
+      technicians: _parseJobTechniciansList(json),
     );
+  }
+
+  /// GET /cashier/orders may use `technicians` and/or `assignments` (same shape as assign response).
+  /// Prefer **`technicians`** when non-empty — that is the job’s current roster from the API. Do not
+  /// merge with `assignments` (full history); merging re‑showed removed technicians after product
+  /// pricing updates. Fall back to `assignments` only when `technicians` is missing or empty.
+  static List<JobTechnician> _parseJobTechniciansList(Map<String, dynamic> json) {
+    List<JobTechnician> parseList(List<dynamic>? list) {
+      if (list == null) return [];
+      return list
+          .map((t) {
+            if (t is! Map) return null;
+            return JobTechnician.fromJson(Map<String, dynamic>.from(t));
+          })
+          .whereType<JobTechnician>()
+          .toList();
+    }
+
+    final tech = parseList(json['technicians'] as List?);
+    if (tech.isNotEmpty) return tech;
+    return parseList(json['assignments'] as List?);
   }
 }
 
@@ -242,6 +346,8 @@ class JobTechnician {
   final double commissionPercent;
   final double commissionAmount;
   final String? status;
+  /// From assignment row; used to pick latest row when API returns history.
+  final String? assignedAt;
 
   JobTechnician({
     required this.id,
@@ -250,6 +356,7 @@ class JobTechnician {
     required this.commissionPercent,
     required this.commissionAmount,
     this.status,
+    this.assignedAt,
   });
 
   /// Id used to match [PosTechnician.id] in the assign-technician picker.
@@ -268,10 +375,28 @@ class JobTechnician {
     return true;
   }
 
+  static String? _employeeIdFromJson(Map<String, dynamic> json) {
+    for (final k in ['employeeId', 'employee_id']) {
+      final v = json[k]?.toString().trim();
+      if (v != null && v.isNotEmpty) return v;
+    }
+    for (final nestedKey in ['employee', 'user', 'technician']) {
+      final o = json[nestedKey];
+      if (o is Map) {
+        final m = Map<String, dynamic>.from(o);
+        for (final idKey in ['id', 'employeeId', 'userId']) {
+          final v = m[idKey]?.toString().trim();
+          if (v != null && v.isNotEmpty) return v;
+        }
+      }
+    }
+    return null;
+  }
+
   factory JobTechnician.fromJson(Map<String, dynamic> json) {
     return JobTechnician(
       id: json['id']?.toString() ?? '',
-      employeeId: json['employeeId']?.toString() ?? json['employee_id']?.toString(),
+      employeeId: _employeeIdFromJson(json),
       name: json['name']?.toString() ??
           json['employeeName']?.toString() ??
           '',
@@ -292,6 +417,7 @@ class JobTechnician {
           ) ??
           0.0,
       status: json['status']?.toString() ?? json['assignmentStatus']?.toString() ?? '',
+      assignedAt: json['assignedAt']?.toString() ?? json['assigned_at']?.toString(),
     );
   }
 }
@@ -619,12 +745,23 @@ class PosOrder {
     return allDone ? 'COMPLETED' : 'PENDING';
   }
 
+  /// Each non-cancelled job must have line items and at least one technician before invoicing.
+  bool get meetsCashierInvoicePrerequisites {
+    final active = jobs.where((j) => !j.isCancelledJob).toList();
+    if (active.isEmpty) return false;
+    for (final job in active) {
+      if (job.items.isEmpty) return false;
+      if (job.distinctActiveTechnicians.isEmpty) return false;
+    }
+    return true;
+  }
+
   String get normalizedJobStatus {
     return _normalizeStatus(_latestJobStatus);
   }
 
   String get assignedTechnicianNames {
-    final techs = latestJob?.activeTechnicians ?? const <JobTechnician>[];
+    final techs = latestJob?.distinctActiveTechnicians ?? const <JobTechnician>[];
     final names = techs
         .map((t) => t.name.trim())
         .where((n) => n.isNotEmpty)
@@ -661,13 +798,13 @@ class PosOrder {
 
   String get statusText {
     final job = latestJob;
-    if (job != null && job.activeTechnicians.length > 1) {
-      final completedCount = job.activeTechnicians
+    if (job != null && job.distinctActiveTechnicians.length > 1) {
+      final completedCount = job.distinctActiveTechnicians
           .where((t) => t.status?.toLowerCase() == 'completed')
           .length;
       // If at least one has completed, but not all of them
       if (completedCount > 0 &&
-          completedCount < job.activeTechnicians.length) {
+          completedCount < job.distinctActiveTechnicians.length) {
         return 'COMPLETED BY $completedCount TECHNICIAN${completedCount > 1 ? 'S' : ''} STILL PENDING';
       }
     }

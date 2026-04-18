@@ -13,6 +13,7 @@ import '../../../models/expense_category_model.dart'; // Added
 import '../../../models/cashier_expense_models.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../utils/pos_shell_scaffold.dart';
 
 import '../More Tab/pos_more_view.dart'; // Added
 import '../Promo/promo_code_dialog.dart'; // Added
@@ -93,7 +94,8 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
         title: 'Petty Cash',
         showBackButton: false,
         showHamburger: true,
-        onMenuPressed: () => Scaffold.of(context).openDrawer(),
+        onMenuPressed: () =>
+            kPosShellScaffoldKey.currentState?.openDrawer(),
       ),
       body: wrapPosShellRailBody(
         context,

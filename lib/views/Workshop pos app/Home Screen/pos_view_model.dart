@@ -14,6 +14,7 @@ import '../../../services/realtime_service.dart';
 import '../../../models/walk_in_customer_model.dart';
 import '../../../models/customer_search_model.dart';
 import '../../../models/create_invoice_model.dart';
+import '../../../models/pos_payment_method.dart';
 import '../../../models/invoiced_orders_model.dart';
 import '../../../models/expense_category_model.dart'; // Added
 import '../../../models/cashier_complete_job_model.dart'; // Added
@@ -135,6 +136,10 @@ class PosViewModel extends ChangeNotifier {
   PosOrder? _editingOrder;
   String? _editingCompletingOrderId;
 
+  /// Orders summary panel: corporate vs individual + payment method(s) before Generate Invoice.
+  bool? _invoicePaymentIsCorporate;
+  final Set<PaymentMethod> _invoicePaymentMethods = <PaymentMethod>{};
+
   String get customerName => _customerName;
   String get vatNumber => _vatNumber;
   String get mobile => _mobile;
@@ -153,6 +158,12 @@ class PosViewModel extends ChangeNotifier {
   WalkInOrder? get lastPlacedWalkInOrder => _lastPlacedWalkInOrder;
   String? get lastCreatedWalkInOrderId => _lastCreatedWalkInOrderId;
   String? get lastCreatedWalkInVehicleNumber => _lastCreatedWalkInVehicleNumber;
+
+  bool? get invoicePaymentIsCorporate => _invoicePaymentIsCorporate;
+  Set<PaymentMethod> get invoicePaymentMethods =>
+      Set<PaymentMethod>.unmodifiable(_invoicePaymentMethods);
+  bool get invoicePaymentSelectionReady =>
+      _invoicePaymentIsCorporate != null && _invoicePaymentMethods.isNotEmpty;
 
   /// Job id for a department on the last successful walk-in create response (shell).
   String? jobIdForPlacedDepartment(String departmentId) {
@@ -190,7 +201,6 @@ class PosViewModel extends ChangeNotifier {
   String? _loadingOrderId;
   /// Cashier "Mark complete" API in flight for this job (orders list, product grid, sheets).
   String? _cashierCompletingJobId;
-
   bool get isLoading => _isLoading;
   bool get ordersApiFetchCompleted => _ordersApiFetchCompleted;
   bool get isInvoicePanelSaveBusy => _invoicePanelSaveBusy;
@@ -212,8 +222,28 @@ class PosViewModel extends ChangeNotifier {
   }
 
   void selectOrder(PosOrder? order) {
+    if (_selectedOrder?.id != order?.id) {
+      _invoicePaymentIsCorporate = null;
+      _invoicePaymentMethods.clear();
+    }
     _selectedOrder = order;
     notifyListeners();
+  }
+
+  void setInvoicePaymentPreferences({
+    required bool isCorporate,
+    required Set<PaymentMethod> payments,
+  }) {
+    _invoicePaymentIsCorporate = isCorporate;
+    _invoicePaymentMethods
+      ..clear()
+      ..addAll(payments);
+    notifyListeners();
+  }
+
+  void _clearInvoicePaymentPreferences() {
+    _invoicePaymentIsCorporate = null;
+    _invoicePaymentMethods.clear();
   }
 
   /// Merge technicians from POST /cashier/job/:id/assign before [fetchOrders] returns.
@@ -237,6 +267,8 @@ class PosViewModel extends ChangeNotifier {
       items: job.items,
       technicians: technicians,
       amountBeforeDiscount: job.amountBeforeDiscount,
+      amountAfterDiscount: job.amountAfterDiscount,
+      amountAfterPromo: job.amountAfterPromo,
       totalAmount: job.totalAmount,
       vatAmount: job.vatAmount,
       vatPercent: job.vatPercent,
@@ -639,6 +671,221 @@ class PosViewModel extends ChangeNotifier {
       if (explicitClearPromo) 'promoCode': null,
       if (explicitClearPromo) 'promoCodeId': null,
     };
+  }
+
+  static String normalizeCashierJobStatus(String? raw) {
+    var s = (raw ?? '').toLowerCase().trim();
+    if (s == 'complete') return 'completed';
+    if (s == 'job_edited') return 'edited';
+    return s;
+  }
+
+  PosProduct? _productById(String id) {
+    final want = id.trim();
+    if (want.isEmpty) return null;
+    for (final p in _allProducts) {
+      if (p.id == want) return p;
+    }
+    return null;
+  }
+
+  static int _moneyKey(double v) => (v * 100).round();
+
+  List<CartItem> _cartItemsSnapshotFromJob(List<PosOrderJobItem> jobItems) {
+    final out = <CartItem>[];
+    for (final ji in jobItems) {
+      final p = _productById(ji.productId);
+      if (p == null) continue;
+      final rawDt = (ji.discountType ?? '').trim();
+      final pct = rawDt.toLowerCase().contains('percent');
+      final dv = ji.discountValue ?? 0.0;
+      final ci = CartItem(
+        product: p,
+        quantity: ji.qty,
+        discount: dv,
+        isDiscountPercent: pct,
+      );
+      if (p.isService && p.isPriceEditable && ji.unitPrice > 0) {
+        ci.serviceUnitPrice = ji.unitPrice;
+      }
+      out.add(ci);
+    }
+    return out;
+  }
+
+  String _pricingLineSigFromCartItem(CartItem item, String defaultDepartmentId) {
+    final lineDept = item.product.departmentId?.trim().isNotEmpty == true
+        ? item.product.departmentId!.trim()
+        : defaultDepartmentId;
+    if (item.product.isService) {
+      final buf = StringBuffer(
+        'S|$lineDept|${item.product.id}|${item.quantity}',
+      );
+      if (item.discount > 0) {
+        buf.write('|${item.isDiscountPercent ? 'p' : 'a'}:${_moneyKey(item.discount)}');
+      }
+      if (item.product.isPriceEditable) {
+        buf.write('|u:${_moneyKey(item.effectiveUnitPrice)}');
+      }
+      return buf.toString();
+    }
+    final buf = StringBuffer(
+      'P|$lineDept|${item.product.id}|${item.quantity}',
+    );
+    if (item.discount > 0) {
+      buf.write('|${item.isDiscountPercent ? 'p' : 'a'}:${_moneyKey(item.discount)}');
+    }
+    return buf.toString();
+  }
+
+  bool _multisetLineSigsEqual(
+    List<CartItem> a,
+    List<CartItem> b,
+    String defaultDepartmentId,
+  ) {
+    if (a.length != b.length) return false;
+    final sa = a.map((c) => _pricingLineSigFromCartItem(c, defaultDepartmentId)).toList()
+      ..sort();
+    final sb = b.map((c) => _pricingLineSigFromCartItem(c, defaultDepartmentId)).toList()
+      ..sort();
+    for (var i = 0; i < sa.length; i++) {
+      if (sa[i] != sb[i]) return false;
+    }
+    return true;
+  }
+
+  bool _jobOrderPricingMatchesPersisted(
+    Map<String, dynamic> body,
+    PosOrderJob job,
+    PosOrder order,
+  ) {
+    final gtv = (body['totalDiscountValue'] as num?)?.toDouble() ?? 0.0;
+    final gtt = (body['totalDiscountType'] as String?)?.toLowerCase() ?? 'amount';
+    final rawGt =
+        job.totalDiscountType ?? order.totalDiscountType ?? 'amount';
+    final expT =
+        rawGt.toLowerCase().contains('percent') ? 'percent' : 'amount';
+    if (gtt != expT) return false;
+    final expV = job.totalDiscountValue != 0 ||
+            (job.totalDiscountType != null && job.totalDiscountType!.trim().isNotEmpty)
+        ? job.totalDiscountValue
+        : (order.totalDiscountValue ?? 0);
+    if (_moneyKey(gtv) != _moneyKey(expV)) return false;
+
+    final jobPid = (job.promoCodeId ?? order.promoCodeId ?? '').trim();
+    final explicitClear =
+        body.containsKey('promoCode') && body['promoCode'] == null;
+    if (explicitClear) {
+      return jobPid.isEmpty;
+    }
+    final bodyPid = body['promoCodeId']?.toString().trim() ?? '';
+    if (bodyPid.isEmpty && jobPid.isEmpty) return true;
+    return bodyPid == jobPid;
+  }
+
+  bool _completedJobEditHasMeaningfulPricingChange({
+    required PosOrderJob job,
+    required PosOrder order,
+    required List<CartItem> itemsForJob,
+    required String defaultDept,
+    required Map<String, dynamic> body,
+  }) {
+    final snap = _cartItemsSnapshotFromJob(job.items);
+    if (!_multisetLineSigsEqual(itemsForJob, snap, defaultDept)) {
+      return true;
+    }
+    return !_jobOrderPricingMatchesPersisted(body, job, order);
+  }
+
+  /// PATCH `/cashier/job/:id/mark-edited` — flips **completed → edited** on success.
+  ///
+  /// Returns **true** only when the server accepts the patch. Callers that must POST pricing on a
+  /// completed job **must** get `true` before [updateJobPricing], or the backend will reject.
+  /// Do **not** call on open — only after snapshot diff (or technician diff) says there is a change.
+  Future<bool> tryMarkCashierJobEditedAfterMeaningfulChange(
+    BuildContext? context, {
+    required String jobId,
+    required String orderId,
+    bool refreshOrdersOnSuccess = true,
+  }) async {
+    if (jobId.trim().isEmpty) return false;
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) return false;
+      final res = await posRepository.markCashierJobEdited(jobId, token);
+      final ok = res['success'] != false;
+      if (ok) {
+        if (refreshOrdersOnSuccess) {
+          await fetchOrders(silent: true, preferredOrderId: orderId);
+        }
+        await _refreshEditingOrderSnapshot(orderId);
+        return true;
+      }
+      // Client still had `completed` while server is already `edited` → redundant PATCH fails.
+      if (await _recoverEditingOrderIfJobAlreadyEdited(jobId, orderId)) {
+        return true;
+      }
+      if (context != null && context.mounted) {
+        ToastService.showError(
+          context,
+          res['message']?.toString() ?? 'Could not mark job as edited',
+        );
+      }
+      return false;
+    } catch (e) {
+      if (await _recoverEditingOrderIfJobAlreadyEdited(jobId, orderId)) {
+        return true;
+      }
+      final msg = _extractErrorMessage(e.toString());
+      if (context != null && context.mounted) {
+        ToastService.showError(context, msg);
+      }
+      return false;
+    }
+  }
+
+  /// Keeps [_editingOrder] job status in sync with the server after mark-edited / list refresh,
+  /// so a second Save on the same screen does not call mark-edited again (would fail).
+  Future<void> _refreshEditingOrderSnapshot(String orderId) async {
+    if (_editingOrder?.id != orderId) return;
+    final detail = await loadCashierOrderDetail(orderId);
+    if (detail != null) {
+      _editingOrder = detail;
+    } else {
+      _syncEditingOrderFromOrdersList(orderId);
+    }
+    notifyListeners();
+  }
+
+  void _syncEditingOrderFromOrdersList(String orderId) {
+    if (_editingOrder?.id != orderId) return;
+    try {
+      _editingOrder = _orders.firstWhere((o) => o.id == orderId);
+    } catch (_) {}
+  }
+
+  Future<bool> _recoverEditingOrderIfJobAlreadyEdited(String jobId, String orderId) async {
+    if (_editingOrder?.id != orderId) return false;
+    final detail = await loadCashierOrderDetail(orderId);
+    if (detail == null) return false;
+    PosOrderJob? job;
+    for (final j in detail.jobs) {
+      if (j.id == jobId) {
+        job = j;
+        break;
+      }
+    }
+    if (normalizeCashierJobStatus(job?.status) != 'edited') return false;
+    _editingOrder = detail;
+    notifyListeners();
+    return true;
+  }
+
+  static bool _responseLooksLikeCompletedJobPricingBlock(Map<String, dynamic> response) {
+    if (response['success'] != false) return false;
+    final m = (response['message']?.toString() ?? '').toLowerCase();
+    return m.contains('completed') &&
+        (m.contains('pricing') || m.contains('update'));
   }
 
   void _applyWalkInOrderSuccess(
@@ -1146,8 +1393,62 @@ class PosViewModel extends ChangeNotifier {
         sourceOrder: _editingOrder,
       );
 
-      final response = await posRepository.updateJobPricing(jobId, body, token);
-      final success = response['success'] != false;
+      final st = normalizeCashierJobStatus(jobMeta?.status);
+      final isCompleted = st == 'completed';
+      final meaningfulPricingChange = jobMeta != null &&
+          _completedJobEditHasMeaningfulPricingChange(
+            job: jobMeta,
+            order: _editingOrder!,
+            itemsForJob: itemsForJob,
+            defaultDept: defaultDept.isNotEmpty ? defaultDept : '0',
+            body: body,
+          );
+
+      // Backend rejects POST …/pricing while the job is still `completed` — never POST in that case
+      // unless we successfully PATCH mark-edited first (or there is nothing to persist).
+      if (isCompleted && !meaningfulPricingChange) {
+        if (context.mounted) {
+          ToastService.showInfo(context, 'No changes to save');
+        }
+        return true;
+      }
+
+      if (isCompleted && meaningfulPricingChange) {
+        final marked = await tryMarkCashierJobEditedAfterMeaningfulChange(
+          context,
+          jobId: jobId,
+          orderId: orderId,
+          refreshOrdersOnSuccess: false,
+        );
+        if (!marked) {
+          _errorMessage = 'Could not unlock this job for editing';
+          if (context.mounted) {
+            ToastService.showError(
+              context,
+              'Could not unlock this job for editing. Please try again.',
+            );
+          }
+          return false;
+        }
+      }
+
+      var response = await posRepository.updateJobPricing(jobId, body, token);
+      var success = response['success'] != false;
+
+      if (!success &&
+          isCompleted &&
+          _responseLooksLikeCompletedJobPricingBlock(response)) {
+        final marked = await tryMarkCashierJobEditedAfterMeaningfulChange(
+          context,
+          jobId: jobId,
+          orderId: orderId,
+          refreshOrdersOnSuccess: false,
+        );
+        if (marked) {
+          response = await posRepository.updateJobPricing(jobId, body, token);
+          success = response['success'] != false;
+        }
+      }
 
       if (success) {
         // GET /cashier/orders is authoritative for draft rows; no merge of POST …/pricing body.
@@ -1156,7 +1457,10 @@ class PosViewModel extends ChangeNotifier {
 
       if (context.mounted) {
         if (success) {
-          ToastService.showSuccess(context, response['message']?.toString() ?? 'Order updated successfully');
+          ToastService.showSuccess(
+            context,
+            response['message']?.toString() ?? 'Order updated successfully',
+          );
         } else {
           final msg = response['message']?.toString() ?? 'Failed to update order';
           _errorMessage = msg;
@@ -1787,6 +2091,12 @@ class PosViewModel extends ChangeNotifier {
         _orderStats = response.stats;
         _lastCashierOrdersFetchedAt = DateTime.now();
 
+        if (_editingOrder != null) {
+          try {
+            _editingOrder = _orders.firstWhere((o) => o.id == _editingOrder!.id);
+          } catch (_) {}
+        }
+
         final preferredId = (preferredOrderId?.trim().isNotEmpty == true)
             ? preferredOrderId!.trim()
             : ((_lastCreatedWalkInOrderId ?? '').trim().isNotEmpty
@@ -2067,6 +2377,24 @@ class PosViewModel extends ChangeNotifier {
     return s == 'walk_in';
   }
 
+  bool isStandardWalkInOrderForBilling(PosOrder o) =>
+      _isStandardWalkInOrderForBilling(o);
+
+  /// Plate, name, and mobile required for walk-in invoice (VM fields or order payload).
+  bool walkInBillingReadyForInvoice(PosOrder order) {
+    if (!_isStandardWalkInOrderForBilling(order)) return true;
+    final name = _customerName.trim().isNotEmpty
+        ? _customerName.trim()
+        : (order.customer?.name ?? '').trim();
+    final mobile = _mobile.trim().isNotEmpty
+        ? _mobile.trim()
+        : (order.customer?.mobile ?? '').trim();
+    final plate = _vehicleNumber.trim().isNotEmpty
+        ? _vehicleNumber.trim()
+        : order.plateNumber.trim();
+    return name.isNotEmpty && mobile.isNotEmpty && plate.isNotEmpty;
+  }
+
   Map<String, dynamic> _buildWalkInBillingPatchBody(PosOrder order) {
     final nameOrder = (order.customer?.name ?? '').trim();
     final mobOrder = (order.customer?.mobile ?? '').trim();
@@ -2146,6 +2474,38 @@ class PosViewModel extends ChangeNotifier {
     return body;
   }
 
+  /// Production [createInvoice] may still require **completed** jobs only. After mark-edited,
+  /// jobs stay **edited** until `complete-cashier` with `{}` (recalc, no line overwrite).
+  /// Mirrors backend behavior when present; safe no-op when there are no edited jobs.
+  Future<String?> _finalizeEditedJobsBeforeInvoice(PosOrder order, String token) async {
+    for (final job in order.jobs) {
+      if (job.isCancelledJob) continue;
+      final s = job.status.trim().toLowerCase();
+      if (s != 'edited' && s != 'job_edited') continue;
+
+      debugPrint(
+        'InvoiceFlow: finalizing edited job jobId=${job.id} before createInvoice',
+      );
+      final readyResponse = await posRepository.checkJobCompleteReady(job.id, token);
+      if (!readyResponse.success || !readyResponse.isReady) {
+        return readyResponse.message.isNotEmpty
+            ? readyResponse.message
+            : 'Job is not ready to invoice. Add billable lines and technicians first.';
+      }
+      final response = await posRepository.completeCashierJob(
+        job.id,
+        token,
+        body: <String, dynamic>{},
+      );
+      if (!response.success) {
+        return response.message.isNotEmpty
+            ? response.message
+            : 'Could not finalize edited job before invoice.';
+      }
+    }
+    return null;
+  }
+
   Future<CreateInvoiceResponse?> generateInvoice(
     String orderId, {
     String? paymentMethod,
@@ -2223,10 +2583,23 @@ class PosViewModel extends ChangeNotifier {
         }
       }
 
+      final freshOrder = await loadCashierOrderDetail(orderId);
+      final orderForFinalize = freshOrder ?? orderCtx;
+      if (orderForFinalize != null) {
+        final finalizeError = await _finalizeEditedJobsBeforeInvoice(orderForFinalize, token);
+        if (finalizeError != null) {
+          _errorMessage = finalizeError;
+          _isInvoiceLoading = false;
+          _loadingOrderId = null;
+          notifyListeners();
+          return CreateInvoiceResponse(success: false, message: finalizeError);
+        }
+      }
+
       final request = CreateInvoiceRequest(
         orderId: orderId,
         discountAmount: 0.0,
-        invoiceDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        invoiceDate: DateTime.now().toIso8601String(),
         paymentMethod: paymentMethod,
         payments: payments,
         isCorporate: isCorporate,
@@ -2279,6 +2652,7 @@ class PosViewModel extends ChangeNotifier {
         debugPrint(
           'InvoiceFlow: completed. source=${detailedResponse.success ? 'by-order' : 'create'} total=${finalResponse.invoice?.totalAmount ?? 0}',
         );
+        _clearInvoicePaymentPreferences();
         return finalResponse;
       } else {
         debugPrint(

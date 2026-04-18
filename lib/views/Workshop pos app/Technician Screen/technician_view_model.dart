@@ -230,6 +230,15 @@ class TechnicianViewModel extends ChangeNotifier {
       final response = await _posRepository.assignTechnicians(jobId, employeeIds, token);
 
       _assignmentMessage = response.message;
+      final m = (_assignmentMessage ?? '').toLowerCase();
+      if (!response.success &&
+          response.sync != true &&
+          m.contains('no new assignments') &&
+          employeeIds.isNotEmpty) {
+        _assignmentMessage =
+            'Cannot apply removals: server treats assign as add-only. Backend must sync '
+            '`employeeIds` to the full desired list (or honor sync: true).';
+      }
       if (response.isEffectiveAssignFailure(employeeIds)) {
         _assignmentSuccess = false;
         if (_assignmentMessage == null || _assignmentMessage!.trim().isEmpty) {

@@ -67,8 +67,6 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           : const PosScreenAppBar(
               title: 'Store Closing',
               showBackButton: false,
-              showGlobalLeft: true,
-              showHamburger: false,
             ),
       body: wrapPosShellRailBody(
         context,

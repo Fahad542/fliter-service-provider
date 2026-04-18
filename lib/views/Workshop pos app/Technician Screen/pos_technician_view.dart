@@ -8,6 +8,7 @@ import '../Home Screen/pos_view_model.dart';
 import '../../../models/pos_technician_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../utils/pos_shell_scaffold.dart';
 
 class PosTechnicianView extends StatefulWidget {
   /// When embedded in [PosShell], keep drawer + no back. When pushed from another
@@ -26,6 +27,49 @@ class PosTechnicianView extends StatefulWidget {
 }
 
 class _PosTechnicianViewState extends State<PosTechnicianView> {
+  /// All | Offline | Online — filters by [PosTechnician.isOnline].
+  String _presenceTab = 'All';
+
+  Widget _buildPresenceTab(String title) {
+    final isSelected = _presenceTab == title;
+    return GestureDetector(
+      onTap: () {
+        if (!isSelected) {
+          setState(() => _presenceTab = title);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFCC247) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected
+              ? null
+              : Border.all(color: const Color(0xFFE8ECF3), width: 1.5),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? const Color(0xFF23262D) : const Color(0xFF64748B),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<PosTechnician> _filterByPresence(
+    List<PosTechnician> searched,
+  ) {
+    if (_presenceTab == 'All') return searched;
+    if (_presenceTab == 'Online') {
+      return searched.where((t) => t.isOnline).toList();
+    }
+    return searched.where((t) => !t.isOnline).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +89,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         showBackButton: widget.showBackButton,
         showHamburger: widget.showHamburger,
         onMenuPressed: widget.showHamburger
-            ? () => Scaffold.of(context).openDrawer()
+            ? () => kPosShellScaffoldKey.currentState?.openDrawer()
             : null,
       ),
       body: wrapPosShellRailBody(
@@ -82,7 +126,8 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
               );
             }
 
-            final technicians = vm.technicians;
+            final searched = vm.technicians;
+            final technicians = _filterByPresence(searched);
             final horizontalPadding = isTablet ? 32.0 : 16.0;
 
             return Column(
@@ -96,9 +141,22 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
                   ),
                   child: _buildSearchSection(context, isTablet),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Row(
+                    children: [
+                      _buildPresenceTab('All'),
+                      const SizedBox(width: 12),
+                      _buildPresenceTab('Offline'),
+                      const SizedBox(width: 12),
+                      _buildPresenceTab('Online'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Expanded(
-                  child: technicians.isEmpty
+                  child: searched.isEmpty
                       ? SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: EdgeInsets.symmetric(
@@ -110,16 +168,43 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
                             child: Center(child: Text('No technicians found')),
                           ),
                         )
-                      : SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            0,
-                            horizontalPadding,
-                            24,
-                          ),
-                          child: _buildTechnicianGrid(technicians, isTablet),
-                        ),
+                      : technicians.isEmpty
+                          ? SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: horizontalPadding,
+                                vertical: 16,
+                              ),
+                              child: SizedBox(
+                                height: 280,
+                                child: Center(
+                                  child: Text(
+                                    _presenceTab == 'Online'
+                                        ? 'No online technicians'
+                                        : _presenceTab == 'Offline'
+                                            ? 'No offline technicians'
+                                            : 'No technicians found',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.fromLTRB(
+                                horizontalPadding,
+                                0,
+                                horizontalPadding,
+                                24,
+                              ),
+                              child: _buildTechnicianGrid(
+                                technicians,
+                                isTablet,
+                              ),
+                            ),
                   ),
               ],
             );

@@ -16,6 +16,7 @@ import '../../../models/pos_order_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import 'pos_order_review_view.dart';
+import 'pos_invoice_payment_dialog.dart';
 
 class PosOrdersView extends StatefulWidget {
   const PosOrdersView({super.key});
@@ -38,8 +39,6 @@ class _PosOrdersViewState extends State<PosOrdersView> {
       appBar: const PosScreenAppBar(
         title: 'Orders',
         showBackButton: false,
-        showGlobalLeft: true,
-        showHamburger: false,
       ),
       body: Stack(
         children: [
@@ -92,51 +91,22 @@ class _PosOrdersViewState extends State<PosOrdersView> {
   }
 }
 
-class _OrdersTabletLayout extends StatelessWidget {
+/// Tablet: search + tabs on top; vertical order list in the first column (beside shell rail), then
+/// job detail and draft totals.
+class _OrdersTabletLayout extends StatefulWidget {
   final PosViewModel vm;
   const _OrdersTabletLayout({required this.vm});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _OrdersFullWidthTopBar(vm: vm),
-        const Divider(height: 1, color: Color(0xFFE8ECF3)),
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 3,
-                child: _OrderDetailPanel(vm: vm),
-              ),
-              const VerticalDivider(width: 1, color: Color(0xFFE8ECF3)),
-              SizedBox(
-                width: 340,
-                child: _OrderSummaryPanel(vm: vm),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  State<_OrdersTabletLayout> createState() => _OrdersTabletLayoutState();
 }
 
-/// Search, new order, and horizontal draft list spanning the full content width (above jobs + totals).
-class _OrdersFullWidthTopBar extends StatefulWidget {
-  final PosViewModel vm;
-  const _OrdersFullWidthTopBar({required this.vm});
-
-  @override
-  State<_OrdersFullWidthTopBar> createState() => _OrdersFullWidthTopBarState();
-}
-
-class _OrdersFullWidthTopBarState extends State<_OrdersFullWidthTopBar> {
+class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
   String _selectedTab = 'All';
   String? _lastSelectedOrderId;
   String? _lastSelectedOrderBadge;
+
+  static const double _kOrderListColumnWidth = 184;
 
   Widget _buildTab(String title) {
     final isSelected = _selectedTab == title;
@@ -170,9 +140,10 @@ class _OrdersFullWidthTopBarState extends State<_OrdersFullWidthTopBar> {
 
   @override
   Widget build(BuildContext context) {
+    final vm = widget.vm;
     // Auto-follow: only switch tab when the *same* order's status changes
     // (e.g. after mark-complete), not when the user manually switches tabs.
-    final selected = widget.vm.selectedOrder;
+    final selected = vm.selectedOrder;
     if (selected != null && _selectedTab != 'All') {
       final currentBadge = selected.jobsAggregateBadgeLabel;
       if (_lastSelectedOrderId == selected.id &&
@@ -191,7 +162,9 @@ class _OrdersFullWidthTopBarState extends State<_OrdersFullWidthTopBar> {
       _lastSelectedOrderBadge = currentBadge;
     }
 
-    final filteredOrders = widget.vm.orders.where((order) {
+    final filteredOrders = vm.orders.where((order) {
+      final isCancelled = order.status.toLowerCase() == 'cancelled';
+      if (isCancelled) return false;
       if (_selectedTab == 'All') return true;
       final isCompleted = order.jobsAggregateBadgeLabel == 'COMPLETED';
       if (_selectedTab == 'Pending') {
@@ -201,76 +174,285 @@ class _OrdersFullWidthTopBarState extends State<_OrdersFullWidthTopBar> {
       }
     }).toList();
 
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: PosSearchBar(
-                      hintText: 'Search plate, name, ID...',
-                      onChanged: (val) => widget.vm.setOrderSearchQuery(val),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                _OrdersNewOrderButton(),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Row(
-              children: [
-                _buildTab('All'),
-                const SizedBox(width: 12),
-                _buildTab('Pending'),
-                const SizedBox(width: 12),
-                _buildTab('Completed'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: SizedBox(
-              height: 72,
-              width: double.infinity,
-              child: filteredOrders.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No ${_selectedTab.toLowerCase()} orders found',
-                        style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w600),
+    const draftColumnWidth = 392.0;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 12, 20, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 44,
+                        child: PosSearchBar(
+                          hintText: 'Search plate, name, ID...',
+                          onChanged: (val) =>
+                              vm.setOrderSearchQuery(val),
+                        ),
                       ),
-                    )
-                  : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      scrollDirection: Axis.horizontal,
-                      itemCount: filteredOrders.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 16),
-                      itemBuilder: (context, index) {
-                        final order = filteredOrders[index];
-                        final isSelected = widget.vm.selectedOrder?.id == order.id;
-                        return _HorizontalOrderTile(
-                          order: order,
-                          isSelected: isSelected,
-                          onTap: () => widget.vm.selectOrder(order),
-                        );
-                      },
                     ),
+                    const SizedBox(width: 12),
+                    _OrdersNewOrderButton(),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: SizedBox(
+                        width: _kOrderListColumnWidth,
+                        child: ColoredBox(
+                          color: Colors.white,
+                          child: filteredOrders.isEmpty
+                              ? Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    child: Text(
+                                      'No ${_selectedTab.toLowerCase()} orders found',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade400,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    14,
+                                    8,
+                                    12,
+                                    16,
+                                  ),
+                                  itemCount: filteredOrders.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final order = filteredOrders[index];
+                                    final isSelected =
+                                        vm.selectedOrder?.id == order.id;
+                                    return _HorizontalOrderTile(
+                                      order: order,
+                                      isSelected: isSelected,
+                                      fullWidth: true,
+                                      onTap: () => vm.selectOrder(order),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ),
+                    ),
+                    const VerticalDivider(width: 1, color: Color(0xFFE8ECF3)),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ColoredBox(
+                            color: Colors.white,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(12, 8, 20, 12),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildTab('All'),
+                                      const SizedBox(width: 12),
+                                      _buildTab('Pending'),
+                                      const SizedBox(width: 12),
+                                      _buildTab('Completed'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Divider(
+                              height: 1, color: Color(0xFFE8ECF3)),
+                          Expanded(
+                            child: _OrderDetailPanel(vm: vm),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const VerticalDivider(width: 1, color: Color(0xFFE8ECF3)),
+        SizedBox(
+          width: draftColumnWidth,
+          child: ColoredBox(
+            color: const Color(0xFFFBFBFD),
+            child: vm.selectedOrder == null
+                ? const SizedBox.expand()
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 12, 14, 12),
+                    child: _OrderSummaryPanel(vm: vm),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Add customer + Choose payment (order summary footer; above Generate Invoice). Disabled when no order selected.
+class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
+  final PosViewModel vm;
+  const _OrdersHeaderCustomerPaymentRow({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    final order = vm.selectedOrder;
+    final enabled = order != null;
+
+    Future<void> openAddCustomer() async {
+      if (order == null) return;
+      if (vm.isStandardWalkInOrderForBilling(order)) {
+        final result = await showDialog<WalkInInvoiceFormResult?>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => WalkInInvoiceDetailsDialog(
+            order: order,
+            posVm: vm,
+          ),
+        );
+        if (!context.mounted) return;
+        if (result != null) {
+          vm.updateWalkInBillingContact(
+            name: result.name,
+            mobile: result.mobile,
+            vat: result.vat,
+            vehicleNumber: result.vehicleNumber,
+            vin: result.vin,
+            make: result.make,
+            model: result.model,
+            odometer: result.odometer,
+            year: result.year,
+            color: result.color,
+          );
+          ToastService.showSuccess(context, 'Customer details saved');
+        }
+        return;
+      }
+      vm.setCustomerData(
+        name: order.customer?.name ?? order.customerName,
+        vat: order.customer?.vatNumber ?? '',
+        mobile: order.customer?.mobile ?? '',
+        vehicleNumber: order.plateNumber.isNotEmpty
+            ? order.plateNumber
+            : vm.vehicleNumber,
+        vinNumber: order.vehicle?.vin ?? '',
+        make: order.vehicle?.make ?? '',
+        model: order.vehicle?.model ?? '',
+        odometer: order.odometerReading,
+        previousOrderId: order.id,
+      );
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => const PosAddCustomerView(),
+        ),
+      );
+    }
+
+    Future<void> openPayment() async {
+      if (order == null) return;
+      final result = await showInvoicePaymentChoiceDialog(
+        context,
+        initialIsCorporate: vm.invoicePaymentIsCorporate,
+        initialPayments:
+            vm.invoicePaymentIsCorporate != null ? vm.invoicePaymentMethods : null,
+      );
+      if (!context.mounted) return;
+      if (result != null) {
+        vm.setInvoicePaymentPreferences(
+          isCorporate: result.isCorporate,
+          payments: result.payments,
+        );
+        ToastService.showSuccess(context, 'Payment method saved');
+      }
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: enabled ? openAddCustomer : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryLight,
+              foregroundColor: AppColors.onPrimaryLight,
+              disabledBackgroundColor: const Color(0xFFE8ECF3),
+              disabledForegroundColor: const Color(0xFF94A3B8),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Add customer details',
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                height: 1.15,
+                color: AppColors.onPrimaryLight,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: enabled ? openPayment : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryLight,
+              foregroundColor: AppColors.onPrimaryLight,
+              disabledBackgroundColor: const Color(0xFFE8ECF3),
+              disabledForegroundColor: const Color(0xFF94A3B8),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Choose payment method',
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                height: 1.15,
+                color: AppColors.onPrimaryLight,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -362,7 +544,7 @@ class _OrderDetailPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Select an order from the list above to view details',
+                    'Select an order from the list on the left to view details',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade400,
@@ -376,7 +558,7 @@ class _OrderDetailPanel extends StatelessWidget {
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              const pad = EdgeInsets.fromLTRB(28, 20, 28, 24);
+              const pad = EdgeInsets.fromLTRB(28, 12, 28, 24);
               const crossSpacing = 16.0;
               const runSpacing = 16.0;
               final innerW = constraints.maxWidth - pad.horizontal;
@@ -667,7 +849,7 @@ void _openJobTechnicianAssignment(BuildContext context, PosOrder order, PosOrder
         departmentName: resolved.name,
         departmentId: resolved.id,
         isWalkIn: false,
-        initialAssignedTechnicians: job.activeTechnicians,
+        initialAssignedTechnicians: job.distinctActiveTechnicians,
       ),
     ),
   );
@@ -755,7 +937,7 @@ Future<void> _onMarkJobComplete(
   }
 
   // Ensure technicians are assigned
-  if (job.activeTechnicians.isEmpty) {
+  if (job.distinctActiveTechnicians.isEmpty) {
     ToastService.showError(
       context,
       'Assign at least one technician before completing this job.',
@@ -929,7 +1111,9 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final st = job.status.toLowerCase();
+    var st = job.status.toLowerCase().trim();
+    if (st == 'complete') st = 'completed';
+    if (st == 'job_edited') st = 'edited';
     final isInvoiced = st == 'invoiced';
     final isComplete = st == 'completed';
     final isEdited = st == 'edited';
@@ -986,23 +1170,22 @@ class _JobCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: Text(
-                          job.department.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.4,
-                            color: Color(0xFF1E2124),
-                          ),
+                      Text(
+                        job.department.toUpperCase(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.4,
+                          color: Color(0xFF1E2124),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: 6),
                       _buildStatusBadge(job.status),
                     ],
                   ),
@@ -1036,20 +1219,28 @@ class _JobCard extends StatelessWidget {
                             context,
                             'This job cannot be edited.',
                           )
-                      : () => _openJobProductGrid(context, order, job),
+                      : () => _openJobProductGrid(
+                            context,
+                            order,
+                            job,
+                          ),
                 ),
                 const SizedBox(height: 8),
                 _ModernActionChip(
                   icon: Icons.engineering_rounded,
-                  label: job.activeTechnicians.isEmpty
+                  label: job.distinctActiveTechnicians.isEmpty
                       ? 'Assign Technicians'
-                      : '${job.activeTechnicians.length} ${job.activeTechnicians.length == 1 ? 'technician' : 'technicians'}',
+                      : '${job.distinctActiveTechnicians.length} ${job.distinctActiveTechnicians.length == 1 ? 'technician' : 'technicians'}',
                   onTap: isLocked
                       ? () => ToastService.showError(
                             context,
                             'This job cannot be edited.',
                           )
-                      : () => _openJobTechnicianAssignment(context, order, job),
+                      : () => _openJobTechnicianAssignment(
+                            context,
+                            order,
+                            job,
+                          ),
                 ),
               ],
             ),
@@ -1096,14 +1287,20 @@ class _JobCard extends StatelessWidget {
                               : isCancelled
                                   ? Colors.white
                                   : const Color(0xFF23262D),
-                          isBusy: completing &&
-                              !isInvoiced &&
-                              !isComplete &&
-                              !isEdited &&
-                              !isCancelled,
+                          isBusy: (isComplete || isEdited)
+                              ? false
+                              : completing &&
+                                  !isInvoiced &&
+                                  !isComplete &&
+                                  !isEdited &&
+                                  !isCancelled,
                           enabled: !completing,
                           onTap: (isComplete || isEdited)
-                              ? () => _openJobProductGrid(context, order, job)
+                              ? () => _openJobProductGrid(
+                                    context,
+                                    order,
+                                    job,
+                                  )
                             : isCancelled
                                 ? () {}
                                 : () => _onMarkJobComplete(context, order, job),
@@ -1128,37 +1325,31 @@ class _JobCard extends StatelessWidget {
     final isInProgress =
         s == 'in_progress' || s == 'inprogress' || statusRaw.toLowerCase() == 'in progress';
 
-    late Color dot;
     late Color fg;
     late Color bg;
     late Color border;
     late String label;
     if (isCancelled) {
-      dot = Colors.white;
       fg = Colors.white;
       bg = const Color(0xFFD32F2F);
       border = const Color(0xFFB71C1C);
       label = 'CANCELLED';
     } else if (isComplete) {
-      dot = const Color(0xFF4CAF50);
       fg = const Color(0xFF4CAF50);
       bg = const Color(0xFF4CAF50).withOpacity(0.1);
       border = const Color(0xFF4CAF50).withOpacity(0.2);
       label = 'COMPLETE';
     } else if (isEdited) {
-      dot = const Color(0xFF3949AB);
       fg = const Color(0xFF3949AB);
       bg = const Color(0xFF3949AB).withOpacity(0.1);
       border = const Color(0xFF3949AB).withOpacity(0.2);
       label = 'EDITED';
     } else if (isInProgress) {
-      dot = const Color(0xFF2196F3);
       fg = const Color(0xFF1976D2);
       bg = const Color(0xFF2196F3).withOpacity(0.1);
       border = const Color(0xFF2196F3).withOpacity(0.2);
       label = 'IN PROGRESS';
     } else {
-      dot = const Color(0xFFFF9800);
       fg = const Color(0xFFFF9800);
       bg = const Color(0xFFFF9800).withOpacity(0.1);
       border = const Color(0xFFFF9800).withOpacity(0.2);
@@ -1172,39 +1363,15 @@ class _JobCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: border),
       ),
-      child: isCancelled
-          ? Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                color: fg,
-                letterSpacing: 0.5,
-              ),
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: dot,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    color: fg,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: fg,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 }
@@ -1324,7 +1491,197 @@ class _JobFooterButton extends StatelessWidget {
   }
 }
 
+// --- Draft totals panel: amounts follow GET /cashier/orders job & order fields (VAT excl. where noted on model). ---
 
+String _draftFmtQty(double q) =>
+    q == q.roundToDouble() ? q.toInt().toString() : q.toStringAsFixed(2);
+
+double _draftLineDisplayTotal(PosOrderJobItem item) {
+  if (item.lineTotal > 0) return item.lineTotal;
+  return item.qty * item.unitPrice;
+}
+
+/// Readable job status next to department name (e.g. `in_progress` → `In progress`).
+String _summaryFormatJobStatus(String raw) {
+  final t = raw.trim().replaceAll('_', ' ');
+  if (t.isEmpty) return '—';
+  return t
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map((w) => '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+      .join(' ');
+}
+
+String _summaryNormalizeJobStatusKey(String raw) {
+  return raw.trim().toLowerCase().replaceAll(RegExp(r'[\s-]+'), '_');
+}
+
+/// Badge colors: edited → green, in progress → yellow, pending → orange; else secondary.
+({Color background, Color foreground}) _summaryJobStatusBadgeColors(
+    String raw) {
+  final k = _summaryNormalizeJobStatusKey(raw);
+  if (k == 'edited' || k == 'job_edited') {
+    return (
+      background: const Color(0xFF34C759),
+      foreground: Colors.white,
+    );
+  }
+  if (k == 'in_progress' || k == 'inprogress') {
+    return (
+      background: AppColors.primaryLight,
+      foreground: AppColors.onPrimaryLight,
+    );
+  }
+  if (k == 'pending') {
+    return (
+      background: const Color(0xFFFF9500),
+      foreground: Colors.white,
+    );
+  }
+  return (
+    background: AppColors.secondaryLight,
+    foreground: AppColors.onSecondaryLight,
+  );
+}
+
+String? _draftLineDiscountCaption(PosOrderJobItem item) {
+  final dv = item.discountValue ?? 0;
+  if (dv <= 0) return null;
+  final t = (item.discountType ?? '').toLowerCase();
+  if (t == 'percent' || t == 'percentage') {
+    final s = dv == dv.roundToDouble() ? dv.toInt().toString() : dv.toStringAsFixed(1);
+    return 'Line discount: $s%';
+  }
+  return 'Line discount: ${dv.toStringAsFixed(2)} SAR';
+}
+
+double _draftJobOrderLevelDiscountAmount(PosOrderJob job) {
+  final v = job.totalDiscountValue;
+  if (v <= 0) return 0;
+  final t = (job.totalDiscountType ?? '').toLowerCase();
+  if (t == 'percent' || t == 'percentage') {
+    if (job.amountAfterDiscount <= 0) return 0;
+    return job.amountAfterDiscount * (v / 100);
+  }
+  return v;
+}
+
+double _draftOrderLevelDiscountAmount(PosOrder order) {
+  final raw = order.totalDiscountValue;
+  if (raw == null || raw <= 0) return 0;
+  final t = (order.totalDiscountType ?? '').toLowerCase();
+  if (t == 'percent' || t == 'percentage') {
+    var base = order.subtotal;
+    if (base <= 0) {
+      base = order.jobs
+          .where((j) => !j.isCancelledJob)
+          .fold<double>(0, (s, j) => s + j.amountAfterPromo);
+    }
+    if (base <= 0) return 0;
+    return base * (raw / 100);
+  }
+  return raw;
+}
+
+/// Highlight strip for department name / dept total / grand total in the order summary column.
+/// [secondaryBackground] uses [AppColors.secondaryLight] for the **grand total** row.
+/// [departmentTotalStripe] uses a light neutral strip so it does not match the grand total bar.
+Widget _orderSummaryHighlightBox({
+  required Widget child,
+  bool emphasized = false,
+  bool secondaryBackground = false,
+  /// Tighter padding & radius (e.g. grand total row).
+  bool compact = false,
+  /// Per-job "Department total" row — light background, distinct from grand total.
+  bool departmentTotalStripe = false,
+}) {
+  final Color bg;
+  final Color borderColor;
+  final double borderW;
+  if (departmentTotalStripe) {
+    bg = const Color(0xFFEFF1F5);
+    borderColor = const Color(0xFFD1D9E6);
+    borderW = 1;
+  } else if (secondaryBackground) {
+    bg = AppColors.secondaryLight;
+    borderColor = AppColors.primaryLight.withValues(alpha: emphasized ? 0.55 : 0.4);
+    borderW = emphasized ? 2 : 1.5;
+  } else {
+    bg = emphasized
+        ? const Color(0xFFFFF3D6)
+        : const Color(0xFFFFF9E8);
+    borderColor =
+        const Color(0xFFFCC247).withValues(alpha: emphasized ? 0.95 : 0.55);
+    borderW = emphasized ? 2 : 1.5;
+  }
+
+  final hPad = compact
+      ? 10.0
+      : (emphasized ? 14.0 : 12.0);
+  final vPad = compact
+      ? 8.0
+      : (emphasized ? 12.0 : 10.0);
+  final radius = compact
+      ? 10.0
+      : (departmentTotalStripe ? 10.0 : 12.0);
+
+  return Container(
+    width: double.infinity,
+    padding: EdgeInsets.symmetric(
+      horizontal: hPad,
+      vertical: vPad,
+    ),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: borderColor,
+        width: borderW,
+      ),
+      boxShadow: compact || departmentTotalStripe
+          ? null
+          : emphasized && !secondaryBackground
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFFCC247).withValues(alpha: 0.22),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : emphasized && secondaryBackground
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+    ),
+    child: child,
+  );
+}
+
+String? _posOrdersInvoiceFooterHint({
+  required bool allDepartmentsComplete,
+  required PosOrder order,
+  required PosViewModel vm,
+  required bool meetsPrereq,
+  required bool billingOk,
+  required bool paymentOk,
+}) {
+  if (!allDepartmentsComplete) return null;
+  if (!meetsPrereq) {
+    return 'Add at least one product or service and one technician to each job before generating an invoice.';
+  }
+  if (!billingOk) {
+    return 'Vehicle plate, customer name, and mobile are required. Tap Add customer details.';
+  }
+  if (!paymentOk) {
+    return 'Select customer type and a payment method (Choose payment method).';
+  }
+  return null;
+}
 
 class _OrderSummaryPanel extends StatelessWidget {
   final PosViewModel vm;
@@ -1346,10 +1703,230 @@ class _OrderSummaryPanel extends StatelessWidget {
     final progress = totalJobs > 0 ? completedJobs / totalJobs : 0.0;
     final allDepartmentsComplete =
         totalJobs > 0 && completedJobs == totalJobs;
+    final meetsPrereq = order.meetsCashierInvoicePrerequisites;
+    final billingOk = vm.walkInBillingReadyForInvoice(order);
+    final paymentOk = vm.invoicePaymentSelectionReady;
+    final canGenerateInvoice = allDepartmentsComplete &&
+        meetsPrereq &&
+        billingOk &&
+        paymentOk;
+    final invoiceFooterHint = _posOrdersInvoiceFooterHint(
+      allDepartmentsComplete: allDepartmentsComplete,
+      order: order,
+      vm: vm,
+      meetsPrereq: meetsPrereq,
+      billingOk: billingOk,
+      paymentOk: paymentOk,
+    );
+
+    final orderPromoName = (order.promoCodeName ?? '').trim();
+    final orderPromoAmt = order.promoDiscountAmount ?? 0;
+    final orderDiscAmt = _draftOrderLevelDiscountAmount(order);
+
+    final grandTotal = order.draftPosOrderTotalDisplay;
+
+    final detailChildren = <Widget>[];
+
+    if (orderPromoName.isNotEmpty || orderPromoAmt > 0) {
+      detailChildren.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'ORDER PROMO',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.4,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              if (orderPromoName.isNotEmpty)
+                Text(
+                  orderPromoName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E2124),
+                  ),
+                ),
+              if (orderPromoAmt > 0)
+                Text(
+                  '− ${orderPromoAmt.toStringAsFixed(2)} SAR',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (orderDiscAmt > 0) {
+      final dt = (order.totalDiscountType ?? '').toLowerCase();
+      final dv = order.totalDiscountValue ?? 0;
+      final label = (dt == 'percent' || dt == 'percentage')
+          ? 'Order discount (${dv.toStringAsFixed(0)}%)'
+          : 'Order discount';
+      detailChildren.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+              Text(
+                '− ${orderDiscAmt.toStringAsFixed(2)} SAR',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.green.shade800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (detailChildren.isNotEmpty) {
+      detailChildren.add(const Divider(height: 20, thickness: 1, color: Color(0xFFE8ECF3)));
+    }
+
+    for (var ji = 0; ji < activeJobs.length; ji++) {
+      final job = activeJobs[ji];
+      detailChildren.add(_DraftDepartmentSection(job: job));
+      if (ji < activeJobs.length - 1) {
+        detailChildren.add(const SizedBox(height: 14));
+        detailChildren.add(const Divider(height: 1, color: Color(0xFFE8ECF3)));
+        detailChildren.add(const SizedBox(height: 14));
+      }
+    }
+
+    if (activeJobs.any((j) => j.vatAmount > 0)) {
+      detailChildren.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Text(
+            'Includes VAT where shown on jobs (see department lines).',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              height: 1.25,
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final fixedFooter = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _orderSummaryHighlightBox(
+          emphasized: true,
+          secondaryBackground: true,
+          compact: true,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Grand total',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.onSecondaryLight,
+                  ),
+                ),
+              ),
+              Text(
+                '${grandTotal.toStringAsFixed(2)} SAR',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primaryLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _OrdersHeaderCustomerPaymentRow(vm: vm),
+        if (allDepartmentsComplete) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton(
+              onPressed: canGenerateInvoice
+                  ? () {
+                      Navigator.push<void>(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) =>
+                              PosOrderReviewView(order: order),
+                        ),
+                      );
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secondaryLight,
+                foregroundColor: AppColors.onSecondaryLight,
+                disabledBackgroundColor: const Color(0xFFCBD5E1),
+                disabledForegroundColor: const Color(0xFF64748B),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Generate Invoice',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.onSecondaryLight,
+                ),
+              ),
+            ),
+          ),
+          if (invoiceFooterHint != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              invoiceFooterHint,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.zero,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1358,131 +1935,315 @@ class _OrderSummaryPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'DRAFT TOTALS',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-              color: Color(0xFF64748B),
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Expanded(
+                flex: 2,
+                child: Text(
+                  'ORDER SUMMARY',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 8,
+                          backgroundColor: const Color(0xFFF1F4F9),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF34C759),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$completedJobs/$totalJobs',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: activeJobs.map((job) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              job.department,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade500,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(
-                            job.totalAmount.toStringAsFixed(2),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF1E2124),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )).toList(),
-                  ),
-                  const Divider(height: 24, thickness: 1, color: Color(0xFFE8ECF3)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Total',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF1E2124),
-                        ),
-                      ),
-                      Text(
-                        '${activeJobs.fold<double>(0, (s, j) => s + j.totalAmount).toStringAsFixed(2)} SAR',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFFFF9500),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 10,
-                            backgroundColor: const Color(0xFFF1F4F9),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF34C759)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '$completedJobs/$totalJobs jobs',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                children: detailChildren,
               ),
             ),
           ),
-          if (allDepartmentsComplete) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PosOrderReviewView(order: order),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E2124),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+          fixedFooter,
+        ],
+      ),
+    );
+  }
+}
+
+class _DraftDepartmentSection extends StatelessWidget {
+  final PosOrderJob job;
+  const _DraftDepartmentSection({required this.job});
+
+  @override
+  Widget build(BuildContext context) {
+    final techs = job.distinctActiveTechnicians;
+    final techLabel = techs.isEmpty
+        ? 'No technicians assigned'
+        : techs.map((t) => t.name.trim()).where((n) => n.isNotEmpty).join(', ');
+
+    final jobPromoName = (job.promoCodeName ?? '').trim();
+    final jobPromoAmt = job.promoDiscountAmount;
+    final jobDiscAmt = _draftJobOrderLevelDiscountAmount(job);
+
+    final items = job.items;
+    final statusBadge = _summaryJobStatusBadgeColors(job.status);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _orderSummaryHighlightBox(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  job.department.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.6,
+                    color: Color(0xFF1E2124),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                child: const Text(
-                  'Generate Invoice',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusBadge.background,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _summaryFormatJobStatus(job.status),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: statusBadge.foreground,
+                    letterSpacing: 0.15,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (items.isEmpty)
+          Text(
+            'No products or services',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade400,
+            ),
+          )
+        else
+          ...items.map((item) {
+            final cap = _draftLineDiscountCaption(item);
+            final lineTot = _draftLineDisplayTotal(item);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.productName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E2124),
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        lineTot.toStringAsFixed(2),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1E2124),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Qty ${_draftFmtQty(item.qty)} × ${item.unitPrice.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                  if (cap != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      cap,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }),
+        const SizedBox(height: 6),
+        if (jobPromoName.isNotEmpty || jobPromoAmt > 0) ...[
+          Text(
+            'Dept promo',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              color: Colors.grey.shade500,
+            ),
+          ),
+          if (jobPromoName.isNotEmpty)
+            Text(
+              jobPromoName,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E2124),
+              ),
+            ),
+          if (jobPromoAmt > 0)
+            Text(
+              '− ${jobPromoAmt.toStringAsFixed(2)} SAR',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Colors.green.shade700,
+              ),
+            ),
+          const SizedBox(height: 6),
+        ],
+        if (jobDiscAmt > 0) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  () {
+                    final dt = (job.totalDiscountType ?? '').toLowerCase();
+                    final dv = job.totalDiscountValue;
+                    if (dt == 'percent' || dt == 'percentage') {
+                      return 'Dept discount (${dv.toStringAsFixed(0)}%)';
+                    }
+                    return 'Dept discount';
+                  }(),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+              Text(
+                '− ${jobDiscAmt.toStringAsFixed(2)} SAR',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.green.shade800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+        ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.engineering_outlined, size: 14, color: Colors.grey.shade500),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                techLabel,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                  color: Colors.grey.shade700,
                 ),
               ),
             ),
           ],
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        _orderSummaryHighlightBox(
+          departmentTotalStripe: true,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Department total',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              Text(
+                '${job.totalAmount.toStringAsFixed(2)} SAR',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (job.vatAmount > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'VAT ${job.vatPercent.toStringAsFixed(0)}%: ${job.vatAmount.toStringAsFixed(2)} SAR',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1529,11 +2290,14 @@ class _HorizontalOrderTile extends StatelessWidget {
   final PosOrder order;
   final bool isSelected;
   final VoidCallback onTap;
+  /// When true (tablet vertical list), tile spans the column width.
+  final bool fullWidth;
 
   const _HorizontalOrderTile({
     required this.order,
     required this.isSelected,
     required this.onTap,
+    this.fullWidth = false,
   });
 
   @override
@@ -1546,126 +2310,159 @@ class _HorizontalOrderTile extends StatelessWidget {
         })
         .length;
     final jobProgressLabel = '$completedActive/${activeJobs.length}';
+    final canCancel = posOrderCanCashierCancel(order);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 145,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFCC247) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFFCC247) : const Color(0xFFE8ECF3),
-            width: isSelected ? 1.5 : 1,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: fullWidth ? double.infinity : 162,
+            padding: EdgeInsets.fromLTRB(10, 7, canCancel ? 24 : 10, 7),
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFFFCC247) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected ? const Color(0xFFFCC247) : const Color(0xFFE8ECF3),
+                width: isSelected ? 1.5 : 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFFCC247).withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : null,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '#${order.id.split('-').last.toUpperCase()}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          height: 1.1,
+                          color: isSelected ? const Color(0xFF23262D).withOpacity(0.7) : Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _orderStripStatusBadge(order, isSelected: isSelected),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Image.asset(
+                      'assets/images/car icon.png',
+                      width: 18,
+                      height: 18,
+                      color: isSelected ? const Color(0xFF23262D) : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        order.vehicle?.plateNo ?? 'No Plate',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          letterSpacing: 0.5,
+                          color: isSelected ? const Color(0xFF23262D) : const Color(0xFF1E2124),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      jobProgressLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: isSelected ? const Color(0xFF23262D) : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _formatDateForStrip(order),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 7,
+                          height: 1,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? const Color(0xFF23262D).withOpacity(0.55) : Colors.grey.shade400,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      ' · ',
+                      style: TextStyle(
+                        fontSize: 7,
+                        height: 1,
+                        color: isSelected ? const Color(0xFF23262D).withOpacity(0.35) : Colors.grey.shade400,
+                      ),
+                    ),
+                    Text(
+                      _formatTime(order),
+                      style: TextStyle(
+                        fontSize: 7,
+                        height: 1,
+                        color: isSelected ? const Color(0xFF23262D).withOpacity(0.6) : Colors.grey.shade400,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFCC247).withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ]
-              : null,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    '#${order.id.split('-').last.toUpperCase()}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      height: 1.1,
-                      color: isSelected ? const Color(0xFF23262D).withOpacity(0.7) : Colors.grey.shade500,
-                    ),
+        if (canCancel)
+          Positioned(
+            top: 2,
+            right: 2,
+            child: Material(
+              color: Colors.transparent,
+              elevation: 0,
+              child: InkWell(
+                onTap: () => showCashierCancelOrderDialog(context, order.id),
+                customBorder: const CircleBorder(),
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1E2124),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 12,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(width: 6),
-                _orderStripStatusBadge(order, isSelected: isSelected),
-              ],
+              ),
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Image.asset(
-                  'assets/images/car icon.png',
-                  width: 18,
-                  height: 18,
-                  color: isSelected ? const Color(0xFF23262D) : const Color(0xFF64748B),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    order.vehicle?.plateNo ?? 'No Plate',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                      letterSpacing: 0.5,
-                      color: isSelected ? const Color(0xFF23262D) : const Color(0xFF1E2124),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(
-                  jobProgressLabel,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    color: isSelected ? const Color(0xFF23262D) : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _formatDateForStrip(order),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 7,
-                      height: 1,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? const Color(0xFF23262D).withOpacity(0.55) : Colors.grey.shade400,
-                    ),
-                  ),
-                ),
-                Text(
-                  ' · ',
-                  style: TextStyle(
-                    fontSize: 7,
-                    height: 1,
-                    color: isSelected ? const Color(0xFF23262D).withOpacity(0.35) : Colors.grey.shade400,
-                  ),
-                ),
-                Text(
-                  _formatTime(order),
-                  style: TextStyle(
-                    fontSize: 7,
-                    height: 1,
-                    color: isSelected ? const Color(0xFF23262D).withOpacity(0.6) : Colors.grey.shade400,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 

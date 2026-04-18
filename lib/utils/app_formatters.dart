@@ -1,4 +1,70 @@
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+
+/// Tax / legal invoice date — **date only** (`dd/MM/yyyy`). Ignores time on ISO strings
+/// (avoids showing `00:00` when the backend sends midnight).
+String formatInvoiceLegalDate(String? invoiceDateIso) {
+  final raw = invoiceDateIso?.trim() ?? '';
+  if (raw.isEmpty) return '—';
+  final datePart = raw.split('T').first.split(' ').first.trim();
+  var d = DateTime.tryParse(raw);
+  if (d == null && datePart.length <= 10) {
+    d = DateTime.tryParse('${datePart}T00:00:00');
+  }
+  if (d != null) {
+    return DateFormat('dd/MM/yyyy').format(DateTime(d.year, d.month, d.day));
+  }
+  if (datePart.isNotEmpty) return datePart;
+  return '—';
+}
+
+/// Clock time when the invoice was **issued** (print / system time). Uses [DateTime.toLocal]
+/// after parsing (handles UTC `Z` from API). Returns `null` for legacy rows with no `issuedAt`
+/// — caller should hide the time line.
+String? formatInvoiceIssuedAtClock(String? issuedAtIso) {
+  final raw = issuedAtIso?.trim() ?? '';
+  if (raw.isEmpty) return null;
+  final d = DateTime.tryParse(raw);
+  if (d == null) return null;
+  return DateFormat.jm().format(d.toLocal());
+}
+
+/// Allows non-negative decimal quantities: digits, optional single `.`, limited fractional digits.
+class DecimalQtyTextInputFormatter extends TextInputFormatter {
+  final int maxFractionDigits;
+
+  const DecimalQtyTextInputFormatter({this.maxFractionDigits = 2});
+
+  static final _validChars = RegExp(r'^[0-9.]*$');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var text = newValue.text.replaceAll(',', '.');
+    if (text.isEmpty) return newValue;
+    if (!_validChars.hasMatch(text)) return oldValue;
+
+    final firstDot = text.indexOf('.');
+    if (firstDot != -1 && text.indexOf('.', firstDot + 1) != -1) {
+      return oldValue;
+    }
+    if (firstDot != -1 && maxFractionDigits >= 0) {
+      final frac = text.substring(firstDot + 1);
+      if (frac.length > maxFractionDigits) return oldValue;
+    }
+
+    if (text != newValue.text) {
+      return TextEditingValue(
+        text: text,
+        selection: newValue.selection,
+        composing: TextRange.empty,
+      );
+    }
+    return newValue;
+  }
+}
 
 class EnglishNumberFormatter extends TextInputFormatter {
   static const Map<String, String> _mapping = {

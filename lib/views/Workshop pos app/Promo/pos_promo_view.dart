@@ -8,6 +8,7 @@ import '../../../utils/app_formatters.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../utils/pos_shell_scaffold.dart';
 import '../More Tab/pos_more_view.dart'; // Added
 import 'promo_code_dialog.dart'; // Added (same folder)
 import 'promo_view_model.dart';
@@ -40,7 +41,8 @@ class _PosPromoViewState extends State<PosPromoView> {
         title: 'Promo Code',
         showBackButton: false,
         showHamburger: true,
-        onMenuPressed: () => Scaffold.of(context).openDrawer(),
+        onMenuPressed: () =>
+            kPosShellScaffoldKey.currentState?.openDrawer(),
       ),
       body: wrapPosShellRailBody(
         context,

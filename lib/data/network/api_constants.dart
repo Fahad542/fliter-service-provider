@@ -1,4 +1,6 @@
 class ApiConstants {
+  /// Local dev — change the port to match your backend (e.g. 8080, 5000).
+  //static const String baseUrl = 'http://localhost:3000';
   static const String baseUrl = 'https://filterbackend-production.up.railway.app';
 
   //// workshop pos ////
@@ -12,6 +14,12 @@ class ApiConstants {
   static String cashierOrderDetailEndpoint(String orderId) => '/cashier/order/$orderId';
   static String assignTechnicianEndpoint(String jobId) =>
       '/cashier/job/$jobId/assign';
+
+  /// When true, [PosRepository.assignTechnicians] sends `sync: true` so the server should treat
+  /// `employeeIds` as the **full desired roster** (remove unlisted, add missing). Required for
+  /// “keep Zaid only” after Jabbar+Taha were assigned — add-only APIs return “No new assignments”.
+  /// Backend DTO must accept `sync`; set to false if validation rejects unknown fields.
+  static const bool cashierAssignSendSyncReplace = true;
   /// Broadcast job to workshop / on-call technicians (plural `jobs` per backend).
   static String cashierJobBroadcastEndpoint(String jobId) =>
       '/cashier/jobs/$jobId/broadcast';
@@ -23,6 +31,15 @@ class ApiConstants {
       '/cashier/job/$jobId/pricing';
   static String cashierCompleteReadyEndpoint(String jobId) =>
       '/cashier/job/$jobId/complete-ready';
+  /// PATCH — transitions a **completed** job to **edited** when the call succeeds.
+  ///
+  /// **Contract (cashier POS):**
+  /// - Opening product grid / technician assign **without** this call is fine.
+  /// - **POST /cashier/job/:id/pricing** is rejected while the job is still `completed` — call this
+  ///   first when saving real edits (or retry once if pricing returns that error).
+  /// - No-op saves: skip pricing POST entirely (client detects unchanged snapshot).
+  static String cashierJobMarkEditedEndpoint(String jobId) =>
+      '/cashier/job/$jobId/mark-edited';
   static const String cashierOrdersEndpoint = '/cashier/orders';
   static String cancelOrderEndpoint(String orderId) =>
       '/cashier/order/$orderId/cancel';
@@ -45,6 +62,9 @@ class ApiConstants {
   static const String openSessionEndpoint = '/cashier/session/open';
   static const String closeSessionEndpoint = '/cashier/session/close';
   static const String currentSessionEndpoint = '/cashier/session/current';
+  /// POST — creates invoice from completed jobs. Server finalizes `edited` jobs first
+  /// via `complete-cashier` with an empty body (recalc only), then includes them; failures
+  /// surface the same validation errors (e.g. missing tech/lines).
   static const String createInvoiceEndpoint = '/cashier/invoice/create';
   static const String getInvoiceByOrderEndpoint = '/cashier/invoice/by-order';
   static const String submitSalesReturnEndpoint = '/cashier/return/submit';

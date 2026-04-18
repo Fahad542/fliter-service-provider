@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/toast_service.dart';
 import '../utils/pos_tablet_layout.dart';
+import '../utils/pos_shell_scaffold.dart';
 import '../views/Workshop pos app/Notifications/notifications_view.dart';
 import '../views/Workshop pos app/Product Grid/pos_product_grid_view.dart';
 import '../views/Workshop pos app/Order Screen/pos_order_review_view.dart';
@@ -21,11 +22,8 @@ import '../views/Workshop pos app/Department/pos_department_view.dart';
 import '../views/Workshop pos app/Technician Assignment/pos_technician_assignment_view.dart';
 import '../views/Workshop pos app/Add Customer Screen/pos_add_customer_view.dart';
 
-/// Left nav rail is shown on tablet landscape — hide redundant drawer hamburger.
-bool kPosHideDrawerMenuTabletLandscape(BuildContext context) {
-  final m = MediaQuery.of(context);
-  return m.size.width > 600 && m.orientation == Orientation.landscape;
-}
+/// Drawer menu (hamburger) is always available on tablet; the left rail was removed.
+bool kPosHideDrawerMenuTabletLandscape(BuildContext context) => false;
 
 // ── Reusable POS Screen AppBar (Back + Title + Global Icon) ──
 class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -139,7 +137,8 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: onMenuPressed ??
-                                  () => Scaffold.of(context).openDrawer(),
+                                  () => kPosShellScaffoldKey.currentState
+                                      ?.openDrawer(),
                               child: Container(
                                 width: iconContainerSize,
                                 height: iconContainerSize,
@@ -169,28 +168,84 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                           padding: EdgeInsets.only(left: isTablet ? 10 : 6),
                           child: const SizedBox.shrink(),
                         ),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize:
-                  isTablet ? PosTabletLayout.appBarTitleSize : 19,
+          title: InkWell(
+            onTap: () =>
+                kPosShellScaffoldKey.currentState?.openDrawer(),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize:
+                      isTablet ? PosTabletLayout.appBarTitleSize : 19,
+                ),
+              ),
             ),
           ),
           centerTitle: true,
           actions: [
             ...?actions,
-            if (!showGlobalLeft)
-              Consumer<SettingsViewModel>(
-                builder: (context, settings, _) {
-                  return InkWell(
+            Padding(
+              padding: EdgeInsets.only(right: isTablet ? 18 : 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!showGlobalLeft)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Consumer<SettingsViewModel>(
+                        builder: (context, settings, _) {
+                          return InkWell(
+                            onTap: () {
+                              final newLocale =
+                                  settings.locale.languageCode == 'en'
+                                      ? const Locale('ar')
+                                      : const Locale('en');
+                              settings.updateLocale(newLocale);
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: isTablet
+                                  ? PosTabletLayout.appBarIconBox
+                                  : 40,
+                              height: isTablet
+                                  ? PosTabletLayout.appBarIconBox
+                                  : 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.35),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Image.asset(
+                                  'assets/images/global.png',
+                                  width: isTablet ? 26 : 22,
+                                  color: Colors.black,
+                                  errorBuilder:
+                                      (context, error, stackTrace) => Icon(
+                                    Icons.language_rounded,
+                                    size: isTablet ? 26 : 22,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  InkWell(
                     onTap: () {
-                      final newLocale = settings.locale.languageCode == 'en'
-                          ? const Locale('ar')
-                          : const Locale('en');
-                      settings.updateLocale(newLocale);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsView(),
+                        ),
+                      );
                     },
+                    borderRadius: BorderRadius.circular(20),
                     child: Container(
                       width: isTablet ? PosTabletLayout.appBarIconBox : 40,
                       height: isTablet ? PosTabletLayout.appBarIconBox : 40,
@@ -198,73 +253,39 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                         color: Colors.white.withOpacity(0.35),
                         shape: BoxShape.circle,
                       ),
-                      child: Center(
-                        child: Image.asset(
-                          'assets/images/global.png',
-                          width: isTablet ? 26 : 22,
-                          color: Colors.black,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.language_rounded,
-                            size: isTablet ? 26 : 22,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/images/notifications.png',
+                            width: isTablet ? 26 : 22,
                             color: Colors.black,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Icon(
+                              Icons.notifications_rounded,
+                              size: isTablet ? 26 : 22,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
+                          Positioned(
+                            top: isTablet ? 9 : 8,
+                            right: isTablet ? 9 : 8,
+                            child: Container(
+                              width: isTablet ? 10 : 8,
+                              height: isTablet ? 10 : 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                },
-              ),
-            const SizedBox(width: 8),
-            Padding(
-              padding: EdgeInsets.only(right: isTablet ? 18 : 12),
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationsView(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: isTablet ? PosTabletLayout.appBarIconBox : 40,
-                  height: isTablet ? PosTabletLayout.appBarIconBox : 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.35),
-                    shape: BoxShape.circle,
                   ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/images/notifications.png',
-                        width: isTablet ? 26 : 22,
-                        color: Colors.black,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Icons.notifications_rounded,
-                          size: isTablet ? 26 : 22,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Positioned(
-                        top: isTablet ? 9 : 8,
-                        right: isTablet ? 9 : 8,
-                        child: Container(
-                          width: isTablet ? 10 : 8,
-                          height: isTablet ? 10 : 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
-            if (!showGlobalLeft) const SizedBox(width: 4),
           ],
         ),
       ),
@@ -387,7 +408,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: onMenuPressed ??
-                          () => Scaffold.of(context).openDrawer(),
+                          () => kPosShellScaffoldKey.currentState?.openDrawer(),
                       child: Container(
                         width: iconContainerSize,
                         height: iconContainerSize,
@@ -416,120 +437,142 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                   : null,
       title: Padding(
         padding: EdgeInsets.zero,
-        child: customTitle != null
-            ? Text(
-                customTitle!,
-                style: AppTextStyles.h2.copyWith(
-                  color: Colors.black,
-                  fontSize: isTablet ? PosTabletLayout.appBarTitleSize : 18,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              )
-            : SizedBox(
-                height: isTablet ? PosTabletLayout.appBarLogoHeight : 28,
-                child: Image.asset(
-                  'assets/images/icon.png',
-                  color: Colors.black,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.store, color: Colors.black),
-                ),
-              ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: showDrawer && !showBackButton
+                ? () =>
+                    kPosShellScaffoldKey.currentState?.openDrawer()
+                : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: customTitle != null
+                  ? Text(
+                      customTitle!,
+                      style: AppTextStyles.h2.copyWith(
+                        color: Colors.black,
+                        fontSize: isTablet
+                            ? PosTabletLayout.appBarTitleSize
+                            : 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    )
+                  : SizedBox(
+                      height:
+                          isTablet ? PosTabletLayout.appBarLogoHeight : 28,
+                      child: Image.asset(
+                        'assets/images/icon.png',
+                        color: Colors.black,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.store, color: Colors.black),
+                      ),
+                    ),
+            ),
+          ),
+        ),
       ),
       actions: [
-        if (!showGlobalLeft) ...[
-          // Language Pill
-          Padding(
-            padding: EdgeInsets.zero,
-            child: Consumer<SettingsViewModel>(
-              builder: (context, settings, _) {
-                return InkWell(
-                  onTap: () {
-                    final newLocale = settings.locale.languageCode == 'en'
-                        ? const Locale('ar')
-                        : const Locale('en');
-                    settings.updateLocale(newLocale);
+        Padding(
+          padding: EdgeInsets.only(right: isTablet ? 18 : 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!showGlobalLeft)
+                Consumer<SettingsViewModel>(
+                  builder: (context, settings, _) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: InkWell(
+                        onTap: () {
+                          final newLocale =
+                              settings.locale.languageCode == 'en'
+                                  ? const Locale('ar')
+                                  : const Locale('en');
+                          settings.updateLocale(newLocale);
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          width: isTablet
+                              ? PosTabletLayout.appBarIconBox
+                              : 40,
+                          height: isTablet
+                              ? PosTabletLayout.appBarIconBox
+                              : 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.35),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Image.asset(
+                              'assets/images/global.png',
+                              width: isTablet ? 26 : 22,
+                              color: Colors.black,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Icon(
+                                Icons.language_rounded,
+                                size: isTablet ? 26 : 22,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
                   },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: isTablet ? PosTabletLayout.appBarIconBox : 40,
-                    height: isTablet ? PosTabletLayout.appBarIconBox : 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.35),
-                      shape: BoxShape.circle,
+                ),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationsView(),
                     ),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/images/global.png',
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                  height: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.35),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/notifications.png',
                         width: isTablet ? 26 : 22,
                         color: Colors.black,
                         errorBuilder: (context, error, stackTrace) =>
                             Icon(
-                              Icons.language_rounded,
-                              size: isTablet ? 26 : 22,
-                              color: Colors.black,
-                            ),
+                          Icons.notifications_rounded,
+                          size: isTablet ? 26 : 22,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        top: isTablet ? 9 : 8,
+                        right: isTablet ? 9 : 8,
+                        child: Container(
+                          width: isTablet ? 10 : 8,
+                          height: isTablet ? 10 : 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-        ],
-
-        Padding(
-          padding: EdgeInsets.zero,
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationsView(),
                 ),
-              );
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              width: isTablet ? PosTabletLayout.appBarIconBox : 40,
-              height: isTablet ? PosTabletLayout.appBarIconBox : 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.35),
-                shape: BoxShape.circle,
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Image.asset(
-                    'assets/images/notifications.png',
-                    width: isTablet ? 26 : 22,
-                    color: Colors.black,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      Icons.notifications_rounded,
-                      size: isTablet ? 26 : 22,
-                      color: Colors.black,
-                    ),
-                  ),
-                  Positioned(
-                    top: isTablet ? 9 : 8,
-                    right: isTablet ? 9 : 8,
-                    child: Container(
-                      width: isTablet ? 10 : 8,
-                      height: isTablet ? 10 : 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         ),
-        const SizedBox(width: 16),
       ],
     );
   }
@@ -1323,6 +1366,34 @@ class _OrderItemCardState extends State<OrderItemCard> {
                         ],
                       ),
                     ),
+                    if (posOrderCanCashierCancel(widget.order))
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => showCashierCancelOrderDialog(
+                              context,
+                              widget.order.id,
+                            ),
+                            customBorder: const CircleBorder(),
+                            child: Container(
+                              width: widget.isTablet ? 28 : 26,
+                              height: widget.isTablet ? 28 : 26,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF1E2124),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: widget.isTablet ? 16 : 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
                 SizedBox(height: widget.isTablet ? 8 : 10),
@@ -1386,9 +1457,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                     String displayStatus = widget.order.displayJobStatus
                         .toLowerCase();
                     final canShowCancelOrder =
-                        displayStatus != 'completed' &&
-                        displayStatus != 'completed by technician' &&
-                        displayStatus != 'cancelled';
+                        posOrderCanCashierCancel(widget.order);
                     final canShowOrderDetails =
                         displayStatus != 'completed' &&
                         displayStatus != 'completed by technician' &&
@@ -1635,7 +1704,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                         ?.department,
                                                 departmentId: j?.departmentId,
                                                 initialAssignedTechnicians:
-                                                    j?.activeTechnicians ??
+                                                    j?.distinctActiveTechnicians ??
                                                         const [],
                                               );
                                             },
@@ -1654,7 +1723,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                     SizedBox(width: widget.isTablet ? 10 : 8),
                                     Expanded(
                                       child: _buildActionButton(
-                                        onPressed: () => _showCancelOrderDialog(
+                                        onPressed: () =>
+                                            showCashierCancelOrderDialog(
                                           context,
                                           widget.order.id,
                                         ),
@@ -1730,6 +1800,14 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                   );
                                                 }
                                               } else {
+                                                if (!widget.order
+                                                    .meetsCashierInvoicePrerequisites) {
+                                                  ToastService.showError(
+                                                    context,
+                                                    'Add at least one product or service and one technician to each job first.',
+                                                  );
+                                                  return;
+                                                }
                                                 // Navigate to the Final Review Screen - no API call
                                                 if (context.mounted) {
                                                   Navigator.push(
@@ -1835,7 +1913,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                               SizedBox(width: widget.isTablet ? 10 : 8),
                               Expanded(
                                 child: _buildActionButton(
-                                  onPressed: () => _showCancelOrderDialog(
+                                  onPressed: () =>
+                                      showCashierCancelOrderDialog(
                                     context,
                                     widget.order.id,
                                   ),
@@ -1863,8 +1942,21 @@ class _OrderItemCardState extends State<OrderItemCard> {
   }
 }
 
+/// Whether the cashier may cancel the whole order (`POST /cashier/order/:id/cancel`).
+bool posOrderCanCashierCancel(PosOrder order) {
+  final normalizedStatus = order.status.toLowerCase();
+  if (normalizedStatus == 'cancelled' || normalizedStatus == 'invoiced') {
+    return false;
+  }
+  final badge = order.jobsAggregateBadgeLabel;
+  return badge == 'PENDING' || badge == 'COMPLETED';
+}
+
+void showCashierCancelOrderDialog(BuildContext context, String orderId) {
+  _showCancelOrderDialog(context, orderId);
+}
+
 void _showCancelOrderDialog(BuildContext context, String orderId) {
-  final reasonController = TextEditingController();
   bool isLoading = false;
 
   showDialog(
@@ -1887,34 +1979,8 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Please provide a reason for cancellation.',
+                  'Are you sure you want to cancel this order?',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
-                ),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: reasonController,
-                  maxLines: 4,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: const TextStyle(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Customer requested cancellation',
-                    hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: AppColors.primaryLight, width: 1.5),
-                    ),
-                    contentPadding: const EdgeInsets.all(16),
-                  ),
                 ),
               ],
             ),
@@ -1940,14 +2006,14 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
                       onPressed: isLoading
                           ? null
                           : () async {
-                              final reason = reasonController.text.trim();
-                              if (reason.isEmpty) {
-                                ToastService.showError(ctx, 'Please enter a cancellation reason');
-                                return;
-                              }
                               setDialogState(() => isLoading = true);
                               final vm = ctx.read<pvm.PosViewModel>();
-                              final success = await vm.cancelOrder(context, orderId, reason);
+                              const defaultReason = 'Cancelled by cashier';
+                              final success = await vm.cancelOrder(
+                                context,
+                                orderId,
+                                defaultReason,
+                              );
                               if (success && dialogContext.mounted) {
                                 Navigator.pop(dialogContext);
                               } else {
@@ -2434,7 +2500,7 @@ void _showOrderDetailsSheet(
                                           }),
 
                                         // Render Technicians if any
-                                        if (job.activeTechnicians.isNotEmpty) ...[
+                                        if (job.distinctActiveTechnicians.isNotEmpty) ...[
                                           const Padding(
                                             padding: EdgeInsets.symmetric(
                                               vertical: 12,
@@ -2465,7 +2531,7 @@ void _showOrderDetailsSheet(
                                             ],
                                           ),
                                           const SizedBox(height: 12),
-                                          ...job.activeTechnicians.map(
+                                          ...job.distinctActiveTechnicians.map(
                                             (tech) => Padding(
                                               padding: const EdgeInsets.only(
                                                 bottom: 8,
@@ -3359,11 +3425,8 @@ class InvoiceDialog extends StatelessWidget {
       symbol: 'SAR ',
       decimalDigits: 2,
     );
-    final dateFormat = DateFormat('dd/MM/yyyy');
-    final DateTime? invDate = DateTime.tryParse(invoice.invoiceDate);
-    final invoiceDateText = invDate != null
-        ? dateFormat.format(invDate)
-        : invoice.invoiceDate.split('T').first;
+    final invoiceDateText = formatInvoiceLegalDate(invoice.invoiceDate);
+    final issuedAtClock = formatInvoiceIssuedAtClock(invoice.issuedAt);
     final paymentMethodText = invoice.payments.isNotEmpty
         ? invoice.payments.map((p) => p.method).join(', ')
         : (invoice.paymentMethod ?? requestedPaymentMethod ?? 'Unpaid');
@@ -3449,6 +3512,17 @@ class InvoiceDialog extends StatelessWidget {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
+                                  if (issuedAtClock != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Time: $issuedAtClock',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

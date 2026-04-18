@@ -56,6 +56,8 @@ class Invoice {
   final String id;
   final String invoiceNo;
   final String invoiceDate;
+  /// When the invoice record was issued (for “Time:” on PDF / dialog). Optional for legacy APIs.
+  final String? issuedAt;
   final double subtotal;
   final double vatAmount;
   final double discountAmount;
@@ -90,6 +92,7 @@ class Invoice {
     required this.id,
     required this.invoiceNo,
     required this.invoiceDate,
+    this.issuedAt,
     required this.subtotal,
     required this.vatAmount,
     required this.discountAmount,
@@ -173,6 +176,7 @@ class Invoice {
       id: json['id']?.toString() ?? '',
       invoiceNo: json['invoiceNo'] ?? '',
       invoiceDate: json['invoiceDate'] ?? '',
+      issuedAt: json['issuedAt']?.toString() ?? json['issued_at']?.toString(),
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
       vatAmount: double.tryParse(json['vatAmount']?.toString() ?? '0') ?? 0,
       discountAmount: [

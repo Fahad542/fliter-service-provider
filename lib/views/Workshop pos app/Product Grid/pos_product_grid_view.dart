@@ -102,7 +102,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     final jid = widget.completingOrderId?.trim();
     if (o == null || jid == null || jid.isEmpty) return const [];
     for (final j in o.jobs) {
-      if (j.id == jid) return j.technicians;
+      if (j.id == jid) return j.distinctActiveTechnicians;
     }
     return const [];
   }
@@ -149,7 +149,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       }
       if (job != null && job.id.trim().isNotEmpty) {
         jobId = job.id.trim();
-        initial = job.activeTechnicians;
+        initial = job.distinctActiveTechnicians;
         isWalkIn = false;
       } else {
         initial = _initialAssignedForWalkInTechnicianScreen();
@@ -163,7 +163,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         if (sel != null) {
           for (final j in sel.jobs) {
             if (j.id == jobId) {
-              initial = j.activeTechnicians;
+              initial = j.distinctActiveTechnicians;
               break;
             }
           }
@@ -177,7 +177,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           if (sel != null) {
             for (final j in sel.jobs) {
               if (j.id == jobId) {
-                initial = j.activeTechnicians;
+                initial = j.distinctActiveTechnicians;
                 break;
               }
             }
@@ -604,6 +604,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           textScaler: PosTabletLayout.textScaler(context),
         ),
         child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: const Color(0xFFF5F3F0),
         appBar: PosScreenAppBar(
           title: (widget.departmentName != null &&
@@ -612,8 +613,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               ? widget.departmentName!
               : (widget.isReadOnly ? 'Products' : 'Add Products'),
           showBackButton: widget.showBackButton,
-          showGlobalLeft: !widget.showBackButton,
-          showHamburger: false,
+          showGlobalLeft: false,
+          showHamburger: !widget.showBackButton,
           onBack: () async {
             final canPop = await _confirmBackNavigation();
             if (canPop && mounted) Navigator.pop(context);
@@ -621,11 +622,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         ),
         body: Stack(
           children: [
-            wrapPosShellRailBody(
-              context,
-              isTablet
-                  ? _buildTabletSplitLayout(vm)
-                  : _buildProductSection(false),
+            Positioned.fill(
+              child: wrapPosShellRailBody(
+                context,
+                isTablet
+                    ? _buildTabletSplitLayout(vm)
+                    : _buildProductSection(false),
+              ),
             ),
             if (vm.isLoading && !vm.isInvoicePanelSaveBusy)
               Positioned.fill(
@@ -724,21 +727,32 @@ class _PosProductGridViewState extends State<PosProductGridView> {
   }
 
   Widget _buildTabletSplitLayout(PosViewModel vm) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 0, 14, 10),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: _buildProductSection(true),
+    // Row intrinsic height ignores Expanded children; without an explicit height the
+    // row stays short and the invoice column leaves empty space at the bottom.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 14, 0),
+          child: SizedBox(
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _buildProductSection(true),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 360,
+                  child: _buildLiveInvoicePanel(vm),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 360,
-            child: _buildLiveInvoicePanel(vm),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -794,14 +808,25 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     final vat = taxable * 0.15;
     final total = taxable + vat;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final h = constraints.maxHeight;
+        final w = constraints.maxWidth;
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: w,
+            maxWidth: w,
+            minHeight: h.isFinite ? h : 0,
+            maxHeight: h.isFinite ? h : double.infinity,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
             child: Row(
@@ -835,26 +860,42 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           ),
           Divider(height: 1, color: Colors.grey.shade200),
           Expanded(
-            child: activeCart.isEmpty
-                ? Center(
-                    child: Text(
-                      'No items in invoice',
-                      style: TextStyle(color: Colors.grey.shade500),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                bottom: 8 + MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (activeCart.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 28),
+                      child: Center(
+                        child: Text(
+                          'No items in invoice',
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < activeCart.length; i++) ...[
+                            _buildCartItem(activeCart[i], false),
+                            if (i != activeCart.length - 1)
+                              const SizedBox(height: 8),
+                          ],
+                        ],
+                      ),
                     ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                    itemCount: activeCart.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) => _buildCartItem(activeCart[index], false),
-                  ),
-          ),
-          Divider(height: 1, color: Colors.grey.shade200),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+                  Divider(height: 1, color: Colors.grey.shade200),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                 _buildTotalRow(
                   'Gross Amount (Excl. VAT)',
                   'SAR ${gross.toStringAsFixed(2)}',
@@ -1062,11 +1103,18 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                   ),
                 ],
                 const SizedBox(height: 10),
-              ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1858,8 +1906,10 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       hintText: 'Search products & services...',
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  _buildAddTechnicianButton(true),
+                  if (!widget.isMainTab) ...[
+                    const SizedBox(width: 12),
+                    _buildAddTechnicianButton(true),
+                  ],
                 ],
               ),
             ),
@@ -1962,8 +2012,10 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     hintText: 'Search products & services...',
                   ),
                 ),
-                const SizedBox(width: 8),
-                _buildAddTechnicianButton(false),
+                if (!widget.isMainTab) ...[
+                  const SizedBox(width: 8),
+                  _buildAddTechnicianButton(false),
+                ],
               ],
             ),
           ),
@@ -2321,7 +2373,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 ],
                               ),
                               child: Text(
-                                'x${cartQty % 1 == 0 ? cartQty.toInt() : cartQty}',
+                                'x${_formatGridQuantityLabel(product, cartQty)}',
                                 style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.secondaryLight),
                               ),
                             ),
@@ -2535,7 +2587,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 ],
               ),
               child: Text(
-                'x${cartQty % 1 == 0 ? cartQty.toInt() : cartQty}',
+                'x${_formatGridQuantityLabel(product, cartQty)}',
                 style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.secondaryLight),
               ),
             ),
@@ -2615,7 +2667,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${item.quantity % 1 == 0 ? item.quantity.toInt() : item.quantity} × SAR ${item.effectiveUnitPrice.toStringAsFixed(0)}',
+                              '${_formatGridQuantityLabel(item.product, item.quantity)} × SAR ${item.effectiveUnitPrice.toStringAsFixed(0)}',
                               style: TextStyle(
                                 fontSize: isTablet ? 13 : 11,
                                 fontWeight: FontWeight.w600,
@@ -2969,6 +3021,22 @@ class _PosProductGridViewState extends State<PosProductGridView> {
 
 }
 
+/// Grid badge + inline qty field (respects [PosProduct.allowDecimalQty]).
+String _formatGridQuantityLabel(PosProduct product, double q) {
+  if (q <= 0) return '0';
+  if (!product.allowDecimalQty) {
+    return (q % 1 == 0) ? q.toInt().toString() : q.round().toString();
+  }
+  final rounded = (q * 100).round() / 100.0;
+  if (rounded % 1 == 0) return rounded.toInt().toString();
+  var s = rounded.toStringAsFixed(2);
+  if (s.contains('.')) {
+    s = s.replaceFirst(RegExp(r'0+$'), '');
+    if (s.endsWith('.')) s = s.substring(0, s.length - 1);
+  }
+  return s;
+}
+
 /// Clamps typed quantity so services never exceed 1.
 class _ServiceQtyCapFormatter extends TextInputFormatter {
   @override
@@ -3017,11 +3085,7 @@ class _InlineGridQtyFieldState extends State<_InlineGridQtyField> {
   Timer? _typingCommitDebounce;
 
   static String _formatQty(PosProduct product, double q) {
-    if (q <= 0) return '0';
-    if (!product.allowDecimalQty || q % 1 == 0) {
-      return q.toInt().toString();
-    }
-    return q.toStringAsFixed(1);
+    return _formatGridQuantityLabel(product, q);
   }
 
   @override
@@ -3030,13 +3094,16 @@ class _InlineGridQtyFieldState extends State<_InlineGridQtyField> {
     _controller = TextEditingController(
       text: _formatQty(widget.product, widget.cartQty),
     );
-    _focusNode = FocusNode();
+    _focusNode = FocusNode()..canRequestFocus = !widget.product.isService;
     _focusNode.addListener(_onFocusChanged);
   }
 
   @override
   void didUpdateWidget(covariant _InlineGridQtyField oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.product.isService != widget.product.isService) {
+      _focusNode.canRequestFocus = !widget.product.isService;
+    }
     if (oldWidget.outOfStock != widget.outOfStock ||
         oldWidget.product.id != widget.product.id) {
       _controller.text = _formatQty(widget.product, widget.cartQty);
@@ -3088,7 +3155,14 @@ class _InlineGridQtyFieldState extends State<_InlineGridQtyField> {
 
   void _commit() {
     if (widget.outOfStock) return;
-    final raw = _controller.text.trim();
+    final rawFull = EnglishNumberFormatter.convert(_controller.text.trim())
+        .replaceAll(',', '.');
+    if (rawFull == '.') return;
+
+    var raw = rawFull;
+    if (RegExp(r'^\d+\.$').hasMatch(raw)) {
+      raw = '${raw}0';
+    }
     var qty = double.tryParse(raw) ?? 0;
     if (widget.product.isService && qty > 1) {
       qty = 1;
@@ -3109,23 +3183,30 @@ class _InlineGridQtyFieldState extends State<_InlineGridQtyField> {
     _controller.text = _formatQty(widget.product, _qtyInCart(vm));
   }
 
-  InputDecoration _decoration({required bool disabled}) {
+  InputDecoration _decoration({
+    required bool disabled,
+    bool readOnlyService = false,
+  }) {
     final r = BorderRadius.circular(widget.isTablet ? 7 : 6);
     final base = OutlineInputBorder(
       borderRadius: r,
       borderSide: BorderSide(color: Colors.grey.shade200),
     );
-    final fill = disabled ? Colors.grey.shade200 : Colors.grey.shade50;
+    final fill = disabled
+        ? Colors.grey.shade200
+        : (readOnlyService ? Colors.grey.shade100 : Colors.grey.shade50);
     return InputDecoration(
       isDense: true,
       filled: true,
       fillColor: fill,
       border: base,
       enabledBorder: base,
-      focusedBorder: OutlineInputBorder(
-        borderRadius: r,
-        borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.5),
-      ),
+      focusedBorder: readOnlyService
+          ? base
+          : OutlineInputBorder(
+              borderRadius: r,
+              borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.5),
+            ),
       disabledBorder: base,
       contentPadding: EdgeInsets.symmetric(
         horizontal: 4,
@@ -3139,37 +3220,41 @@ class _InlineGridQtyFieldState extends State<_InlineGridQtyField> {
   @override
   Widget build(BuildContext context) {
     final disabled = widget.outOfStock;
+    final serviceLockQty = widget.product.isService;
     final field = TextField(
       controller: _controller,
       focusNode: _focusNode,
       enabled: !disabled,
+      readOnly: serviceLockQty,
+      showCursor: !serviceLockQty,
+      enableInteractiveSelection: !serviceLockQty,
       textAlign: TextAlign.center,
       keyboardType: TextInputType.numberWithOptions(decimal: widget.product.allowDecimalQty),
       inputFormatters: [
-        if (widget.product.isService) ...[
-          if (!widget.product.allowDecimalQty) FilteringTextInputFormatter.digitsOnly,
-          if (widget.product.allowDecimalQty) EnglishNumberFormatter(),
-          _ServiceQtyCapFormatter(),
-        ] else ...[
-          if (!widget.product.allowDecimalQty) FilteringTextInputFormatter.digitsOnly,
-          if (widget.product.allowDecimalQty) EnglishNumberFormatter(),
-        ],
+        EnglishNumberFormatter(),
+        if (widget.product.allowDecimalQty)
+          const DecimalQtyTextInputFormatter(maxFractionDigits: 2)
+        else
+          FilteringTextInputFormatter.digitsOnly,
+        if (widget.product.isService) _ServiceQtyCapFormatter(),
       ],
       style: TextStyle(
         fontSize: widget.isTablet ? 12 : 11,
         fontWeight: FontWeight.w600,
         color: disabled ? Colors.grey.shade600 : const Color(0xFF1E2124),
       ),
-      decoration: _decoration(disabled: disabled),
-      onChanged: (_) => _scheduleCommitFromTyping(),
+      decoration: _decoration(disabled: disabled, readOnlyService: serviceLockQty && !disabled),
+      onChanged: serviceLockQty ? null : (_) => _scheduleCommitFromTyping(),
       onEditingComplete: () {
         _typingCommitDebounce?.cancel();
-        _commit();
+        if (!serviceLockQty) _commit();
       },
       onSubmitted: (_) {
         _typingCommitDebounce?.cancel();
-        _commit();
-        _focusNode.unfocus();
+        if (!serviceLockQty) {
+          _commit();
+          _focusNode.unfocus();
+        }
       },
     );
 
@@ -3242,7 +3327,7 @@ class _EditableServiceUnitPriceRowState extends State<_EditableServiceUnitPriceR
   @override
   Widget build(BuildContext context) {
     final q = widget.item.quantity;
-    final qtyLabel = q % 1 == 0 ? q.toInt().toString() : q.toString();
+    final qtyLabel = _formatGridQuantityLabel(widget.item.product, q);
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: widget.isTablet ? 9 : 6,

@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/pos_order_model.dart';
+import '../../../models/pos_payment_method.dart';
 import '../../../models/create_invoice_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -66,50 +67,39 @@ class ReviewLineItem {
   double get commission => lineTotal * commissionRate;
 }
 
-enum PaymentMethod { cash, card, bankTransfer, tabby, tamara }
-
-extension PaymentMethodLabel on PaymentMethod {
-  String get label {
-    switch (this) {
-      case PaymentMethod.cash:
-        return 'Cash';
-      case PaymentMethod.card:
-        return 'Card';
-      case PaymentMethod.bankTransfer:
-        return 'Bank Transfer';
-      case PaymentMethod.tabby:
-        return 'Tabby';
-      case PaymentMethod.tamara:
-        return 'Tamara';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case PaymentMethod.cash:
-        return Icons.money_rounded;
-      case PaymentMethod.card:
-        return Icons.credit_card_rounded;
-      case PaymentMethod.bankTransfer:
-        return Icons.account_balance_rounded;
-      case PaymentMethod.tabby:
-        return Icons.splitscreen_rounded;
-      case PaymentMethod.tamara:
-        return Icons.shopping_bag_rounded;
-    }
-  }
-}
-
 // ── Walk-in invoice dialog (StatefulWidget: controllers disposed with route) ─
 
-InputDecoration _walkInInvoiceFieldDecoration(String label, {bool optional = false}) {
-  final borderRadius = BorderRadius.circular(12);
+const TextStyle _kWalkInInvoiceDialogFieldStyle =
+    TextStyle(fontSize: 13, fontWeight: FontWeight.w500);
+
+InputDecoration _walkInInvoiceFieldDecoration(
+  String label, {
+  bool optional = false,
+  bool compact = false,
+}) {
+  final borderRadius = BorderRadius.circular(compact ? 10 : 12);
+  final baseLabel = TextStyle(
+    fontSize: compact ? 11.5 : null,
+    fontWeight: FontWeight.w600,
+    color: Colors.grey.shade700,
+  );
   return InputDecoration(
     labelText: optional ? '$label (optional)' : label,
+    labelStyle: compact ? baseLabel : null,
+    floatingLabelStyle: compact
+        ? baseLabel.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.secondaryLight,
+          )
+        : null,
     filled: true,
     fillColor: Colors.grey.shade50,
     isDense: true,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    contentPadding: EdgeInsets.symmetric(
+      horizontal: compact ? 12 : 16,
+      vertical: compact ? 10 : 14,
+    ),
     border: OutlineInputBorder(borderRadius: borderRadius),
     enabledBorder: OutlineInputBorder(
       borderRadius: borderRadius,
@@ -122,23 +112,37 @@ InputDecoration _walkInInvoiceFieldDecoration(String label, {bool optional = fal
   );
 }
 
-Widget _walkInInvoiceSectionHeader(String title, IconData icon) {
+Widget _walkInInvoiceSectionHeader(
+  String title,
+  IconData icon, {
+  bool compact = false,
+}) {
   return Row(
     children: [
-      Icon(icon, size: 20, color: AppColors.secondaryLight),
-      const SizedBox(width: 8),
+      Icon(
+        icon,
+        size: compact ? 17 : 20,
+        color: AppColors.secondaryLight,
+      ),
+      const SizedBox(width: 6),
       Text(
         title,
-        style: AppTextStyles.bodyLarge.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppColors.secondaryLight,
-        ),
+        style: compact
+            ? TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.secondaryLight,
+              )
+            : AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryLight,
+              ),
       ),
     ],
   );
 }
 
-class _WalkInInvoiceFormResult {
+class WalkInInvoiceFormResult {
   final String name;
   final String mobile;
   final String vat;
@@ -150,7 +154,7 @@ class _WalkInInvoiceFormResult {
   final String color;
   final int odometer;
 
-  const _WalkInInvoiceFormResult({
+  const WalkInInvoiceFormResult({
     required this.name,
     required this.mobile,
     required this.vat,
@@ -164,20 +168,21 @@ class _WalkInInvoiceFormResult {
   });
 }
 
-class _WalkInInvoiceDetailsDialog extends StatefulWidget {
+class WalkInInvoiceDetailsDialog extends StatefulWidget {
   final PosOrder order;
   final pvm.PosViewModel posVm;
 
-  const _WalkInInvoiceDetailsDialog({
+  const WalkInInvoiceDetailsDialog({
+    super.key,
     required this.order,
     required this.posVm,
   });
 
   @override
-  State<_WalkInInvoiceDetailsDialog> createState() => _WalkInInvoiceDetailsDialogState();
+  State<WalkInInvoiceDetailsDialog> createState() => WalkInInvoiceDetailsDialogState();
 }
 
-class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog> {
+class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _mobileCtrl;
   late final TextEditingController _vatCtrl;
@@ -236,7 +241,7 @@ class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog
     super.dispose();
   }
 
-  void _close([_WalkInInvoiceFormResult? result]) {
+  void _close([WalkInInvoiceFormResult? result]) {
     FocusManager.instance.primaryFocus?.unfocus();
     Navigator.of(context).pop(result);
   }
@@ -244,12 +249,13 @@ class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.sizeOf(context);
-    final maxW = min(440.0, mq.width - 40);
-    final maxH = min(560.0, mq.height * 0.88);
+    // Compact card; same max-width formula as payment dialog.
+    final maxW = min(520.0, mq.width - 40);
+    final maxH = min(520.0, mq.height * 0.78);
     final v = widget.order.vehicle;
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
       backgroundColor: AppColors.surfaceLight,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxW, maxHeight: maxH),
@@ -258,95 +264,171 @@ class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Invoice details',
-                    style: AppTextStyles.h3.copyWith(color: AppColors.secondaryLight),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                      color: AppColors.secondaryLight,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     'Confirm billing contact and vehicle before creating the invoice.',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.grey.shade700,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
                       height: 1.35,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _walkInInvoiceSectionHeader('Billing', Icons.person_outline_rounded),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _nameCtrl,
-                        decoration: _walkInInvoiceFieldDecoration('Customer name'),
-                        textCapitalization: TextCapitalization.words,
-                        validator: (s) =>
-                            (s == null || s.trim().isEmpty) ? 'Required' : null,
+                      _walkInInvoiceSectionHeader(
+                        'Billing',
+                        Icons.person_outline_rounded,
+                        compact: true,
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _mobileCtrl,
-                        decoration: _walkInInvoiceFieldDecoration('Mobile'),
-                        keyboardType: TextInputType.phone,
-                        validator: (s) =>
-                            (s == null || s.trim().isEmpty) ? 'Required' : null,
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _nameCtrl,
+                              style: _kWalkInInvoiceDialogFieldStyle,
+                              decoration: _walkInInvoiceFieldDecoration(
+                                'Customer name',
+                                compact: true,
+                              ),
+                              textCapitalization: TextCapitalization.words,
+                              validator: (s) =>
+                                  (s == null || s.trim().isEmpty) ? 'Required' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _mobileCtrl,
+                              style: _kWalkInInvoiceDialogFieldStyle,
+                              decoration: _walkInInvoiceFieldDecoration(
+                                'Mobile',
+                                compact: true,
+                              ),
+                              keyboardType: TextInputType.phone,
+                              validator: (s) =>
+                                  (s == null || s.trim().isEmpty) ? 'Required' : null,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       TextFormField(
                         controller: _vatCtrl,
-                        decoration: _walkInInvoiceFieldDecoration('VAT', optional: true),
+                        style: _kWalkInInvoiceDialogFieldStyle,
+                        decoration: _walkInInvoiceFieldDecoration(
+                          'VAT',
+                          optional: true,
+                          compact: true,
+                        ),
                       ),
-                      const SizedBox(height: 22),
-                      _walkInInvoiceSectionHeader('Vehicle', Icons.directions_car_outlined),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _plateCtrl,
-                        decoration: _walkInInvoiceFieldDecoration('Plate number'),
-                        textCapitalization: TextCapitalization.characters,
-                        validator: (s) =>
-                            (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
+                      const SizedBox(height: 14),
+                      _walkInInvoiceSectionHeader(
+                        'Vehicle',
+                        Icons.directions_car_outlined,
+                        compact: true,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _plateCtrl,
+                              style: _kWalkInInvoiceDialogFieldStyle,
+                              decoration: _walkInInvoiceFieldDecoration(
+                                'Plate number',
+                                compact: true,
+                              ),
+                              textCapitalization: TextCapitalization.characters,
+                              validator: (s) =>
+                                  (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _odoCtrl,
+                              style: _kWalkInInvoiceDialogFieldStyle,
+                              decoration: _walkInInvoiceFieldDecoration(
+                                'Odometer',
+                                optional: true,
+                                compact: true,
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: TextFormField(
                               controller: _makeCtrl,
-                              decoration: _walkInInvoiceFieldDecoration('Make', optional: true),
+                              style: _kWalkInInvoiceDialogFieldStyle,
+                              decoration: _walkInInvoiceFieldDecoration(
+                                'Make',
+                                optional: true,
+                                compact: true,
+                              ),
                               textCapitalization: TextCapitalization.words,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: TextFormField(
                               controller: _modelCtrl,
-                              decoration: _walkInInvoiceFieldDecoration('Model', optional: true),
+                              style: _kWalkInInvoiceDialogFieldStyle,
+                              decoration: _walkInInvoiceFieldDecoration(
+                                'Model',
+                                optional: true,
+                                compact: true,
+                              ),
                               textCapitalization: TextCapitalization.words,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: TextFormField(
                               controller: _yearCtrl,
-                              decoration: _walkInInvoiceFieldDecoration('Year', optional: true),
+                              style: _kWalkInInvoiceDialogFieldStyle,
+                              decoration: _walkInInvoiceFieldDecoration(
+                                'Year',
+                                optional: true,
+                                compact: true,
+                              ),
                               keyboardType: TextInputType.number,
                               validator: (s) {
                                 if (s == null || s.trim().isEmpty) return null;
@@ -358,23 +440,22 @@ class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog
                               },
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: TextFormField(
                               controller: _vinCtrl,
-                              decoration: _walkInInvoiceFieldDecoration('VIN', optional: true),
+                              style: _kWalkInInvoiceDialogFieldStyle,
+                              decoration: _walkInInvoiceFieldDecoration(
+                                'VIN',
+                                optional: true,
+                                compact: true,
+                              ),
                               textCapitalization: TextCapitalization.characters,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _odoCtrl,
-                        decoration: _walkInInvoiceFieldDecoration('Odometer', optional: true),
-                        keyboardType: TextInputType.number,
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                     ],
                   ),
                 ),
@@ -382,15 +463,20 @@ class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog
             ),
             const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
                     onPressed: () => _close(null),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    ),
                     child: Text(
                       'Cancel',
-                      style: AppTextStyles.button.copyWith(
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.secondaryLight.withValues(alpha: 0.85),
                       ),
                     ),
@@ -401,15 +487,15 @@ class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog
                       backgroundColor: AppColors.primaryLight,
                       foregroundColor: AppColors.onPrimaryLight,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     onPressed: () {
                       if (_formKey.currentState?.validate() != true) return;
                       _close(
-                        _WalkInInvoiceFormResult(
+                        WalkInInvoiceFormResult(
                           name: _nameCtrl.text,
                           mobile: _mobileCtrl.text,
                           vat: _vatCtrl.text,
@@ -423,7 +509,13 @@ class _WalkInInvoiceDetailsDialogState extends State<_WalkInInvoiceDetailsDialog
                         ),
                       );
                     },
-                    child: Text('Continue', style: AppTextStyles.button),
+                    child: const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -476,15 +568,34 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   late final TextEditingController _vinCtrl;
   late final TextEditingController _odoCtrl;
 
+  /// Tablet split-row scroll areas (Final Review) — scrollbars on tech + summary only.
+  late final ScrollController _reviewTechScrollController;
+  late final ScrollController _reviewSummaryScrollController;
+
   @override
   void initState() {
     super.initState();
+    _reviewTechScrollController = ScrollController();
+    _reviewSummaryScrollController = ScrollController();
     _currentInvoice = widget.invoice;
     if (_currentInvoice != null) {
       _isGenerated = true;
     }
     _buildItems();
     _initBillingControllers();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final posVm = Provider.of<pvm.PosViewModel>(context, listen: false);
+      if (posVm.invoicePaymentIsCorporate == null) return;
+      setState(() {
+        _isCorporate = posVm.invoicePaymentIsCorporate;
+        _selectedPayments = Set<PaymentMethod>.from(posVm.invoicePaymentMethods);
+        if (_isCorporate == true && _selectedPayments.isEmpty) {
+          _selectedPayments = {PaymentMethod.monthlyBilling};
+        }
+        _syncSplitControllers();
+      });
+    });
   }
 
   void _initBillingControllers() {
@@ -530,6 +641,17 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     }
   }
 
+  void _onCorporateCustomerChanged(bool? v) {
+    setState(() {
+      _isCorporate = v;
+      if (v == true) {
+        _selectedPayments = {PaymentMethod.monthlyBilling};
+      } else if (v == false) {
+        _selectedPayments = {};
+      }
+    });
+  }
+
   @override
   void dispose() {
     for (final c in _splitControllers.values) {
@@ -544,6 +666,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     _yearCtrl.dispose();
     _vinCtrl.dispose();
     _odoCtrl.dispose();
+    _reviewTechScrollController.dispose();
+    _reviewSummaryScrollController.dispose();
     super.dispose();
   }
 
@@ -726,14 +850,18 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     // Fallback 1: use technician data already present in the order's jobs
     final jobEntries = <_CommissionDisplayEntry>[];
     for (final job in widget.order.jobs.where((j) => !j.isCancelledJob)) {
-      for (final tech in job.technicians) {
-        if (tech.name.isEmpty) continue;
+      final active =
+          job.distinctActiveTechnicians.where((t) => t.name.isNotEmpty).toList();
+      final n = active.length;
+      for (final tech in active) {
         double amount = tech.commissionAmount;
         double percent = tech.commissionPercent;
-        // If backend didn't return a monetary amount, compute from percent or default 10%
+        // If backend didn't return a monetary amount, estimate one pool from job total
+        // and split equally across assigned technicians (2 techs → each gets pool/2).
         if (amount <= 0) {
           final rate = percent > 0 ? percent / 100.0 : 0.10;
-          amount = job.totalAmount * rate;
+          final pool = job.totalAmount * rate;
+          amount = n > 0 ? pool / n : pool;
           if (percent <= 0) percent = 10.0;
         }
         jobEntries.add(_CommissionDisplayEntry(
@@ -770,10 +898,10 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   Future<bool> _ensureWalkInBillingContact(pvm.PosViewModel posVm) async {
     if (!_isStandardWalkInOrder(widget.order)) return true;
 
-    final result = await showDialog<_WalkInInvoiceFormResult?>(
+    final result = await showDialog<WalkInInvoiceFormResult?>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => _WalkInInvoiceDetailsDialog(
+      builder: (ctx) => WalkInInvoiceDetailsDialog(
         order: widget.order,
         posVm: posVm,
       ),
@@ -1058,7 +1186,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                         (s == null || s.trim().isEmpty) ? 'Required' : null,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
                     controller: _mobileCtrl,
@@ -1068,12 +1196,14 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                         (s == null || s.trim().isEmpty) ? 'Required' : null,
                   ),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _vatCtrl,
+                    decoration: _walkInInvoiceFieldDecoration('VAT', optional: true),
+                  ),
+                ),
               ],
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _vatCtrl,
-              decoration: _walkInInvoiceFieldDecoration('VAT', optional: true),
             ),
             const SizedBox(height: 22),
             _walkInInvoiceSectionHeader('Vehicle', Icons.directions_car_outlined),
@@ -1090,7 +1220,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                         (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
                     controller: _odoCtrl,
@@ -1098,12 +1228,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     keyboardType: TextInputType.number,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
                     controller: _makeCtrl,
@@ -1111,7 +1236,12 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     textCapitalization: TextCapitalization.words,
                   ),
                 ),
-                const SizedBox(width: 12),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Expanded(
                   child: TextFormField(
                     controller: _modelCtrl,
@@ -1119,12 +1249,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     textCapitalization: TextCapitalization.words,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
                     controller: _yearCtrl,
@@ -1140,7 +1265,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
                     controller: _vinCtrl,
@@ -1157,6 +1282,14 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   }
 
   void _generateInvoice() async {
+    if (!widget.order.meetsCashierInvoicePrerequisites) {
+      ToastService.showError(
+        context,
+        'Add at least one product or service and one technician to each job first.',
+      );
+      return;
+    }
+
     // 1. Corporate decision must be made
     if (_isCorporate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1167,7 +1300,13 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       return;
     }
 
-    // 2. Payment methods required for non-corporate
+    // 2. Payment methods required
+    if (_isCorporate == true && _selectedPayments.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a payment method.')),
+      );
+      return;
+    }
     if (_isCorporate == false && _selectedPayments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one payment method.')),
@@ -1237,7 +1376,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         orderForBilling: widget.order,
         isCorporate: _isCorporate,
         paymentMethod: _isCorporate == true
-            ? 'Corporate'
+            ? (_selectedPayments.isNotEmpty
+                ? _selectedPayments.first.label
+                : 'Corporate')
             : (paymentSplits?.length == 1 ? paymentSplits!.first['method'] : null),
         payments: _isCorporate != true && paymentSplits != null && paymentSplits.length > 1
             ? paymentSplits
@@ -1245,15 +1386,34 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       );
 
       if (response != null && response.success) {
-        setState(() {
-          _isGenerated = true;
-          if (response.invoice != null) {
-            _currentInvoice = response.invoice;
-            _buildItems();
-          }
-        });
-
         posVm.fetchOrders();
+
+        final inv = response.invoice;
+        if (inv != null) {
+          setState(() {
+            _currentInvoice = inv;
+            _buildItems();
+          });
+          if (!mounted) return;
+          await showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => InvoiceDialog(
+              invoice: inv,
+              requestedPaymentMethod: _requestedPaymentLabelForInvoice(),
+              onDone: () {
+                Future.delayed(Duration.zero, () {
+                  if (context.mounted) Navigator.pop(context);
+                });
+              },
+            ),
+          );
+        } else if (mounted) {
+          ToastService.showSuccess(
+            context,
+            response.message ?? 'Invoice generated',
+          );
+        }
       } else {
         if (mounted) {
           ToastService.showError(
@@ -1289,6 +1449,91 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         return b.id.compareTo(a.id);
       });
 
+    final summaryCard = _ReviewDraftOrderSummaryCard(
+      isTablet: isTablet,
+      currencyFormat: currencyFormat,
+      grossSubtotal: _grossSubtotal,
+      itemDiscountsTotal: _itemDiscountsTotal,
+      invoiceDiscountTotal: _invoiceDiscountTotal,
+      promoDiscountTotal: _promoDiscountTotal,
+      netSubtotal: _netSubtotal,
+      vatAmount: _vatAmount,
+      totalAmount: _totalAmount,
+      showFinalReviewHints: isTablet,
+    );
+
+    if (isTablet) {
+      final mq = MediaQuery.of(context);
+      final panelH = (mq.size.height * 0.62).clamp(440.0, 780.0);
+
+      return SizedBox(
+        height: panelH,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final minCardH = constraints.maxHeight;
+                  final table = _buildDepartmentsDataTable(
+                    sortedJobs,
+                    isTablet,
+                    currencyFormat,
+                    minTableHeight: minCardH,
+                  );
+                  // No Scrollbar here: always-visible thumb/track looked like an "extra" bar when
+                  // filler rows match panel height; table still scrolls when content overflows.
+                  return SingleChildScrollView(
+                    primary: false,
+                    physics: const ClampingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: minCardH),
+                      child: table,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 336,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: _ReviewAssignTechniciansCard(
+                      isTablet: isTablet,
+                      jobs: sortedJobs,
+                      bodyScrollable: true,
+                      bodyScrollController: _reviewTechScrollController,
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 12 : 14),
+                  Expanded(
+                    flex: 3,
+                    child: Scrollbar(
+                      controller: _reviewSummaryScrollController,
+                      thumbVisibility: true,
+                      trackVisibility: true,
+                      thickness: 6,
+                      radius: const Radius.circular(8),
+                      child: SingleChildScrollView(
+                        controller: _reviewSummaryScrollController,
+                        primary: false,
+                        physics: const ClampingScrollPhysics(),
+                        child: summaryCard,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final table = _buildDepartmentsDataTable(sortedJobs, isTablet, currencyFormat);
 
     final sidePanels = Column(
@@ -1299,30 +1544,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
           jobs: sortedJobs,
         ),
         SizedBox(height: isTablet ? 12 : 14),
-        _ReviewDraftOrderSummaryCard(
-          isTablet: isTablet,
-          currencyFormat: currencyFormat,
-          grossSubtotal: _grossSubtotal,
-          itemDiscountsTotal: _itemDiscountsTotal,
-          invoiceDiscountTotal: _invoiceDiscountTotal,
-          promoDiscountTotal: _promoDiscountTotal,
-          netSubtotal: _netSubtotal,
-          vatAmount: _vatAmount,
-          totalAmount: _totalAmount,
-        ),
+        summaryCard,
       ],
     );
-
-    if (isTablet) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: table),
-          const SizedBox(width: 16),
-          SizedBox(width: 312, child: sidePanels),
-        ],
-      );
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1431,11 +1655,28 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     );
   }
 
+  /// Empty rows so [Table] grid lines extend to [minTableHeight] (tablet Final Review).
+  static const int _kMaxReviewFillerRows = 120;
+
+  int _reviewFillerRowCount({
+    required int tableRowCount,
+    required double minViewportHeight,
+    required bool isTablet,
+  }) {
+    final perRow = isTablet ? 39.0 : 33.0;
+    final estimated = tableRowCount * perRow;
+    if (estimated >= minViewportHeight) return 0;
+    final gap = minViewportHeight - estimated;
+    final n = (gap / perRow).ceil();
+    return n.clamp(0, _kMaxReviewFillerRows);
+  }
+
   Widget _buildDepartmentsDataTable(
     List<PosOrderJob> jobs,
     bool isTablet,
-    NumberFormat currencyFormat,
-  ) {
+    NumberFormat currencyFormat, {
+    double? minTableHeight,
+  }) {
     final rows = <TableRow>[
       TableRow(
         children: [
@@ -1558,6 +1799,31 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       }
     }
 
+    final minH = minTableHeight;
+    if (minH != null && minH > 0) {
+      final extra = _reviewFillerRowCount(
+        tableRowCount: rows.length,
+        minViewportHeight: minH,
+        isTablet: isTablet,
+      );
+      // One fewer filler row so the table does not show an extra blank line at the bottom.
+      final fillCount = extra > 0 ? extra - 1 : 0;
+      for (var i = 0; i < fillCount; i++) {
+        rows.add(
+          TableRow(
+            children: [
+              _reviewBodyCell('', isTablet),
+              _reviewBodyCell('', isTablet),
+              _reviewBodyCell('', isTablet),
+              _reviewBodyCell('', isTablet),
+              _reviewBodyCell('', isTablet, align: TextAlign.end),
+              _reviewBodyCell('', isTablet, align: TextAlign.end),
+            ],
+          ),
+        );
+      }
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1628,7 +1894,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         backgroundColor: const Color(0xFFF5F6FA),
         appBar: PosScreenAppBar(
           title: _isGenerated ? 'Invoice Ready' : 'Final Review',
-          showBackButton: false,
+          showBackButton: true,
           showHamburger: false,
         ),
         body: MediaQuery(
@@ -1679,7 +1945,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                             icon: Icons.business_rounded,
                             child: _CorporatePrompt(
                               isCorporate: _isCorporate,
-                              onChanged: (val) => setState(() => _isCorporate = val),
+                              onChanged: _onCorporateCustomerChanged,
                             ),
                           ),
                         ),
@@ -1710,7 +1976,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                             icon: Icons.business_rounded,
                             child: _CorporatePrompt(
                               isCorporate: _isCorporate,
-                              onChanged: (val) => setState(() => _isCorporate = val),
+                              onChanged: _onCorporateCustomerChanged,
                             ),
                           ),
                         ),
@@ -1721,7 +1987,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                             icon: Icons.payment_rounded,
                             child: _PaymentMethodSelector(
                               selected: _selectedPayments,
-                              onChanged: (_) {},
+                              onChanged: (pms) => setState(() => _selectedPayments = pms),
                               isTablet: isTablet,
                               corporateMonthlyOnly: true,
                             ),
@@ -1735,7 +2001,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       icon: Icons.business_rounded,
                       child: _CorporatePrompt(
                         isCorporate: _isCorporate,
-                        onChanged: (val) => setState(() => _isCorporate = val),
+                        onChanged: _onCorporateCustomerChanged,
                       ),
                     ),
                   const SizedBox(height: 16),
@@ -1749,7 +2015,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     icon: Icons.business_rounded,
                     child: _CorporatePrompt(
                       isCorporate: _isCorporate,
-                      onChanged: (val) => setState(() => _isCorporate = val),
+                      onChanged: _onCorporateCustomerChanged,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1778,7 +2044,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       icon: Icons.payment_rounded,
                       child: _PaymentMethodSelector(
                         selected: _selectedPayments,
-                        onChanged: (_) {},
+                        onChanged: (pms) => setState(() => _selectedPayments = pms),
                         isTablet: isTablet,
                         corporateMonthlyOnly: true,
                       ),
@@ -1797,6 +2063,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 _GenerateInvoiceButton(
                   onTap: _generateInvoice,
                   isLoading: _isLoading,
+                  enabled: widget.order.meetsCashierInvoicePrerequisites,
                 ),
                 const SizedBox(height: 24),
               ],
@@ -1806,6 +2073,19 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         ),
       ),
     );
+  }
+
+  /// Matches [InvoiceDialog] payment hint (corporate / split / single method).
+  String? _requestedPaymentLabelForInvoice() {
+    if (_isCorporate == true) {
+      if (_selectedPayments.isEmpty) return 'Corporate';
+      return 'Corporate — ${_selectedPayments.first.label}';
+    }
+    if (_selectedPayments.length > 1) {
+      return 'Split (${_selectedPayments.map((p) => p.label).join(' + ')})';
+    }
+    if (_selectedPayments.length == 1) return _selectedPayments.first.label;
+    return null;
   }
 
   void _showPrintDialog() {
@@ -1819,9 +2099,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       barrierDismissible: false,
       builder: (context) => InvoiceDialog(
         invoice: _currentInvoice!,
-        requestedPaymentMethod: _isCorporate == true
-            ? 'Corporate (Monthly)'
-            : (_selectedPayments.length > 1 ? 'Split (${_selectedPayments.map((p) => p.label).join(' + ')})' : _selectedPayments.firstOrNull?.label),
+        requestedPaymentMethod: _requestedPaymentLabelForInvoice(),
         onDone: () {
           setState(() {
             _canExit = true;
@@ -2504,7 +2782,7 @@ class _PaymentMethodSelector extends StatelessWidget {
   final Set<PaymentMethod> selected;
   final ValueChanged<Set<PaymentMethod>> onChanged;
   final bool isTablet;
-  /// Corporate invoice: show monthly billing as active; counter methods greyed (not used).
+  /// Corporate invoice: five tappable methods (monthly billing, cash, card, bank, wallet).
   final bool corporateMonthlyOnly;
   const _PaymentMethodSelector({
     required this.selected,
@@ -2550,73 +2828,30 @@ class _PaymentMethodSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (corporateMonthlyOnly) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.secondaryLight,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.secondaryLight, width: 1.5),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.calendar_month_rounded, size: 18, color: Colors.white),
-                const SizedBox(width: 8),
-                Text(
-                  'Monthly billing (Corporate)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white.withOpacity(0.98),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Monthly billing — no payment collected at this time.',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Counter methods (Cash, Card, …) do not apply to this invoice.',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          IgnorePointer(
-            child: Opacity(
-              opacity: 0.42,
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: PaymentMethod.values
-                    .map((pm) => _methodChip(pm, isSelected: false))
-                    .toList(),
-              ),
-            ),
-          ),
-        ],
+      const corporateMethods = <PaymentMethod>[
+        PaymentMethod.monthlyBilling,
+        PaymentMethod.bankTransfer,
+        PaymentMethod.cash,
+        PaymentMethod.card,
+        PaymentMethod.wallet,
+      ];
+      return Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: corporateMethods.map((pm) {
+          final isSelected = selected.contains(pm);
+          return GestureDetector(
+            onTap: () => onChanged({pm}),
+            child: _methodChip(pm, isSelected: isSelected),
+          );
+        }).toList(),
       );
     }
 
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: PaymentMethod.values.map((pm) {
+      children: PaymentMethod.values.where((pm) => pm.isRetailSelectable).map((pm) {
         final isSelected = selected.contains(pm);
         return GestureDetector(
           onTap: () {
@@ -2638,18 +2873,24 @@ class _PaymentMethodSelector extends StatelessWidget {
 class _GenerateInvoiceButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool isLoading;
-  const _GenerateInvoiceButton({required this.onTap, this.isLoading = false});
+  final bool enabled;
+  const _GenerateInvoiceButton({
+    required this.onTap,
+    this.isLoading = false,
+    this.enabled = true,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final canTap = enabled && !isLoading;
     return ElevatedButton.icon(
-      onPressed: isLoading ? null : onTap,
+      onPressed: canTap ? onTap : null,
       icon: isLoading
           ? const SizedBox.shrink()
-          : const Icon(
+          : Icon(
               Icons.auto_awesome_rounded,
               size: 18,
-              color: Colors.black,
+              color: canTap ? Colors.black : const Color(0xFF64748B),
             ),
       label: isLoading
           ? const SizedBox(
@@ -2660,17 +2901,20 @@ class _GenerateInvoiceButton extends StatelessWidget {
                 color: Colors.black,
               ),
             )
-          : const Text(
+          : Text(
               'Complete Order & Generate Invoice',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
-                color: Colors.black,
+                color: canTap ? Colors.black : const Color(0xFF64748B),
               ),
             ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryLight,
+        backgroundColor:
+            canTap ? AppColors.primaryLight : const Color(0xFFCBD5E1),
         foregroundColor: Colors.black,
+        disabledBackgroundColor: const Color(0xFFCBD5E1),
+        disabledForegroundColor: const Color(0xFF64748B),
         elevation: 0,
         minimumSize: const Size.fromHeight(56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -3118,6 +3362,8 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
   final double netSubtotal;
   final double vatAmount;
   final double totalAmount;
+  /// Extra hint lines + spacing (tablet Final Review right column).
+  final bool showFinalReviewHints;
 
   const _ReviewDraftOrderSummaryCard({
     required this.isTablet,
@@ -3129,6 +3375,7 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
     required this.netSubtotal,
     required this.vatAmount,
     required this.totalAmount,
+    this.showFinalReviewHints = false,
   });
 
   static const _border = Color(0xFFE8ECF3);
@@ -3199,6 +3446,37 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
           line('Promo Discount', '- ${promoDiscountTotal.toStringAsFixed(2)}', negative: true),
           line('Total Taxable Amount', netSubtotal.toStringAsFixed(2)),
           line('VAT (15%)', vatAmount.toStringAsFixed(2)),
+          if (showFinalReviewHints) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Line totals are net of item-level discounts.',
+              style: TextStyle(
+                fontSize: isTablet ? 11.5 : 11,
+                color: Colors.grey.shade600,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Invoice and promo discounts apply to the taxable subtotal.',
+              style: TextStyle(
+                fontSize: isTablet ? 11.5 : 11,
+                color: Colors.grey.shade600,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Confirm all amounts match the job before generating the invoice.',
+              style: TextStyle(
+                fontSize: isTablet ? 11.5 : 11,
+                color: Colors.grey.shade500,
+                height: 1.4,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
           const Divider(height: 20, thickness: 1, color: _border),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -3238,19 +3516,99 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
 class _ReviewAssignTechniciansCard extends StatelessWidget {
   final bool isTablet;
   final List<PosOrderJob> jobs;
+  /// When true, the list scrolls inside a fixed-height parent (tablet split row).
+  final bool bodyScrollable;
+  final ScrollController? bodyScrollController;
 
   const _ReviewAssignTechniciansCard({
     required this.isTablet,
     required this.jobs,
+    this.bodyScrollable = false,
+    this.bodyScrollController,
   });
 
   static const _border = Color(0xFFE8ECF3);
 
-  String _commissionLabel(JobTechnician tech) {
-    if (tech.commissionAmount > 0 || tech.commissionPercent == 0) {
-      return 'SAR ${tech.commissionAmount.toStringAsFixed(2)}';
+  /// Preview commission for review. API often returns `0` until completion/invoice; mirror
+  /// [_commissions] fallback so reassigned techs don’t show SAR 0.00 before invoice.
+  String _commissionLabel(JobTechnician tech, PosOrderJob job) {
+    double amount = tech.commissionAmount;
+    double percent = tech.commissionPercent;
+    if (amount <= 0) {
+      final rate = percent > 0 ? percent / 100.0 : 0.10;
+      amount = job.totalAmount * rate;
+      if (percent <= 0) percent = 10.0;
     }
-    return '${tech.commissionPercent.toStringAsFixed(0)}%';
+    return 'SAR ${amount.toStringAsFixed(2)}'
+        '${percent > 0 ? ' (${percent.toStringAsFixed(0)}%)' : ''}';
+  }
+
+  List<Widget> _jobBlocks({
+    required TextStyle deptStyle,
+    required TextStyle jobIdStyle,
+    required TextStyle nameStyle,
+    required TextStyle commStyle,
+  }) {
+    final list = <Widget>[];
+    for (var i = 0; i < jobs.length; i++) {
+      final job = jobs[i];
+      final techs = job.distinctActiveTechnicians;
+      list.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(job.department.toUpperCase(), style: deptStyle),
+              Text('Job #${job.id}', style: jobIdStyle),
+              const SizedBox(height: 8),
+              if (techs.isEmpty)
+                Text(
+                  'No technician assigned',
+                  style: TextStyle(
+                    fontSize: isTablet ? 12.5 : 11.5,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey.shade500,
+                  ),
+                )
+              else
+                ...techs.map(
+                  (t) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.engineering_outlined,
+                          size: isTablet ? 20 : 18,
+                          color: AppColors.secondaryLight,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(t.name, style: nameStyle),
+                              Text(
+                                'Commission: ${_commissionLabel(t, job)}',
+                                style: commStyle,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+      if (i < jobs.length - 1) {
+        list.add(Divider(height: 1, thickness: 1, color: Colors.grey.shade200));
+      }
+    }
+    return list;
   }
 
   @override
@@ -3277,6 +3635,23 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
       color: Colors.grey.shade700,
     );
 
+    final header = Text(
+      'ASSIGNED TECHNICIANS',
+      style: TextStyle(
+        fontSize: isTablet ? 13 : 12,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.5,
+        color: const Color(0xFF64748B),
+      ),
+    );
+
+    final blocks = _jobBlocks(
+      deptStyle: deptStyle,
+      jobIdStyle: jobIdStyle,
+      nameStyle: nameStyle,
+      commStyle: commStyle,
+    );
+
     return Container(
       padding: pad,
       decoration: BoxDecoration(
@@ -3294,72 +3669,41 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'ASSIGNED TECHNICIANS',
-            style: TextStyle(
-              fontSize: isTablet ? 13 : 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-              color: const Color(0xFF64748B),
-            ),
-          ),
+          header,
           const SizedBox(height: 14),
-          ...jobs.expand((job) {
-            final techs = job.activeTechnicians;
-            return [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(job.department.toUpperCase(), style: deptStyle),
-                    Text('Job #${job.id}', style: jobIdStyle),
-                    const SizedBox(height: 8),
-                    if (techs.isEmpty)
-                      Text(
-                        'No technician assigned',
-                        style: TextStyle(
-                          fontSize: isTablet ? 12.5 : 11.5,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey.shade500,
-                        ),
-                      )
-                    else
-                      ...techs.map(
-                        (t) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.engineering_outlined,
-                                size: isTablet ? 20 : 18,
-                                color: AppColors.secondaryLight,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(t.name, style: nameStyle),
-                                    Text(
-                                      'Commission: ${_commissionLabel(t)}',
-                                      style: commStyle,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+          if (bodyScrollable)
+            Expanded(
+              child: bodyScrollController != null
+                  ? Scrollbar(
+                      controller: bodyScrollController,
+                      thumbVisibility: true,
+                      trackVisibility: true,
+                      thickness: 6,
+                      radius: const Radius.circular(8),
+                      child: SingleChildScrollView(
+                        controller: bodyScrollController,
+                        primary: false,
+                        physics: const ClampingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ...blocks,
+                            const SizedBox(height: 16),
+                          ],
                         ),
                       ),
-                  ],
-                ),
-              ),
-              if (job != jobs.last)
-                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
-            ];
-          }),
+                    )
+                  : SingleChildScrollView(
+                      primary: false,
+                      physics: const ClampingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: blocks,
+                      ),
+                    ),
+            )
+          else
+            ...blocks,
         ],
       ),
     );

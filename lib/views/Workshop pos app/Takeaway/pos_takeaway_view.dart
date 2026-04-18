@@ -81,11 +81,9 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F3F0),
-        appBar: PosScreenAppBar(
+        appBar: const PosScreenAppBar(
           title: 'Takeaway',
           showBackButton: false,
-          showGlobalLeft: true,
-          showHamburger: false,
         ),
         body: wrapPosShellRailBody(
           context,

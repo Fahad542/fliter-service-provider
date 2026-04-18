@@ -282,7 +282,7 @@ class PosOrderDetailsView extends StatelessWidget {
       children: jobs.asMap().entries.map((entry) {
         final i = entry.key;
         final job = entry.value;
-        final techNames = job.activeTechnicians
+        final techNames = job.distinctActiveTechnicians
             .map((t) => t.name)
             .where((n) => n.trim().isNotEmpty)
             .join(', ');

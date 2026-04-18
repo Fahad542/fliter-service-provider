@@ -16,21 +16,28 @@ class AssignTechnicianResponse {
   final TechnicianAssignment? assignment;
   /// From `assignments` or `assigned` on POST /cashier/job/:id/assign (for immediate UI).
   final List<JobTechnician> assignedTechnicians;
+  /// Echoes replace mode when the server supports `sync: true` on the request body.
+  final bool? sync;
+  /// Active assignment rows cancelled in this call (0 under add-only or when none removed).
+  final int removedCount;
 
   AssignTechnicianResponse({
     required this.success,
     required this.message,
     this.assignment,
     this.assignedTechnicians = const [],
+    this.sync,
+    this.removedCount = 0,
   });
 
   /// POST can return `success: true` with `assigned: []` when the server skips every
   /// id (e.g. invalid ids, or historically when duplicate checks counted cancelled rows).
-  /// Callers should not toast success when [requestedEmployeeIds] is non-empty but
-  /// [assignedTechnicians] is empty.
+  /// With **sync/replace** (`sync == true`), trust [success] and [message] even if the
+  /// assigned list is empty in edge cases (e.g. roster unchanged wording from API).
   bool isEffectiveAssignFailure(List<String> requestedEmployeeIds) {
     if (!success) return true;
     if (requestedEmployeeIds.isEmpty) return false;
+    if (sync == true) return false;
     return assignedTechnicians.isEmpty;
   }
 
@@ -70,6 +77,18 @@ class AssignTechnicianResponse {
   }
 
   factory AssignTechnicianResponse.fromJson(Map<String, dynamic> json) {
+    final syncRaw = json['sync'];
+    bool? syncParsed;
+    if (syncRaw is bool) {
+      syncParsed = syncRaw;
+    } else if (syncRaw != null) {
+      syncParsed = syncRaw.toString().toLowerCase() == 'true';
+    }
+    final removed = json['removedCount'] ?? json['removed_count'];
+    final removedN = removed is num
+        ? removed.toInt()
+        : int.tryParse(removed?.toString() ?? '') ?? 0;
+
     return AssignTechnicianResponse(
       success: json['success'] ?? false,
       message: json['message']?.toString() ?? '',
@@ -79,6 +98,8 @@ class AssignTechnicianResponse {
             )
           : null,
       assignedTechnicians: _parseTechnicianList(json),
+      sync: syncParsed,
+      removedCount: removedN,
     );
   }
 }
