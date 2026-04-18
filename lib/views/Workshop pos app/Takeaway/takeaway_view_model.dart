@@ -425,7 +425,7 @@ class TakeawayViewModel extends ChangeNotifier {
     _lastInvoice = null;
     _lastOrderId = null;
     if (_cart.isEmpty) {
-      _checkoutError = 'Add at least one product';
+      _checkoutError = 'Cart is empty.';
       notifyListeners();
       return null;
     }

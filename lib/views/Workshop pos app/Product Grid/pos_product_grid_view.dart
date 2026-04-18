@@ -201,32 +201,32 @@ class _PosProductGridViewState extends State<PosProductGridView> {
 
   Widget _buildAddTechnicianButton(bool isTablet) {
     final child = Material(
-      color: AppColors.secondaryLight,
-      borderRadius: BorderRadius.circular(16),
+      color: AppColors.primaryLight,
+      borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: _openTechniciansPage,
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: isTablet ? 16 : 10,
-            vertical: isTablet ? 14 : 12,
+            horizontal: isTablet ? 12 : 8,
+            vertical: isTablet ? 10 : 9,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.person_add_alt_1_rounded,
-                color: Colors.white,
-                size: isTablet ? 20 : 18,
+                color: AppColors.onPrimaryLight,
+                size: isTablet ? 18 : 16,
               ),
               if (isTablet) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
                   'Add Technician',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white,
+                    color: AppColors.onPrimaryLight,
                     fontWeight: FontWeight.w800,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -1648,12 +1648,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                 isMainTab: widget.isMainTab,
                                               );
                                               if (response != null && response.success && context.mounted) {
-                                                vm.setShellSelectedIndex(2); // Orders Tab
-                                                Navigator.pushAndRemoveUntil(
-                                                  context,
-                                                  MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
-                                                  (route) => false,
-                                                );
+                                                navigateToPosShellOrdersTab(context);
                                                 ToastService.showSuccess(context, 'Order marked as completed successfully');
                                               } else {
                                                 if (context.mounted) {
@@ -1714,13 +1709,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                             }
                                                             final success = await vm.submitWalkInOrder([finalDeptId], context);
                                                             if (success && context.mounted) {
-                                                              vm.setShellSelectedIndex(2);
                                                               vm.fetchOrders();
-                                                              Navigator.pushAndRemoveUntil(
-                                                                context,
-                                                                MaterialPageRoute(builder: (_) => const PosShell(initialIndex: 2)),
-                                                                (route) => false,
-                                                              );
+                                                              navigateToPosShellOrdersTab(context);
                                                             }
                                                             if (mounted) {
                                                               setSheetState(() => isSavingDraft = false);

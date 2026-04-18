@@ -1804,7 +1804,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                     .meetsCashierInvoicePrerequisites) {
                                                   ToastService.showError(
                                                     context,
-                                                    'Add at least one product or service and one technician to each job first.',
+                                                    'Order is not ready for invoicing.',
                                                   );
                                                   return;
                                                 }

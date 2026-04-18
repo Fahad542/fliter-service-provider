@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
@@ -15,8 +16,10 @@ import '../Technician Assignment/pos_technician_assignment_view.dart';
 import '../../../models/pos_order_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
-import 'pos_order_review_view.dart';
+import '../../../models/pos_payment_method.dart';
 import 'pos_invoice_payment_dialog.dart';
+import 'pos_order_review_view.dart'
+    show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
 
 class PosOrdersView extends StatefulWidget {
   const PosOrdersView({super.key});
@@ -106,7 +109,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
   String? _lastSelectedOrderId;
   String? _lastSelectedOrderBadge;
 
-  static const double _kOrderListColumnWidth = 184;
+  static const double _kOrderListColumnWidth = 204;
 
   Widget _buildTab(String title) {
     final isSelected = _selectedTab == title;
@@ -315,7 +318,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
   }
 }
 
-/// Add customer + Choose payment (order summary footer; above Generate Invoice). Disabled when no order selected.
+/// Add customer + Select payment (order summary footer; above Generate Invoice). Disabled when no order selected.
 class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
   final PosViewModel vm;
   const _OrdersHeaderCustomerPaymentRow({required this.vm});
@@ -415,7 +418,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w800,
                 height: 1.15,
                 color: AppColors.onPrimaryLight,
@@ -439,12 +442,12 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
               ),
             ),
             child: const Text(
-              'Choose payment method',
+              'Select payment method',
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w800,
                 height: 1.15,
                 color: AppColors.onPrimaryLight,
@@ -462,9 +465,9 @@ class _OrdersNewOrderButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: const Color(0xFFFCC247),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         onTap: () {
           final vm = context.read<PosViewModel>();
           vm.clearCustomerData();
@@ -477,28 +480,28 @@ class _OrdersNewOrderButton extends StatelessWidget {
           );
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFCC247).withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: const Color(0xFFFCC247).withOpacity(0.18),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_rounded, color: Color(0xFF23262D), size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.add_rounded, color: Color(0xFF23262D), size: 18),
+              SizedBox(width: 6),
               Text(
                 'New Order',
                 style: TextStyle(
                   color: Color(0xFF23262D),
                   fontWeight: FontWeight.w800,
-                  fontSize: 14,
+                  fontSize: 12.5,
                 ),
               ),
             ],
@@ -507,6 +510,67 @@ class _OrdersNewOrderButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Job status chip — same look in department cards and ORDER SUMMARY.
+Widget posOrdersJobStatusBadge(String statusRaw) {
+  var s = statusRaw.toLowerCase().replaceAll(' ', '_');
+  if (s == 'complete') s = 'completed';
+  if (s == 'job_edited') s = 'edited';
+  final isComplete = s == 'completed' || s == 'invoiced';
+  final isEdited = s == 'edited';
+  final isCancelled = s == 'cancelled' || s == 'canceled';
+  final isInProgress =
+      s == 'in_progress' || s == 'inprogress' || statusRaw.toLowerCase() == 'in progress';
+
+  late Color fg;
+  late Color bg;
+  late Color border;
+  late String label;
+
+  if (isCancelled) {
+    fg = Colors.white;
+    bg = const Color(0xFFD32F2F);
+    border = const Color(0xFFB71C1C);
+    label = 'CANCELLED';
+  } else if (isComplete) {
+    fg = Colors.white;
+    bg = const Color(0xFF4CAF50);
+    border = const Color(0xFF388E3C);
+    label = 'COMPLETE';
+  } else if (isEdited) {
+    fg = Colors.white;
+    bg = const Color(0xFF4CAF50);
+    border = const Color(0xFF388E3C);
+    label = 'EDITED';
+  } else if (isInProgress) {
+    fg = AppColors.onPrimaryLight;
+    bg = AppColors.primaryLight;
+    border = const Color(0xFFE6B03A);
+    label = 'IN PROGRESS';
+  } else {
+    fg = Colors.white;
+    bg = const Color(0xFFFF9800);
+    border = const Color(0xFFF57C00);
+    label = 'PENDING';
+  }
+
+  final textStyle = TextStyle(
+    fontSize: 9,
+    fontWeight: FontWeight.w800,
+    color: fg,
+    letterSpacing: 0.5,
+  );
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(color: border),
+    ),
+    child: Text(label, style: textStyle),
+  );
 }
 
 class _OrderDetailPanel extends StatelessWidget {
@@ -929,19 +993,13 @@ Future<void> _onMarkJobComplete(
   PosOrderJob job,
 ) async {
   if (job.items.isEmpty) {
-    ToastService.showError(
-      context,
-      'Add at least one product or service before completing this job.',
-    );
+    ToastService.showError(context, 'This job has no line items.');
     return;
   }
 
   // Ensure technicians are assigned
   if (job.distinctActiveTechnicians.isEmpty) {
-    ToastService.showError(
-      context,
-      'Assign at least one technician before completing this job.',
-    );
+    ToastService.showError(context, 'Technician assignment is required.');
     return;
   }
   final vm = context.read<PosViewModel>();
@@ -1159,12 +1217,16 @@ class _JobCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(9),
                   decoration: BoxDecoration(
-                    color: isComplete ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0),
+                    color: (isComplete || isEdited)
+                        ? const Color(0xFFE8F5E9)
+                        : const Color(0xFFFFF3E0),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     _getDepartmentIcon(job.department),
-                    color: isComplete ? const Color(0xFF4CAF50) : const Color(0xFFFF9800),
+                    color: (isComplete || isEdited)
+                        ? const Color(0xFF4CAF50)
+                        : const Color(0xFFFF9800),
                     size: 18,
                   ),
                 ),
@@ -1186,7 +1248,7 @@ class _JobCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      _buildStatusBadge(job.status),
+                      posOrdersJobStatusBadge(job.status),
                     ],
                   ),
                 ),
@@ -1317,63 +1379,6 @@ class _JobCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(String statusRaw) {
-    final s = statusRaw.toLowerCase().replaceAll(' ', '_');
-    final isComplete = s == 'completed' || s == 'invoiced';
-    final isEdited = s == 'edited';
-    final isCancelled = s == 'cancelled' || s == 'canceled';
-    final isInProgress =
-        s == 'in_progress' || s == 'inprogress' || statusRaw.toLowerCase() == 'in progress';
-
-    late Color fg;
-    late Color bg;
-    late Color border;
-    late String label;
-    if (isCancelled) {
-      fg = Colors.white;
-      bg = const Color(0xFFD32F2F);
-      border = const Color(0xFFB71C1C);
-      label = 'CANCELLED';
-    } else if (isComplete) {
-      fg = const Color(0xFF4CAF50);
-      bg = const Color(0xFF4CAF50).withOpacity(0.1);
-      border = const Color(0xFF4CAF50).withOpacity(0.2);
-      label = 'COMPLETE';
-    } else if (isEdited) {
-      fg = const Color(0xFF3949AB);
-      bg = const Color(0xFF3949AB).withOpacity(0.1);
-      border = const Color(0xFF3949AB).withOpacity(0.2);
-      label = 'EDITED';
-    } else if (isInProgress) {
-      fg = const Color(0xFF1976D2);
-      bg = const Color(0xFF2196F3).withOpacity(0.1);
-      border = const Color(0xFF2196F3).withOpacity(0.2);
-      label = 'IN PROGRESS';
-    } else {
-      fg = const Color(0xFFFF9800);
-      bg = const Color(0xFFFF9800).withOpacity(0.1);
-      border = const Color(0xFFFF9800).withOpacity(0.2);
-      label = 'PENDING';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: border),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          color: fg,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
 }
 
 class _ModernActionChip extends StatelessWidget {
@@ -1501,58 +1506,35 @@ double _draftLineDisplayTotal(PosOrderJobItem item) {
   return item.qty * item.unitPrice;
 }
 
-/// Readable job status next to department name (e.g. `in_progress` → `In progress`).
-String _summaryFormatJobStatus(String raw) {
-  final t = raw.trim().replaceAll('_', ' ');
-  if (t.isEmpty) return '—';
-  return t
-      .split(RegExp(r'\s+'))
-      .where((w) => w.isNotEmpty)
-      .map((w) => '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
-      .join(' ');
+/// Unit price for ORDER SUMMARY qty row — line [unitPrice] from API is often VAT-inclusive.
+double _draftLineUnitPriceExVat(PosOrderJob job, PosOrderJobItem item) {
+  final pct = job.vatPercent;
+  if (pct <= 0 || item.unitPrice <= 0) return item.unitPrice;
+  return item.unitPrice / (1.0 + pct / 100.0);
 }
 
-String _summaryNormalizeJobStatusKey(String raw) {
-  return raw.trim().toLowerCase().replaceAll(RegExp(r'[\s-]+'), '_');
-}
-
-/// Badge colors: edited → green, in progress → yellow, pending → orange; else secondary.
-({Color background, Color foreground}) _summaryJobStatusBadgeColors(
-    String raw) {
-  final k = _summaryNormalizeJobStatusKey(raw);
-  if (k == 'edited' || k == 'job_edited') {
-    return (
-      background: const Color(0xFF34C759),
-      foreground: Colors.white,
-    );
-  }
-  if (k == 'in_progress' || k == 'inprogress') {
-    return (
-      background: AppColors.primaryLight,
-      foreground: AppColors.onPrimaryLight,
-    );
-  }
-  if (k == 'pending') {
-    return (
-      background: const Color(0xFFFF9500),
-      foreground: Colors.white,
-    );
-  }
-  return (
-    background: AppColors.secondaryLight,
-    foreground: AppColors.onSecondaryLight,
-  );
-}
-
-String? _draftLineDiscountCaption(PosOrderJobItem item) {
+String? _draftLineDiscountLabel(PosOrderJobItem item) {
   final dv = item.discountValue ?? 0;
   if (dv <= 0) return null;
   final t = (item.discountType ?? '').toLowerCase();
   if (t == 'percent' || t == 'percentage') {
     final s = dv == dv.roundToDouble() ? dv.toInt().toString() : dv.toStringAsFixed(1);
-    return 'Line discount: $s%';
+    return 'Line discount ($s%)';
   }
-  return 'Line discount: ${dv.toStringAsFixed(2)} SAR';
+  return 'Line discount';
+}
+
+/// SAR amount for the line discount row (fixed value or % of `qty × unitPrice`).
+double? _draftLineDiscountAmountSar(PosOrderJobItem item) {
+  final dv = item.discountValue ?? 0;
+  if (dv <= 0) return null;
+  final t = (item.discountType ?? '').toLowerCase();
+  if (t == 'percent' || t == 'percentage') {
+    final base = item.qty * item.unitPrice;
+    if (base <= 0) return null;
+    return base * (dv / 100.0);
+  }
+  return dv;
 }
 
 double _draftJobOrderLevelDiscountAmount(PosOrderJob job) {
@@ -1583,9 +1565,105 @@ double _draftOrderLevelDiscountAmount(PosOrder order) {
   return raw;
 }
 
+/// Per job: taxable total after discounts/promo, before VAT ([PosOrderJob.amountAfterPromo]).
+double _draftJobTotalBeforeVat(PosOrderJob job) {
+  if (job.amountAfterPromo > 0.0001) return job.amountAfterPromo;
+  return (job.totalAmount - job.vatAmount).clamp(0.0, double.infinity);
+}
+
+/// Plain totals under dept discount (no highlight strip) — same label typography as dept discount.
+Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
+  final labelStyle = TextStyle(
+    fontSize: 10,
+    fontWeight: FontWeight.w600,
+    color: Colors.grey.shade600,
+    height: 1.25,
+  );
+  final valueStyle = TextStyle(
+    fontSize: 10,
+    fontWeight: FontWeight.w800,
+    color: Colors.grey.shade800,
+    height: 1.25,
+  );
+  final pct = job.vatPercent;
+  final pctLabel = (pct - pct.round()).abs() < 0.001
+      ? pct.round().toString()
+      : pct.toStringAsFixed(1);
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: Text('Total before VAT', style: labelStyle)),
+          Text(
+            '${_draftJobTotalBeforeVat(job).toStringAsFixed(2)} SAR',
+            style: valueStyle,
+          ),
+        ],
+      ),
+      const SizedBox(height: 4),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: Text('VAT ($pctLabel%)', style: labelStyle)),
+          Text(
+            '+ ${job.vatAmount.toStringAsFixed(2)} SAR',
+            style: valueStyle.copyWith(color: Colors.red.shade700),
+          ),
+        ],
+      ),
+      const SizedBox(height: 4),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              'Total (incl. VAT)',
+              style: GoogleFonts.manrope(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: Colors.grey.shade800,
+                height: 1.25,
+              ),
+            ),
+          ),
+          Text(
+            '${job.totalAmount.toStringAsFixed(2)} SAR',
+            style: GoogleFonts.manrope(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1E2124),
+              height: 1.25,
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+/// Light fill for ORDER SUMMARY department name row (matches badge hue).
+Color _orderSummaryDeptHeaderFillForStatus(String statusRaw) {
+  var s = statusRaw.toLowerCase().replaceAll(' ', '_');
+  if (s == 'complete') s = 'completed';
+  if (s == 'job_edited') s = 'edited';
+  final isComplete = s == 'completed' || s == 'invoiced';
+  final isEdited = s == 'edited';
+  final isCancelled = s == 'cancelled' || s == 'canceled';
+  final isInProgress =
+      s == 'in_progress' || s == 'inprogress' || statusRaw.toLowerCase() == 'in progress';
+
+  if (isCancelled) return const Color(0xFFFFEBEE);
+  if (isComplete || isEdited) return const Color(0xFFE8F5E9);
+  if (isInProgress) return const Color(0xFFFFF9E8);
+  return const Color(0xFFFFF3E0);
+}
+
 /// Highlight strip for department name / dept total / grand total in the order summary column.
 /// [secondaryBackground] uses [AppColors.secondaryLight] for the **grand total** row.
 /// [departmentTotalStripe] uses a light neutral strip so it does not match the grand total bar.
+/// [departmentStatusHeaderTint] when set, tints the strip to the same hue as the job status badge.
 Widget _orderSummaryHighlightBox({
   required Widget child,
   bool emphasized = false,
@@ -1594,18 +1672,40 @@ Widget _orderSummaryHighlightBox({
   bool compact = false,
   /// Per-job "Department total" row — light background, distinct from grand total.
   bool departmentTotalStripe = false,
+  String? departmentStatusHeaderTint,
 }) {
+  final useDeptStatusTint = !departmentTotalStripe &&
+      !secondaryBackground &&
+      (departmentStatusHeaderTint?.trim().isNotEmpty ?? false);
+
   final Color bg;
   final Color borderColor;
   final double borderW;
+  List<BoxShadow>? boxShadow;
+
   if (departmentTotalStripe) {
     bg = const Color(0xFFEFF1F5);
     borderColor = const Color(0xFFD1D9E6);
     borderW = 1;
+    boxShadow = null;
   } else if (secondaryBackground) {
     bg = AppColors.secondaryLight;
     borderColor = AppColors.primaryLight.withValues(alpha: emphasized ? 0.55 : 0.4);
     borderW = emphasized ? 2 : 1.5;
+    boxShadow = emphasized
+        ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ]
+        : null;
+  } else if (useDeptStatusTint) {
+    bg = _orderSummaryDeptHeaderFillForStatus(departmentStatusHeaderTint!);
+    borderColor = Colors.transparent;
+    borderW = 0;
+    boxShadow = null;
   } else {
     bg = emphasized
         ? const Color(0xFFFFF3D6)
@@ -1613,6 +1713,15 @@ Widget _orderSummaryHighlightBox({
     borderColor =
         const Color(0xFFFCC247).withValues(alpha: emphasized ? 0.95 : 0.55);
     borderW = emphasized ? 2 : 1.5;
+    boxShadow = emphasized
+        ? [
+            BoxShadow(
+              color: const Color(0xFFFCC247).withValues(alpha: 0.22),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ]
+        : null;
   }
 
   final hPad = compact
@@ -1634,53 +1743,303 @@ Widget _orderSummaryHighlightBox({
     decoration: BoxDecoration(
       color: bg,
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(
-        color: borderColor,
-        width: borderW,
-      ),
-      boxShadow: compact || departmentTotalStripe
+      border: useDeptStatusTint
           ? null
-          : emphasized && !secondaryBackground
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFCC247).withValues(alpha: 0.22),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : emphasized && secondaryBackground
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.18),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
+          : Border.all(
+              color: borderColor,
+              width: borderW,
+            ),
+      boxShadow: compact || departmentTotalStripe || useDeptStatusTint
+          ? null
+          : boxShadow,
     ),
     child: child,
   );
 }
 
-String? _posOrdersInvoiceFooterHint({
-  required bool allDepartmentsComplete,
-  required PosOrder order,
-  required PosViewModel vm,
-  required bool meetsPrereq,
-  required bool billingOk,
-  required bool paymentOk,
-}) {
-  if (!allDepartmentsComplete) return null;
-  if (!meetsPrereq) {
-    return 'Add at least one product or service and one technician to each job before generating an invoice.';
+String? _ordersRequestedPaymentLabelForInvoice(
+  bool? isCorporate,
+  Set<PaymentMethod> methods,
+) {
+  if (isCorporate == true) {
+    if (methods.isEmpty) return 'Corporate';
+    return 'Corporate — ${methods.first.label}';
   }
-  if (!billingOk) {
-    return 'Vehicle plate, customer name, and mobile are required. Tap Add customer details.';
+  if (methods.length > 1) {
+    return 'Split (${methods.map((p) => p.label).join(' + ')})';
   }
-  if (!paymentOk) {
-    return 'Select customer type and a payment method (Choose payment method).';
-  }
+  if (methods.length == 1) return methods.first.label;
   return null;
+}
+
+/// Confirm payment amount(s) before invoice (always shown for non-corporate from Orders).
+///
+/// Controllers are owned by [_OrdersSplitPaymentDialog] so they are disposed only after
+/// the route is unmounted — disposing in `showDialog`'s `finally` caused
+/// `_dependents.isEmpty` when Cancel was pressed.
+Future<List<Map<String, dynamic>>?> _showOrdersSplitPaymentDialog(
+  BuildContext context, {
+  required List<PaymentMethod> methods,
+  required double invoiceTotal,
+}) {
+  return showDialog<List<Map<String, dynamic>>>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _OrdersSplitPaymentDialog(
+      methods: methods,
+      invoiceTotal: invoiceTotal,
+    ),
+  );
+}
+
+class _OrdersSplitPaymentDialog extends StatefulWidget {
+  final List<PaymentMethod> methods;
+  final double invoiceTotal;
+
+  const _OrdersSplitPaymentDialog({
+    required this.methods,
+    required this.invoiceTotal,
+  });
+
+  @override
+  State<_OrdersSplitPaymentDialog> createState() => _OrdersSplitPaymentDialogState();
+}
+
+class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
+  late final Map<PaymentMethod, TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = {
+      for (final pm in widget.methods) pm: TextEditingController(),
+    };
+    if (widget.methods.length == 1) {
+      _controllers[widget.methods.first]!.text =
+          widget.invoiceTotal.toStringAsFixed(2);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double currentSum = 0;
+    for (final c in _controllers.values) {
+      currentSum += double.tryParse(c.text.trim()) ?? 0.0;
+    }
+    final remaining = widget.invoiceTotal - currentSum;
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: AppColors.surfaceLight,
+      title: Text(
+        widget.methods.length > 1 ? 'Split Payment' : 'Payment',
+        style: AppTextStyles.h3.copyWith(color: AppColors.secondaryLight),
+      ),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Invoice Total', style: AppTextStyles.bodyMedium),
+                  Text(
+                    '${widget.invoiceTotal.toStringAsFixed(2)} SAR',
+                    style: AppTextStyles.bodyLarge
+                        .copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...widget.methods.map((pm) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: Row(
+                        children: [
+                          Icon(pm.icon, size: 20, color: Colors.grey.shade600),
+                          const SizedBox(width: 8),
+                          Text(
+                            pm.label,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _controllers[pm],
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          labelText: 'Amount (SAR)',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            if (remaining.abs() > 0.05)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  remaining > 0
+                      ? 'Remaining: ${remaining.toStringAsFixed(2)} SAR'
+                      : 'Exceeds total by ${remaining.abs().toStringAsFixed(2)} SAR',
+                  style: TextStyle(
+                    color: remaining > 0 ? Colors.orange.shade700 : Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, null),
+          child: Text(
+            'Cancel',
+            style: AppTextStyles.button.copyWith(color: AppColors.secondaryLight),
+          ),
+        ),
+        FilledButton(
+          onPressed: remaining.abs() > 0.05
+              ? null
+              : () {
+                  final result = <Map<String, dynamic>>[];
+                  for (final pm in widget.methods) {
+                    result.add({
+                      'method': pm.label,
+                      'amount':
+                          double.tryParse(_controllers[pm]!.text.trim()) ?? 0.0,
+                    });
+                  }
+                  Navigator.pop(context, result);
+                },
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primaryLight,
+            foregroundColor: AppColors.onPrimaryLight,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text('Confirm amounts'),
+        ),
+      ],
+    );
+  }
+}
+
+Future<void> _generateInvoiceFromOrdersSummary(
+  BuildContext context,
+  PosViewModel vm,
+  PosOrder order,
+) async {
+  if (!order.meetsCashierInvoicePrerequisites) {
+    ToastService.showError(context, 'Order is not ready for invoicing.');
+    return;
+  }
+
+  final isCorporate = vm.invoicePaymentIsCorporate;
+  final methods = vm.invoicePaymentMethods;
+  if (isCorporate == null || methods.isEmpty) {
+    ToastService.showError(context, 'Select customer type and payment method first.');
+    return;
+  }
+
+  final totalAmount = order.draftPosOrderTotalDisplay;
+
+  List<Map<String, dynamic>>? paymentSplits;
+  if (isCorporate != true) {
+    final split = await _showOrdersSplitPaymentDialog(
+      context,
+      methods: methods.toList(),
+      invoiceTotal: totalAmount,
+    );
+    if (!context.mounted) return;
+    if (split == null) return;
+    paymentSplits = split;
+  }
+
+  try {
+    final response = await vm.generateInvoice(
+      order.id,
+      orderForBilling: order,
+      isCorporate: isCorporate,
+      paymentMethod: isCorporate == true
+          ? (methods.isNotEmpty ? methods.first.label : 'Corporate')
+          : (paymentSplits != null && paymentSplits.length == 1
+              ? paymentSplits.first['method'] as String?
+              : null),
+      payments: isCorporate != true &&
+              paymentSplits != null &&
+              paymentSplits.length > 1
+          ? paymentSplits
+          : null,
+    );
+
+    if (!context.mounted) return;
+    if (response != null && response.success) {
+      vm.fetchOrders();
+      final inv = response.invoice;
+      if (inv != null) {
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => InvoiceDialog(
+            invoice: inv,
+            requestedPaymentMethod:
+                _ordersRequestedPaymentLabelForInvoice(isCorporate, methods),
+            onDone: () {},
+          ),
+        );
+      } else {
+        ToastService.showSuccess(
+          context,
+          response.message.isNotEmpty
+              ? response.message
+              : 'Invoice generated',
+        );
+      }
+    } else {
+      ToastService.showError(
+        context,
+        response?.message ?? 'Failed to generate invoice',
+      );
+    }
+  } catch (e) {
+    if (context.mounted) ToastService.showError(context, e.toString());
+  }
 }
 
 class _OrderSummaryPanel extends StatelessWidget {
@@ -1710,14 +2069,6 @@ class _OrderSummaryPanel extends StatelessWidget {
         meetsPrereq &&
         billingOk &&
         paymentOk;
-    final invoiceFooterHint = _posOrdersInvoiceFooterHint(
-      allDepartmentsComplete: allDepartmentsComplete,
-      order: order,
-      vm: vm,
-      meetsPrereq: meetsPrereq,
-      billingOk: billingOk,
-      paymentOk: paymentOk,
-    );
 
     final orderPromoName = (order.promoCodeName ?? '').trim();
     final orderPromoAmt = order.promoDiscountAmount ?? 0;
@@ -1817,23 +2168,6 @@ class _OrderSummaryPanel extends StatelessWidget {
       }
     }
 
-    if (activeJobs.any((j) => j.vatAmount > 0)) {
-      detailChildren.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Text(
-            'Includes VAT where shown on jobs (see department lines).',
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              height: 1.25,
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ),
-      );
-    }
-
     final fixedFooter = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1871,55 +2205,56 @@ class _OrderSummaryPanel extends StatelessWidget {
         _OrdersHeaderCustomerPaymentRow(vm: vm),
         if (allDepartmentsComplete) ...[
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: canGenerateInvoice
-                  ? () {
-                      Navigator.push<void>(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              PosOrderReviewView(order: order),
+          Consumer<PosViewModel>(
+            builder: (context, posVm, _) {
+              final invoicingThisOrder =
+                  posVm.isInvoiceLoading && posVm.loadingOrderId == order.id;
+              return SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: canGenerateInvoice && !invoicingThisOrder
+                      ? () => _generateInvoiceFromOrdersSummary(
+                            context,
+                            posVm,
+                            order,
+                          )
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondaryLight,
+                    foregroundColor: AppColors.onSecondaryLight,
+                    disabledBackgroundColor: const Color(0xFFCBD5E1),
+                    disabledForegroundColor: const Color(0xFF64748B),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: invoicingThisOrder
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.onSecondaryLight,
+                          ),
+                        )
+                      : const Text(
+                          'Generate Invoice',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.onSecondaryLight,
+                          ),
                         ),
-                      );
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondaryLight,
-                foregroundColor: AppColors.onSecondaryLight,
-                disabledBackgroundColor: const Color(0xFFCBD5E1),
-                disabledForegroundColor: const Color(0xFF64748B),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Generate Invoice',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.onSecondaryLight,
                 ),
-              ),
-            ),
+              );
+            },
           ),
-          if (invoiceFooterHint != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              invoiceFooterHint,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                height: 1.35,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
         ],
       ],
     );
@@ -2013,12 +2348,12 @@ class _DraftDepartmentSection extends StatelessWidget {
     final jobDiscAmt = _draftJobOrderLevelDiscountAmount(job);
 
     final items = job.items;
-    final statusBadge = _summaryJobStatusBadgeColors(job.status);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _orderSummaryHighlightBox(
+          departmentStatusHeaderTint: job.status,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -2036,23 +2371,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusBadge.background,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _summaryFormatJobStatus(job.status),
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    color: statusBadge.foreground,
-                    letterSpacing: 0.15,
-                    height: 1.15,
-                  ),
-                ),
-              ),
+              posOrdersJobStatusBadge(job.status),
             ],
           ),
         ),
@@ -2067,17 +2386,31 @@ class _DraftDepartmentSection extends StatelessWidget {
             ),
           )
         else
-          ...items.map((item) {
-            final cap = _draftLineDiscountCaption(item);
+          ...List<Widget>.generate(items.length, (i) {
+            final item = items[i];
+            final discLabel = _draftLineDiscountLabel(item);
+            final discAmt = _draftLineDiscountAmountSar(item);
             final lineTot = _draftLineDisplayTotal(item);
+            final isLast = i == items.length - 1;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: EdgeInsets.only(
+                top: i == 0 ? 0 : 12,
+                bottom: isLast ? 10 : 0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 5, right: 6),
+                        child: Icon(
+                          Icons.circle,
+                          size: 5,
+                          color: AppColors.secondaryLight,
+                        ),
+                      ),
                       Expanded(
                         child: Text(
                           item.productName,
@@ -2102,22 +2435,60 @@ class _DraftDepartmentSection extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'Qty ${_draftFmtQty(item.qty)} × ${item.unitPrice.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade500,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Text.rich(
+                      TextSpan(
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade500,
+                        ),
+                        children: [
+                          TextSpan(
+                            text:
+                                'Qty ${_draftFmtQty(item.qty)} × ${_draftLineUnitPriceExVat(job, item).toStringAsFixed(2)}',
+                          ),
+                          TextSpan(
+                            text: ' Without VAT',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  if (cap != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      cap,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.orange.shade800,
+                  if (discLabel != null &&
+                      discAmt != null &&
+                      discAmt > 0.0001) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              discLabel,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '− ${discAmt.toStringAsFixed(2)} SAR',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.green.shade800,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -2125,7 +2496,51 @@ class _DraftDepartmentSection extends StatelessWidget {
               ),
             );
           }),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: AppColors.secondaryLight,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.engineering_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                techLabel,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  height: 1.25,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 6),
+          child: Divider(
+            height: 1,
+            thickness: 0.5,
+            color: Colors.black.withValues(alpha: 0.06),
+          ),
+        ),
         if (jobPromoName.isNotEmpty || jobPromoAmt > 0) ...[
           Text(
             'Dept promo',
@@ -2188,61 +2603,7 @@ class _DraftDepartmentSection extends StatelessWidget {
           ),
           const SizedBox(height: 6),
         ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.engineering_outlined, size: 14, color: Colors.grey.shade500),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                techLabel,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        _orderSummaryHighlightBox(
-          departmentTotalStripe: true,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Department total',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-              Text(
-                '${job.totalAmount.toStringAsFixed(2)} SAR',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.secondaryLight,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (job.vatAmount > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              'VAT ${job.vatPercent.toStringAsFixed(0)}%: ${job.vatAmount.toStringAsFixed(2)} SAR',
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade500,
-              ),
-            ),
-          ),
+        _draftDeptTotalsPlainTextRows(job),
       ],
     );
   }
@@ -2253,12 +2614,13 @@ Widget _orderStripStatusBadge(PosOrder order, {required bool isSelected}) {
   final Color fg;
   final Color bg;
 
-  if (label == 'COMPLETED') {
-    fg = Colors.white;
-    bg = AppColors.secondaryLight;
-  } else if (!isSelected) {
+  // Unselected tiles: same soft grey pill for PENDING, COMPLETED, and DRAFT.
+  if (!isSelected) {
     fg = AppColors.secondaryLight;
     bg = AppColors.secondaryLight.withValues(alpha: 0.08);
+  } else if (label == 'COMPLETED') {
+    fg = Colors.white;
+    bg = AppColors.secondaryLight;
   } else if (label == 'DRAFT') {
     fg = const Color(0xFF23262D).withValues(alpha: 0.8);
     bg = const Color(0xFF23262D).withValues(alpha: 0.1);

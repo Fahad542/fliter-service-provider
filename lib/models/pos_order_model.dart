@@ -745,7 +745,7 @@ class PosOrder {
     return allDone ? 'COMPLETED' : 'PENDING';
   }
 
-  /// Each non-cancelled job must have line items and at least one technician before invoicing.
+  /// Each non-cancelled job must have line items and an assigned technician before invoicing.
   bool get meetsCashierInvoicePrerequisites {
     final active = jobs.where((j) => !j.isCancelledJob).toList();
     if (active.isEmpty) return false;

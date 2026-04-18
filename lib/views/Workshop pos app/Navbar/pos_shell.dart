@@ -41,6 +41,28 @@ import '../Takeaway/takeaway_view_model.dart';
 // import '../Workshop pos app/Store Closing/store_closing_view_model.dart';
 // import '../../widgets/pos_widgets.dart';
 
+/// Selects the Orders tab and returns to [PosShell].
+///
+/// When [PosDepartmentView] replaced the shell ([Navigator.pushReplacement]),
+/// the stack has a single route — use [Navigator.pushReplacement] to restore
+/// the shell. Otherwise pop all routes above the shell (walk-in / add customer).
+void navigateToPosShellOrdersTab(BuildContext context) {
+  final posVm = context.read<PosViewModel>();
+  posVm.setShellSelectedIndex(2);
+  final nav = Navigator.of(context, rootNavigator: true);
+  if (!nav.canPop()) {
+    nav.pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const PosShell(initialIndex: 2),
+      ),
+    );
+    return;
+  }
+  while (nav.canPop()) {
+    nav.pop();
+  }
+}
+
 class PosShell extends StatefulWidget {
   final int initialIndex;
   const PosShell({super.key, this.initialIndex = 0});
@@ -50,15 +72,20 @@ class PosShell extends StatefulWidget {
 }
 
 class _PosShellState extends State<PosShell> {
+  bool _didBootstrapShell = false;
+
   @override
-  void initState() {
-    super.initState();
-    // Initialize view model index if needed
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didBootstrapShell) return;
+    _didBootstrapShell = true;
+    final idx = widget.initialIndex;
+    if (idx != 0) {
+      context.read<PosViewModel>().setShellSelectedIndex(idx);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.initialIndex != 0) {
-        context.read<PosViewModel>().setShellSelectedIndex(widget.initialIndex);
-      }
-      _triggerVisitFetch(context, widget.initialIndex);
+      if (!mounted) return;
+      _triggerVisitFetch(context, idx);
     });
   }
 

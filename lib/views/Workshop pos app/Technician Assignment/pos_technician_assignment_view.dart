@@ -124,7 +124,6 @@ class _PosTechnicianAssignmentViewState
   ) async {
     final vm = context.read<TechnicianViewModel>();
     final posVm = context.read<PosViewModel>();
-    final navigator = Navigator.of(context);
 
     setState(() => _saveFlowInProgress = true);
     var didNavigateToOrders = false;
@@ -316,10 +315,7 @@ class _PosTechnicianAssignmentViewState
       }
       if (!mounted) return;
       didNavigateToOrders = true;
-      navigator.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => PosShell(initialIndex: 2)),
-        (route) => false,
-      );
+      navigateToPosShellOrdersTab(context);
     } else {
       ToastService.showError(
         context,

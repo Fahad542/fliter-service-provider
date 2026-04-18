@@ -1283,10 +1283,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
   void _generateInvoice() async {
     if (!widget.order.meetsCashierInvoicePrerequisites) {
-      ToastService.showError(
-        context,
-        'Add at least one product or service and one technician to each job first.',
-      );
+      ToastService.showError(context, 'Order is not ready for invoicing.');
       return;
     }
 

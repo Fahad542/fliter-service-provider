@@ -516,12 +516,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                 preferredOrderId: createdOrderId,
               );
               if (!context.mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute<void>(
-                  builder: (_) => const PosShell(initialIndex: 2),
-                ),
-                    (route) => false,
-              );
+              navigateToPosShellOrdersTab(context);
             } finally {
               if (mounted) {
                 setState(() => _placingOrder = false);
