@@ -66,6 +66,8 @@ class ApiConstants {
   /// via `complete-cashier` with an empty body (recalc only), then includes them; failures
   /// surface the same validation errors (e.g. missing tech/lines).
   static const String createInvoiceEndpoint = '/cashier/invoice/create';
+  static String invoicePaymentEndpoint(String orderId) =>
+      '/cashier/invoice/$orderId/payment';
   static const String getInvoiceByOrderEndpoint = '/cashier/invoice/by-order';
   static const String submitSalesReturnEndpoint = '/cashier/return/submit';
   static const String salesReturnListEndpoint = '/cashier/return/list';

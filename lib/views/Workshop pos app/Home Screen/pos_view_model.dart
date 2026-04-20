@@ -34,6 +34,54 @@ class _DepartmentPromoState {
   });
 }
 
+/// Billing + vehicle fields saved from the walk-in "Invoice details" dialog, keyed by order id.
+/// Prevents one order's draft from pre-filling another when [PosViewModel] is shared.
+class WalkInBillingSnapshot {
+  final String name;
+  final String mobile;
+  final String vat;
+  final String vehicleNumber;
+  final String vin;
+  final String make;
+  final String model;
+  final int odometer;
+  final String year;
+  final String color;
+
+  const WalkInBillingSnapshot({
+    required this.name,
+    required this.mobile,
+    required this.vat,
+    required this.vehicleNumber,
+    required this.vin,
+    required this.make,
+    required this.model,
+    required this.odometer,
+    required this.year,
+    required this.color,
+  });
+}
+
+/// Prefer saved "Invoice details" snapshot, then VM overlay, then order from API.
+String _walkInPickField(String snap, String vm, String orderFallback) {
+  final a = snap.trim();
+  if (a.isNotEmpty) return a;
+  final b = vm.trim();
+  if (b.isNotEmpty) return b;
+  return orderFallback.trim();
+}
+
+/// Backend expects integer year; tolerate spaces or extra text (e.g. "2010 ").
+int? _parseYearForBillingApi(String raw) {
+  final t = raw.trim();
+  if (t.isEmpty) return null;
+  final direct = int.tryParse(t);
+  if (direct != null) return direct;
+  final m = RegExp(r'\b(19|20)\d{2}\b').firstMatch(t);
+  if (m != null) return int.tryParse(m.group(0)!);
+  return null;
+}
+
 class PosViewModel extends ChangeNotifier {
   final PosRepository posRepository;
   final SessionService sessionService;
@@ -139,6 +187,11 @@ class PosViewModel extends ChangeNotifier {
   /// Orders summary panel: corporate vs individual + payment method(s) before Generate Invoice.
   bool? _invoicePaymentIsCorporate;
   final Set<PaymentMethod> _invoicePaymentMethods = <PaymentMethod>{};
+  final Map<PaymentMethod, double> _invoicePaymentAmounts = <PaymentMethod, double>{};
+
+  /// Per–walk-in-order billing drafts (Add customer details / Final Review). Not global VM bleed.
+  final Map<String, WalkInBillingSnapshot> _walkInBillingSnapshotsByOrderId =
+      <String, WalkInBillingSnapshot>{};
 
   String get customerName => _customerName;
   String get vatNumber => _vatNumber;
@@ -162,8 +215,16 @@ class PosViewModel extends ChangeNotifier {
   bool? get invoicePaymentIsCorporate => _invoicePaymentIsCorporate;
   Set<PaymentMethod> get invoicePaymentMethods =>
       Set<PaymentMethod>.unmodifiable(_invoicePaymentMethods);
+  Map<PaymentMethod, double> get invoicePaymentAmounts =>
+      Map<PaymentMethod, double>.unmodifiable(_invoicePaymentAmounts);
   bool get invoicePaymentSelectionReady =>
       _invoicePaymentIsCorporate != null && _invoicePaymentMethods.isNotEmpty;
+
+  WalkInBillingSnapshot? walkInBillingSnapshotForOrder(String orderId) {
+    final k = orderId.trim();
+    if (k.isEmpty) return null;
+    return _walkInBillingSnapshotsByOrderId[k];
+  }
 
   /// Job id for a department on the last successful walk-in create response (shell).
   String? jobIdForPlacedDepartment(String departmentId) {
@@ -225,25 +286,73 @@ class PosViewModel extends ChangeNotifier {
     if (_selectedOrder?.id != order?.id) {
       _invoicePaymentIsCorporate = null;
       _invoicePaymentMethods.clear();
+      _invoicePaymentAmounts.clear();
     }
     _selectedOrder = order;
+    _rehydrateWalkInVmFromSelectedOrderDraft();
     notifyListeners();
+  }
+
+  void _clearWalkInBillingOverlayFields() {
+    _customerName = '';
+    _vatNumber = '';
+    _mobile = '';
+    _vehicleNumber = '';
+    _vinNumber = '';
+    _make = '';
+    _model = '';
+    _odometerReading = 0;
+    _vehicleYear = '';
+    _vehicleColor = '';
+  }
+
+  void _applyWalkInSnapshotToVm(WalkInBillingSnapshot s) {
+    _customerName = s.name;
+    _mobile = s.mobile;
+    _vatNumber = s.vat;
+    _vehicleNumber = s.vehicleNumber;
+    _vinNumber = s.vin;
+    _make = s.make;
+    _model = s.model;
+    _odometerReading = s.odometer;
+    _vehicleYear = s.year;
+    _vehicleColor = s.color;
+  }
+
+  /// Keeps [customerName] / vehicle fields aligned with the selected order's saved draft (or clears).
+  void _rehydrateWalkInVmFromSelectedOrderDraft() {
+    final oid = (_selectedOrder?.id ?? '').trim();
+    if (oid.isEmpty) {
+      _clearWalkInBillingOverlayFields();
+      return;
+    }
+    final snap = _walkInBillingSnapshotsByOrderId[oid];
+    if (snap != null) {
+      _applyWalkInSnapshotToVm(snap);
+    } else {
+      _clearWalkInBillingOverlayFields();
+    }
   }
 
   void setInvoicePaymentPreferences({
     required bool isCorporate,
     required Set<PaymentMethod> payments,
+    Map<PaymentMethod, double> paymentAmounts = const {},
   }) {
     _invoicePaymentIsCorporate = isCorporate;
     _invoicePaymentMethods
       ..clear()
       ..addAll(payments);
+    _invoicePaymentAmounts
+      ..clear()
+      ..addAll(paymentAmounts);
     notifyListeners();
   }
 
   void _clearInvoicePaymentPreferences() {
     _invoicePaymentIsCorporate = null;
     _invoicePaymentMethods.clear();
+    _invoicePaymentAmounts.clear();
   }
 
   /// Merge technicians from POST /cashier/job/:id/assign before [fetchOrders] returns.
@@ -365,8 +474,9 @@ class PosViewModel extends ChangeNotifier {
     return clean;
   }
 
-  /// Billing + vehicle snapshot before invoice (walk-in billing PATCH).
+  /// Billing + vehicle snapshot before invoice (walk-in billing PATCH). Scoped to [forOrderId].
   void updateWalkInBillingContact({
+    required String forOrderId,
     required String name,
     required String mobile,
     String vat = '',
@@ -378,17 +488,63 @@ class PosViewModel extends ChangeNotifier {
     String year = '',
     String color = '',
   }) {
-    _customerName = name.trim();
-    _mobile = mobile.trim();
-    _vatNumber = vat.trim();
-    _vehicleNumber = vehicleNumber.trim();
-    _vinNumber = vin.trim();
-    _make = make.trim();
-    _model = model.trim();
-    _odometerReading = odometer;
-    _vehicleYear = year.trim();
-    _vehicleColor = color.trim();
+    final oid = forOrderId.trim();
+    if (oid.isEmpty) return;
+    final snap = WalkInBillingSnapshot(
+      name: name.trim(),
+      mobile: mobile.trim(),
+      vat: vat.trim(),
+      vehicleNumber: vehicleNumber.trim(),
+      vin: vin.trim(),
+      make: make.trim(),
+      model: model.trim(),
+      odometer: odometer,
+      year: year.trim(),
+      color: color.trim(),
+    );
+    _walkInBillingSnapshotsByOrderId[oid] = snap;
+    if (_selectedOrder?.id == oid) {
+      _applyWalkInSnapshotToVm(snap);
+    }
     notifyListeners();
+  }
+
+  /// PATCH `/cashier/order/:orderId/billing` after **Add customer details** / Invoice details (Orders).
+  /// Walk-in without corporate only; skipped if an invoice already exists on [order].
+  /// Call after [updateWalkInBillingContact] so [_buildWalkInBillingPatchBody] sees the new snapshot.
+  /// Returns `null` on success, otherwise a user-facing error string.
+  Future<String?> submitWalkInOrderBillingPatch(PosOrder order) async {
+    if (!_isStandardWalkInOrderForBilling(order)) return null;
+    if ((order.invoiceNo ?? '').trim().isNotEmpty) {
+      return 'Billing cannot be edited after an invoice exists.';
+    }
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) {
+        return 'Session expired. Sign in again.';
+      }
+      final billingBody = _buildWalkInBillingPatchBody(order);
+      final cn = (billingBody['customerName'] as String? ?? '').trim();
+      final mb = (billingBody['mobile'] as String? ?? '').trim();
+      if (cn.isEmpty || mb.isEmpty) {
+        return 'Customer name and mobile are required.';
+      }
+      final patchRes = await posRepository.patchWalkInOrderBilling(
+        order.id.trim(),
+        billingBody,
+        token,
+      );
+      if (patchRes['success'] != true) {
+        return patchRes['message']?.toString() ??
+            'Failed to update billing details';
+      }
+      await fetchOrders(silent: true, preferredOrderId: order.id);
+      return null;
+    } on StateError catch (e) {
+      return e.message;
+    } catch (e) {
+      return _extractErrorMessage(e.toString());
+    }
   }
 
   void setCustomerData({
@@ -401,6 +557,8 @@ class PosViewModel extends ChangeNotifier {
     required String model,
     required int odometer,
     String? previousOrderId,
+    String vehicleYear = '',
+    String vehicleColor = '',
   }) {
     _customerName = name;
     _vatNumber = vat;
@@ -411,20 +569,14 @@ class PosViewModel extends ChangeNotifier {
     _model = model;
     _odometerReading = odometer;
     _previousOrderId = previousOrderId;
+    _vehicleYear = vehicleYear;
+    _vehicleColor = vehicleColor;
     notifyListeners();
   }
 
   void clearCustomerData() {
-    _customerName = '';
-    _vatNumber = '';
-    _mobile = '';
-    _vehicleNumber = '';
-    _vinNumber = '';
-    _make = '';
-    _model = '';
-    _odometerReading = 0;
-    _vehicleYear = '';
-    _vehicleColor = '';
+    _walkInBillingSnapshotsByOrderId.clear();
+    _clearWalkInBillingOverlayFields();
     _previousOrderId = null;
     _lastPlacedWalkInOrder = null;
     _corporateAccountId = null;
@@ -924,6 +1076,25 @@ class PosViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? _walkInTrimOrNull(String value) {
+    final t = value.trim();
+    return t.isEmpty ? null : t;
+  }
+
+  int? _walkInOdometerReadingOrNull() =>
+      _odometerReading > 0 ? _odometerReading : null;
+
+  WalkInCustomerRequest _walkInShellCreateRequest(List<String> departmentIds) {
+    return WalkInCustomerRequest(
+      vehicleNumber: _vehicleNumber,
+      vinNumber: _walkInTrimOrNull(_vinNumber),
+      make: _walkInTrimOrNull(_make),
+      model: _walkInTrimOrNull(_model),
+      odometerReading: _walkInOdometerReadingOrNull(),
+      departmentIds: departmentIds,
+    );
+  }
+
   /// POST /cashier/walk-in-order — new order + empty jobs (vehicle + departmentIds only).
   /// Corporate accounts use the existing submit-for-approval path instead.
   Future<bool> placeWalkInShellOrder(
@@ -961,14 +1132,7 @@ class PosViewModel extends ChangeNotifier {
       }
       final createdVehicle = _vehicleNumber.trim();
 
-      final shellReq = WalkInCustomerRequest(
-        vehicleNumber: _vehicleNumber,
-        vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
-        make: _make.trim().isNotEmpty ? _make.trim() : null,
-        model: _model.trim().isNotEmpty ? _model.trim() : null,
-        odometerReading: _odometerReading > 0 ? _odometerReading : null,
-        departmentIds: departmentIds,
-      );
+      final shellReq = _walkInShellCreateRequest(departmentIds);
       final res = await posRepository.postWalkInOrder(
         shellReq.toShellCreateJson(),
         token,
@@ -1102,10 +1266,10 @@ class PosViewModel extends ChangeNotifier {
           vatNumber: _vatNumber,
           mobile: _mobile,
           vehicleNumber: _vehicleNumber,
-          vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
-          make: _make,
-          model: _model,
-          odometerReading: _odometerReading,
+          vinNumber: _walkInTrimOrNull(_vinNumber),
+          make: _walkInTrimOrNull(_make),
+          model: _walkInTrimOrNull(_model),
+          odometerReading: _walkInOdometerReadingOrNull(),
           departmentIds: allDepartmentIds.toList(),
           products: products.isNotEmpty ? products : null,
           services: services.isNotEmpty ? services : null,
@@ -1152,14 +1316,8 @@ class PosViewModel extends ChangeNotifier {
             if (context.mounted) ToastService.showError(context, _errorMessage!);
             return false;
           }
-          final shellReq = WalkInCustomerRequest(
-            vehicleNumber: _vehicleNumber,
-            vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
-            make: _make,
-            model: _model,
-            odometerReading: _odometerReading,
-            departmentIds: allDepartmentIds.toList(),
-          );
+          final shellReq =
+              _walkInShellCreateRequest(allDepartmentIds.toList());
           final shellRes =
               await posRepository.postWalkInOrder(shellReq.toShellCreateJson(), token);
           if (shellRes.success) {
@@ -1190,14 +1348,7 @@ class PosViewModel extends ChangeNotifier {
           return false;
         }
 
-        final shellReq = WalkInCustomerRequest(
-          vehicleNumber: _vehicleNumber,
-          vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
-          make: _make,
-          model: _model,
-          odometerReading: _odometerReading,
-          departmentIds: allDepartmentIds.toList(),
-        );
+        final shellReq = _walkInShellCreateRequest(allDepartmentIds.toList());
         final shellRes =
             await posRepository.postWalkInOrder(shellReq.toShellCreateJson(), token);
         if (!shellRes.success || shellRes.order == null) {
@@ -1278,10 +1429,10 @@ class PosViewModel extends ChangeNotifier {
         vatNumber: _vatNumber,
         mobile: _mobile,
         vehicleNumber: _vehicleNumber,
-        vinNumber: _vinNumber.isNotEmpty ? _vinNumber : null,
-        make: _make,
-        model: _model,
-        odometerReading: _odometerReading,
+        vinNumber: _walkInTrimOrNull(_vinNumber),
+        make: _walkInTrimOrNull(_make),
+        model: _walkInTrimOrNull(_model),
+        odometerReading: _walkInOdometerReadingOrNull(),
         departmentIds: allDepartmentIds.toList(),
         products: products.isNotEmpty ? products : null,
         services: services.isNotEmpty ? services : null,
@@ -2396,13 +2547,21 @@ class PosViewModel extends ChangeNotifier {
   }
 
   Map<String, dynamic> _buildWalkInBillingPatchBody(PosOrder order) {
+    final snap = _walkInBillingSnapshotsByOrderId[order.id.trim()];
+
     final nameOrder = (order.customer?.name ?? '').trim();
     final mobOrder = (order.customer?.mobile ?? '').trim();
     final vatOrder = (order.customer?.vatNumber ?? '').trim();
 
-    final name = nameOrder.isNotEmpty ? nameOrder : _customerName.trim();
-    final mobile = mobOrder.isNotEmpty ? mobOrder : _mobile.trim();
-    final vat = vatOrder.isNotEmpty ? vatOrder : _vatNumber.trim();
+    final name = snap != null
+        ? _walkInPickField(snap.name, _customerName, nameOrder)
+        : (nameOrder.isNotEmpty ? nameOrder : _customerName.trim());
+    final mobile = snap != null
+        ? _walkInPickField(snap.mobile, _mobile, mobOrder)
+        : (mobOrder.isNotEmpty ? mobOrder : _mobile.trim());
+    final vat = snap != null
+        ? _walkInPickField(snap.vat, _vatNumber, vatOrder)
+        : (vatOrder.isNotEmpty ? vatOrder : _vatNumber.trim());
 
     final body = <String, dynamic>{
       'customerName': name,
@@ -2410,61 +2569,92 @@ class PosViewModel extends ChangeNotifier {
     };
     if (vat.isNotEmpty) body['vatNumber'] = vat;
 
-    if (_odometerReading != 0) {
-      body['odometerReading'] = _odometerReading;
+    final plateOrder = (order.vehicle?.plateNo ?? '').trim();
+    final plateEff = snap != null
+        ? _walkInPickField(snap.vehicleNumber, _vehicleNumber, plateOrder)
+        : _vehicleNumber.trim().isNotEmpty
+            ? _vehicleNumber.trim()
+            : plateOrder;
+
+    int odoEff = order.odometerReading;
+    if (snap != null && snap.odometer != 0) {
+      odoEff = snap.odometer;
+    } else if (_odometerReading != 0) {
+      odoEff = _odometerReading;
+    }
+    if (odoEff != 0) {
+      body['odometerReading'] = odoEff;
     }
 
-    final plateOrder = (order.vehicle?.plateNo ?? '').trim();
-    final plateVm = _vehicleNumber.trim();
-    final makeVm = _make.trim();
-    final modelVm = _model.trim();
-    final vinVm = _vinNumber.trim();
+    final makeEff = snap != null
+        ? _walkInPickField(snap.make, _make, (order.vehicle?.make ?? '').trim())
+        : _make.trim();
+    final modelEff = snap != null
+        ? _walkInPickField(snap.model, _model, (order.vehicle?.model ?? '').trim())
+        : _model.trim();
+    final vinEff = snap != null
+        ? _walkInPickField(snap.vin, _vinNumber, (order.vehicle?.vin ?? '').trim())
+        : _vinNumber.trim().isNotEmpty
+            ? _vinNumber.trim()
+            : (order.vehicle?.vin ?? '').trim();
+    final yearEff = snap != null
+        ? _walkInPickField(snap.year, _vehicleYear, (order.vehicle?.year ?? '').trim())
+        : _vehicleYear.trim().isNotEmpty
+            ? _vehicleYear.trim()
+            : (order.vehicle?.year ?? '').trim();
+    final colorEff = snap != null
+        ? _walkInPickField(snap.color, _vehicleColor, (order.vehicle?.color ?? '').trim())
+        : _vehicleColor.trim();
 
-    final yearVm = _vehicleYear.trim();
-    final colorVm = _vehicleColor.trim();
-    final wantsVehicleFields = plateVm.isNotEmpty ||
-        makeVm.isNotEmpty ||
-        modelVm.isNotEmpty ||
-        vinVm.isNotEmpty ||
-        yearVm.isNotEmpty ||
-        colorVm.isNotEmpty;
+    final wantsVehicleFields = plateEff.isNotEmpty ||
+        makeEff.isNotEmpty ||
+        modelEff.isNotEmpty ||
+        vinEff.isNotEmpty ||
+        yearEff.isNotEmpty ||
+        colorEff.isNotEmpty;
 
     if (wantsVehicleFields) {
-      final plate = plateVm.isNotEmpty ? plateVm : plateOrder;
+      final plate = plateEff.isNotEmpty ? plateEff : plateOrder;
       if (plate.isEmpty) {
         throw StateError(
           'vehicleNumber is required when sending vehicle fields. Add the plate under Add Customer.',
         );
       }
       body['vehicleNumber'] = plate;
-      if (makeVm.isNotEmpty) {
-        body['make'] = makeVm;
+      if (makeEff.isNotEmpty) {
+        body['make'] = makeEff;
       } else if ((order.vehicle?.make ?? '').trim().isNotEmpty) {
         body['make'] = order.vehicle!.make.trim();
       }
-      if (modelVm.isNotEmpty) {
-        body['model'] = modelVm;
+      if (modelEff.isNotEmpty) {
+        body['model'] = modelEff;
       } else if ((order.vehicle?.model ?? '').trim().isNotEmpty) {
         body['model'] = order.vehicle!.model.trim();
       }
-      if (yearVm.isNotEmpty) {
-        final yi = int.tryParse(yearVm);
-        if (yi != null) body['year'] = yi;
+      if (yearEff.isNotEmpty) {
+        final yi = _parseYearForBillingApi(yearEff);
+        if (yi != null) {
+          body['year'] = yi;
+        } else {
+          debugPrint(
+            'WalkIn billing: year "$yearEff" could not be parsed as int; omitting year field',
+          );
+        }
       } else {
         final yStr = order.vehicle?.year?.trim();
         if (yStr != null && yStr.isNotEmpty) {
-          final yi = int.tryParse(yStr);
+          final yi = _parseYearForBillingApi(yStr);
           if (yi != null) body['year'] = yi;
         }
       }
-      if (colorVm.isNotEmpty) {
-        body['color'] = colorVm;
+      if (colorEff.isNotEmpty) {
+        body['color'] = colorEff;
       } else {
         final col = order.vehicle?.color?.trim();
         if (col != null && col.isNotEmpty) body['color'] = col;
       }
-      if (vinVm.isNotEmpty) {
-        body['vin'] = vinVm;
+      if (vinEff.isNotEmpty) {
+        body['vin'] = vinEff;
       } else {
         final ov = order.vehicle?.vin?.trim();
         if (ov != null && ov.isNotEmpty) body['vin'] = ov;
@@ -2504,6 +2694,43 @@ class PosViewModel extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  Map<String, dynamic> _buildInvoicePaymentBody({
+    required double totalAmount,
+    String? paymentMethod,
+    List<Map<String, dynamic>>? payments,
+    bool? isCorporate,
+  }) {
+    final cleanMethod = paymentMethod?.trim();
+    final normalizedPayments = <Map<String, dynamic>>[];
+
+    if (payments != null && payments.isNotEmpty) {
+      for (final p in payments) {
+        final method = p['method']?.toString().trim() ?? '';
+        if (method.isEmpty) continue;
+        final amount =
+            double.tryParse(p['amount']?.toString() ?? '') ?? 0.0;
+        if (amount <= 0) continue;
+        normalizedPayments.add(<String, dynamic>{
+          'method': method,
+          'amount': amount,
+        });
+      }
+    }
+
+    if (normalizedPayments.isEmpty && cleanMethod != null && cleanMethod.isNotEmpty) {
+      normalizedPayments.add(<String, dynamic>{
+        'method': cleanMethod,
+        'amount': totalAmount > 0 ? totalAmount : 0.0,
+      });
+    }
+
+    return <String, dynamic>{
+      if (isCorporate != null) 'isCorporate': isCorporate,
+      if (cleanMethod != null && cleanMethod.isNotEmpty) 'paymentMethod': cleanMethod,
+      'payments': normalizedPayments,
+    };
   }
 
   Future<CreateInvoiceResponse?> generateInvoice(
@@ -2600,9 +2827,6 @@ class PosViewModel extends ChangeNotifier {
         orderId: orderId,
         discountAmount: 0.0,
         invoiceDate: DateTime.now().toIso8601String(),
-        paymentMethod: paymentMethod,
-        payments: payments,
-        isCorporate: isCorporate,
       );
 
       debugPrint(
@@ -2613,19 +2837,85 @@ class PosViewModel extends ChangeNotifier {
         debugPrint(
           'InvoiceFlow: create success, invoiceId=${createResponse.invoice?.id ?? 'N/A'}, invoiceNo=${createResponse.invoice?.invoiceNo ?? 'N/A'}',
         );
-        // Immediately fetch full invoice details by order id
-        final detailedResponse = await posRepository.getInvoiceByOrder(
+        // Persist payment(s) after create, then fetch invoice again.
+        final payableTotal =
+            (createResponse.invoice?.totalAmount ?? orderCtx?.draftPosOrderTotalDisplay ?? 0)
+                .toDouble();
+        final paymentBody = _buildInvoicePaymentBody(
+          totalAmount: payableTotal,
+          paymentMethod: paymentMethod,
+          payments: payments,
+          isCorporate: isCorporate,
+        );
+        final paymentRows =
+            (paymentBody['payments'] as List?)?.whereType<Map<String, dynamic>>().toList() ??
+                const <Map<String, dynamic>>[];
+        if (paymentRows.isEmpty) {
+          final msg = 'Payment method is required before generating invoice.';
+          _errorMessage = msg;
+          _isInvoiceLoading = false;
+          _loadingOrderId = null;
+          notifyListeners();
+          return CreateInvoiceResponse(success: false, message: msg);
+        }
+
+        final paymentRes = await posRepository.saveInvoicePayment(
           orderId,
+          paymentBody,
           token,
         );
-        final finalResponse = detailedResponse.success
-            ? detailedResponse
-            : createResponse;
-        debugPrint(
-          detailedResponse.success
-              ? 'InvoiceFlow: using detailed by-order response for orderId=$orderId'
-              : 'InvoiceFlow: by-order fetch failed, falling back to create response. reason=${detailedResponse.message}',
+        if (paymentRes['success'] != true) {
+          final msg = paymentRes['message']?.toString().trim().isNotEmpty == true
+              ? paymentRes['message'].toString()
+              : 'Invoice created, but failed to save payment.';
+          _errorMessage = msg;
+          _isInvoiceLoading = false;
+          _loadingOrderId = null;
+          notifyListeners();
+          return CreateInvoiceResponse(success: false, message: msg);
+        }
+
+        final detailedResponse = await posRepository.getInvoiceByOrder(orderId, token);
+
+        Invoice? paymentInvoice;
+        final prInv = paymentRes['invoice'];
+        if (prInv is Map<String, dynamic>) {
+          try {
+            paymentInvoice = Invoice.fromJson(Map<String, dynamic>.from(prInv));
+          } catch (e, st) {
+            debugPrint('InvoiceFlow: paymentRes invoice parse failed: $e\n$st');
+          }
+        }
+
+        // Prefer fresh by-order payload; fall back to create response or payment response.
+        Invoice? mergedInvoice = detailedResponse.invoice ??
+            createResponse.invoice ??
+            paymentInvoice;
+
+        if (mergedInvoice == null) {
+          debugPrint(
+            'InvoiceFlow: no invoice object after success — '
+            'byOrder=${detailedResponse.invoice != null} '
+            'create=${createResponse.invoice != null} '
+            'payment=${paymentInvoice != null} '
+            'detailedSuccess=${detailedResponse.success}',
+          );
+        }
+
+        final msg = detailedResponse.message.trim().isNotEmpty
+            ? detailedResponse.message
+            : (createResponse.message.trim().isNotEmpty
+                ? createResponse.message
+                : (paymentRes['message']?.toString() ?? 'Invoice saved'));
+
+        final finalResponse = CreateInvoiceResponse(
+          success: true,
+          message: msg,
+          invoice: mergedInvoice,
+          statusCode: detailedResponse.statusCode ?? createResponse.statusCode,
         );
+
+        debugPrint('InvoiceFlow: fetched invoice after payment for orderId=$orderId');
 
         // Update local order status to avoid refetching
         final index = _orders.indexWhere((o) => o.id == orderId);
@@ -2650,9 +2940,12 @@ class PosViewModel extends ChangeNotifier {
         _loadingOrderId = null;
         notifyListeners();
         debugPrint(
-          'InvoiceFlow: completed. source=${detailedResponse.success ? 'by-order' : 'create'} total=${finalResponse.invoice?.totalAmount ?? 0}',
+          'InvoiceFlow: completed. mergedInvoice=${mergedInvoice != null} total=${mergedInvoice?.totalAmount ?? 0}',
         );
         _clearInvoicePaymentPreferences();
+        _walkInBillingSnapshotsByOrderId.remove(orderId);
+        _rehydrateWalkInVmFromSelectedOrderDraft();
+        notifyListeners();
         return finalResponse;
       } else {
         debugPrint(

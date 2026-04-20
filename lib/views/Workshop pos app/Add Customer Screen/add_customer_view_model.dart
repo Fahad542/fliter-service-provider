@@ -41,12 +41,26 @@ class AddCustomerViewModel extends ChangeNotifier {
     vatController.text = vm.vatNumber;
     mobileController.text = vm.mobile;
     vehicleNumberController.text = vm.vehicleNumber;
-    vinNumberController.text = vm.vinNumber;
-    makeController.text = vm.make;
-    modelController.text = vm.model;
-    odoMeterController.text = vm.odometerReading > 0
-        ? vm.odometerReading.toString()
-        : '';
+
+    final oid = (vm.selectedOrder?.id ?? '').trim();
+    final hasBillingDraft =
+        oid.isNotEmpty && vm.walkInBillingSnapshotForOrder(oid) != null;
+    final continuingShell =
+        (vm.walkInDraftOrderId ?? '').trim().isNotEmpty;
+
+    if (hasBillingDraft || continuingShell) {
+      vinNumberController.text = vm.vinNumber;
+      makeController.text = vm.make;
+      modelController.text = vm.model;
+      odoMeterController.text = vm.odometerReading > 0
+          ? vm.odometerReading.toString()
+          : '';
+    } else {
+      vinNumberController.text = '';
+      makeController.text = '';
+      modelController.text = '';
+      odoMeterController.text = '';
+    }
   }
 
   void setCorporate(String name, CashierCorporateAccount? data) {

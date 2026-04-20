@@ -1,3 +1,39 @@
+String _invoicePickVin(
+  Map<String, dynamic> vehicle,
+  Map<String, dynamic> salesOrder,
+  Map<String, dynamic> root,
+) {
+  const keys = [
+    'vin',
+    'VIN',
+    'carNo', // legacy DB field; PATCH stores VIN here
+    'vinNumber',
+    'chassisNumber',
+    'chassisNo',
+    'chassis',
+  ];
+  for (final k in keys) {
+    final v = vehicle[k] ?? salesOrder[k] ?? root[k];
+    final s = v?.toString().trim() ?? '';
+    if (s.isNotEmpty) return s;
+  }
+  return '';
+}
+
+String _invoicePickYear(
+  Map<String, dynamic> vehicle,
+  Map<String, dynamic> salesOrder,
+  Map<String, dynamic> root,
+) {
+  const keys = ['year', 'modelYear', 'vehicleYear', 'carYear', 'yr'];
+  for (final k in keys) {
+    final v = vehicle[k] ?? salesOrder[k] ?? root[k];
+    final s = v?.toString().trim() ?? '';
+    if (s.isNotEmpty) return s;
+  }
+  return '';
+}
+
 class CreateInvoiceRequest {
   final String orderId;
   final double discountAmount;
@@ -40,14 +76,31 @@ class CreateInvoiceResponse {
     this.statusCode,
   });
 
+  /// Resolves `invoice` from `invoice`, `data.invoice`, or `data` (when it looks like an invoice).
+  static Invoice? _parseInvoiceField(Map<String, dynamic> json) {
+    dynamic raw = json['invoice'];
+    if (raw == null && json['data'] != null) {
+      final data = json['data'];
+      if (data is Map<String, dynamic>) {
+        raw = data['invoice'] ?? data;
+      }
+    }
+    if (raw is! Map) return null;
+    try {
+      return Invoice.fromJson(Map<String, dynamic>.from(raw));
+    } catch (_) {
+      return null;
+    }
+  }
+
   factory CreateInvoiceResponse.fromJson(Map<String, dynamic> json) {
     return CreateInvoiceResponse(
       success: json['success'] ?? false,
-      message: json['message'] ?? '',
-      invoice: json['invoice'] != null
-          ? Invoice.fromJson(json['invoice'])
-          : null,
-      statusCode: json['statusCode'],
+      message: json['message']?.toString() ?? '',
+      invoice: _parseInvoiceField(json),
+      statusCode: json['statusCode'] is int
+          ? json['statusCode'] as int
+          : int.tryParse(json['statusCode']?.toString() ?? ''),
     );
   }
 }
@@ -77,6 +130,10 @@ class Invoice {
   final String vehicleMake;
   final String vehicleModel;
   final String plateNo;
+  /// Vehicle identification number (when present on order/invoice payload).
+  final String vehicleVin;
+  /// Model year as shown on invoice (string to preserve API formatting).
+  final String vehicleYear;
   final String? branchName;
   final String? branchAddress;
   final String? cashierName;
@@ -112,6 +169,8 @@ class Invoice {
     this.vehicleMake = '',
     this.vehicleModel = '',
     required this.plateNo,
+    this.vehicleVin = '',
+    this.vehicleYear = '',
     this.branchName,
     this.branchAddress,
     this.cashierName,
@@ -125,11 +184,21 @@ class Invoice {
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
-    var salesOrder = json['salesOrder'] ?? {};
+    final salesOrder = json['salesOrder'] is Map
+        ? Map<String, dynamic>.from(json['salesOrder'] as Map)
+        : <String, dynamic>{};
     var branch = json['branch'] ?? {};
     var createdByUser = json['createdByUser'] ?? {};
     var customer = salesOrder['customer'] ?? {};
-    var vehicle = salesOrder['vehicle'] ?? {};
+    var vehicle = salesOrder['vehicle'] is Map
+        ? Map<String, dynamic>.from(salesOrder['vehicle'] as Map)
+        : <String, dynamic>{};
+    if (json['vehicle'] is Map) {
+      vehicle = {
+        ...vehicle,
+        ...Map<String, dynamic>.from(json['vehicle'] as Map),
+      };
+    }
 
     // Parse Departments from jobs array or fallback to departments
     var departmentsList =
@@ -205,7 +274,14 @@ class Invoice {
       vehicleInfo: '${vehicle['make'] ?? ""} ${vehicle['model'] ?? ""}'.trim(),
       vehicleMake: vehicle['make']?.toString() ?? '',
       vehicleModel: vehicle['model']?.toString() ?? '',
-      plateNo: vehicle['plateNo'] ?? '',
+      plateNo: (vehicle['plateNo'] ??
+              vehicle['plate'] ??
+              vehicle['vehicleNumber'] ??
+              salesOrder['vehicleNumber'] ??
+              '')
+          .toString(),
+      vehicleVin: _invoicePickVin(vehicle, salesOrder, json),
+      vehicleYear: _invoicePickYear(vehicle, salesOrder, json),
       branchName: branch['name'],
       branchAddress: branch['address']?.toString(),
       cashierName: createdByUser['name'],

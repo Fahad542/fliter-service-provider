@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/// Normalizes API `vehicle.year` / `vehicle.vin` (may be int or string; empty → null).
+String? _orderVehicleJsonString(dynamic value) {
+  if (value == null) return null;
+  final s = value.toString().trim();
+  return s.isEmpty ? null : s;
+}
+
 class CashierOrdersResponse {
   final bool success;
   final OrderStats stats;
@@ -887,9 +894,10 @@ class OrderVehicle {
       plateNo: json['plateNo']?.toString() ?? '',
       make: json['make']?.toString() ?? '',
       model: json['model']?.toString() ?? '',
-      year: json['year']?.toString(),
-      color: json['color']?.toString(),
-      vin: json['vin']?.toString() ?? json['carNo']?.toString(),
+      year: _orderVehicleJsonString(json['year']),
+      color: _orderVehicleJsonString(json['color']),
+      vin: _orderVehicleJsonString(json['vin']) ??
+          _orderVehicleJsonString(json['carNo']),
     );
   }
 }

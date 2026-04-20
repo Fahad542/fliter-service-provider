@@ -13,7 +13,7 @@ import '../../../models/expense_category_model.dart'; // Added
 import '../../../models/cashier_expense_models.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
-import '../../../utils/pos_shell_scaffold.dart';
+import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 
 import '../More Tab/pos_more_view.dart'; // Added
 import '../Promo/promo_code_dialog.dart'; // Added
@@ -95,7 +95,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
         showBackButton: false,
         showHamburger: true,
         onMenuPressed: () =>
-            kPosShellScaffoldKey.currentState?.openDrawer(),
+            PosShellScaffoldRegistry.openDrawer(),
       ),
       body: wrapPosShellRailBody(
         context,

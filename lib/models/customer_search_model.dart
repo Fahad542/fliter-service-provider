@@ -1,5 +1,3 @@
-import 'pos_order_model.dart';
-
 class CustomerSearchResponse {
   final bool success;
   final String message;
@@ -99,20 +97,32 @@ class SearchedCustomerVehicle {
   final String plateNo;
   final String make;
   final String model;
+  final String? year;
+  final String? vin;
 
   SearchedCustomerVehicle({
     required this.id,
     required this.plateNo,
     required this.make,
     required this.model,
+    this.year,
+    this.vin,
   });
 
   factory SearchedCustomerVehicle.fromJson(Map<String, dynamic> json) {
+    String? opt(dynamic v) {
+      if (v == null) return null;
+      final s = v.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
     return SearchedCustomerVehicle(
       id: json['id']?.toString() ?? '',
-      plateNo: json['plateNo'] ?? '',
-      make: json['make'] ?? '',
-      model: json['model'] ?? '',
+      plateNo: json['plateNo']?.toString() ?? '',
+      make: json['make']?.toString() ?? '',
+      model: json['model']?.toString() ?? '',
+      year: opt(json['year']),
+      vin: opt(json['vin']) ?? opt(json['carNo']),
     );
   }
 }

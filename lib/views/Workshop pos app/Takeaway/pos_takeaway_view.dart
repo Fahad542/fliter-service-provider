@@ -1,19 +1,19 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_formatters.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
-import '../../../models/pos_order_model.dart';
+import '../../../utils/toast_service.dart';
 import '../../../models/takeaway_models.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Home Screen/pos_view_model.dart';
-import '../Order Screen/pos_order_review_view.dart';
+import '../Order Screen/pos_invoice_payment_dialog.dart';
+import '../Order Screen/pos_order_review_view.dart'
+    show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
 import '../Promo/promo_code_dialog.dart';
 import '../Promo/promo_view_model.dart';
 import 'takeaway_view_model.dart';
@@ -310,7 +310,9 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   /// Right column on tablet — mirrors Products tab live invoice (narrow panel + totals).
   Widget _buildLiveInvoicePanel(BuildContext context, TakeawayViewModel vm) {
     final currency = vm.catalog?.currency ?? 'SAR';
-    
+
+    final gross = vm.grossExclVatBeforeLineDiscounts;
+    final lineDiscount = vm.lineDiscountTotalExclVat;
     final subtotal = vm.subtotalBeforeOrderDiscount;
     final orderDiscInput = double.tryParse(vm.orderDiscountValueController.text.trim()) ?? 0.0;
     final isOrderDiscPercent = vm.orderDiscountType == 'percent' || vm.orderDiscountType == 'percentage';
@@ -328,8 +330,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         .clamp(0, double.infinity)
         .toDouble();
 
-    final vatPercent = double.tryParse(vm.vatController.text.trim()) ?? vm.catalog?.vatPercentDefault ?? 0.0;
-    final vatAmount = taxable * (vatPercent / 100);
+    final vatAmount = taxable * TakeawayViewModel.liveInvoiceVatRate;
     
     Widget buildRow(String label, String value, {Color? color, FontWeight weight = FontWeight.w500}) {
       return Row(
@@ -423,10 +424,21 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                buildRow('Gross Amount (Excl. VAT)', '$currency ${subtotal.toStringAsFixed(2)}'),
+                buildRow('Gross Amount (Excl. VAT)', '$currency ${gross.toStringAsFixed(2)}'),
                 const SizedBox(height: 6),
-                
-                // Interactive Discount Row
+                buildRow(
+                  'Line discount',
+                  '-$currency ${lineDiscount.toStringAsFixed(2)}',
+                  color: lineDiscount > 0 ? Colors.green.shade700 : Colors.grey.shade600,
+                ),
+                const SizedBox(height: 6),
+                buildRow(
+                  'Price after line discount',
+                  '$currency ${subtotal.toStringAsFixed(2)}',
+                ),
+                const SizedBox(height: 8),
+
+                // Interactive order-level discount (same control as Products tab)
                 Row(
                   children: [
                     const Text(
@@ -492,8 +504,16 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 6),
+                if (orderDisc > 0) ...[
+                  buildRow(
+                    'Total discount applied',
+                    '-$currency ${orderDisc.toStringAsFixed(2)}',
+                    color: Colors.green.shade700,
+                  ),
+                  const SizedBox(height: 6),
+                ],
                 buildRow('Price after total discount', '$currency ${afterOrderDiscount.toStringAsFixed(2)}'),
                 const SizedBox(height: 8),
                 
@@ -568,7 +588,10 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 ],
                 buildRow('Price after promo', '$currency ${taxable.toStringAsFixed(2)}'),
                 const SizedBox(height: 6),
-                buildRow('VAT ($vatPercent%)', '$currency ${vatAmount.toStringAsFixed(2)}'),
+                buildRow(
+                  'VAT (15%)',
+                  '$currency ${vatAmount.toStringAsFixed(2)}',
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -584,11 +607,65 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                   ],
                 ),
                 const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: vm.cartLineCount == 0
+                            ? null
+                            : () => _openTakeawayCustomerVehicleDialog(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryLight,
+                          foregroundColor: AppColors.onPrimaryLight,
+                          disabledBackgroundColor: const Color(0xFFE8ECF3),
+                          disabledForegroundColor: const Color(0xFF94A3B8),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        child: const Text(
+                          'Add customer details',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    if (vm.showTakeawayPaymentMethodButton) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: vm.cartLineCount == 0
+                              ? null
+                              : () => _openTakeawayPaymentDialog(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryLight,
+                            foregroundColor: AppColors.onPrimaryLight,
+                            disabledBackgroundColor: const Color(0xFFE8ECF3),
+                            disabledForegroundColor: const Color(0xFF94A3B8),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          child: const Text(
+                            'Select payment',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 8),
                 SizedBox(
                   height: 44,
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: vm.cartLineCount == 0 ? null : () => _openCheckout(context, true),
+                    onPressed: !vm.canGenerateTakeawayInvoice
+                        ? null
+                        : () => _openCheckout(context, true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondaryLight,
                       foregroundColor: Colors.white,
@@ -1007,26 +1084,23 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                     )
                                 : null,
                           ),
-                          GestureDetector(
-                            onTap: () => _showQtyDialog(context, vm, product, false),
-                            child: Container(
-                              height: 24,
-                              width: 28,
-                              alignment: Alignment.center,
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade50,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              child: Text(
-                                (!product.allowDecimalQty || cartQty % 1 == 0)
-                                    ? '${cartQty.toInt()}'
-                                    : cartQty.toStringAsFixed(1),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          Container(
+                            height: 24,
+                            width: 28,
+                            alignment: Alignment.center,
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Text(
+                              (!product.allowDecimalQty || cartQty % 1 == 0)
+                                  ? '${cartQty.toInt()}'
+                                  : cartQty.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -1178,31 +1252,27 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                     : null,
                               ),
                               Expanded(
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      _showQtyDialog(context, vm, product, true),
-                                  child: Container(
-                                    height: 28,
-                                    alignment: Alignment.center,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 3,
+                                child: Container(
+                                  height: 28,
+                                  alignment: Alignment.center,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(7),
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
-                                      borderRadius: BorderRadius.circular(7),
-                                      border: Border.all(
-                                        color: Colors.grey.shade200,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      (!product.allowDecimalQty ||
-                                              cartQty % 1 == 0)
-                                          ? '${cartQty.toInt()}'
-                                          : cartQty.toStringAsFixed(1),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  ),
+                                  child: Text(
+                                    (!product.allowDecimalQty ||
+                                            cartQty % 1 == 0)
+                                        ? '${cartQty.toInt()}'
+                                        : cartQty.toStringAsFixed(1),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -1350,265 +1420,200 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
               ],
             ),
           ),
-          SizedBox(
-            height: isTablet ? 48 : 46,
-            child: ElevatedButton.icon(
-              onPressed: () => _openCheckout(context, isTablet),
-              icon: Icon(
-                Icons.receipt_long_outlined,
-                size: isTablet ? 20 : 18,
-              ),
-              label: Text(
-                'Generate Invoice',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: isTablet ? 14 : 13,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (vm.showTakeawayPaymentMethodButton) ...[
+                SizedBox(
+                  height: isTablet ? 48 : 46,
+                  child: ElevatedButton(
+                    onPressed: () => _openTakeawayPaymentDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryLight,
+                      foregroundColor: AppColors.onPrimaryLight,
+                      elevation: 0,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 12 : 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Text(
+                      'Select payment',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: isTablet ? 12 : 10,
+                        height: 1.1,
+                        color: AppColors.onPrimaryLight,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: isTablet ? 8 : 6),
+              ],
+              SizedBox(
+                height: isTablet ? 48 : 46,
+                child: ElevatedButton.icon(
+                  onPressed: vm.canGenerateTakeawayInvoice
+                      ? () => _openCheckout(context, isTablet)
+                      : null,
+                  icon: Icon(
+                    Icons.receipt_long_outlined,
+                    size: isTablet ? 20 : 18,
+                  ),
+                  label: Text(
+                    'Generate Invoice',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: isTablet ? 14 : 13,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFC145),
+                    foregroundColor: const Color(0xFF1E2124),
+                    elevation: 0,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 18 : 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFC145),
-                foregroundColor: const Color(0xFF1E2124),
-                elevation: 0,
-                padding: EdgeInsets.symmetric(horizontal: isTablet ? 18 : 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _openCheckout(BuildContext context, bool isTablet) {
-    if (context.read<TakeawayViewModel>().cart.isEmpty) return;
+  Future<void> _openTakeawayCustomerVehicleDialog(BuildContext context) async {
     final vm = context.read<TakeawayViewModel>();
-    final previewOrder = _buildTakeawayPreviewOrder(vm);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PosOrderReviewView(order: previewOrder),
+    final posVm = context.read<PosViewModel>();
+    final initial = WalkInInvoiceFormResult(
+      name: vm.customerNameController.text.trim(),
+      mobile: vm.customerMobileController.text.trim(),
+      vat: vm.customerTaxIdController.text.trim(),
+      vehicleNumber: '',
+      vin: '',
+      make: '',
+      model: '',
+      year: '',
+      color: '',
+      odometer: 0,
+    );
+    final result = await showDialog<WalkInInvoiceFormResult?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => WalkInInvoiceDetailsDialog(
+        order: null,
+        posVm: posVm,
+        standaloneInitial: initial,
+        showVehicleSection: false,
       ),
     );
+    if (result == null || !context.mounted) return;
+    vm.customerNameController.text = result.name.trim();
+    vm.customerMobileController.text = result.mobile.trim();
+    vm.customerTaxIdController.text = result.vat.trim();
+    vm.vehiclePlateController.text = result.vehicleNumber.trim();
+    vm.vehicleVinController.text = result.vin.trim();
+    vm.vehicleMakeController.text = result.make.trim();
+    vm.vehicleModelController.text = result.model.trim();
+    vm.vehicleYearController.text = result.year.trim();
+    vm.vehicleColorController.text = result.color.trim();
+    vm.odometerController.text =
+        result.odometer != 0 ? '${result.odometer}' : '';
+    vm.refreshPreview();
+    ToastService.showSuccess(context, 'Customer details saved');
   }
 
-  PosOrder _buildTakeawayPreviewOrder(TakeawayViewModel vm) {
-    final now = DateTime.now();
-    double lineDiscountAmount(TakeawayCartLine line) {
-      final gross = line.unitPriceExclVat * line.qty;
-      final type = (line.lineDiscountType ?? '').toLowerCase();
-      if (type == 'percent' || type == 'percentage') {
-        return (gross * (line.lineDiscountValue / 100)).clamp(0, gross);
+  Future<void> _openTakeawayPaymentDialog(BuildContext context) async {
+    final vm = context.read<TakeawayViewModel>();
+    final result = await showInvoicePaymentChoiceDialog(
+      context,
+      initialIsCorporate: vm.isCorporate,
+      initialPayments: vm.invoicePaymentMethods,
+      initialPaymentAmounts: vm.invoicePaymentAmounts,
+      totalAmount: vm.estimatedDisplayTotal,
+    );
+    if (!context.mounted) return;
+    if (result != null) {
+      vm.setInvoicePaymentPreferences(
+        isCorporate: result.isCorporate,
+        methods: result.payments,
+        amounts: result.paymentAmounts,
+      );
+      ToastService.showSuccess(context, 'Payment method saved');
+    }
+  }
+
+  Future<void> _openCheckout(BuildContext context, bool isTablet) async {
+    final vm = context.read<TakeawayViewModel>();
+    if (vm.cart.isEmpty) return;
+
+    if (!vm.hasRequiredTakeawayBillingFields) {
+      await _openTakeawayCustomerVehicleDialog(context);
+      if (!context.mounted) return;
+      if (!vm.hasRequiredTakeawayBillingFields) {
+        ToastService.showError(
+          context,
+          'Customer name and mobile number are required.',
+        );
+        return;
       }
-      return line.lineDiscountValue.clamp(0, gross);
     }
 
-    final grossSubtotal = vm.cart.fold<double>(
-      0,
-      (s, line) => s + (line.unitPriceExclVat * line.qty),
-    );
-    final totalItemDiscount = vm.cart.fold<double>(
-      0,
-      (s, line) => s + lineDiscountAmount(line),
-    );
-    final double subtotalAfterItemDiscount = max(
-      0.0,
-      grossSubtotal - totalItemDiscount,
-    );
+    if (!vm.paymentSelectionReady) {
+      await _openTakeawayPaymentDialog(context);
+      if (!context.mounted) return;
+      if (!vm.paymentSelectionReady) {
+        ToastService.showError(context, 'Select payment method first.');
+        return;
+      }
+    }
 
-    final orderDiscountInput =
-        double.tryParse(vm.orderDiscountValueController.text.trim()) ?? 0;
-    final orderDiscountIsPercent =
-        vm.orderDiscountType == 'percent' ||
-        vm.orderDiscountType == 'percentage';
-    final orderDiscountAmountRaw = orderDiscountIsPercent
-        ? (subtotalAfterItemDiscount * (orderDiscountInput / 100))
-        : orderDiscountInput;
-    final double orderDiscountAmount = min(
-      subtotalAfterItemDiscount,
-      max(0.0, orderDiscountAmountRaw),
-    );
+    final totalAmount = vm.estimatedDisplayTotal;
+    final pay = vm.buildPaymentPayloadForTotal(totalAmount);
+    final pm = pay['paymentMethod'] as String?;
+    final payments = pay['payments'] as List<Map<String, dynamic>>?;
+    if (payments == null || payments.isEmpty) {
+      ToastService.showError(context, 'Add valid payment amounts to continue.');
+      return;
+    }
+    if (pm != null && pm.isNotEmpty) {
+      vm.setPaymentMethod(pm);
+    } else {
+      vm.setPayments(payments);
+    }
 
-    final double afterOrderDiscount = max(
-      0.0,
-      subtotalAfterItemDiscount - orderDiscountAmount,
-    );
+    final res = await vm.submitCheckout();
+    if (!context.mounted) return;
+    if (res == null || !res.success || vm.lastInvoice == null) {
+      ToastService.showError(
+        context,
+        vm.checkoutError ?? res?.message ?? 'Failed to generate invoice',
+      );
+      return;
+    }
 
-    final promoDiscountAmountRaw = vm.isPromoPercent
-        ? (afterOrderDiscount * (vm.promoDiscountValue / 100))
-        : vm.promoDiscountValue;
-    final double promoDiscountAmount = min(
-      afterOrderDiscount,
-      max(0.0, promoDiscountAmountRaw),
-    );
-    final double netSubtotal = max(0.0, afterOrderDiscount - promoDiscountAmount);
-    final vatPercent = double.tryParse(vm.vatController.text.trim()) ?? 15.0;
-    final vatAmount = netSubtotal * (vatPercent / 100);
-    final totalAmount = netSubtotal + vatAmount;
-
-    final items = vm.cart
-        .map((line) {
-          final gross = line.unitPriceExclVat * line.qty;
-          final lineDisc = lineDiscountAmount(line);
-          final lineNet = max(0.0, gross - lineDisc);
-          return PosOrderJobItem(
-            id: 'takeaway-${line.product.id}',
-            itemType: 'product',
-            productId: line.product.id,
-            productName: line.product.name,
-            departmentId: line.product.department.id,
-            departmentName: line.product.department.name,
-            qty: line.qty,
-            unitPrice: line.unitPrice,
-            lineTotal: lineNet,
-            discountType: line.lineDiscountType,
-            discountValue: line.lineDiscountValue,
-          );
-        })
-        .toList();
-
-    final jobs = <PosOrderJob>[
-      PosOrderJob(
-        id: 'takeaway-preview-job',
-        status: 'draft',
-        department: 'Takeaway',
-        items: items,
-        totalAmount: totalAmount,
-        vatAmount: vatAmount,
-        vatPercent: vatPercent,
-        totalDiscountType:
-            orderDiscountAmount > 0 ? vm.orderDiscountType : null,
-        totalDiscountValue: orderDiscountAmount > 0
-            ? (orderDiscountIsPercent ? orderDiscountInput : orderDiscountAmount)
-            : 0.0,
-        promoCodeId: vm.appliedPromoCodeId,
-        promoCodeName: vm.appliedPromoCode.isEmpty ? null : vm.appliedPromoCode,
-        promoDiscountType: vm.isPromoPercent ? 'percent' : 'amount',
-        promoDiscountValue: vm.isPromoPercent ? vm.promoDiscountValue : 0.0,
-        promoDiscountAmount: promoDiscountAmount,
-      ),
-    ];
-
-    return PosOrder(
-      id: 'takeaway-preview',
-      status: 'draft',
-      source: 'takeaway',
-      odometerReading: 0,
-      createdAt: now.toIso8601String(),
-      orderDate: now.toIso8601String().split('T').first,
-      orderDateTime: now.toIso8601String(),
-      customer: OrderCustomer(
-        id: 'walkin',
-        name: 'Walk-in Customer',
-        mobile: '',
-      ),
-      vehicle: OrderVehicle(
-        id: 'na',
-        plateNo: '',
-        make: '',
-        model: '',
-      ),
-      jobsCount: jobs.length,
-      jobs: jobs,
-      items: items,
-      subtotal: subtotalAfterItemDiscount,
-      totalAmount: totalAmount,
-      totalDiscountType: orderDiscountAmount > 0 ? vm.orderDiscountType : null,
-      totalDiscountValue: orderDiscountAmount > 0
-          ? (orderDiscountIsPercent ? orderDiscountInput : orderDiscountAmount)
-          : 0.0,
-      promoCodeId: vm.appliedPromoCodeId,
-      promoCodeName: vm.appliedPromoCode.isEmpty ? null : vm.appliedPromoCode,
-      promoDiscountType: vm.isPromoPercent ? 'percent' : 'amount',
-      promoDiscountValue: vm.isPromoPercent ? vm.promoDiscountValue : 0.0,
-      promoDiscountAmount: promoDiscountAmount,
-    );
-  }
-
-
-  void _showQtyDialog(
-    BuildContext context,
-    TakeawayViewModel vm,
-    TakeawayProduct product,
-    bool isTablet,
-  ) {
-    final currentQty = vm.qtyInCartForProduct(product.id);
-    final controller = TextEditingController(
-      text: (!product.allowDecimalQty || currentQty % 1 == 0)
-          ? currentQty.toInt().toString()
-          : currentQty.toString(),
-    );
-    showDialog<void>(
+    // [InvoiceDialog] already pops the dialog in its Done handler; do not pop again
+    // here (that removed the shell route and caused a black screen).
+    await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Enter Quantity',
-          style: TextStyle(
-            fontSize: isTablet ? 22 : 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              product.name,
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: isTablet ? 16 : 12,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.numberWithOptions(
-                decimal: product.allowDecimalQty,
-              ),
-              inputFormatters: [
-                if (!product.allowDecimalQty)
-                  FilteringTextInputFormatter.digitsOnly,
-                if (product.allowDecimalQty) EnglishNumberFormatter(),
-              ],
-              autofocus: true,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isTablet ? 22 : 18,
-                fontWeight: FontWeight.w700,
-              ),
-              decoration: InputDecoration(
-                hintText: '0',
-                suffixText: product.unit,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final qty = double.tryParse(controller.text) ?? 0;
-              vm.applyProductQuantity(product, qty);
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryLight,
-              foregroundColor: AppColors.secondaryLight,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text('Confirm'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (ctx) => InvoiceDialog(
+        invoice: vm.lastInvoice!,
+        requestedPaymentMethod: pm ?? payments.map((p) => p['method']).join(' + '),
+        onDone: () {},
       ),
     );
+    vm.resetLastInvoice();
   }
 }
 

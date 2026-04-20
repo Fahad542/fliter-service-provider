@@ -81,7 +81,9 @@ class WalkInCustomerRequest {
     }
     if (make != null && make!.trim().isNotEmpty) data['make'] = make!.trim();
     if (model != null && model!.trim().isNotEmpty) data['model'] = model!.trim();
-    if (odometerReading != null) data['odometerReading'] = odometerReading;
+    if (odometerReading != null && odometerReading! > 0) {
+      data['odometerReading'] = odometerReading;
+    }
 
     if (products != null && products!.isNotEmpty) {
       data['products'] = products!.map((v) => v.toJson()).toList();
@@ -121,7 +123,8 @@ class WalkInCustomerRequest {
       'departmentIds': departmentIds,
       if (make != null && make!.trim().isNotEmpty) 'make': make!.trim(),
       if (model != null && model!.trim().isNotEmpty) 'model': model!.trim(),
-      if (odometerReading != null) 'odometerReading': odometerReading,
+      if (odometerReading != null && odometerReading! > 0)
+        'odometerReading': odometerReading,
       if (vinNumber != null && vinNumber!.trim().isNotEmpty) 'vinNumber': vinNumber!.trim(),
     };
   }
@@ -291,6 +294,12 @@ class WalkInCustomer {
   }
 }
 
+String? _walkInVehicleJsonString(dynamic value) {
+  if (value == null) return null;
+  final s = value.toString().trim();
+  return s.isEmpty ? null : s;
+}
+
 class WalkInVehicle {
   final String id;
   final String plateNo;
@@ -316,9 +325,10 @@ class WalkInVehicle {
       plateNo: json['plateNo']?.toString() ?? '',
       make: json['make']?.toString() ?? '',
       model: json['model']?.toString() ?? '',
-      year: json['year']?.toString(),
-      color: json['color']?.toString(),
-      vin: json['vin']?.toString() ?? json['carNo']?.toString(),
+      year: _walkInVehicleJsonString(json['year']),
+      color: _walkInVehicleJsonString(json['color']),
+      vin: _walkInVehicleJsonString(json['vin']) ??
+          _walkInVehicleJsonString(json['carNo']),
     );
   }
 }

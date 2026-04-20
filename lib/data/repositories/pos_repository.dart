@@ -646,6 +646,30 @@ class PosRepository {
     }
   }
 
+  /// POST /cashier/invoice/:orderId/payment
+  /// Payload examples:
+  /// - { isCorporate: true, payments: [{method, amount}] }
+  /// - { isCorporate: false, payments: [{method, amount}, ...] }
+  Future<Map<String, dynamic>> saveInvoicePayment(
+    String orderId,
+    Map<String, dynamic> body,
+    String token,
+  ) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.invoicePaymentEndpoint(orderId),
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return Map<String, dynamic>.from(response as Map);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<PromoCodeResponse> applyPromoCode(String code, double orderAmount, String token) async {
     try {
       final response = await _apiService.post(

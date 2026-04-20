@@ -12,7 +12,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import 'package:flutter/services.dart';
 import '../../../utils/app_formatters.dart';
 import '../../../utils/pos_tablet_layout.dart';
-import '../../../utils/pos_shell_scaffold.dart';
+import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../Product Grid/pos_product_grid_view.dart';
 import '../Sales Return/sales_return_view_model.dart';
 import '../Sales Return/pos_sales_return_view.dart';
@@ -40,8 +40,7 @@ class PosHomeView extends StatelessWidget {
           infoTitle: vm.workshopName,
           infoBranch: 'Branch: ${vm.branchName}',
           infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
-          onMenuPressed: () =>
-              kPosShellScaffoldKey.currentState?.openDrawer(),
+          onMenuPressed: () => PosShellScaffoldRegistry.openDrawer(),
         ),
         body: wrapPosShellRailBody(
           context,
@@ -205,6 +204,7 @@ class PosHomeView extends StatelessWidget {
                       return SearchHistoryItem(
                         vehicle: vehicle != null
                             ? '${vehicle.make} ${vehicle.model}'
+                                '${(vehicle.year != null && vehicle.year!.isNotEmpty) ? ' · ${vehicle.year}' : ''}'
                             : 'No Vehicle',
                         plate: vehicle?.plateNo ?? 'N/A',
                         customer: customer.name,

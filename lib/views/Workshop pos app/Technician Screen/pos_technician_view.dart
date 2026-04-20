@@ -8,7 +8,7 @@ import '../Home Screen/pos_view_model.dart';
 import '../../../models/pos_technician_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
-import '../../../utils/pos_shell_scaffold.dart';
+import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 
 class PosTechnicianView extends StatefulWidget {
   /// When embedded in [PosShell], keep drawer + no back. When pushed from another
@@ -89,7 +89,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         showBackButton: widget.showBackButton,
         showHamburger: widget.showHamburger,
         onMenuPressed: widget.showHamburger
-            ? () => kPosShellScaffoldKey.currentState?.openDrawer()
+            ? PosShellScaffoldRegistry.openDrawer
             : null,
       ),
       body: wrapPosShellRailBody(

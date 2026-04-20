@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../../../../data/network/base_api_service.dart';
 import '../../../../data/repositories/pos_repository.dart';
 import '../../../../models/create_invoice_model.dart';
+import '../../../../models/pos_payment_method.dart';
 import '../../../../models/takeaway_models.dart';
 import '../../../../services/session_service.dart';
 
@@ -29,6 +30,9 @@ class TakeawayCartLine {
 }
 
 class TakeawayViewModel extends ChangeNotifier {
+  /// Matches [PosProductGridView] live invoice panel (15% VAT on taxable amount).
+  static const double liveInvoiceVatRate = 0.15;
+
   TakeawayViewModel({
     required this.posRepository,
     required this.sessionService,
@@ -37,6 +41,18 @@ class TakeawayViewModel extends ChangeNotifier {
     vatController.addListener(_onPreviewInputChanged);
     orderDiscountValueController.addListener(_onPreviewInputChanged);
     promoCodeController.addListener(_onPreviewInputChanged);
+    for (final c in <TextEditingController>[
+      customerNameController,
+      customerMobileController,
+      vehiclePlateController,
+      vehicleMakeController,
+      vehicleModelController,
+      vehicleVinController,
+      vehicleYearController,
+      odometerController,
+    ]) {
+      c.addListener(_onPreviewInputChanged);
+    }
   }
 
   final PosRepository posRepository;
@@ -71,6 +87,13 @@ class TakeawayViewModel extends ChangeNotifier {
       TextEditingController();
   final TextEditingController customerTaxIdController =
       TextEditingController();
+  final TextEditingController vehiclePlateController = TextEditingController();
+  final TextEditingController vehicleVinController = TextEditingController();
+  final TextEditingController vehicleMakeController = TextEditingController();
+  final TextEditingController vehicleModelController = TextEditingController();
+  final TextEditingController vehicleYearController = TextEditingController();
+  final TextEditingController vehicleColorController = TextEditingController();
+  final TextEditingController odometerController = TextEditingController();
   final TextEditingController promoCodeController = TextEditingController();
   final TextEditingController vatController = TextEditingController();
   final TextEditingController invoiceDateController = TextEditingController();
@@ -82,6 +105,10 @@ class TakeawayViewModel extends ChangeNotifier {
   String _orderDiscountType = '';
   String? _paymentMethod = 'Cash';
   List<Map<String, dynamic>>? _payments;
+  bool? _isCorporate;
+  final Set<PaymentMethod> _invoicePaymentMethods = <PaymentMethod>{};
+  final Map<PaymentMethod, double> _invoicePaymentAmounts =
+      <PaymentMethod, double>{};
 
   TakeawayCatalogData? get catalog => _catalog;
   bool get catalogLoading => _catalogLoading;
@@ -117,6 +144,31 @@ class TakeawayViewModel extends ChangeNotifier {
   String get orderDiscountType => _orderDiscountType;
   String? get paymentMethod => _paymentMethod;
   List<Map<String, dynamic>>? get payments => _payments;
+  bool? get isCorporate => _isCorporate;
+  Set<PaymentMethod> get invoicePaymentMethods =>
+      Set<PaymentMethod>.unmodifiable(_invoicePaymentMethods);
+  Map<PaymentMethod, double> get invoicePaymentAmounts =>
+      Map<PaymentMethod, double>.unmodifiable(_invoicePaymentAmounts);
+  bool get paymentSelectionReady =>
+      _isCorporate != null && _invoicePaymentMethods.isNotEmpty;
+
+  /// Name and mobile; vehicle is optional (Takeaway collects customer only in the dialog).
+  bool get hasRequiredTakeawayBillingFields {
+    return customerNameController.text.trim().isNotEmpty &&
+        customerMobileController.text.trim().isNotEmpty;
+  }
+
+  /// Block Generate until cart, billing, and payment match Orders-tab rules.
+  bool get canGenerateTakeawayInvoice =>
+      cartLineCount > 0 &&
+      !checkoutLoading &&
+      hasRequiredTakeawayBillingFields &&
+      paymentSelectionReady;
+
+  /// Same idea as Orders summary: show "Select payment" only after customer details exist (with items in cart).
+  bool get showTakeawayPaymentMethodButton =>
+      cartLineCount > 0 && hasRequiredTakeawayBillingFields;
+
   String get appliedPromoCode => _appliedPromoCode;
   String? get appliedPromoCodeId => _appliedPromoCodeId;
   double get promoDiscountValue => _promoDiscountValue;
@@ -161,6 +213,89 @@ class TakeawayViewModel extends ChangeNotifier {
     _paymentMethod = null;
     _payments = p;
     notifyListeners();
+  }
+
+  void setInvoicePaymentPreferences({
+    required bool isCorporate,
+    required Set<PaymentMethod> methods,
+    Map<PaymentMethod, double> amounts = const {},
+  }) {
+    _isCorporate = isCorporate;
+    _invoicePaymentMethods
+      ..clear()
+      ..addAll(methods);
+    _invoicePaymentAmounts
+      ..clear()
+      ..addAll(amounts);
+    notifyListeners();
+  }
+
+  void clearInvoicePaymentPreferences() {
+    _isCorporate = null;
+    _invoicePaymentMethods.clear();
+    _invoicePaymentAmounts.clear();
+    _paymentMethod = 'Cash';
+    _payments = null;
+    notifyListeners();
+  }
+
+  Map<String, dynamic> buildPaymentPayloadForTotal(double invoiceTotal) {
+    if (_isCorporate == null || _invoicePaymentMethods.isEmpty) {
+      return {
+        'paymentMethod': null,
+        'payments': null,
+        'isCorporate': null,
+      };
+    }
+
+    if (_isCorporate == true) {
+      if (_invoicePaymentMethods.length == 1) {
+        final method = _invoicePaymentMethods.first.label;
+        return {
+          'paymentMethod': method,
+          'payments': <Map<String, dynamic>>[
+            {'method': method, 'amount': invoiceTotal}
+          ],
+          'isCorporate': true,
+        };
+      }
+      final list = <Map<String, dynamic>>[];
+      for (final pm in _invoicePaymentMethods) {
+        final amount = _invoicePaymentAmounts[pm] ?? 0;
+        if (amount > 0) {
+          list.add({'method': pm.label, 'amount': amount});
+        }
+      }
+      return {
+        'paymentMethod': null,
+        'payments': list,
+        'isCorporate': true,
+      };
+    }
+
+    if (_invoicePaymentMethods.length == 1) {
+      final method = _invoicePaymentMethods.first.label;
+      return {
+        'paymentMethod': method,
+        'payments': <Map<String, dynamic>>[
+          {'method': method, 'amount': invoiceTotal}
+        ],
+        'isCorporate': false,
+      };
+    }
+
+    final list = <Map<String, dynamic>>[];
+    for (final pm in _invoicePaymentMethods) {
+      final amount = _invoicePaymentAmounts[pm] ?? 0;
+      if (amount > 0) {
+        list.add({'method': pm.label, 'amount': amount});
+      }
+    }
+    return {
+      'paymentMethod': null,
+      'payments': list,
+      'isCorporate': false,
+    };
   }
 
   void setAppliedPromo({
@@ -373,7 +508,16 @@ class TakeawayViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sum of line gross (excl. VAT) before per-line discounts — matches product grid "Gross Amount".
+  double get grossExclVatBeforeLineDiscounts {
+    return _cart.fold<double>(
+      0,
+      (sum, line) => sum + line.unitPriceExclVat * line.qty,
+    );
+  }
+
   /// Subtotal VAT-exclusive: sum of (unitPriceExclVat × qty - line discount).
+  /// Same as product grid "Price after line discount" base.
   double get subtotalBeforeOrderDiscount {
     double sum = 0;
     for (final line in _cart) {
@@ -390,8 +534,15 @@ class TakeawayViewModel extends ChangeNotifier {
     return sum;
   }
 
+  /// Matches product grid "Line discount" row (excl. VAT).
+  double get lineDiscountTotalExclVat {
+    final g = grossExclVatBeforeLineDiscounts;
+    final after = subtotalBeforeOrderDiscount;
+    return (g - after).clamp(0, double.infinity);
+  }
+
   /// Shown in bottom bar. Must match checkout sheet total:
-  /// item-level discounts -> order discount -> promo -> VAT.
+  /// item-level discounts -> order discount -> promo -> VAT (15%, same as main POS live invoice).
   double get estimatedDisplayTotal {
     final sub = subtotalBeforeOrderDiscount;
 
@@ -413,10 +564,7 @@ class TakeawayViewModel extends ChangeNotifier {
         .clamp(0, double.infinity)
         .toDouble();
 
-    final vat = double.tryParse(vatController.text.trim()) ??
-        _catalog?.vatPercentDefault ??
-        0;
-    final vatAmount = taxable * (vat / 100);
+    final vatAmount = taxable * liveInvoiceVatRate;
     return taxable + vatAmount;
   }
 
@@ -429,11 +577,9 @@ class TakeawayViewModel extends ChangeNotifier {
       notifyListeners();
       return null;
     }
-    final name = customerNameController.text.trim().isEmpty
-        ? 'Walk-in Customer'
-        : customerNameController.text.trim();
+    final name = customerNameController.text.trim();
 
-    double _lineDiscountAmount(TakeawayCartLine line) {
+    double lineDiscountAmount(TakeawayCartLine line) {
       final gross = line.unitPriceExclVat * line.qty;
       final type = (line.lineDiscountType ?? '').toLowerCase();
       if (type == 'percent' || type == 'percentage') {
@@ -452,7 +598,7 @@ class TakeawayViewModel extends ChangeNotifier {
 
     final items = _cart.map((line) {
       final beforeDiscountPrice = line.unitPriceExclVat * line.qty;
-      final lineDiscount = _lineDiscountAmount(line);
+      final lineDiscount = lineDiscountAmount(line);
       final double afterDiscountPrice =
           (beforeDiscountPrice - lineDiscount).clamp(0, double.infinity).toDouble();
       return TakeawayCheckoutLinePayload(
@@ -488,16 +634,25 @@ class TakeawayViewModel extends ChangeNotifier {
     final double amountAfterPromo =
         (amountAfterDiscount - promoDiscountAmount).clamp(0, double.infinity).toDouble();
 
-    final vatParsed = double.tryParse(vatController.text.trim()) ??
-        _catalog?.vatPercentDefault;
-    final vatPercent = vatParsed ?? 0.0;
+    // Align with main POS live invoice (15% on taxable excl. VAT).
+    const vatPercent = 15.0;
     final vatAmount = amountAfterPromo * (vatPercent / 100.0);
     final totalAmount = amountAfterPromo + vatAmount;
     final discAmt =
         double.tryParse(discountAmountController.text.trim()) ?? 0;
 
+    final plate = vehiclePlateController.text.trim();
+    final make = vehicleMakeController.text.trim();
+    final model = vehicleModelController.text.trim();
+    final vin = vehicleVinController.text.trim();
+    final color = vehicleColorController.text.trim();
+    final year = int.tryParse(vehicleYearController.text.trim());
+    final odo = int.tryParse(
+      odometerController.text.trim().replaceAll(RegExp(r'[\s,]'), ''),
+    );
+
     final request = TakeawayCheckoutRequest(
-      customerName: name,
+      customerName: name.isEmpty ? 'Walk-in Customer' : name,
       customerMobile: customerMobileController.text.trim().isEmpty
           ? null
           : customerMobileController.text.trim(),
@@ -521,6 +676,13 @@ class TakeawayViewModel extends ChangeNotifier {
           ? null
           : invoiceDateController.text.trim(),
       discountAmount: discAmt > 0 ? discAmt : 0,
+      vehicleNumber: plate.isNotEmpty ? plate : null,
+      make: make.isNotEmpty ? make : null,
+      model: model.isNotEmpty ? model : null,
+      vin: vin.isNotEmpty ? vin : null,
+      year: year,
+      odometerReading: (odo != null && odo > 0) ? odo : null,
+      color: color.isNotEmpty ? color : null,
     );
 
     // Dev trace: verify contract payload sent to takeaway checkout API.
@@ -543,10 +705,11 @@ class TakeawayViewModel extends ChangeNotifier {
       }
       final res = await posRepository.postTakeawayCheckout(request, token);
       if (res.success) {
-        _lastOrderId = res.orderId;
+        // Do not PATCH /billing after takeaway checkout: the API creates the invoice
+        // in the same flow, and billing is locked ("Cannot edit billing after invoice generation").
+        // Customer + vehicle are sent on [TakeawayCheckoutRequest] only.
         Invoice? resolvedInvoice;
         if (res.orderId != null && res.orderId!.isNotEmpty) {
-          // Always use same by-order invoice call as product flow.
           final invoiceByOrder = await posRepository.getInvoiceByOrder(
             res.orderId!,
             token,
@@ -555,6 +718,7 @@ class TakeawayViewModel extends ChangeNotifier {
         }
 
         _lastInvoice = resolvedInvoice;
+        _lastOrderId = null;
         if (resolvedInvoice != null) {
           clearCart();
           searchController.clear();
@@ -563,11 +727,19 @@ class TakeawayViewModel extends ChangeNotifier {
           customerNameController.clear();
           customerMobileController.clear();
           customerTaxIdController.clear();
+          vehiclePlateController.clear();
+          vehicleVinController.clear();
+          vehicleMakeController.clear();
+          vehicleModelController.clear();
+          vehicleYearController.clear();
+          vehicleColorController.clear();
+          odometerController.clear();
           promoCodeController.clear();
           orderDiscountValueController.clear();
           discountAmountController.clear();
           _orderDiscountType = '';
           clearAppliedPromo();
+          clearInvoicePaymentPreferences();
         } else {
           _checkoutError =
               res.message.isNotEmpty ? res.message : 'No invoice in response';
@@ -603,10 +775,29 @@ class TakeawayViewModel extends ChangeNotifier {
     vatController.removeListener(_onPreviewInputChanged);
     orderDiscountValueController.removeListener(_onPreviewInputChanged);
     promoCodeController.removeListener(_onPreviewInputChanged);
+    for (final c in <TextEditingController>[
+      customerNameController,
+      customerMobileController,
+      vehiclePlateController,
+      vehicleMakeController,
+      vehicleModelController,
+      vehicleVinController,
+      vehicleYearController,
+      odometerController,
+    ]) {
+      c.removeListener(_onPreviewInputChanged);
+    }
     searchController.dispose();
     customerNameController.dispose();
     customerMobileController.dispose();
     customerTaxIdController.dispose();
+    vehiclePlateController.dispose();
+    vehicleVinController.dispose();
+    vehicleMakeController.dispose();
+    vehicleModelController.dispose();
+    vehicleYearController.dispose();
+    vehicleColorController.dispose();
+    odometerController.dispose();
     promoCodeController.dispose();
     vatController.dispose();
     invoiceDateController.dispose();

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth_response_model.dart';
 
@@ -37,6 +38,10 @@ class SessionService {
 
 
   Future<void> clearSession({String role = 'cashier'}) async {
+    if (kDebugMode) {
+      debugPrint('SessionService.clearSession(role: $role) called');
+      debugPrint(StackTrace.current.toString());
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('${role}_auth_token');
     await prefs.remove('${role}_user_data');

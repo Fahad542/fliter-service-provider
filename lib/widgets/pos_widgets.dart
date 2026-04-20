@@ -10,11 +10,11 @@ import '../views/Workshop pos app/Home Screen/pos_view_model.dart' as pvm;
 import '../models/create_invoice_model.dart';
 import '../models/pos_technician_model.dart'; // Added import for TechnicianCard
 import '../models/pos_product_model.dart'; // Added import for ProductCard
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:share_plus/share_plus.dart';
 import '../utils/toast_service.dart';
 import '../utils/pos_tablet_layout.dart';
-import '../utils/pos_shell_scaffold.dart';
+import '../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../views/Workshop pos app/Notifications/notifications_view.dart';
 import '../views/Workshop pos app/Product Grid/pos_product_grid_view.dart';
 import '../views/Workshop pos app/Order Screen/pos_order_review_view.dart';
@@ -137,8 +137,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: onMenuPressed ??
-                                  () => kPosShellScaffoldKey.currentState
-                                      ?.openDrawer(),
+                                  PosShellScaffoldRegistry.openDrawer,
                               child: Container(
                                 width: iconContainerSize,
                                 height: iconContainerSize,
@@ -169,8 +168,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                           child: const SizedBox.shrink(),
                         ),
           title: InkWell(
-            onTap: () =>
-                kPosShellScaffoldKey.currentState?.openDrawer(),
+            onTap: PosShellScaffoldRegistry.openDrawer,
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -408,7 +406,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: onMenuPressed ??
-                          () => kPosShellScaffoldKey.currentState?.openDrawer(),
+                          PosShellScaffoldRegistry.openDrawer,
                       child: Container(
                         width: iconContainerSize,
                         height: iconContainerSize,
@@ -441,8 +439,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: showDrawer && !showBackButton
-                ? () =>
-                    kPosShellScaffoldKey.currentState?.openDrawer()
+                ? PosShellScaffoldRegistry.openDrawer
                 : null,
             borderRadius: BorderRadius.circular(8),
             child: Padding(
@@ -1229,10 +1226,13 @@ class _OrderItemCardState extends State<OrderItemCard> {
       vat: widget.order.customer?.vatNumber ?? '',
       mobile: widget.order.customer?.mobile ?? '',
       vehicleNumber: widget.order.plateNumber,
+      vinNumber: widget.order.vehicle?.vin ?? '',
       make: widget.order.vehicle?.make ?? '',
       model: widget.order.vehicle?.model ?? '',
       odometer: widget.order.odometerReading,
       previousOrderId: widget.order.id,
+      vehicleYear: widget.order.vehicle?.year ?? '',
+      vehicleColor: widget.order.vehicle?.color ?? '',
     );
     posVm.setEditOrderContext(
       departmentId: departmentId,
@@ -1855,6 +1855,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                 '',
                                             vehicleNumber:
                                                 widget.order.plateNumber,
+                                            vinNumber:
+                                                widget.order.vehicle?.vin ?? '',
                                             make:
                                                 widget.order.vehicle?.make ??
                                                 '',
@@ -1864,6 +1866,12 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                             odometer:
                                                 widget.order.odometerReading,
                                             previousOrderId: widget.order.id,
+                                            vehicleYear:
+                                                widget.order.vehicle?.year ??
+                                                '',
+                                            vehicleColor:
+                                                widget.order.vehicle?.color ??
+                                                '',
                                           );
                                           Navigator.push(
                                             context,
@@ -3565,6 +3573,8 @@ class InvoiceDialog extends StatelessWidget {
                       _buildItemsTaxTable(currencyFormat),
                       const SizedBox(height: 12),
                       _buildTotalsTaxTable(currencyFormat),
+                      const SizedBox(height: 12),
+                      _buildChecklistSection(),
                     ],
                   ),
                 ),
@@ -3642,13 +3652,17 @@ class InvoiceDialog extends StatelessWidget {
   }
 
   Widget _buildInvoiceInfoTable(String paymentMethodText) {
+    final yearStr = invoice.vehicleYear.trim();
+    final vinStr = invoice.vehicleVin.trim();
     final rows = <List<String>>[
       ['Customer', invoice.customerName],
       ['Phone', invoice.customerMobile ?? '-'],
       ['Tax ID', invoice.customerTaxId ?? '-'],
       ['Model', invoice.vehicleModel.isNotEmpty ? invoice.vehicleModel : '-'],
-      ['Mileage', invoice.odometerReading?.toString() ?? '-'],
       ['Plate', invoice.plateNo.isNotEmpty ? invoice.plateNo : '-'],
+      ['Year', yearStr.isNotEmpty ? yearStr : '-'],
+      ['VIN', vinStr.isNotEmpty ? vinStr : '-'],
+      ['Mileage', invoice.odometerReading?.toString() ?? '-'],
       ['Make', invoice.vehicleMake.isNotEmpty ? invoice.vehicleMake : '-'],
       ['Payment Method', paymentMethodText],
     ];
@@ -3946,6 +3960,152 @@ class InvoiceDialog extends StatelessWidget {
         row('VAT 15%', currencyFormat.format(vatAmount)),
         row('Total Invoice Amount', currencyFormat.format(totalInvoiceAmount), total: true),
       ],
+    );
+  }
+
+  /// Bilingual maintenance checklist: header in two halves; each row is
+  /// English | Arabic | checkbox | English | Arabic | checkbox.
+  Widget _buildChecklistSection() {
+    const kInv = Color(0xFF1E2124);
+    const leftCol = <(String en, String ar)>[
+      ('Tire Pressure Check', 'فحص هواء الاطارات'),
+      ('Brake Fluid Check', 'فحص سائل الفرامل'),
+      ('Wipers Fluid Check', 'فحص سائل المساحات'),
+    ];
+    const rightCol = <(String en, String ar)>[
+      ('Power Steering Fluid Check', 'فحص سائل المقود'),
+      ('Transmission Fluid Check', 'فحص سائل نقل الحركة'),
+      ('Radiator Fluid Check', 'فحص سائل مبرد المحرك'),
+    ];
+
+    const headerStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 12,
+      fontWeight: FontWeight.w800,
+    );
+
+    Widget cellEn(String text) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            text,
+            textAlign: TextAlign.left,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: kInv,
+              height: 1.25,
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget cellAr(String text) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            text,
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade800,
+              height: 1.25,
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget cellCheckbox() {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Center(
+          child: Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              border: Border.all(color: kInv, width: 1),
+              borderRadius: BorderRadius.circular(2),
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: kInv, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFF5B5B5B),
+              border: Border(
+                bottom: BorderSide(color: kInv, width: 1),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Check list', style: headerStyle),
+                    ),
+                  ),
+                  Container(width: 1, color: kInv),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text('قائمة الفحص', style: headerStyle),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Table(
+            columnWidths: const <int, TableColumnWidth>{
+              0: FlexColumnWidth(2.15),
+              1: FlexColumnWidth(2.15),
+              2: FixedColumnWidth(26),
+              3: FlexColumnWidth(2.15),
+              4: FlexColumnWidth(2.15),
+              5: FixedColumnWidth(26),
+            },
+            border: const TableBorder(
+              horizontalInside: BorderSide(color: kInv, width: 1),
+              verticalInside: BorderSide(color: kInv, width: 1),
+            ),
+            children: [
+              for (var i = 0; i < 3; i++)
+                TableRow(
+                  children: [
+                    cellEn(leftCol[i].$1),
+                    cellAr(leftCol[i].$2),
+                    cellCheckbox(),
+                    cellEn(rightCol[i].$1),
+                    cellAr(rightCol[i].$2),
+                    cellCheckbox(),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

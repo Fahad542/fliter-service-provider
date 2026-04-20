@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
-import '../../../utils/pos_shell_scaffold.dart';
+import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../../../models/create_invoice_model.dart';
 import 'sales_return_view_model.dart';
 
@@ -47,7 +47,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
         showBackButton: widget.showBackButton || (!isTablet && vm.selectedInvoice != null),
         showHamburger: !widget.showBackButton && !(!isTablet && vm.selectedInvoice != null),
         onMenuPressed: () =>
-            kPosShellScaffoldKey.currentState?.openDrawer(),
+            PosShellScaffoldRegistry.openDrawer(),
         onBack: () {
           if (!isTablet && vm.selectedInvoice != null) {
             vm.clearSelection();

@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
-import '../../../utils/pos_shell_scaffold.dart';
+import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import 'current_shift_view_model.dart';
 
 class PosCurrentShiftView extends StatefulWidget {
@@ -33,7 +33,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
         showBackButton: false,
         showHamburger: true,
         onMenuPressed: () =>
-            kPosShellScaffoldKey.currentState?.openDrawer(),
+            PosShellScaffoldRegistry.openDrawer(),
       ),
       body: wrapPosShellRailBody(context, _buildBody(vm)),
     );

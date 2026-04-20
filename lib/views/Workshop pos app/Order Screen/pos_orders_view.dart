@@ -21,6 +21,22 @@ import 'pos_invoice_payment_dialog.dart';
 import 'pos_order_review_view.dart'
     show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
 
+bool _orderIsListableForOrdersList(PosOrder o) =>
+    o.status.toLowerCase() != 'cancelled';
+
+/// Detail panel when this tab has no orders but other tabs do.
+String _ordersTabDetailEmptyMessage(String tab) {
+  switch (tab) {
+    case 'Pending':
+      return 'No pending orders found';
+    case 'Completed':
+      return 'No completed orders found';
+    case 'All':
+    default:
+      return 'No orders found';
+  }
+}
+
 class PosOrdersView extends StatefulWidget {
   const PosOrdersView({super.key});
 
@@ -68,14 +84,29 @@ class _PosOrdersViewState extends State<PosOrdersView> {
   }
 
   Widget _buildMobileView(PosViewModel vm) {
-    // Basic list for mobile, tapping opens detail screen (existing flow)
+    if (!vm.orders.any(_orderIsListableForOrdersList)) {
+      return const ColoredBox(
+        color: Color(0xFFFBFBFD),
+        child: Center(
+          child: _OrdersEmptyStateBody(title: 'No orders found'),
+        ),
+      );
+    }
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(12.0),
-          child: PosSearchBar(
-            hintText: 'Search orders...',
-            onChanged: (val) => vm.setOrderSearchQuery(val),
+          child: Row(
+            children: [
+              Expanded(
+                child: PosSearchBar(
+                  hintText: 'Search orders...',
+                  onChanged: (val) => vm.setOrderSearchQuery(val),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const _OrdersNewOrderButton(),
+            ],
           ),
         ),
         Expanded(
@@ -179,6 +210,26 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
 
     const draftColumnWidth = 392.0;
 
+    final hasAnyListableOrder =
+        vm.orders.any(_orderIsListableForOrdersList);
+
+    if (!hasAnyListableOrder) {
+      return ColoredBox(
+        color: const Color(0xFFFBFBFD),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: const _OrdersEmptyStateBody(
+              title: 'No orders found',
+            ),
+          ),
+        ),
+      );
+    }
+
+    final selectedInFilter = vm.selectedOrder != null &&
+        filteredOrders.any((o) => o.id == vm.selectedOrder!.id);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -187,7 +238,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(6, 12, 20, 10),
+                padding: const EdgeInsets.fromLTRB(6, 12, 20, 0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -202,10 +253,33 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    _OrdersNewOrderButton(),
+                    const _OrdersNewOrderButton(),
                   ],
                 ),
               ),
+              ColoredBox(
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 20, 10),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildTab('All'),
+                          const SizedBox(width: 12),
+                          _buildTab('Pending'),
+                          const SizedBox(width: 12),
+                          _buildTab('Completed'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFE8ECF3)),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -216,82 +290,42 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
                         width: _kOrderListColumnWidth,
                         child: ColoredBox(
                           color: Colors.white,
-                          child: filteredOrders.isEmpty
-                              ? Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                    ),
-                                    child: Text(
-                                      'No ${_selectedTab.toLowerCase()} orders found',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade400,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : ListView.separated(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    14,
-                                    8,
-                                    12,
-                                    16,
-                                  ),
-                                  itemCount: filteredOrders.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 12),
-                                  itemBuilder: (context, index) {
-                                    final order = filteredOrders[index];
-                                    final isSelected =
-                                        vm.selectedOrder?.id == order.id;
-                                    return _HorizontalOrderTile(
-                                      order: order,
-                                      isSelected: isSelected,
-                                      fullWidth: true,
-                                      onTap: () => vm.selectOrder(order),
-                                    );
-                                  },
-                                ),
+                          child: ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(
+                              14,
+                              8,
+                              12,
+                              16,
+                            ),
+                            itemCount: filteredOrders.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final order = filteredOrders[index];
+                              final isSelected =
+                                  vm.selectedOrder?.id == order.id;
+                              return _HorizontalOrderTile(
+                                order: order,
+                                isSelected: isSelected,
+                                fullWidth: true,
+                                onTap: () => vm.selectOrder(order),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
-                    const VerticalDivider(width: 1, color: Color(0xFFE8ECF3)),
+                    const VerticalDivider(
+                        width: 1, color: Color(0xFFE8ECF3)),
                     Expanded(
                       flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ColoredBox(
-                            color: Colors.white,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(12, 8, 20, 12),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _buildTab('All'),
-                                      const SizedBox(width: 12),
-                                      _buildTab('Pending'),
-                                      const SizedBox(width: 12),
-                                      _buildTab('Completed'),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const Divider(
-                              height: 1, color: Color(0xFFE8ECF3)),
-                          Expanded(
-                            child: _OrderDetailPanel(vm: vm),
-                          ),
-                        ],
+                      child: ColoredBox(
+                        color: Colors.white,
+                        child: _OrderDetailPanel(
+                          vm: vm,
+                          filteredOrders: filteredOrders,
+                          selectedTab: _selectedTab,
+                        ),
                       ),
                     ),
                   ],
@@ -305,7 +339,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
           width: draftColumnWidth,
           child: ColoredBox(
             color: const Color(0xFFFBFBFD),
-            child: vm.selectedOrder == null
+            child: !selectedInFilter
                 ? const SizedBox.expand()
                 : Padding(
                     padding: const EdgeInsets.fromLTRB(10, 12, 14, 12),
@@ -318,10 +352,15 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
   }
 }
 
-/// Add customer + Select payment (order summary footer; above Generate Invoice). Disabled when no order selected.
+/// Add customer + optional Select payment (order summary footer; above Generate Invoice).
+/// Select payment is shown only when [showPaymentMethodButton] is true (same gate as Generate Invoice).
 class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
   final PosViewModel vm;
-  const _OrdersHeaderCustomerPaymentRow({required this.vm});
+  final bool showPaymentMethodButton;
+  const _OrdersHeaderCustomerPaymentRow({
+    required this.vm,
+    required this.showPaymentMethodButton,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -342,6 +381,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
         if (!context.mounted) return;
         if (result != null) {
           vm.updateWalkInBillingContact(
+            forOrderId: order.id,
             name: result.name,
             mobile: result.mobile,
             vat: result.vat,
@@ -353,7 +393,13 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
             year: result.year,
             color: result.color,
           );
-          ToastService.showSuccess(context, 'Customer details saved');
+          final patchErr = await vm.submitWalkInOrderBillingPatch(order);
+          if (!context.mounted) return;
+          if (patchErr != null) {
+            ToastService.showError(context, patchErr);
+          } else {
+            ToastService.showSuccess(context, 'Customer details saved');
+          }
         }
         return;
       }
@@ -369,6 +415,8 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
         model: order.vehicle?.model ?? '',
         odometer: order.odometerReading,
         previousOrderId: order.id,
+        vehicleYear: order.vehicle?.year ?? '',
+        vehicleColor: order.vehicle?.color ?? '',
       );
       await Navigator.push<void>(
         context,
@@ -385,47 +433,57 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
         initialIsCorporate: vm.invoicePaymentIsCorporate,
         initialPayments:
             vm.invoicePaymentIsCorporate != null ? vm.invoicePaymentMethods : null,
+        initialPaymentAmounts:
+            vm.invoicePaymentIsCorporate != null ? vm.invoicePaymentAmounts : null,
+        totalAmount: order.draftPosOrderTotalDisplay,
       );
       if (!context.mounted) return;
       if (result != null) {
         vm.setInvoicePaymentPreferences(
           isCorporate: result.isCorporate,
           payments: result.payments,
+          paymentAmounts: result.paymentAmounts,
         );
         ToastService.showSuccess(context, 'Payment method saved');
       }
     }
 
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: enabled ? openAddCustomer : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryLight,
-              foregroundColor: AppColors.onPrimaryLight,
-              disabledBackgroundColor: const Color(0xFFE8ECF3),
-              disabledForegroundColor: const Color(0xFF94A3B8),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Add customer details',
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                height: 1.15,
-                color: AppColors.onPrimaryLight,
-              ),
-            ),
+    final addCustomerBtn = Expanded(
+      child: ElevatedButton(
+        onPressed: enabled ? openAddCustomer : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryLight,
+          foregroundColor: AppColors.onPrimaryLight,
+          disabledBackgroundColor: const Color(0xFFE8ECF3),
+          disabledForegroundColor: const Color(0xFF94A3B8),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
+        child: const Text(
+          'Add customer details',
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            height: 1.15,
+            color: AppColors.onPrimaryLight,
+          ),
+        ),
+      ),
+    );
+
+    if (!showPaymentMethodButton) {
+      return Row(children: [addCustomerBtn]);
+    }
+
+    return Row(
+      children: [
+        addCustomerBtn,
         const SizedBox(width: 6),
         Expanded(
           child: ElevatedButton(
@@ -460,7 +518,40 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
   }
 }
 
+/// Centered title + [New Order] for empty order list (tablet + mobile).
+class _OrdersEmptyStateBody extends StatelessWidget {
+  final String title;
+
+  const _OrdersEmptyStateBody({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade500,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const _OrdersNewOrderButton(),
+        ],
+      ),
+    );
+  }
+}
+
 class _OrdersNewOrderButton extends StatelessWidget {
+  const _OrdersNewOrderButton();
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -575,11 +666,46 @@ Widget posOrdersJobStatusBadge(String statusRaw) {
 
 class _OrderDetailPanel extends StatelessWidget {
   final PosViewModel vm;
-  const _OrderDetailPanel({required this.vm});
+  final List<PosOrder> filteredOrders;
+  final String selectedTab;
+
+  const _OrderDetailPanel({
+    required this.vm,
+    required this.filteredOrders,
+    required this.selectedTab,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final order = vm.selectedOrder;
+    final hasListable =
+        vm.orders.any(_orderIsListableForOrdersList);
+
+    if (filteredOrders.isEmpty && hasListable) {
+      return ColoredBox(
+        color: Colors.white,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              _ordersTabDetailEmptyMessage(selectedTab),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade500,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final sel = vm.selectedOrder;
+    final order = sel != null &&
+            filteredOrders.any((o) => o.id == sel.id)
+        ? sel
+        : null;
 
     return Column(
       children: [
@@ -958,10 +1084,13 @@ void _openJobProductGrid(BuildContext context, PosOrder order, PosOrderJob job) 
     vat: order.customer?.vatNumber ?? '',
     mobile: order.customer?.mobile ?? '',
     vehicleNumber: order.plateNumber.trim().isNotEmpty ? order.plateNumber : posVm.vehicleNumber,
+    vinNumber: order.vehicle?.vin ?? '',
     make: order.vehicle?.make ?? '',
     model: order.vehicle?.model ?? '',
     odometer: order.odometerReading,
     previousOrderId: order.id,
+    vehicleYear: order.vehicle?.year ?? '',
+    vehicleColor: order.vehicle?.color ?? '',
   );
   posVm.setEditOrderContext(
     departmentId: deptId,
@@ -1067,15 +1196,6 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFD32F2F), size: 28),
-            ),
-            const SizedBox(height: 18),
             Text(
               'Delete Job',
               style: AppTextStyles.h2.copyWith(fontSize: 20),
@@ -1089,7 +1209,7 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
@@ -1101,7 +1221,9 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
                       elevation: 0,
                       side: const BorderSide(color: Color(0xFFE2E8F0)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                      minimumSize: const Size(0, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: const Text('NO', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 13)),
                   ),
@@ -1111,18 +1233,20 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
                   child: ElevatedButton(
                     onPressed: _isBusy ? null : _handleConfirm,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD32F2F),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.primaryLight,
+                      foregroundColor: AppColors.onPrimaryLight,
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                      minimumSize: const Size(0, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: _isBusy
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: AppColors.onPrimaryLight,
                               strokeWidth: 2,
                             ),
                           )
@@ -1763,6 +1887,9 @@ String? _ordersRequestedPaymentLabelForInvoice(
 ) {
   if (isCorporate == true) {
     if (methods.isEmpty) return 'Corporate';
+    if (methods.length > 1) {
+      return 'Corporate — Split (${methods.map((p) => p.label).join(' + ')})';
+    }
     return 'Corporate — ${methods.first.label}';
   }
   if (methods.length > 1) {
@@ -1979,16 +2106,36 @@ Future<void> _generateInvoiceFromOrdersSummary(
 
   final totalAmount = order.draftPosOrderTotalDisplay;
 
+  final amounts = vm.invoicePaymentAmounts;
   List<Map<String, dynamic>>? paymentSplits;
-  if (isCorporate != true) {
-    final split = await _showOrdersSplitPaymentDialog(
-      context,
-      methods: methods.toList(),
-      invoiceTotal: totalAmount,
+  if (methods.length == 1) {
+    paymentSplits = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'method': methods.first.label,
+        'amount': totalAmount,
+      },
+    ];
+  } else if (methods.length > 1) {
+    paymentSplits = methods
+        .map(
+          (m) => <String, dynamic>{
+            'method': m.label,
+            'amount': (amounts[m] ?? 0),
+          },
+        )
+        .where((p) => (p['amount'] as num) > 0)
+        .toList();
+    final splitSum = paymentSplits.fold<double>(
+      0,
+      (s, p) => s + ((p['amount'] as num).toDouble()),
     );
-    if (!context.mounted) return;
-    if (split == null) return;
-    paymentSplits = split;
+    if ((splitSum - totalAmount).abs() > 0.05) {
+      ToastService.showError(
+        context,
+        'Split amounts must equal total (${totalAmount.toStringAsFixed(2)} SAR).',
+      );
+      return;
+    }
   }
 
   try {
@@ -1996,14 +2143,10 @@ Future<void> _generateInvoiceFromOrdersSummary(
       order.id,
       orderForBilling: order,
       isCorporate: isCorporate,
-      paymentMethod: isCorporate == true
-          ? (methods.isNotEmpty ? methods.first.label : 'Corporate')
-          : (paymentSplits != null && paymentSplits.length == 1
-              ? paymentSplits.first['method'] as String?
-              : null),
-      payments: isCorporate != true &&
-              paymentSplits != null &&
-              paymentSplits.length > 1
+      paymentMethod: paymentSplits != null && paymentSplits.length == 1
+          ? paymentSplits.first['method'] as String?
+          : null,
+      payments: paymentSplits != null && paymentSplits.length > 1
           ? paymentSplits
           : null,
     );
@@ -2026,9 +2169,8 @@ Future<void> _generateInvoiceFromOrdersSummary(
       } else {
         ToastService.showSuccess(
           context,
-          response.message.isNotEmpty
-              ? response.message
-              : 'Invoice generated',
+          'Invoice was saved, but receipt details were not returned. '
+          'The order should appear as invoiced after refresh.',
         );
       }
     } else {
@@ -2202,7 +2344,10 @@ class _OrderSummaryPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _OrdersHeaderCustomerPaymentRow(vm: vm),
+        _OrdersHeaderCustomerPaymentRow(
+          vm: vm,
+          showPaymentMethodButton: allDepartmentsComplete,
+        ),
         if (allDepartmentsComplete) ...[
           const SizedBox(height: 12),
           Consumer<PosViewModel>(

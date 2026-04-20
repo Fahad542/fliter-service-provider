@@ -169,14 +169,23 @@ class WalkInInvoiceFormResult {
 }
 
 class WalkInInvoiceDetailsDialog extends StatefulWidget {
-  final PosOrder order;
+  /// When null (e.g. Takeaway checkout), use [standaloneInitial] to seed fields.
+  final PosOrder? order;
   final pvm.PosViewModel posVm;
+  final WalkInInvoiceFormResult? standaloneInitial;
+  /// Takeaway only asks for customer + VAT; walk-in orders still show vehicle fields.
+  final bool showVehicleSection;
 
   const WalkInInvoiceDetailsDialog({
     super.key,
-    required this.order,
+    this.order,
     required this.posVm,
-  });
+    this.standaloneInitial,
+    this.showVehicleSection = true,
+  }) : assert(
+          order != null || standaloneInitial != null,
+          'Provide order or standaloneInitial',
+        );
 
   @override
   State<WalkInInvoiceDetailsDialog> createState() => WalkInInvoiceDetailsDialogState();
@@ -194,11 +203,6 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
   late final TextEditingController _odoCtrl;
   final _formKey = GlobalKey<FormState>();
 
-  static String _pick(String vm, String fallback) {
-    final a = vm.trim();
-    return a.isNotEmpty ? a : fallback.trim();
-  }
-
   static int _parseOdometer(String s) {
     final t = s.trim().replaceAll(RegExp(r'[\s,]'), '');
     if (t.isEmpty) return 0;
@@ -208,23 +212,57 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
   @override
   void initState() {
     super.initState();
-    final o = widget.order;
-    final c = o.customer;
-    final v = o.vehicle;
-    final posVm = widget.posVm;
-    _nameCtrl = TextEditingController(text: _pick(posVm.customerName, c?.name ?? ''));
-    _mobileCtrl = TextEditingController(text: _pick(posVm.mobile, c?.mobile ?? ''));
-    _vatCtrl = TextEditingController(text: _pick(posVm.vatNumber, c?.vatNumber ?? ''));
-    _plateCtrl = TextEditingController(text: _pick(posVm.vehicleNumber, v?.plateNo ?? ''));
-    _makeCtrl = TextEditingController(text: _pick(posVm.make, v?.make ?? ''));
-    _modelCtrl = TextEditingController(text: _pick(posVm.model, v?.model ?? ''));
-    _yearCtrl = TextEditingController(text: _pick(posVm.vehicleYear, v?.year ?? ''));
-    _vinCtrl = TextEditingController(text: _pick(posVm.vinNumber, v?.vin ?? ''));
-    _odoCtrl = TextEditingController(
-      text: posVm.odometerReading != 0
-          ? '${posVm.odometerReading}'
-          : (o.odometerReading != 0 ? '${o.odometerReading}' : ''),
-    );
+    if (widget.order != null) {
+      final o = widget.order!;
+      final c = o.customer;
+      final v = o.vehicle;
+      final posVm = widget.posVm;
+      final snap = posVm.walkInBillingSnapshotForOrder(o.id);
+      // Billing contact + plate: snapshot wins when set (user draft for this order).
+      // Optional vehicle fields (make, model, year, VIN, odometer): always from [o] only —
+      // snapshot previously mirrored stale PosViewModel data and showed wrong prefills.
+      if (snap != null) {
+        _nameCtrl = TextEditingController(
+          text: snap.name.trim().isNotEmpty ? snap.name : (c?.name ?? '').trim(),
+        );
+        _mobileCtrl = TextEditingController(
+          text: snap.mobile.trim().isNotEmpty ? snap.mobile : (c?.mobile ?? '').trim(),
+        );
+        _vatCtrl = TextEditingController(
+          text: snap.vat.trim().isNotEmpty ? snap.vat : (c?.vatNumber ?? '').trim(),
+        );
+        _plateCtrl = TextEditingController(
+          text: snap.vehicleNumber.trim().isNotEmpty
+              ? snap.vehicleNumber
+              : (v?.plateNo ?? '').trim(),
+        );
+      } else {
+        _nameCtrl = TextEditingController(text: (c?.name ?? '').trim());
+        _mobileCtrl = TextEditingController(text: (c?.mobile ?? '').trim());
+        _vatCtrl = TextEditingController(text: (c?.vatNumber ?? '').trim());
+        _plateCtrl = TextEditingController(text: (v?.plateNo ?? '').trim());
+      }
+      _makeCtrl = TextEditingController(text: (v?.make ?? '').trim());
+      _modelCtrl = TextEditingController(text: (v?.model ?? '').trim());
+      _yearCtrl = TextEditingController(text: (v?.year ?? '').trim());
+      _vinCtrl = TextEditingController(text: (v?.vin ?? '').trim());
+      _odoCtrl = TextEditingController(
+        text: o.odometerReading != 0 ? '${o.odometerReading}' : '',
+      );
+    } else {
+      final d = widget.standaloneInitial!;
+      _nameCtrl = TextEditingController(text: d.name);
+      _mobileCtrl = TextEditingController(text: d.mobile);
+      _vatCtrl = TextEditingController(text: d.vat);
+      _plateCtrl = TextEditingController(text: d.vehicleNumber);
+      _makeCtrl = TextEditingController(text: d.make);
+      _modelCtrl = TextEditingController(text: d.model);
+      _yearCtrl = TextEditingController(text: d.year);
+      _vinCtrl = TextEditingController(text: d.vin);
+      _odoCtrl = TextEditingController(
+        text: d.odometer != 0 ? '${d.odometer}' : '',
+      );
+    }
   }
 
   @override
@@ -252,15 +290,192 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
     // Compact card; same max-width formula as payment dialog.
     final maxW = min(520.0, mq.width - 40);
     final maxH = min(520.0, mq.height * 0.78);
-    final v = widget.order.vehicle;
+    final formScroll = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      //shrinkWrap: !widget.showVehicleSection,
+      physics: widget.showVehicleSection
+          ? null
+          : const ClampingScrollPhysics(),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _walkInInvoiceSectionHeader(
+              'Billing',
+              Icons.person_outline_rounded,
+              compact: true,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _nameCtrl,
+                    style: _kWalkInInvoiceDialogFieldStyle,
+                    decoration: _walkInInvoiceFieldDecoration(
+                      'Customer name',
+                      compact: true,
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (s) =>
+                        (s == null || s.trim().isEmpty) ? 'Required' : null,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _mobileCtrl,
+                    style: _kWalkInInvoiceDialogFieldStyle,
+                    decoration: _walkInInvoiceFieldDecoration(
+                      'Mobile',
+                      compact: true,
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (s) =>
+                        (s == null || s.trim().isEmpty) ? 'Required' : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _vatCtrl,
+              style: _kWalkInInvoiceDialogFieldStyle,
+              decoration: _walkInInvoiceFieldDecoration(
+                'VAT',
+                optional: true,
+                compact: true,
+              ),
+            ),
+            if (widget.showVehicleSection) ...[
+              const SizedBox(height: 14),
+              _walkInInvoiceSectionHeader(
+                'Vehicle',
+                Icons.directions_car_outlined,
+                compact: true,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _plateCtrl,
+                      style: _kWalkInInvoiceDialogFieldStyle,
+                      decoration: _walkInInvoiceFieldDecoration(
+                        'Plate number',
+                        compact: true,
+                      ),
+                      textCapitalization: TextCapitalization.characters,
+                      validator: (s) =>
+                          (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _odoCtrl,
+                      style: _kWalkInInvoiceDialogFieldStyle,
+                      decoration: _walkInInvoiceFieldDecoration(
+                        'Odometer',
+                        optional: true,
+                        compact: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _makeCtrl,
+                      style: _kWalkInInvoiceDialogFieldStyle,
+                      decoration: _walkInInvoiceFieldDecoration(
+                        'Make',
+                        optional: true,
+                        compact: true,
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _modelCtrl,
+                      style: _kWalkInInvoiceDialogFieldStyle,
+                      decoration: _walkInInvoiceFieldDecoration(
+                        'Model',
+                        optional: true,
+                        compact: true,
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _yearCtrl,
+                      style: _kWalkInInvoiceDialogFieldStyle,
+                      decoration: _walkInInvoiceFieldDecoration(
+                        'Year',
+                        optional: true,
+                        compact: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (s) {
+                        if (s == null || s.trim().isEmpty) return null;
+                        final yi = int.tryParse(s.trim());
+                        if (yi == null || yi < 1900 || yi > 2100) {
+                          return 'Invalid year';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _vinCtrl,
+                      style: _kWalkInInvoiceDialogFieldStyle,
+                      decoration: _walkInInvoiceFieldDecoration(
+                        'VIN',
+                        optional: true,
+                        compact: true,
+                      ),
+                      textCapitalization: TextCapitalization.characters,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+            ],
+          ],
+        ),
+      ),
+    );
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
       backgroundColor: AppColors.surfaceLight,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxW, maxHeight: maxH),
+        constraints: widget.showVehicleSection
+            ? BoxConstraints(maxWidth: maxW, maxHeight: maxH)
+            : BoxConstraints(maxWidth: maxW),
         child: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: widget.showVehicleSection
+              ? MainAxisSize.max
+              : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
@@ -269,7 +484,9 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Invoice details',
+                    widget.showVehicleSection
+                        ? 'Invoice details'
+                        : 'Customer details',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -279,7 +496,9 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Confirm billing contact and vehicle before creating the invoice.',
+                    widget.showVehicleSection
+                        ? 'Confirm billing contact and vehicle before creating the invoice.'
+                        : 'Confirm billing contact before creating the invoice.',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w500,
@@ -291,176 +510,10 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
               ),
             ),
             const SizedBox(height: 12),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _walkInInvoiceSectionHeader(
-                        'Billing',
-                        Icons.person_outline_rounded,
-                        compact: true,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _nameCtrl,
-                              style: _kWalkInInvoiceDialogFieldStyle,
-                              decoration: _walkInInvoiceFieldDecoration(
-                                'Customer name',
-                                compact: true,
-                              ),
-                              textCapitalization: TextCapitalization.words,
-                              validator: (s) =>
-                                  (s == null || s.trim().isEmpty) ? 'Required' : null,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _mobileCtrl,
-                              style: _kWalkInInvoiceDialogFieldStyle,
-                              decoration: _walkInInvoiceFieldDecoration(
-                                'Mobile',
-                                compact: true,
-                              ),
-                              keyboardType: TextInputType.phone,
-                              validator: (s) =>
-                                  (s == null || s.trim().isEmpty) ? 'Required' : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _vatCtrl,
-                        style: _kWalkInInvoiceDialogFieldStyle,
-                        decoration: _walkInInvoiceFieldDecoration(
-                          'VAT',
-                          optional: true,
-                          compact: true,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _walkInInvoiceSectionHeader(
-                        'Vehicle',
-                        Icons.directions_car_outlined,
-                        compact: true,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _plateCtrl,
-                              style: _kWalkInInvoiceDialogFieldStyle,
-                              decoration: _walkInInvoiceFieldDecoration(
-                                'Plate number',
-                                compact: true,
-                              ),
-                              textCapitalization: TextCapitalization.characters,
-                              validator: (s) =>
-                                  (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _odoCtrl,
-                              style: _kWalkInInvoiceDialogFieldStyle,
-                              decoration: _walkInInvoiceFieldDecoration(
-                                'Odometer',
-                                optional: true,
-                                compact: true,
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _makeCtrl,
-                              style: _kWalkInInvoiceDialogFieldStyle,
-                              decoration: _walkInInvoiceFieldDecoration(
-                                'Make',
-                                optional: true,
-                                compact: true,
-                              ),
-                              textCapitalization: TextCapitalization.words,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _modelCtrl,
-                              style: _kWalkInInvoiceDialogFieldStyle,
-                              decoration: _walkInInvoiceFieldDecoration(
-                                'Model',
-                                optional: true,
-                                compact: true,
-                              ),
-                              textCapitalization: TextCapitalization.words,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _yearCtrl,
-                              style: _kWalkInInvoiceDialogFieldStyle,
-                              decoration: _walkInInvoiceFieldDecoration(
-                                'Year',
-                                optional: true,
-                                compact: true,
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (s) {
-                                if (s == null || s.trim().isEmpty) return null;
-                                final yi = int.tryParse(s.trim());
-                                if (yi == null || yi < 1900 || yi > 2100) {
-                                  return 'Invalid year';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _vinCtrl,
-                              style: _kWalkInInvoiceDialogFieldStyle,
-                              decoration: _walkInInvoiceFieldDecoration(
-                                'VIN',
-                                optional: true,
-                                compact: true,
-                              ),
-                              textCapitalization: TextCapitalization.characters,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            if (widget.showVehicleSection)
+              Expanded(child: formScroll)
+            else
+              formScroll,
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
@@ -494,6 +547,34 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                     ),
                     onPressed: () {
                       if (_formKey.currentState?.validate() != true) return;
+                      if (!widget.showVehicleSection) {
+                        _close(
+                          WalkInInvoiceFormResult(
+                            name: _nameCtrl.text,
+                            mobile: _mobileCtrl.text,
+                            vat: _vatCtrl.text,
+                            vehicleNumber: '',
+                            vin: '',
+                            make: '',
+                            model: '',
+                            year: '',
+                            color: '',
+                            odometer: 0,
+                          ),
+                        );
+                        return;
+                      }
+                      final colorResult = widget.order != null
+                          ? () {
+                              final o = widget.order!;
+                              final v = o.vehicle;
+                              final prev = widget.posVm
+                                  .walkInBillingSnapshotForOrder(o.id);
+                              final pc = (prev?.color ?? '').trim();
+                              if (pc.isNotEmpty) return pc;
+                              return (v?.color ?? '').trim();
+                            }()
+                          : '';
                       _close(
                         WalkInInvoiceFormResult(
                           name: _nameCtrl.text,
@@ -504,7 +585,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                           make: _makeCtrl.text,
                           model: _modelCtrl.text,
                           year: _yearCtrl.text,
-                          color: _pick(widget.posVm.vehicleColor, v?.color ?? ''),
+                          color: colorResult,
                           odometer: _parseOdometer(_odoCtrl.text),
                         ),
                       );
@@ -594,6 +675,12 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
           _selectedPayments = {PaymentMethod.monthlyBilling};
         }
         _syncSplitControllers();
+        for (final entry in posVm.invoicePaymentAmounts.entries) {
+          final c = _splitControllers[entry.key];
+          if (c != null && entry.value > 0) {
+            c.text = entry.value.toStringAsFixed(2);
+          }
+        }
       });
     });
   }
@@ -603,19 +690,34 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     final c = o.customer;
     final v = o.vehicle;
     final posVm = Provider.of<pvm.PosViewModel>(context, listen: false);
-    _nameCtrl = TextEditingController(text: _pickField(posVm.customerName, c?.name ?? ''));
-    _mobileCtrl = TextEditingController(text: _pickField(posVm.mobile, c?.mobile ?? ''));
-    _vatCtrl = TextEditingController(text: _pickField(posVm.vatNumber, c?.vatNumber ?? ''));
-    _plateCtrl = TextEditingController(text: _pickField(posVm.vehicleNumber, v?.plateNo ?? ''));
-    _makeCtrl = TextEditingController(text: _pickField(posVm.make, v?.make ?? ''));
-    _modelCtrl = TextEditingController(text: _pickField(posVm.model, v?.model ?? ''));
-    _yearCtrl = TextEditingController(text: _pickField(posVm.vehicleYear, v?.year ?? ''));
-    _vinCtrl = TextEditingController(text: _pickField(posVm.vinNumber, v?.vin ?? ''));
-    _odoCtrl = TextEditingController(
-      text: posVm.odometerReading != 0
-          ? '${posVm.odometerReading}'
-          : (o.odometerReading != 0 ? '${o.odometerReading}' : ''),
-    );
+    final snap = posVm.walkInBillingSnapshotForOrder(o.id);
+    if (snap != null) {
+      _nameCtrl = TextEditingController(text: snap.name);
+      _mobileCtrl = TextEditingController(text: snap.mobile);
+      _vatCtrl = TextEditingController(text: snap.vat);
+      _plateCtrl = TextEditingController(text: snap.vehicleNumber);
+      _makeCtrl = TextEditingController(text: snap.make);
+      _modelCtrl = TextEditingController(text: snap.model);
+      _yearCtrl = TextEditingController(text: snap.year);
+      _vinCtrl = TextEditingController(text: snap.vin);
+      _odoCtrl = TextEditingController(
+        text: snap.odometer != 0
+            ? '${snap.odometer}'
+            : (o.odometerReading != 0 ? '${o.odometerReading}' : ''),
+      );
+    } else {
+      _nameCtrl = TextEditingController(text: (c?.name ?? '').trim());
+      _mobileCtrl = TextEditingController(text: (c?.mobile ?? '').trim());
+      _vatCtrl = TextEditingController(text: (c?.vatNumber ?? '').trim());
+      _plateCtrl = TextEditingController(text: (v?.plateNo ?? '').trim());
+      _makeCtrl = TextEditingController(text: (v?.make ?? '').trim());
+      _modelCtrl = TextEditingController(text: (v?.model ?? '').trim());
+      _yearCtrl = TextEditingController(text: (v?.year ?? '').trim());
+      _vinCtrl = TextEditingController(text: (v?.vin ?? '').trim());
+      _odoCtrl = TextEditingController(
+        text: o.odometerReading != 0 ? '${o.odometerReading}' : '',
+      );
+    }
   }
 
   static String _pickField(String vm, String fallback) {
@@ -909,6 +1011,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
     if (result != null) {
       posVm.updateWalkInBillingContact(
+        forOrderId: widget.order.id,
         name: result.name,
         mobile: result.mobile,
         vat: result.vat,
@@ -920,6 +1023,12 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         year: result.year,
         color: result.color,
       );
+      final patchErr = await posVm.submitWalkInOrderBillingPatch(widget.order);
+      if (!mounted) return false;
+      if (patchErr != null) {
+        ToastService.showError(context, patchErr);
+        return false;
+      }
     }
 
     return result != null;
@@ -1351,6 +1460,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       }
       final v = widget.order.vehicle;
       posVm.updateWalkInBillingContact(
+        forOrderId: widget.order.id,
         name: _nameCtrl.text,
         mobile: _mobileCtrl.text,
         vat: _vatCtrl.text,

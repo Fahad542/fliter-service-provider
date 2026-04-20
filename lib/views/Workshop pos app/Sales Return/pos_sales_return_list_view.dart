@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
-import '../../../utils/pos_shell_scaffold.dart';
+import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import 'sales_return_list_view_model.dart';
 import '../../../models/sales_return_list_model.dart';
 
@@ -56,7 +56,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
         showBackButton: false,
         showHamburger: true,
         onMenuPressed: () =>
-            kPosShellScaffoldKey.currentState?.openDrawer(),
+            PosShellScaffoldRegistry.openDrawer(),
       ),
       body: wrapPosShellRailBody(
         context,

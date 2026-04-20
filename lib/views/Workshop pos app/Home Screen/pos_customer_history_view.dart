@@ -212,7 +212,9 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '${order.vehicle!.make} ${order.vehicle!.model}  •  ${order.vehicle!.plateNo}',
+                    '${order.vehicle!.make} ${order.vehicle!.model}  •  ${order.vehicle!.plateNo}'
+                    '${(order.vehicle!.year != null && order.vehicle!.year!.isNotEmpty) ? '  ·  ${order.vehicle!.year}' : ''}'
+                    '${(order.vehicle!.vin != null && order.vehicle!.vin!.isNotEmpty) ? '  ·  VIN ${order.vehicle!.vin}' : ''}',
                     style: TextStyle(
                       fontSize: isTablet ? 13 : 12,
                       color: Colors.grey.shade600,

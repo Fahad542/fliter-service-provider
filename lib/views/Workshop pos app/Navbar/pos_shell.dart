@@ -7,7 +7,7 @@ import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_tablet_layout.dart';
-import '../../../utils/pos_shell_scaffold.dart';
+import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../Home Screen/pos_home_view.dart';
 import '../Order Screen/pos_orders_view.dart';
 import '../Petty Cash/petty_cash_view_model.dart';
@@ -43,24 +43,20 @@ import '../Takeaway/takeaway_view_model.dart';
 
 /// Selects the Orders tab and returns to [PosShell].
 ///
-/// When [PosDepartmentView] replaced the shell ([Navigator.pushReplacement]),
-/// the stack has a single route — use [Navigator.pushReplacement] to restore
-/// the shell. Otherwise pop all routes above the shell (walk-in / add customer).
+/// Always resets the **root** navigator to a single [PosShell] at the Orders tab.
+/// The previous `while (canPop) pop()` logic could leave the wrong screen (e.g. only
+/// [PosDepartmentView] after it replaced the shell) or an empty stack, which made the
+/// app fall back to [MenuView] while the session token was still valid.
 void navigateToPosShellOrdersTab(BuildContext context) {
   final posVm = context.read<PosViewModel>();
   posVm.setShellSelectedIndex(2);
   final nav = Navigator.of(context, rootNavigator: true);
-  if (!nav.canPop()) {
-    nav.pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const PosShell(initialIndex: 2),
-      ),
-    );
-    return;
-  }
-  while (nav.canPop()) {
-    nav.pop();
-  }
+  nav.pushAndRemoveUntil<void>(
+    MaterialPageRoute<void>(
+      builder: (_) => const PosShell(initialIndex: 2),
+    ),
+    (route) => false,
+  );
 }
 
 class PosShell extends StatefulWidget {
@@ -73,6 +69,19 @@ class PosShell extends StatefulWidget {
 
 class _PosShellState extends State<PosShell> {
   bool _didBootstrapShell = false;
+  final GlobalKey<ScaffoldState> _shellScaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    PosShellScaffoldRegistry.attach(_shellScaffoldKey);
+  }
+
+  @override
+  void dispose() {
+    PosShellScaffoldRegistry.detach(_shellScaffoldKey);
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -80,11 +89,11 @@ class _PosShellState extends State<PosShell> {
     if (_didBootstrapShell) return;
     _didBootstrapShell = true;
     final idx = widget.initialIndex;
-    if (idx != 0) {
-      context.read<PosViewModel>().setShellSelectedIndex(idx);
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (idx != 0) {
+        context.read<PosViewModel>().setShellSelectedIndex(idx);
+      }
       _triggerVisitFetch(context, idx);
     });
   }
@@ -138,7 +147,7 @@ class _PosShellState extends State<PosShell> {
         }
       },
       child: Scaffold(
-        key: kPosShellScaffoldKey,
+        key: _shellScaffoldKey,
         drawer: isStoreClosingTab ? null : _buildDrawer(isTablet),
         body: MediaQuery(
           data: MediaQuery.of(context).copyWith(

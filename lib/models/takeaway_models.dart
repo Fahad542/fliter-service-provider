@@ -231,6 +231,14 @@ class TakeawayCheckoutRequest {
   final List<Map<String, dynamic>>? payments;
   final String? invoiceDate;
   final double discountAmount;
+  /// Mirrors PATCH billing / cashier order vehicle fields when supported by API.
+  final String? vehicleNumber;
+  final String? make;
+  final String? model;
+  final String? vin;
+  final int? year;
+  final int? odometerReading;
+  final String? color;
 
   const TakeawayCheckoutRequest({
     required this.customerName,
@@ -250,10 +258,17 @@ class TakeawayCheckoutRequest {
     this.payments,
     this.invoiceDate,
     this.discountAmount = 0,
+    this.vehicleNumber,
+    this.make,
+    this.model,
+    this.vin,
+    this.year,
+    this.odometerReading,
+    this.color,
   });
 
   Map<String, dynamic> toJson() {
-    return {
+    final map = <String, dynamic>{
       'customerName': customerName,
       // Keep optional string keys present to avoid undefined.trim() on backend.
       'customerMobile': (customerMobile ?? '').toString(),
@@ -279,6 +294,23 @@ class TakeawayCheckoutRequest {
         'invoiceDate': invoiceDate,
       if (discountAmount > 0) 'discountAmount': discountAmount,
     };
+    final plate = (vehicleNumber ?? '').trim();
+    if (plate.isNotEmpty) {
+      map['vehicleNumber'] = plate;
+      final mk = (make ?? '').trim();
+      final md = (model ?? '').trim();
+      final vn = (vin ?? '').trim();
+      final cl = (color ?? '').trim();
+      if (mk.isNotEmpty) map['make'] = mk;
+      if (md.isNotEmpty) map['model'] = md;
+      if (vn.isNotEmpty) map['vin'] = vn;
+      if (cl.isNotEmpty) map['color'] = cl;
+      if (year != null) map['year'] = year;
+      if (odometerReading != null && odometerReading! > 0) {
+        map['odometerReading'] = odometerReading;
+      }
+    }
+    return map;
   }
 }
 

@@ -1,6 +1,7 @@
 import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../models/pos_payment_method.dart';
 import '../../../utils/app_colors.dart';
 
@@ -8,19 +9,23 @@ import '../../../utils/app_colors.dart';
 class InvoicePaymentChoiceResult {
   final bool isCorporate;
   final Set<PaymentMethod> payments;
+  /// Per-method amounts when multiple methods are selected (individual or corporate).
+  final Map<PaymentMethod, double> paymentAmounts;
 
   const InvoicePaymentChoiceResult({
     required this.isCorporate,
     required this.payments,
+    this.paymentAmounts = const {},
   });
 }
 
-/// Dialog: corporate vs individual, then payment method(s) matching POS rules.
-/// Size and typography track [WalkInInvoiceDetailsDialog] (compact).
 Future<InvoicePaymentChoiceResult?> showInvoicePaymentChoiceDialog(
   BuildContext context, {
   bool? initialIsCorporate,
   Set<PaymentMethod>? initialPayments,
+  Map<PaymentMethod, double>? initialPaymentAmounts,
+  /// Order grand total for split validation; defaults to 0 if omitted (e.g. hot-reload edge cases).
+  double totalAmount = 0,
 }) {
   return showDialog<InvoicePaymentChoiceResult>(
     context: context,
@@ -29,6 +34,8 @@ Future<InvoicePaymentChoiceResult?> showInvoicePaymentChoiceDialog(
     builder: (ctx) => _InvoicePaymentChoiceDialog(
       initialIsCorporate: initialIsCorporate,
       initialPayments: initialPayments,
+      initialPaymentAmounts: initialPaymentAmounts,
+      totalAmount: totalAmount,
     ),
   );
 }
@@ -36,10 +43,14 @@ Future<InvoicePaymentChoiceResult?> showInvoicePaymentChoiceDialog(
 class _InvoicePaymentChoiceDialog extends StatefulWidget {
   final bool? initialIsCorporate;
   final Set<PaymentMethod>? initialPayments;
+  final Map<PaymentMethod, double>? initialPaymentAmounts;
+  final double totalAmount;
 
   const _InvoicePaymentChoiceDialog({
     this.initialIsCorporate,
     this.initialPayments,
+    this.initialPaymentAmounts,
+    this.totalAmount = 0,
   });
 
   @override
@@ -50,6 +61,7 @@ class _InvoicePaymentChoiceDialog extends StatefulWidget {
 class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog> {
   bool? _isCorporate;
   late Set<PaymentMethod> _selected;
+  final Map<PaymentMethod, TextEditingController> _amountControllers = {};
 
   static const _corporateMethods = <PaymentMethod>[
     PaymentMethod.monthlyBilling,
@@ -58,6 +70,9 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     PaymentMethod.card,
     PaymentMethod.wallet,
   ];
+
+  bool get _isSplitMode => _selected.length > 1;
+  double get _safeTotal => widget.totalAmount > 0 ? widget.totalAmount : 0.0;
 
   @override
   void initState() {
@@ -68,20 +83,25 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
       _selected = Set<PaymentMethod>.from(initial);
     } else if (_isCorporate == true) {
       _selected = {PaymentMethod.monthlyBilling};
-    } else if (_isCorporate == false) {
-      _selected = {};
     } else {
       _selected = {};
     }
+    _syncAmountControllers(seedFromInitial: true);
+  }
+
+  @override
+  void dispose() {
+    for (final c in _amountControllers.values) {
+      c.dispose();
+    }
+    super.dispose();
   }
 
   void _setCorporate(bool value) {
     setState(() {
       _isCorporate = value;
       if (value) {
-        _selected = _selected
-            .where((p) => _corporateMethods.contains(p))
-            .toSet();
+        _selected = _selected.where((p) => _corporateMethods.contains(p)).toSet();
         if (_selected.isEmpty) {
           _selected = {PaymentMethod.monthlyBilling};
         }
@@ -90,11 +110,115 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
           (p) => p == PaymentMethod.monthlyBilling || p == PaymentMethod.wallet,
         );
       }
+      _syncAmountControllers();
     });
   }
 
-  bool get _canSave =>
-      _isCorporate != null && _selected.isNotEmpty;
+  void _toggleRetailMethod(PaymentMethod pm, bool isSelected) {
+    final wasRetail = _isCorporate == false;
+    final oldLen = wasRetail ? _selected.length : 0;
+    setState(() {
+      if (isSelected) {
+        _selected.remove(pm);
+      } else {
+        _selected.add(pm);
+      }
+      final newLen = _isCorporate == false ? _selected.length : 0;
+      final oneToMany =
+          wasRetail && oldLen == 1 && newLen >= 2;
+      _syncAmountControllers(fromOneToManySplit: oneToMany);
+    });
+  }
+
+  void _toggleCorporateMethod(PaymentMethod pm, bool isSelected) {
+    if (!_corporateMethods.contains(pm)) return;
+    final wasCorp = _isCorporate == true;
+    final oldLen = wasCorp ? _selected.length : 0;
+    setState(() {
+      if (isSelected) {
+        _selected.remove(pm);
+      } else {
+        _selected.add(pm);
+      }
+      final newLen = _isCorporate == true ? _selected.length : 0;
+      final oneToMany = wasCorp && oldLen == 1 && newLen >= 2;
+      _syncAmountControllers(fromOneToManySplit: oneToMany);
+    });
+  }
+
+  String _amountToText(double v) {
+    if ((v - v.roundToDouble()).abs() < 0.0001) return v.round().toString();
+    return v.toStringAsFixed(2);
+  }
+
+  void _syncAmountControllers({
+    bool seedFromInitial = false,
+    /// True when user goes from 1 method (total auto-filled) to 2+ — clear split fields.
+    bool fromOneToManySplit = false,
+  }) {
+    final current = Set<PaymentMethod>.from(_amountControllers.keys);
+    final desired = _isCorporate != null
+        ? Set<PaymentMethod>.from(_selected)
+        : <PaymentMethod>{};
+
+    for (final removed in current.difference(desired)) {
+      _amountControllers[removed]?.dispose();
+      _amountControllers.remove(removed);
+    }
+
+    for (final pm in desired) {
+      final existing = _amountControllers[pm];
+      if (existing != null) continue;
+      final initialAmount = seedFromInitial
+          ? (widget.initialPaymentAmounts != null
+              ? widget.initialPaymentAmounts![pm]
+              : null)
+          : null;
+      _amountControllers[pm] = TextEditingController(
+        text: initialAmount != null && initialAmount > 0
+            ? _amountToText(initialAmount)
+            : '',
+      );
+    }
+
+    if (!_isSplitMode && _isCorporate != null && _selected.length == 1) {
+      final only = _selected.first;
+      _amountControllers[only]?.text = _amountToText(_safeTotal);
+    }
+
+    if (_isSplitMode && fromOneToManySplit) {
+      for (final pm in _selected) {
+        _amountControllers[pm]?.text = '';
+      }
+    }
+  }
+
+  double _parseAmount(TextEditingController c) {
+    final raw = c.text.trim().replaceAll(',', '');
+    if (raw.isEmpty) return 0;
+    return double.tryParse(raw) ?? 0;
+  }
+
+  double get _splitSum {
+    double sum = 0;
+    for (final pm in _selected) {
+      final c = _amountControllers[pm];
+      if (c != null) sum += _parseAmount(c);
+    }
+    return sum;
+  }
+
+  double get _remainingAmount => _safeTotal - _splitSum;
+
+  bool get _canSave {
+    if (_isCorporate == null || _selected.isEmpty) return false;
+    if (!_isSplitMode) return true;
+    for (final pm in _selected) {
+      final c = _amountControllers[pm];
+      if (c == null || _parseAmount(c) <= 0) return false;
+    }
+    return _remainingAmount.abs() <= 0.05;
+  }
 
   Widget _paymentTile(PaymentMethod pm, {required bool isCorporateMode}) {
     final isSelected = _selected.contains(pm);
@@ -102,17 +226,11 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          setState(() {
-            if (isCorporateMode) {
-              _selected = {pm};
-            } else {
-              if (isSelected) {
-                _selected.remove(pm);
-              } else {
-                _selected.add(pm);
-              }
-            }
-          });
+          if (isCorporateMode) {
+            _toggleCorporateMethod(pm, isSelected);
+          } else {
+            _toggleRetailMethod(pm, isSelected);
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
@@ -125,9 +243,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                 : const Color(0xFFF8F9FC),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected
-                  ? AppColors.primaryLight
-                  : const Color(0xFFE2E8F0),
+              color: isSelected ? AppColors.primaryLight : const Color(0xFFE2E8F0),
               width: isSelected ? 2 : 1,
             ),
             boxShadow: isSelected
@@ -145,17 +261,13 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.7)
-                      : Colors.white,
+                  color: isSelected ? Colors.white.withValues(alpha: 0.7) : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   pm.icon,
                   size: 17,
-                  color: isSelected
-                      ? AppColors.secondaryLight
-                      : Colors.grey.shade500,
+                  color: isSelected ? AppColors.secondaryLight : Colors.grey.shade500,
                 ),
               ),
               const SizedBox(width: 8),
@@ -166,9 +278,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
                     height: 1.2,
-                    color: isSelected
-                        ? AppColors.secondaryLight
-                        : Colors.grey.shade600,
+                    color: isSelected ? AppColors.secondaryLight : Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -185,7 +295,6 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     );
   }
 
-  /// Two payment options per row (matches invoice details field layout).
   Widget _paymentGrid({
     required List<PaymentMethod> methods,
     required bool isCorporateMode,
@@ -198,9 +307,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: _paymentTile(a, isCorporateMode: isCorporateMode),
-            ),
+            Expanded(child: _paymentTile(a, isCorporateMode: isCorporateMode)),
             const SizedBox(width: 8),
             Expanded(
               child: b != null
@@ -210,13 +317,109 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
           ],
         ),
       );
-      if (i + 2 < methods.length) {
-        rows.add(const SizedBox(height: 8));
-      }
+      if (i + 2 < methods.length) rows.add(const SizedBox(height: 8));
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
+  }
+
+  Widget _splitAmountsEditor() {
+    final methods = _selected.toList();
+    final rows = <Widget>[];
+    for (var i = 0; i < methods.length; i += 2) {
+      final a = methods[i];
+      final b = i + 1 < methods.length ? methods[i + 1] : null;
+      rows.add(
+        Row(
+          children: [
+            Expanded(child: _amountField(a)),
+            const SizedBox(width: 8),
+            Expanded(child: b != null ? _amountField(b) : const SizedBox()),
+          ],
+        ),
+      );
+      if (i + 2 < methods.length) rows.add(const SizedBox(height: 8));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: rows,
+      children: [
+        Text(
+          'Amount by payment method',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: AppColors.secondaryLight,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...rows,
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: _remainingAmount.abs() <= 0.05
+                ? const Color(0xFFEAF8EE)
+                : const Color(0xFFFFF4E5),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: _remainingAmount.abs() <= 0.05
+                  ? const Color(0xFFA7D7B2)
+                  : const Color(0xFFF4C27A),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                _remainingAmount.abs() <= 0.05 ? Icons.check_circle : Icons.info_outline,
+                size: 16,
+                color: _remainingAmount.abs() <= 0.05
+                    ? const Color(0xFF2E7D32)
+                    : const Color(0xFFB26A00),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Remaining: ${_remainingAmount.toStringAsFixed(2)} SAR',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: _remainingAmount.abs() <= 0.05
+                        ? const Color(0xFF2E7D32)
+                        : const Color(0xFF8B5E00),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _amountField(PaymentMethod pm) {
+    final c = _amountControllers[pm]!;
+    return TextFormField(
+      controller: c,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
+      ],
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        labelText: '${pm.label} amount',
+        suffixText: 'SAR',
+        isDense: true,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+      ),
+      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
     );
   }
 
@@ -235,25 +438,35 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     );
   }
 
+  Map<PaymentMethod, double> _buildPaymentAmounts() {
+    if (_selected.isEmpty) return const {};
+    if (_selected.length == 1) {
+      return {_selected.first: _safeTotal};
+    }
+    final out = <PaymentMethod, double>{};
+    for (final pm in _selected) {
+      final c = _amountControllers[pm];
+      if (c != null) out[pm] = _parseAmount(c);
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.sizeOf(context);
-    final maxW = min(520.0, mq.width - 40);
-    final maxH = min(520.0, mq.height * 0.78);
-
-    final retailMethods =
-        PaymentMethod.values.where((pm) => pm.isRetailSelectable).toList();
+    final maxW = _isSplitMode ? min(760.0, mq.width - 32) : min(520.0, mq.width - 40);
+    final maxH = min(560.0, mq.height * 0.82);
+    final retailMethods = PaymentMethod.values.where((pm) => pm.isRetailSelectable).toList();
 
     return Dialog(
       elevation: 10,
       shadowColor: Colors.black.withValues(alpha: 0.18),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       backgroundColor: AppColors.surfaceLight,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxW, maxHeight: maxH),
         child: Column(
-          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
@@ -279,7 +492,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                       Expanded(
                         child: Text(
                           'Payment method',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                             height: 1.2,
@@ -356,9 +569,9 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                                 Expanded(
                                   child: Text(
                                     _isCorporate!
-                                        ? 'Corporate payment'
+                                        ? 'Corporate payment (multi-select to split)'
                                         : 'Payment (multi-select to split)',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.secondaryLight,
@@ -369,11 +582,13 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                             ),
                             const SizedBox(height: 10),
                             _paymentGrid(
-                              methods: _isCorporate!
-                                  ? _corporateMethods
-                                  : retailMethods,
+                              methods: _isCorporate! ? _corporateMethods : retailMethods,
                               isCorporateMode: _isCorporate!,
                             ),
+                            if (_isSplitMode) ...[
+                              const SizedBox(height: 12),
+                              _splitAmountsEditor(),
+                            ],
                           ],
                         ),
                       ),
@@ -411,10 +626,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                       disabledBackgroundColor: const Color(0xFFE2E8F0),
                       disabledForegroundColor: const Color(0xFF94A3B8),
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 11,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -424,18 +636,15 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                             Navigator.of(context).pop(
                               InvoicePaymentChoiceResult(
                                 isCorporate: _isCorporate!,
-                                payments:
-                                    Set<PaymentMethod>.from(_selected),
+                                payments: Set<PaymentMethod>.from(_selected),
+                                paymentAmounts: _buildPaymentAmounts(),
                               ),
                             );
                           }
                         : null,
                     child: const Text(
                       'Save',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
                     ),
                   ),
                 ],
@@ -472,14 +681,10 @@ class _CustomerTypeCard extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primaryLight.withValues(alpha: 0.45)
-                : Colors.white,
+            color: selected ? AppColors.primaryLight.withValues(alpha: 0.45) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected
-                  ? AppColors.primaryLight
-                  : const Color(0xFFE2E8F0),
+              color: selected ? AppColors.primaryLight : const Color(0xFFE2E8F0),
               width: selected ? 2 : 1,
             ),
             boxShadow: selected
@@ -503,9 +708,7 @@ class _CustomerTypeCard extends StatelessWidget {
               Icon(
                 icon,
                 size: 22,
-                color: selected
-                    ? AppColors.secondaryLight
-                    : Colors.grey.shade500,
+                color: selected ? AppColors.secondaryLight : Colors.grey.shade500,
               ),
               const SizedBox(height: 6),
               Text(
@@ -514,9 +717,7 @@ class _CustomerTypeCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: selected
-                      ? AppColors.secondaryLight
-                      : Colors.grey.shade600,
+                  color: selected ? AppColors.secondaryLight : Colors.grey.shade600,
                 ),
               ),
             ],
