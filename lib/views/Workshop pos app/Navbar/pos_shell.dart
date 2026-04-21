@@ -138,6 +138,17 @@ class _PosShellState extends State<PosShell> {
         children: _screens,
       ),
     );
+    final shellBodyWithBroadcastBanner = Stack(
+      children: [
+        stackBody,
+        if (posVm.hasActiveBroadcastWaiting)
+          Positioned(
+            left: isTablet ? 18 : 10,
+            bottom: isTablet ? 18 : 10,
+            child: _BroadcastWaitingBanner(posVm: posVm),
+          ),
+      ],
+    );
 
     return PopScope(
       canPop: !isLockedInStoreClosing,
@@ -148,12 +159,12 @@ class _PosShellState extends State<PosShell> {
       },
       child: Scaffold(
         key: _shellScaffoldKey,
-        drawer: isStoreClosingTab ? null : _buildDrawer(isTablet),
+        drawer: _buildDrawer(isTablet),
         body: MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: PosTabletLayout.textScaler(context),
           ),
-          child: stackBody,
+          child: shellBodyWithBroadcastBanner,
         ),
         bottomNavigationBar: hideBottomBar || isTablet
             ? const SizedBox.shrink()
@@ -272,7 +283,7 @@ class _PosShellState extends State<PosShell> {
     final branchName = posVm.branchName;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(24, isTablet ? 80 : 60, 24, 30),
+      padding: EdgeInsets.fromLTRB(24, isTablet ? 70 : 52, 24, 24),
       child: Row(
         children: [
           Container(
@@ -404,6 +415,104 @@ class _PosShellState extends State<PosShell> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BroadcastWaitingBanner extends StatelessWidget {
+  final PosViewModel posVm;
+  const _BroadcastWaitingBanner({required this.posVm});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 360, minWidth: 280),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF1F2937)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFCC247).withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.campaign_rounded,
+                size: 16,
+                color: Color(0xFFFCC247),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Waiting for technician acceptance',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Request expires in ${posVm.broadcastWaitingTimerLabel}',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFCC247).withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                posVm.broadcastWaitingTimerLabel,
+                style: const TextStyle(
+                  color: Color(0xFFFCC247),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => posVm.clearBroadcastWaiting(),
+              icon: Icon(
+                Icons.close_rounded,
+                size: 17,
+                color: Colors.white.withValues(alpha: 0.75),
+              ),
+              visualDensity: VisualDensity.compact,
+              splashRadius: 16,
+            ),
+          ],
+        ),
       ),
     );
   }

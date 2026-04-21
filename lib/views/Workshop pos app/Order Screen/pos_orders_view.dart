@@ -142,13 +142,23 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
 
   static const double _kOrderListColumnWidth = 204;
 
+  @override
+  void initState() {
+    super.initState();
+    _selectedTab = widget.vm.ordersListTab;
+  }
+
+  void _setSelectedTab(String title) {
+    if (_selectedTab == title) return;
+    setState(() => _selectedTab = title);
+    widget.vm.setOrdersListTab(title);
+  }
+
   Widget _buildTab(String title) {
     final isSelected = _selectedTab == title;
     return GestureDetector(
       onTap: () {
-        if (!isSelected) {
-          setState(() => _selectedTab = title);
-        }
+        _setSelectedTab(title);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -186,9 +196,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
         final selectedIsCompleted = currentBadge == 'COMPLETED';
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            setState(() {
-              _selectedTab = selectedIsCompleted ? 'Completed' : 'Pending';
-            });
+            _setSelectedTab(selectedIsCompleted ? 'Completed' : 'Pending');
           }
         });
       }

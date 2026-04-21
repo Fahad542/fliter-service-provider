@@ -871,7 +871,9 @@ class _PosTechnicianAssignmentViewState
                     children: [
                       Consumer<TechnicianViewModel>(
                         builder: (context, vm, _) {
+                          final posVm = context.watch<PosViewModel>();
                           final busy = _saveFlowBusy(vm);
+                          final waitActive = posVm.hasActiveBroadcastWaiting;
                           return Row(
                             children: [
                               if (_canTapBroadcast) ...[
@@ -879,32 +881,58 @@ class _PosTechnicianAssignmentViewState
                                   child: SizedBox(
                                     height: 50,
                                     child: ElevatedButton(
-                                      onPressed: (_broadcastingDuty == null && !busy)
+                                      onPressed: (_broadcastingDuty == null &&
+                                              !busy &&
+                                              !waitActive)
                                           ? () => _broadcastOnCall(context)
                                           : null,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.primaryLight,
                                         foregroundColor: AppColors.secondaryLight,
-                                        disabledBackgroundColor: AppColors.primaryLight.withOpacity(0.5),
-                                        disabledForegroundColor: AppColors.secondaryLight.withOpacity(0.5),
+                                        // Keep the same visual tone even when disabled during save flow.
+                                        disabledBackgroundColor: AppColors.primaryLight,
+                                        disabledForegroundColor: AppColors.secondaryLight,
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                       ),
-                                      child: (_broadcastingDuty == 'on_call') ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          color: AppColors.secondaryLight,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      ) : const Text(
-                                        'Broadcast',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      child: (_broadcastingDuty == 'on_call')
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                color: AppColors.secondaryLight,
+                                                strokeWidth: 2.5,
+                                              ),
+                                            )
+                                          : waitActive
+                                              ? Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.schedule_rounded,
+                                                      size: 16,
+                                                      color:
+                                                          AppColors.secondaryLight,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      'Waiting ${posVm.broadcastWaitingTimerLabel}',
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                              : const Text(
+                                                  'Broadcast',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                     ),
                                   ),
                                 ),

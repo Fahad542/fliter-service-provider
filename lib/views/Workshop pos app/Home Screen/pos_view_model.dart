@@ -417,6 +417,7 @@ class PosViewModel extends ChangeNotifier {
     _homeSearchFocusNode.dispose();
     _searchDebounce?.cancel();
     _ordersRealtimeDebounce?.cancel();
+    _broadcastWaitingTicker?.cancel();
     super.dispose();
   }
 
@@ -429,8 +430,61 @@ class PosViewModel extends ChangeNotifier {
 
   /// Coalesce rapid socket events (e.g. multiple job updates) into one list refresh.
   Timer? _ordersRealtimeDebounce;
+  Timer? _broadcastWaitingTicker;
+  DateTime? _broadcastWaitingEndsAt;
+  String? _broadcastWaitingJobId;
 
   DateTime? _lastCashierOrdersFetchedAt;
+
+  bool get hasActiveBroadcastWaiting {
+    final endsAt = _broadcastWaitingEndsAt;
+    if (endsAt == null) return false;
+    return DateTime.now().isBefore(endsAt);
+  }
+
+  Duration get broadcastWaitingRemaining {
+    final endsAt = _broadcastWaitingEndsAt;
+    if (endsAt == null) return Duration.zero;
+    final left = endsAt.difference(DateTime.now());
+    return left.isNegative ? Duration.zero : left;
+  }
+
+  String get broadcastWaitingTimerLabel {
+    final left = broadcastWaitingRemaining;
+    final m = left.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = left.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  String? get broadcastWaitingJobId => _broadcastWaitingJobId;
+
+  void startBroadcastWaiting({
+    required String jobId,
+    Duration duration = const Duration(minutes: 5),
+  }) {
+    if (jobId.trim().isEmpty) return;
+    _broadcastWaitingTicker?.cancel();
+    _broadcastWaitingJobId = jobId.trim();
+    _broadcastWaitingEndsAt = DateTime.now().add(duration);
+    notifyListeners();
+    _broadcastWaitingTicker = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!hasActiveBroadcastWaiting) {
+        t.cancel();
+        _broadcastWaitingTicker = null;
+        _broadcastWaitingEndsAt = null;
+        _broadcastWaitingJobId = null;
+      }
+      notifyListeners();
+    });
+  }
+
+  void clearBroadcastWaiting() {
+    _broadcastWaitingTicker?.cancel();
+    _broadcastWaitingTicker = null;
+    _broadcastWaitingEndsAt = null;
+    _broadcastWaitingJobId = null;
+    notifyListeners();
+  }
 
   void handleSearchDebounce(String query) {
     if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
@@ -2156,8 +2210,10 @@ class PosViewModel extends ChangeNotifier {
 
   String _orderSearchQuery = '';
   String _orderStatusFilter = 'All';
+  String _ordersListTab = 'All';
 
   String get orderStatusFilter => _orderStatusFilter;
+  String get ordersListTab => _ordersListTab;
 
   List<PosOrder> get orders {
     // Globally filter out invoiced orders based on order status
@@ -2383,6 +2439,11 @@ class PosViewModel extends ChangeNotifier {
   void setOrderStatusFilter(String status) {
     _orderStatusFilter = status;
     notifyListeners();
+  }
+
+  void setOrdersListTab(String tab) {
+    if (tab != 'All' && tab != 'Pending' && tab != 'Completed') return;
+    _ordersListTab = tab;
   }
 
   Future<void> searchCustomers(String query) async {
@@ -3113,6 +3174,7 @@ class PosViewModel extends ChangeNotifier {
           res['message']?.toString() ?? 'Broadcast sent to technicians',
         );
       }
+      startBroadcastWaiting(jobId: jobId);
       await fetchOrders(silent: true);
       return true;
     } catch (e) {
@@ -3139,6 +3201,7 @@ class PosViewModel extends ChangeNotifier {
           res['message']?.toString() ?? 'Broadcast cancelled',
         );
       }
+      clearBroadcastWaiting();
       await fetchOrders(silent: true);
       return true;
     } catch (e) {

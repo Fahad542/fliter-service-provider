@@ -216,6 +216,32 @@ class PosHomeView extends StatelessWidget {
                         orderNumber: latestOrder?.id,
                         isCorporate:
                             customer.customerType.toLowerCase() == 'corporate',
+                        onContinue: () {
+                          final posVm = context.read<PosViewModel>();
+                          final isCorporateCustomer =
+                              customer.customerType.toLowerCase() == 'corporate';
+                          posVm.clearCart();
+                          posVm.setCustomerData(
+                            name: customer.name,
+                            vat: customer.taxId ?? '',
+                            mobile: customer.mobile,
+                            vehicleNumber: vehicle?.plateNo ?? '',
+                            vinNumber: vehicle?.vin ?? '',
+                            make: vehicle?.make ?? '',
+                            model: vehicle?.model ?? '',
+                            odometer: latestOrder?.odometerReading ?? 0,
+                            previousOrderId: latestOrder?.id,
+                            vehicleYear: vehicle?.year ?? '',
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PosAddCustomerView(
+                                initialTab: isCorporateCustomer ? 1 : 0,
+                              ),
+                            ),
+                          );
+                        },
                         onViewHistory: () {
                           Navigator.push(
                             context,
