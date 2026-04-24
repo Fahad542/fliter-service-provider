@@ -447,12 +447,6 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       isTablet: isTablet,
                       enableSuggestions: false,
                       autocorrect: false,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Required';
-                        }
-                        return null;
-                      },
                     ),
                   ),
                 ],
@@ -497,12 +491,6 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       isTablet: isTablet,
                       enableSuggestions: false,
                       autocorrect: false,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Required';
-                        }
-                        return null;
-                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -517,7 +505,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       autocorrect: false,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Required';
+                          return null;
                         }
                         if (int.tryParse(value) == null) {
                           return 'Invalid number';
@@ -574,12 +562,6 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 isTablet: isTablet,
                 enableSuggestions: false,
                 autocorrect: false,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter vehicle make';
-                  }
-                  return null;
-                },
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
@@ -589,12 +571,6 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 isTablet: isTablet,
                 enableSuggestions: false,
                 autocorrect: false,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter vehicle model';
-                  }
-                  return null;
-                },
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
@@ -607,7 +583,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 autocorrect: false,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter odometer reading';
+                    return null;
                   }
                   if (int.tryParse(value) == null) {
                     return 'Please enter a valid number';

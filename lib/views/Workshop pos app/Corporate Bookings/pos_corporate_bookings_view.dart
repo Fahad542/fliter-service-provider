@@ -5,9 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../../utils/app_colors.dart';
 import '../../../../utils/pos_tablet_layout.dart';
 import '../../../../widgets/pos_widgets.dart';
-import '../Department/department_view_model.dart';
+import '../../../models/pos_order_model.dart';
 import '../Home Screen/pos_view_model.dart';
-import '../Product Grid/pos_product_grid_view.dart';
+import '../Navbar/pos_shell.dart';
 import 'corporate_booking_view_model.dart';
 
 class PosCorporateBookingsView extends StatefulWidget {
@@ -19,19 +19,58 @@ class PosCorporateBookingsView extends StatefulWidget {
 }
 
 class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
+  CorporateBookingViewModel? _vmRef;
+  String? _redirectingBookingId;
+  String _statusText(dynamic booking) {
+    final orderRaw = booking.orderStatus?.toString().trim() ?? '';
+    final statusRaw = booking.status?.toString().trim() ?? '';
+    final displayRaw = booking.statusDisplay?.toString().trim() ?? '';
+    final combined = '$displayRaw $statusRaw $orderRaw'.toLowerCase();
+    if (combined.contains('cancelled') || combined.contains('canceled')) {
+      return 'Cancelled';
+    }
+    if (combined.contains('rejected')) {
+      return 'Rejected';
+    }
+    if (displayRaw.isNotEmpty) return displayRaw;
+    if (statusRaw.isNotEmpty) return statusRaw;
+    return 'Pending';
+  }
+
+  bool _isApproved(dynamic booking) {
+    final raw = '${_statusText(booking)} ${booking.orderStatus?.toString() ?? ''}'
+        .toLowerCase();
+    if (raw.contains('cancelled') || raw.contains('canceled') || raw.contains('rejected')) {
+      return false;
+    }
+    return raw.contains('approved');
+  }
+
+  bool _isRejected(dynamic booking) {
+    final raw = '${_statusText(booking)} ${booking.orderStatus?.toString() ?? ''}'
+        .toLowerCase();
+    return raw.contains('rejected') || raw.contains('cancelled');
+  }
+
+  bool _canReviewBooking(dynamic booking) {
+    return !_isApproved(booking) && !_isRejected(booking);
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DepartmentViewModel>(
-        context,
-        listen: false,
-      ).fetchDepartments();
-      Provider.of<CorporateBookingViewModel>(
-        context,
-        listen: false,
-      ).fetchCorporateBookings();
+      final vm = Provider.of<CorporateBookingViewModel>(context, listen: false);
+      _vmRef = vm;
+      vm.fetchCorporateBookings();
+      vm.bindRealtime();
     });
+  }
+
+  @override
+  void dispose() {
+    _vmRef?.unbindRealtime();
+    super.dispose();
   }
 
   @override
@@ -215,6 +254,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   }
 
   Widget _buildBookingCard(booking, bool isTablet) {
+    final isRedirecting = _redirectingBookingId == booking.id.toString();
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -296,7 +336,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       ],
                     ),
                   ),
-                  _buildStatusBadge(booking.status, isTablet),
+                  _buildStatusBadge(_statusText(booking), isTablet),
                 ],
               ),
             ),
@@ -402,8 +442,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  if (booking.statusDisplay.toLowerCase() != 'approved' &&
-                      booking.status.toLowerCase() != 'approved') ...[
+                  if (_canReviewBooking(booking)) ...[
                     Expanded(
                       flex: 1,
                       child: ElevatedButton(
@@ -456,6 +495,9 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                 ),
                               );
                             }
+                          } else {
+                            // After approve, land user on All list so "Continue" is immediately visible.
+                            vm.setFilter('All');
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -480,12 +522,13 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         ),
                       ),
                     ),
-                  ] else ...[
+                  ] else if (_isApproved(booking)) ...[
                     Expanded(
                       flex: 3,
                       child: ElevatedButton(
-                        onPressed: () =>
-                            _navigateToProductGrid(context, booking),
+                        onPressed: isRedirecting
+                            ? null
+                            : () => _navigateToProductGrid(context, booking),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondaryLight,
                           foregroundColor: Colors.white,
@@ -497,26 +540,37 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Continue',
-                              style: TextStyle(
-                                fontSize: isTablet ? 14 : 13,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
+                        child: isRedirecting
+                            ? SizedBox(
+                                width: isTablet ? 18 : 16,
+                                height: isTablet ? 18 : 16,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Continue',
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 14 : 13,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: isTablet ? 18 : 16,
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              size: isTablet ? 18 : 16,
-                            ),
-                          ],
-                        ),
                       ),
                     ),
+                  ] else ...[
+                    const Expanded(flex: 3, child: SizedBox.shrink()),
                   ],
                 ],
               ),
@@ -698,7 +752,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         ],
                       ),
                     ),
-                    _buildStatusBadge(booking.status, isTablet),
+                    _buildStatusBadge(_statusText(booking), isTablet),
                   ],
                 ),
               ),
@@ -729,6 +783,13 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         booking.department,
                         isTablet,
                       ),
+                      if (_isRejected(booking) &&
+                          (booking.rejectionReason?.trim().isNotEmpty ?? false))
+                        _buildDetailRow(
+                          'Rejection reason',
+                          booking.rejectionReason!.trim(),
+                          isTablet,
+                        ),
 
                       const SizedBox(height: 24),
                       Divider(height: 1, color: Colors.grey.shade100),
@@ -941,8 +1002,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    if (booking.statusDisplay.toLowerCase() != 'approved' &&
-                        booking.status.toLowerCase() != 'approved')
+                    if (_canReviewBooking(booking))
                       Expanded(
                         flex: 2,
                         child: ElevatedButton(
@@ -965,6 +1025,8 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                 );
                               }
                             } else {
+                            // Keep UX consistent with card-level approve action.
+                            vm.setFilter('All');
                               if (context.mounted) Navigator.pop(ctx);
                             }
                           },
@@ -991,11 +1053,13 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                           ),
                         ),
                       )
-                    else
+                    else if (_isApproved(booking))
                       Expanded(
                         flex: 2,
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: _redirectingBookingId == booking.id.toString()
+                              ? null
+                              : () {
                             Navigator.pop(ctx);
                             _navigateToProductGrid(context, booking);
                           },
@@ -1008,29 +1072,40 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Continue',
-                                style: TextStyle(
-                                  fontSize: isTablet ? 15 : 14,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
+                          child: _redirectingBookingId == booking.id.toString()
+                              ? SizedBox(
+                                  width: isTablet ? 18 : 16,
+                                  height: isTablet ? 18 : 16,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Continue',
+                                      style: TextStyle(
+                                        fontSize: isTablet ? 15 : 14,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: isTablet ? 18 : 16,
+                                    ),
+                                  ],
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                Icons.arrow_forward_rounded,
-                                size: isTablet ? 18 : 16,
-                              ),
-                            ],
-                          ),
                         ),
-                      ),
+                      )
+                    else
+                      const Expanded(flex: 2, child: SizedBox.shrink()),
                   ],
                 ),
               ),
@@ -1355,252 +1430,124 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
     );
   }
 
-  void _navigateToProductGrid(BuildContext context, dynamic booking) {
-    if (booking.items != null && booking.items!.isNotEmpty) {
-      // Find unique departments from items
-      final Map<String, String> uniqueDepts = {};
-      for (var item in booking.items!) {
-        final deptId = item['departmentId']?.toString();
-        final deptName = item['departmentName']?.toString();
-        if (deptId != null &&
-            deptId.isNotEmpty &&
-            deptName != null &&
-            deptName.isNotEmpty) {
-          uniqueDepts[deptId] = deptName;
-        }
-      }
-
-      if (uniqueDepts.isNotEmpty) {
-        if (uniqueDepts.length == 1) {
-          final deptId = uniqueDepts.keys.first;
-          final deptName = uniqueDepts.values.first;
-          _proceedToGrid(context, booking, deptId, deptName);
-        } else {
-          _showDepartmentSelectionBottomSheet(context, booking, uniqueDepts);
-        }
-        return;
-      }
+  Future<void> _navigateToProductGrid(BuildContext context, dynamic booking) async {
+    final bid = booking.id?.toString() ?? '';
+    if (mounted) {
+      setState(() {
+        _redirectingBookingId = bid;
+      });
     }
+    final posVm = Provider.of<PosViewModel>(context, listen: false);
+    final bookingOrderId = booking.id?.toString().trim() ?? '';
+    final bookingJobBadge = _bookingLooksCompleted(booking) ? 'Completed' : 'Pending';
 
-    // Fallback if no items or no departments found in items
-    final deptVm = Provider.of<DepartmentViewModel>(context, listen: false);
-    final departments = deptVm.departments;
-    String resolvedDeptId = '';
-    if (departments.isNotEmpty) {
-      try {
-        resolvedDeptId = departments
-            .firstWhere(
-              (d) => d.name.toLowerCase() == booking.department.toLowerCase(),
-            )
-            .id;
-      } catch (_) {
-        resolvedDeptId = departments.first.id;
-      }
-    }
-    _proceedToGrid(
-      context,
-      booking,
-      resolvedDeptId.isNotEmpty ? resolvedDeptId : 'dept-mock-id',
-      booking.department,
-    );
-  }
-
-  void _proceedToGrid(
-    BuildContext context,
-    dynamic booking,
-    String departmentId,
-    String departmentName,
-  ) {
-    Provider.of<PosViewModel>(context, listen: false).setCustomerData(
-      name: booking.companyName,
+    // Keep customer/vehicle overlay fields aligned while opening Orders.
+    posVm.setCustomerData(
+      name: booking.companyName?.toString() ?? '',
       vat: '',
       mobile: '',
-      vehicleNumber: booking.vehiclePlate,
-      make: booking.vehicleName,
+      vehicleNumber: booking.vehiclePlate?.toString() ?? '',
+      make: booking.vehicleName?.toString() ?? '',
       model: '',
       odometer: 0,
     );
 
-    // Filter items to only include those for this department
-    List<dynamic>? filteredItems;
-    if (booking.items != null && booking.items!.isNotEmpty) {
-      filteredItems = booking.items!
-          .where((item) => item['departmentId']?.toString() == departmentId)
-          .toList();
-    } else {
-      filteredItems = booking.preSelectedProducts
-          ?.map((id) => {'productId': id})
-          .toList();
+    // Avoid stale filters/search hiding valid orders right after navigation.
+    posVm.setOrderSearchQuery('');
+    posVm.setOrderStatusFilter('All');
+    posVm.setOrdersListTab('All');
+
+    await posVm.fetchOrders(
+      silent: true,
+      preferredOrderId: bookingOrderId.isNotEmpty ? bookingOrderId : null,
+    );
+
+    final matchedOrder = _resolveCorporateOrderMatch(posVm, booking, bookingOrderId);
+    if (matchedOrder == null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No matching order found for this booking yet. Please refresh and try again.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _redirectingBookingId = null;
+        });
+      }
+      return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PosProductGridView(
-          departmentName: departmentName,
-          departmentId: departmentId,
-          preSelectedItems: filteredItems,
-        ),
-      ),
-    );
+    posVm.selectOrder(matchedOrder);
+    posVm.setOrdersListTab(bookingJobBadge);
+
+    if (!context.mounted) return;
+    navigateToPosShellOrdersTab(context);
+    if (mounted) {
+      setState(() {
+        _redirectingBookingId = null;
+      });
+    }
   }
 
-  void _showDepartmentSelectionBottomSheet(
-    BuildContext context,
+  PosOrder? _resolveCorporateOrderMatch(
+    PosViewModel posVm,
     dynamic booking,
-    Map<String, String> departments,
+    String bookingOrderId,
   ) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 600;
+    final allOrders = List<PosOrder>.from(posVm.orders)
+      ..sort((a, b) =>
+          (int.tryParse(b.id) ?? 0).compareTo(int.tryParse(a.id) ?? 0));
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFFBF9F6),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(top: 10, bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Text(
-                'Select Department',
-                style: TextStyle(
-                  fontSize: isTablet ? 20 : 18,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E2124),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Choose a department to process from the requested booking.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: isTablet ? 15 : 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  isTablet ? 32 : 16,
-                  0,
-                  isTablet ? 32 : 16,
-                  MediaQuery.of(context).padding.bottom + 24,
-                ),
-                itemCount: departments.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final deptId = departments.keys.elementAt(index);
-                  final deptName = departments.values.elementAt(index);
+    if (bookingOrderId.isNotEmpty) {
+      try {
+        return allOrders.firstWhere((o) => o.id.trim() == bookingOrderId);
+      } catch (_) {
+        // Fall through to heuristics.
+      }
+    }
 
-                  // Count items for this dept
-                  int itemCount = 0;
-                  if (booking.items != null) {
-                    itemCount = booking.items!
-                        .where((i) => i['departmentId']?.toString() == deptId)
-                        .length;
-                  }
+    final plate = booking.vehiclePlate?.toString().trim().toLowerCase() ?? '';
+    final company = booking.companyName?.toString().trim().toLowerCase() ?? '';
+    final hasBookingPlate = plate.isNotEmpty;
 
-                  return InkWell(
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _proceedToGrid(context, booking, deptId, deptName);
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: EdgeInsets.all(isTablet ? 20 : 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.secondaryLight.withOpacity(0.05),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.build_circle_outlined,
-                              color: AppColors.secondaryLight,
-                              size: isTablet ? 28 : 24,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  deptName,
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 17 : 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF1E2124),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '$itemCount items',
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 14 : 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: Colors.grey.shade400,
-                            size: isTablet ? 24 : 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    // 1) Strong match: corporate + exact plate.
+    if (hasBookingPlate) {
+      final plateMatches = allOrders.where((o) {
+        final isCorporate = o.source.toLowerCase().contains('corporate') ||
+            (o.corporateAccountId?.isNotEmpty ?? false);
+        if (!isCorporate) return false;
+        final orderPlate = o.plateNumber.trim().toLowerCase();
+        return orderPlate.isNotEmpty && orderPlate == plate;
+      }).toList();
+      if (plateMatches.isNotEmpty) return plateMatches.first;
+    }
+
+    // 2) Fallback only when booking itself has no plate.
+    final candidates = allOrders.where((o) {
+      final isCorporate = o.source.toLowerCase().contains('corporate') ||
+          (o.corporateAccountId?.isNotEmpty ?? false);
+      if (!isCorporate) return false;
+
+      final orderPlate = o.plateNumber.trim().toLowerCase();
+      final orderCompany = (o.corporateCompanyName ?? o.customerName).trim().toLowerCase();
+      if (hasBookingPlate) return false;
+      return orderPlate.isNotEmpty && orderPlate == plate ||
+          (company.isNotEmpty && orderCompany == company);
+    }).toList();
+
+    if (candidates.isEmpty) return null;
+    candidates.sort((a, b) => (int.tryParse(b.id) ?? 0).compareTo(int.tryParse(a.id) ?? 0));
+    return candidates.first;
+  }
+
+  bool _bookingLooksCompleted(dynamic booking) {
+    final statusRaw =
+        '${booking.statusDisplay?.toString() ?? ''} ${booking.status?.toString() ?? ''}'
+            .toLowerCase();
+    return statusRaw.contains('complete') || statusRaw.contains('invoiced');
   }
 }

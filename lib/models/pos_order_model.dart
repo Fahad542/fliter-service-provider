@@ -7,6 +7,39 @@ String? _orderVehicleJsonString(dynamic value) {
   return s.isEmpty ? null : s;
 }
 
+Map<String, dynamic> _asMap(dynamic value) {
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return <String, dynamic>{};
+}
+
+String? _firstNonEmptyString(List<dynamic> values) {
+  for (final v in values) {
+    if (v == null) continue;
+    final s = v.toString().trim();
+    if (s.isNotEmpty) return s;
+  }
+  return null;
+}
+
+int _firstNonZeroInt(List<dynamic> values) {
+  for (final v in values) {
+    if (v == null) continue;
+    int? n;
+    if (v is int) {
+      n = v;
+    } else if (v is num) {
+      n = v.round();
+    } else {
+      final raw = v.toString().trim();
+      if (raw.isEmpty) continue;
+      n = int.tryParse(raw);
+      n ??= double.tryParse(raw)?.round();
+    }
+    if (n != null && n > 0) return n;
+  }
+  return 0;
+}
+
 class CashierOrdersResponse {
   final bool success;
   final OrderStats stats;
@@ -123,6 +156,16 @@ double _parseJobDoubleField(Map<String, dynamic> json, List<String> keys) {
     if (raw == null) continue;
     final v = double.tryParse(raw.toString());
     if (v != null) return v;
+  }
+  return 0.0;
+}
+
+double _parseFirstDouble(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final raw = json[key];
+    if (raw == null) continue;
+    final parsed = double.tryParse(raw.toString());
+    if (parsed != null) return parsed;
   }
   return 0.0;
 }
@@ -439,6 +482,9 @@ class PosOrderJobItem {
   final double qty;
   final double unitPrice;
   final double lineTotal;
+  final double unitPriceExcludingVat;
+  final double lineTotalExcludingVat;
+  final double lineVatAmount;
   final String? jobId;
   final String? discountType;
   final double? discountValue;
@@ -453,6 +499,9 @@ class PosOrderJobItem {
     required this.qty,
     required this.unitPrice,
     required this.lineTotal,
+    this.unitPriceExcludingVat = 0.0,
+    this.lineTotalExcludingVat = 0.0,
+    this.lineVatAmount = 0.0,
     this.jobId,
     this.discountType,
     this.discountValue = 0.0,
@@ -478,6 +527,11 @@ class PosOrderJobItem {
       qty: double.tryParse(json['qty']?.toString() ?? '0') ?? 0.0,
       unitPrice: double.tryParse(json['unitPrice']?.toString() ?? '0') ?? 0.0,
       lineTotal: double.tryParse(json['lineTotal']?.toString() ?? '0') ?? 0.0,
+      unitPriceExcludingVat:
+          double.tryParse(json['unitPriceExcludingVat']?.toString() ?? '0') ?? 0.0,
+      lineTotalExcludingVat:
+          double.tryParse(json['lineTotalExcludingVat']?.toString() ?? '0') ?? 0.0,
+      lineVatAmount: double.tryParse(json['lineVatAmount']?.toString() ?? '0') ?? 0.0,
       jobId: json['jobId']?.toString() ?? json['job_id']?.toString(),
       discountType: json['discountType']?.toString(),
       discountValue: double.tryParse(json['discountValue']?.toString() ?? '0') ?? 0.0,
@@ -518,7 +572,10 @@ class PosOrder {
   final String? corporateAccountId;
   final String? corporateCompanyName;
   final String? corporateApprovalRejectionReason;
+  final String? corporateOrderId;
+  final String? paymentMethod;
   final List<dynamic> pendingDepartments;
+  final List<dynamic> proposalDepartments;
 
   PosOrder({
     required this.id,
@@ -549,10 +606,20 @@ class PosOrder {
     this.corporateAccountId,
     this.corporateCompanyName,
     this.corporateApprovalRejectionReason,
+    this.corporateOrderId,
+    this.paymentMethod,
     this.pendingDepartments = const [],
+    this.proposalDepartments = const [],
   });
 
   factory PosOrder.fromJson(Map<String, dynamic> json) {
+    final corporate = _asMap(json['corporate']);
+    final corporateOrder = _asMap(json['corporateOrder']);
+    final corporateOrderVehicle = _asMap(corporateOrder['vehicle']);
+    final vehicleMap = _asMap(json['vehicle']);
+    final effectiveVehicle = vehicleMap.isNotEmpty ? vehicleMap : corporateOrderVehicle;
+    final salesOrder = _asMap(json['salesOrder']);
+
     final parsedJobs =
         (json['jobs'] as List?)?.map((j) => PosOrderJob.fromJson(j)).toList() ??
         [];
@@ -560,17 +627,30 @@ class PosOrder {
       id: json['id']?.toString() ?? '',
       status: json['status'] ?? '',
       source: json['source'] ?? '',
-      odometerReading: json['odometerReading'] ?? 0,
+      odometerReading: _firstNonZeroInt([
+        json['odometerReading'],
+        json['odometer'],
+        salesOrder['odometerReading'],
+        salesOrder['odometer'],
+        effectiveVehicle['odometerReading'],
+        effectiveVehicle['odometer'],
+        corporateOrder['odometerReading'],
+        corporateOrder['odometer'],
+      ]),
       createdAt: json['createdAt'] ?? '',
-      submittedAt: json['submittedAt']?.toString() ?? '',
+      submittedAt: _firstNonEmptyString([
+            json['submittedAt'],
+            corporateOrder['submittedAt'],
+          ]) ??
+          '',
       orderDateTime: json['orderDateTime']?.toString() ?? '',
       orderDate: json['orderDate']?.toString() ?? '',
       orderTime: json['orderTime']?.toString() ?? '',
       customer: json['customer'] != null
           ? OrderCustomer.fromJson(json['customer'])
           : null,
-      vehicle: json['vehicle'] != null
-          ? OrderVehicle.fromJson(json['vehicle'])
+      vehicle: effectiveVehicle.isNotEmpty
+          ? OrderVehicle.fromJson(effectiveVehicle)
           : null,
       jobsCount:
           (json['jobsCount'] as num?)?.toInt() ??
@@ -586,13 +666,44 @@ class PosOrder {
       promoDiscountAmount: double.tryParse(json['promoDiscountAmount']?.toString() ?? '0') ?? 0.0,
       promoDiscountType: json['promoDiscountType']?.toString(),
       promoDiscountValue: double.tryParse(json['promoDiscountValue']?.toString() ?? '0') ?? 0.0,
-      totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0.0,
-      subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0.0,
-      corporateAccountId: json['corporateAccountId']?.toString(),
-      corporateCompanyName: json['corporateCompanyName']?.toString(),
+      totalAmount: _parseFirstDouble(json, [
+        'totalAmount',
+        'total_amount',
+        'grandTotal',
+        'grand_total',
+        'finalTotal',
+        'final_total',
+      ]),
+      subtotal: _parseFirstDouble(json, [
+        'subtotal',
+        'sub_total',
+        'amountAfterPromo',
+        'amount_after_promo',
+        'amountAfterDiscount',
+        'amount_after_discount',
+      ]),
+      corporateAccountId: _firstNonEmptyString([
+        json['corporateAccountId'],
+        corporate['accountId'],
+      ]),
+      corporateCompanyName: _firstNonEmptyString([
+        json['corporateCompanyName'],
+        corporate['companyName'],
+      ]),
       corporateApprovalRejectionReason: json['corporateApprovalRejectionReason']?.toString(),
+      corporateOrderId: _firstNonEmptyString([
+        corporateOrder['id'],
+        json['corporateOrderId'],
+      ]),
+      paymentMethod: _firstNonEmptyString([
+        json['paymentMethod'],
+        corporateOrder['paymentMethod'],
+      ]),
       pendingDepartments: json['pendingDepartments'] is List
           ? List<dynamic>.from(json['pendingDepartments'] as List)
+          : const [],
+      proposalDepartments: json['proposalDepartments'] is List
+          ? List<dynamic>.from(json['proposalDepartments'] as List)
           : const [],
     );
   }
@@ -626,7 +737,10 @@ class PosOrder {
     String? corporateAccountId,
     String? corporateCompanyName,
     String? corporateApprovalRejectionReason,
+    String? corporateOrderId,
+    String? paymentMethod,
     List<dynamic>? pendingDepartments,
+    List<dynamic>? proposalDepartments,
   }) {
     return PosOrder(
       id: id ?? this.id,
@@ -658,18 +772,91 @@ class PosOrder {
       corporateCompanyName: corporateCompanyName ?? this.corporateCompanyName,
       corporateApprovalRejectionReason:
           corporateApprovalRejectionReason ?? this.corporateApprovalRejectionReason,
+      corporateOrderId: corporateOrderId ?? this.corporateOrderId,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       pendingDepartments: pendingDepartments ?? this.pendingDepartments,
+      proposalDepartments: proposalDepartments ?? this.proposalDepartments,
     );
   }
 
   bool get isCorporateWalkIn =>
-      source.toLowerCase() == 'walk_in_corporate' ||
-      (corporateAccountId != null && corporateAccountId!.isNotEmpty);
+      source.toLowerCase().contains('corporate') ||
+      (corporateAccountId != null && corporateAccountId!.isNotEmpty) ||
+      (corporateOrderId != null && corporateOrderId!.isNotEmpty) ||
+      (corporateCompanyName != null && corporateCompanyName!.trim().isNotEmpty);
+
+  String get normalizedOrderStatus => status.trim().toLowerCase();
+
+  bool get isCorporateUnapproved => normalizedOrderStatus == 'unapproved';
+  bool get isWaitingCorporateApproval =>
+      normalizedOrderStatus == 'waiting for corporate approval';
+  bool get isCorporateApproved => normalizedOrderStatus == 'corporate approved';
+  bool get isRejectedByCorporate =>
+      normalizedOrderStatus == 'rejected by corporate';
+
+  List<String> get selectedDepartmentNames {
+    final fromJobs = jobs
+        .map((j) => j.department.trim())
+        .where((n) => n.isNotEmpty)
+        .toSet()
+        .toList();
+    if (fromJobs.isNotEmpty) return fromJobs;
+
+    final out = <String>{};
+    for (final raw in [...pendingDepartments, ...proposalDepartments]) {
+      if (raw is! Map) continue;
+      final m = Map<String, dynamic>.from(raw);
+      final name = _firstNonEmptyString([
+        m['name'],
+        m['departmentName'],
+        m['department_name'],
+      ]);
+      if (name != null && name.trim().isNotEmpty) {
+        out.add(name.trim());
+      }
+    }
+    return out.toList();
+  }
+
+  List<Map<String, String>> get selectedDepartmentEntries {
+    final entries = <Map<String, String>>[];
+    final seen = <String>{};
+    for (final raw in [...pendingDepartments, ...proposalDepartments]) {
+      if (raw is! Map) continue;
+      final m = Map<String, dynamic>.from(raw);
+      final name = _firstNonEmptyString([
+        m['name'],
+        m['departmentName'],
+        m['department_name'],
+      ]);
+      if (name == null || name.trim().isEmpty) continue;
+      final id = _firstNonEmptyString([
+        m['departmentId'],
+        m['department_id'],
+        m['id'],
+      ]);
+      final key = '${id ?? ''}|${name.trim().toLowerCase()}';
+      if (!seen.add(key)) continue;
+      entries.add({
+        'id': (id ?? '').trim(),
+        'name': name.trim(),
+      });
+    }
+    if (entries.isNotEmpty) return entries;
+    for (final n in selectedDepartmentNames) {
+      entries.add({'id': '', 'name': n});
+    }
+    return entries;
+  }
 
   /// Order grand total from GET; fall back to Σ job.totalAmount if order rollup missing.
   double get draftPosOrderTotalDisplay {
-    if (totalAmount > 0) return totalAmount;
-    return jobs.fold<double>(0, (s, j) => s + j.totalAmount);
+    final jobsTotal = jobs.fold<double>(0, (s, j) => s + j.totalAmount);
+    if (jobsTotal <= 0.0001) return totalAmount > 0 ? totalAmount : 0.0;
+    if (totalAmount <= 0.0001) return jobsTotal;
+    // Guard against payloads where order total is actually a single department total.
+    if ((jobsTotal - totalAmount).abs() > 0.01) return jobsTotal;
+    return totalAmount;
   }
 
   String get customerName => customer?.name ?? 'Unknown';
@@ -900,4 +1087,63 @@ class OrderVehicle {
           _orderVehicleJsonString(json['carNo']),
     );
   }
+}
+
+// ── Cashier job line display / cart hydration ─────────────────────────────────
+
+/// API may return duplicate **service** rows for the same [PosOrderJobItem.productId].
+/// POS only allows one cart line per service; pick the best row for UI and pre-selection.
+PosOrderJobItem pickBestDuplicateServiceJobLine(List<PosOrderJobItem> lines) {
+  PosOrderJobItem? withDisc;
+  for (final c in lines) {
+    if ((c.discountValue ?? 0) > 0.0001) withDisc = c;
+  }
+  if (withDisc != null) return withDisc;
+  return lines.reduce((a, b) {
+    final at = a.lineTotalExcludingVat > 0.0001
+        ? a.lineTotalExcludingVat
+        : a.lineTotal;
+    final bt = b.lineTotalExcludingVat > 0.0001
+        ? b.lineTotalExcludingVat
+        : b.lineTotal;
+    return at >= bt ? a : b;
+  });
+}
+
+/// One row per service [productId] (non-service lines unchanged; original order preserved).
+List<PosOrderJobItem> dedupeCashierServiceLinesForPosDisplay(
+  List<PosOrderJobItem> items,
+) {
+  final groups = <String, List<PosOrderJobItem>>{};
+  for (final it in items) {
+    final isSvc = it.itemType.toLowerCase().trim() == 'service';
+    if (!isSvc) continue;
+    final k = it.productId.trim();
+    if (k.isEmpty) continue;
+    groups.putIfAbsent(k, () => []).add(it);
+  }
+  final picked = <String, PosOrderJobItem>{};
+  for (final e in groups.entries) {
+    picked[e.key] = e.value.length == 1
+        ? e.value.first
+        : pickBestDuplicateServiceJobLine(e.value);
+  }
+  final emitted = <String>{};
+  final out = <PosOrderJobItem>[];
+  for (final it in items) {
+    final isSvc = it.itemType.toLowerCase().trim() == 'service';
+    if (!isSvc) {
+      out.add(it);
+      continue;
+    }
+    final k = it.productId.trim();
+    if (k.isEmpty) {
+      out.add(it);
+      continue;
+    }
+    if (emitted.contains(k)) continue;
+    emitted.add(k);
+    out.add(picked[k]!);
+  }
+  return out;
 }

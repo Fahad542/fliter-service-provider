@@ -246,8 +246,9 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
       _modelCtrl = TextEditingController(text: (v?.model ?? '').trim());
       _yearCtrl = TextEditingController(text: (v?.year ?? '').trim());
       _vinCtrl = TextEditingController(text: (v?.vin ?? '').trim());
+      final suggestedOdo = posVm.suggestedOdometerForOrder(o);
       _odoCtrl = TextEditingController(
-        text: o.odometerReading != 0 ? '${o.odometerReading}' : '',
+        text: suggestedOdo != 0 ? '$suggestedOdo' : '',
       );
     } else {
       final d = widget.standaloneInitial!;
@@ -286,6 +287,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
 
   @override
   Widget build(BuildContext context) {
+    final isCorporateLocked = widget.order?.isCorporateWalkIn == true;
     final mq = MediaQuery.sizeOf(context);
     // Compact card; same max-width formula as payment dialog.
     final maxW = min(520.0, mq.width - 40);
@@ -313,6 +315,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                 Expanded(
                   child: TextFormField(
                     controller: _nameCtrl,
+                    readOnly: isCorporateLocked,
                     style: _kWalkInInvoiceDialogFieldStyle,
                     decoration: _walkInInvoiceFieldDecoration(
                       'Customer name',
@@ -320,13 +323,18 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                     ),
                     textCapitalization: TextCapitalization.words,
                     validator: (s) =>
-                        (s == null || s.trim().isEmpty) ? 'Required' : null,
+                        isCorporateLocked
+                            ? null
+                            : (s == null || s.trim().isEmpty)
+                                ? 'Required'
+                                : null,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextFormField(
                     controller: _mobileCtrl,
+                    readOnly: isCorporateLocked,
                     style: _kWalkInInvoiceDialogFieldStyle,
                     decoration: _walkInInvoiceFieldDecoration(
                       'Mobile',
@@ -334,7 +342,11 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                     ),
                     keyboardType: TextInputType.phone,
                     validator: (s) =>
-                        (s == null || s.trim().isEmpty) ? 'Required' : null,
+                        isCorporateLocked
+                            ? null
+                            : (s == null || s.trim().isEmpty)
+                                ? 'Required'
+                                : null,
                   ),
                 ),
               ],
@@ -342,6 +354,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
             const SizedBox(height: 8),
             TextFormField(
               controller: _vatCtrl,
+              readOnly: isCorporateLocked,
               style: _kWalkInInvoiceDialogFieldStyle,
               decoration: _walkInInvoiceFieldDecoration(
                 'VAT',
@@ -363,6 +376,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _plateCtrl,
+                      readOnly: isCorporateLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Plate number',
@@ -370,13 +384,18 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       ),
                       textCapitalization: TextCapitalization.characters,
                       validator: (s) =>
-                          (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
+                          isCorporateLocked
+                              ? null
+                              : (s == null || s.trim().isEmpty)
+                                  ? 'Plate is required'
+                                  : null,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextFormField(
                       controller: _odoCtrl,
+                      readOnly: isCorporateLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Odometer',
@@ -395,6 +414,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _makeCtrl,
+                      readOnly: isCorporateLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Make',
@@ -408,6 +428,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _modelCtrl,
+                      readOnly: isCorporateLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Model',
@@ -426,6 +447,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _yearCtrl,
+                      readOnly: isCorporateLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Year',
@@ -434,6 +456,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       ),
                       keyboardType: TextInputType.number,
                       validator: (s) {
+                        if (isCorporateLocked) return null;
                         if (s == null || s.trim().isEmpty) return null;
                         final yi = int.tryParse(s.trim());
                         if (yi == null || yi < 1900 || yi > 2100) {
@@ -447,6 +470,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _vinCtrl,
+                      readOnly: isCorporateLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'VIN',
@@ -546,7 +570,10 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       ),
                     ),
                     onPressed: () {
-                      if (_formKey.currentState?.validate() != true) return;
+                      if (!isCorporateLocked &&
+                          _formKey.currentState?.validate() != true) {
+                        return;
+                      }
                       if (!widget.showVehicleSection) {
                         _close(
                           WalkInInvoiceFormResult(
@@ -1391,6 +1418,16 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   }
 
   void _generateInvoice() async {
+    if (widget.order.isCorporateWalkIn &&
+        (widget.order.isCorporateUnapproved ||
+            widget.order.isWaitingCorporateApproval ||
+            widget.order.isRejectedByCorporate)) {
+      ToastService.showError(
+        context,
+        'Corporate order must be approved before invoicing.',
+      );
+      return;
+    }
     if (!widget.order.meetsCashierInvoicePrerequisites) {
       ToastService.showError(context, 'Order is not ready for invoicing.');
       return;
@@ -2170,7 +2207,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 _GenerateInvoiceButton(
                   onTap: _generateInvoice,
                   isLoading: _isLoading,
-                  enabled: widget.order.meetsCashierInvoicePrerequisites,
+                  enabled: widget.order.meetsCashierInvoicePrerequisites &&
+                      (!widget.order.isCorporateWalkIn ||
+                          widget.order.isCorporateApproved),
                 ),
                 const SizedBox(height: 24),
               ],

@@ -195,6 +195,9 @@ class _PosShellState extends State<PosShell> {
       if (!vm.ordersApiFetchCompleted) {
         vm.fetchOrders();
       }
+      if (vm.corporateAccounts.isEmpty && !vm.isCorpAccountsLoading) {
+        vm.fetchCorporateAccounts(silent: true);
+      }
     } else if (index == 6) {
       final vm = context.read<TechnicianViewModel>();
       if (vm.technicians.isEmpty) {

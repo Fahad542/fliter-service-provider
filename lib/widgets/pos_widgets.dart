@@ -1217,7 +1217,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
     List<dynamic> preSelectedItems = [];
     if (widget.order.jobs.isNotEmpty) {
       final highestJob = _getHighestJobById()!;
-      for (final item in highestJob.items) {
+      for (final item in dedupeCashierServiceLinesForPosDisplay(highestJob.items)) {
         preSelectedItems.add({
           item.itemType == 'service' ? 'serviceId' : 'productId': item.productId,
           'quantity': item.qty,
@@ -1438,34 +1438,125 @@ class _OrderItemCardState extends State<OrderItemCard> {
                   ],
                 ),
                 SizedBox(height: widget.isTablet ? 5 : 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.engineering_rounded,
-                      size: widget.isTablet ? 11 : 11,
-                      color: Colors.grey.shade600,
+                if (widget.order.isCorporateWalkIn &&
+                    widget.order.selectedDepartmentNames.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.isTablet ? 10 : 8,
+                      vertical: widget.isTablet ? 8 : 6,
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Technician: ${widget.order.assignedTechnicianNames.trim().isEmpty ? 'None' : widget.order.assignedTechnicianNames}',
-                        style: TextStyle(
-                          fontSize: widget.isTablet ? 8.5 : 8,
-                          color: Colors.grey.shade700,
-                          fontWeight: FontWeight.w600,
-                          height: 1.1,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selected departments',
+                          style: TextStyle(
+                            fontSize: widget.isTablet ? 10 : 9,
+                            color: const Color(0xFF475569),
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        SizedBox(height: widget.isTablet ? 6 : 5),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: widget.order.selectedDepartmentNames
+                              .map(
+                                (name) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    name,
+                                    style: TextStyle(
+                                      fontSize: widget.isTablet ? 9.5 : 9,
+                                      color: const Color(0xFF1E3A8A),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: widget.isTablet ? 6 : 5),
+                ],
+                if (widget.order.isCorporateWalkIn &&
+                    widget.order.selectedDepartmentNames.isEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.isTablet ? 10 : 8,
+                      vertical: widget.isTablet ? 8 : 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEFCE8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFEF08A)),
+                    ),
+                    child: Text(
+                      'Departments not returned in order list payload.',
+                      style: TextStyle(
+                        fontSize: widget.isTablet ? 10 : 9,
+                        color: const Color(0xFF854D0E),
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ],
+                  ),
+                  SizedBox(height: widget.isTablet ? 6 : 5),
+                ],
+                Builder(
+                  builder: (_) {
+                    return Row(
+                      children: [
+                        Icon(
+                          Icons.engineering_rounded,
+                          size: widget.isTablet ? 11 : 11,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Technician: ${widget.order.assignedTechnicianNames.trim().isEmpty ? 'None' : widget.order.assignedTechnicianNames}',
+                            style: TextStyle(
+                              fontSize: widget.isTablet ? 8.5 : 8,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w600,
+                              height: 1.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 SizedBox(height: widget.isTablet ? 8 : 10),
                 Builder(
                   builder: (context) {
                     String displayStatus = widget.order.displayJobStatus
                         .toLowerCase();
+                    final isCorporateOrder = widget.order.isCorporateWalkIn;
+                    final isCorporateUnapproved =
+                        isCorporateOrder && widget.order.isCorporateUnapproved;
+                    final isCorporateWaiting =
+                        isCorporateOrder && widget.order.isWaitingCorporateApproval;
+                    final isCorporateRejected =
+                        isCorporateOrder && widget.order.isRejectedByCorporate;
                     final canShowCancelOrder =
                         posOrderCanCashierCancel(widget.order);
                     final canShowOrderDetails =
@@ -1676,7 +1767,10 @@ class _OrderItemCardState extends State<OrderItemCard> {
 
                     if (displayStatus == 'completed' ||
                         displayStatus == 'invoiced' ||
-                        displayStatus.contains('pending')) {
+                        displayStatus.contains('pending') ||
+                        isCorporateUnapproved ||
+                        isCorporateWaiting ||
+                        isCorporateRejected) {
                       final isInvoiced =
                           widget.order.status.toLowerCase() == 'invoiced';
                       return Column(
@@ -1684,7 +1778,107 @@ class _OrderItemCardState extends State<OrderItemCard> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           SizedBox(height: widget.isTablet ? 5 : 4),
-                          if (displayStatus.contains('pending') || displayStatus.contains('draft'))
+                          if (isCorporateWaiting)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: widget.isTablet ? 10 : 8,
+                              ),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: const Text(
+                                  'Waiting corporate approval',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF475569),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (isCorporateRejected)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: widget.isTablet ? 10 : 8,
+                              ),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFFECACA)),
+                                ),
+                                child: Text(
+                                  widget.order.corporateApprovalRejectionReason
+                                              ?.trim()
+                                              .isNotEmpty ==
+                                          true
+                                      ? 'Rejected by corporate: ${widget.order.corporateApprovalRejectionReason!.trim()}'
+                                      : 'Rejected by corporate',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF991B1B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (isCorporateUnapproved)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: widget.isTablet ? 10 : 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildActionButton(
+                                      onPressed: () => _openEditOrderFlow(context),
+                                      icon: Icons.edit_rounded,
+                                      label: 'Edit Order',
+                                      color: AppColors.primaryLight,
+                                      labelFontSize: 12,
+                                    ),
+                                  ),
+                                  SizedBox(width: widget.isTablet ? 10 : 8),
+                                  Expanded(
+                                    child: Consumer<pvm.PosViewModel>(
+                                      builder: (context, vm, _) {
+                                        return _buildActionButton(
+                                          onPressed: vm.isLoading
+                                              ? null
+                                              : () => vm.sendCorporateOrderForApproval(
+                                                    context,
+                                                    orderId: widget.order.id,
+                                                  ),
+                                          icon: Icons.send_rounded,
+                                          label: 'Send for Approval',
+                                          color: AppColors.secondaryLight,
+                                          isSecondary: true,
+                                          labelFontSize: 11,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if ((displayStatus.contains('pending') ||
+                                  displayStatus.contains('draft')) &&
+                              !isCorporateWaiting &&
+                              !isCorporateRejected &&
+                              !isCorporateUnapproved)
                             Padding(
                               padding: EdgeInsets.only(
                                 bottom: widget.isTablet ? 10 : 8,
@@ -1769,7 +1963,11 @@ class _OrderItemCardState extends State<OrderItemCard> {
                               ],
                             ),
                           ],
-                          if (!(displayStatus.contains('pending') || displayStatus.contains('draft')))
+                          if (!(displayStatus.contains('pending') ||
+                                  displayStatus.contains('draft')) &&
+                              !isCorporateWaiting &&
+                              !isCorporateRejected &&
+                              !isCorporateUnapproved)
                             Row(
                               children: [
                               Expanded(
@@ -1965,6 +2163,9 @@ bool posOrderCanCashierCancel(PosOrder order) {
   final normalizedStatus = order.status.toLowerCase();
   if (normalizedStatus == 'cancelled' || normalizedStatus == 'invoiced') {
     return false;
+  }
+  if (order.isCorporateWalkIn && order.isCorporateUnapproved) {
+    return true;
   }
   final badge = order.jobsAggregateBadgeLabel;
   return badge == 'PENDING' || badge == 'COMPLETED';
@@ -3037,6 +3238,18 @@ void _showCompletionBottomSheet(
                                   onPressed: busy
                                       ? null
                                       : () async {
+                                          if (order.isCorporateWalkIn &&
+                                              (order.isCorporateUnapproved ||
+                                                  order.isWaitingCorporateApproval ||
+                                                  order.isRejectedByCorporate)) {
+                                            if (ctx.mounted) {
+                                              ToastService.showError(
+                                                ctx,
+                                                'Corporate order must be approved before completing jobs.',
+                                              );
+                                            }
+                                            return;
+                                          }
                                           try {
                                             final response =
                                                 await vm.completeCashierJob(

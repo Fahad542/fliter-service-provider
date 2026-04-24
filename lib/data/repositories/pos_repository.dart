@@ -292,11 +292,18 @@ class PosRepository {
     String token,
   ) async {
     final endpoint = ApiConstants.cashierJobPricingEndpoint(jobId);
-    _logWalkInRequest(endpoint, body);
+    final normalizedBody = Map<String, dynamic>.from(body);
+    final items = normalizedBody['items'];
+    if (items is List && items.isNotEmpty) {
+      // Backend contract: when `items` is present, treat it as the only line source.
+      normalizedBody.remove('products');
+      normalizedBody.remove('services');
+    }
+    _logWalkInRequest(endpoint, normalizedBody);
     try {
       final response = await _apiService.post(
         endpoint,
-        body,
+        normalizedBody,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -433,14 +440,14 @@ class PosRepository {
     }
   }
 
-  /// Corporate walk-in quote (no jobs until approved + start-department).
-  Future<WalkInCustomerResponse> submitWalkInCorporateForApproval(
+  /// Corporate walk-in quote save (creates/updates status = unapproved).
+  Future<WalkInCustomerResponse> saveWalkInCorporateUnapproved(
     WalkInCustomerRequest request,
     String token,
   ) async {
     try {
       final response = await _apiService.post(
-        ApiConstants.cashierWalkInCorporateSubmitForApprovalEndpoint,
+        ApiConstants.cashierWalkInCorporateUnapprovedEndpoint,
         request.toJson(),
         headers: {
           'Authorization': 'Bearer $token',
@@ -448,6 +455,26 @@ class PosRepository {
         },
       );
       return WalkInCustomerResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Transition corporate walk-in order from `unapproved` to `waiting for corporate approval`.
+  Future<Map<String, dynamic>> sendWalkInCorporateForApproval(
+    String orderId,
+    String token,
+  ) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.cashierWalkInCorporateSendForApprovalEndpoint(orderId),
+        {},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return Map<String, dynamic>.from(response as Map);
     } catch (e) {
       rethrow;
     }
@@ -876,6 +903,29 @@ class PosRepository {
         token,
       );
       return CorporateBookingResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<CorporateBooking?> getCorporateWalkInOrder(String orderId, String token) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.corporateWalkInOrderEndpoint(orderId),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      final data = Map<String, dynamic>.from(response as Map);
+      final orderRaw = data['order'];
+      if (orderRaw is Map<String, dynamic>) {
+        return CorporateBooking.fromJson(orderRaw);
+      }
+      if (orderRaw is Map) {
+        return CorporateBooking.fromJson(Map<String, dynamic>.from(orderRaw));
+      }
+      return CorporateBooking.fromJson(data);
     } catch (e) {
       rethrow;
     }

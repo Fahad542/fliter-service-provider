@@ -31,6 +31,8 @@ class CorporateBooking {
   final String branchId;
   final String branchName;
   final DateTime submittedAt;
+  final String? orderStatus;
+  final String? rejectionReason;
   final List<String>? preSelectedProducts;
   final List<dynamic>? items;
 
@@ -47,11 +49,37 @@ class CorporateBooking {
     required this.branchId,
     required this.branchName,
     required this.submittedAt,
+    this.orderStatus,
+    this.rejectionReason,
     this.preSelectedProducts,
     this.items,
   });
 
   factory CorporateBooking.fromJson(Map<String, dynamic> json) {
+    List<dynamic>? parseLineItems() {
+      final lineItems = json['lineItems'];
+      if (lineItems is List && lineItems.isNotEmpty) {
+        return List<dynamic>.from(lineItems);
+      }
+      final items = json['items'];
+      if (items is List && items.isNotEmpty) {
+        return List<dynamic>.from(items);
+      }
+      final jobs = json['jobs'];
+      if (jobs is List) {
+        final collected = <dynamic>[];
+        for (final job in jobs) {
+          if (job is! Map) continue;
+          final ji = job['items'];
+          if (ji is List && ji.isNotEmpty) {
+            collected.addAll(ji);
+          }
+        }
+        if (collected.isNotEmpty) return collected;
+      }
+      return null;
+    }
+
     return CorporateBooking(
       id: json['id']?.toString() ?? '',
       bookingCode: json['bookingCode'] ?? '',
@@ -69,7 +97,21 @@ class CorporateBooking {
       submittedAt: json['submittedAt'] != null
           ? DateTime.tryParse(json['submittedAt']) ?? DateTime.now()
           : DateTime.now(),
-      items: json['items'] as List<dynamic>?,
+      orderStatus: _firstNonEmptyString([
+        json['orderStatus'],
+        json['salesOrderStatus'],
+        json['walkInOrderStatus'],
+        (json['order'] is Map)
+            ? (json['order'] as Map)['status']
+            : null,
+      ]),
+      rejectionReason: _firstNonEmptyString([
+        json['rejectionReason'],
+        json['rejectReason'],
+        json['rejectedReason'],
+        json['reason'],
+      ]),
+      items: parseLineItems(),
     );
   }
 
@@ -86,7 +128,10 @@ class CorporateBooking {
     String? branchId,
     String? branchName,
     DateTime? submittedAt,
+    String? orderStatus,
+    String? rejectionReason,
     List<String>? preSelectedProducts,
+    List<dynamic>? items,
   }) {
     return CorporateBooking(
       id: id ?? this.id,
@@ -101,8 +146,19 @@ class CorporateBooking {
       branchId: branchId ?? this.branchId,
       branchName: branchName ?? this.branchName,
       submittedAt: submittedAt ?? this.submittedAt,
+      orderStatus: orderStatus ?? this.orderStatus,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       preSelectedProducts: preSelectedProducts ?? this.preSelectedProducts,
       items: items ?? this.items,
     );
   }
+}
+
+String? _firstNonEmptyString(List<dynamic> values) {
+  for (final v in values) {
+    if (v == null) continue;
+    final s = v.toString().trim();
+    if (s.isNotEmpty) return s;
+  }
+  return null;
 }

@@ -409,6 +409,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           vm.clearPromoCode();
         }
       }
+
+      vm.refreshGlobalDiscountFieldText(widget.isMainTab);
     });
   }
 
@@ -575,10 +577,12 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       );
       if (!context.mounted) return;
     } else {
+      final keepDraftContext = vm.corporateAccountId != null &&
+          (vm.walkInDraftOrderId?.trim().isNotEmpty ?? false);
       final ok = await vm.submitWalkInOrder(
         deptIds,
         context,
-        clearCustomerOnSuccess: true,
+        clearCustomerOnSuccess: !keepDraftContext,
         forInvoicePanelSave: true,
       );
       if (!context.mounted) return;
@@ -2377,7 +2381,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'SAR ${product.allowDecimalQty ? product.price.toStringAsFixed(2) : product.price.toInt()}',
+                            'SAR ${product.price.toStringAsFixed(2)}',
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w800,
                               fontSize: 14,
@@ -2515,7 +2519,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'SAR ${product.allowDecimalQty ? product.price.toStringAsFixed(2) : product.price.toInt()}',
+                          'SAR ${product.price.toStringAsFixed(2)}',
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
@@ -2657,7 +2661,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${_formatGridQuantityLabel(item.product, item.quantity)} × SAR ${item.effectiveUnitPrice.toStringAsFixed(0)}',
+                              '${_formatGridQuantityLabel(item.product, item.quantity)} × SAR ${item.effectiveUnitPrice.toStringAsFixed(2)}',
                               style: TextStyle(
                                 fontSize: isTablet ? 13 : 11,
                                 fontWeight: FontWeight.w600,
@@ -2679,7 +2683,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         Padding(
                           padding: const EdgeInsets.only(right: 2),
                           child: Text(
-                            'SAR ${item.totalPrice.toStringAsFixed(2)}',
+                            'SAR ${item.lineSubtotalExclVat.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -2798,7 +2802,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'SAR ${item.totalPrice.toStringAsFixed(2)}',
+                          'SAR ${item.lineSubtotalExclVat.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -2915,12 +2919,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         SizedBox(
           width: isTablet ? 80 : 56,
           height: isTablet ? 28 : 26,
-          child: TextFormField(
-            initialValue: vm.getActiveGlobalDiscount(widget.isMainTab) > 0
-                ? (vm.getActiveGlobalDiscount(widget.isMainTab) % 1 == 0
-                    ? vm.getActiveGlobalDiscount(widget.isMainTab).toInt().toString()
-                    : vm.getActiveGlobalDiscount(widget.isMainTab).toString())
-                : '',
+          child: TextField(
+            controller: vm.globalDiscountTextController(widget.isMainTab),
             keyboardType: TextInputType.text,
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.,+\s]')),

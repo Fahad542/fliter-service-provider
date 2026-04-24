@@ -147,6 +147,7 @@ class PosViewModel extends ChangeNotifier {
       final response = await posRepository.getCashierCorporateAccounts(token);
       if (response.success) {
         _corporateAccounts = response.accounts;
+        _hydrateInvoicePaymentDefaultsForSelectedOrder();
         notifyListeners();
       }
     } catch (e) {
@@ -188,6 +189,7 @@ class PosViewModel extends ChangeNotifier {
   bool? _invoicePaymentIsCorporate;
   final Set<PaymentMethod> _invoicePaymentMethods = <PaymentMethod>{};
   final Map<PaymentMethod, double> _invoicePaymentAmounts = <PaymentMethod, double>{};
+  bool _invoicePaymentWasUserEdited = false;
 
   /// Per–walk-in-order billing drafts (Add customer details / Final Review). Not global VM bleed.
   final Map<String, WalkInBillingSnapshot> _walkInBillingSnapshotsByOrderId =
@@ -287,10 +289,109 @@ class PosViewModel extends ChangeNotifier {
       _invoicePaymentIsCorporate = null;
       _invoicePaymentMethods.clear();
       _invoicePaymentAmounts.clear();
+      _invoicePaymentWasUserEdited = false;
     }
     _selectedOrder = order;
+    _hydrateInvoicePaymentDefaultsForSelectedOrder();
     _rehydrateWalkInVmFromSelectedOrderDraft();
     notifyListeners();
+  }
+
+  void _hydrateInvoicePaymentDefaultsForSelectedOrder() {
+    final o = _selectedOrder;
+    if (o == null) return;
+    if (_invoicePaymentWasUserEdited) return;
+
+    // Corporate orders default to corporate monthly billing in payment dialog.
+    if (o.isCorporateWalkIn) {
+      if (_corporateAccounts.isEmpty) {
+        unawaited(fetchCorporateAccounts(silent: true));
+      }
+      final preferred = _preferredCorporatePaymentMethodForOrder(o);
+      final method = preferred ?? PaymentMethod.monthlyBilling;
+      _invoicePaymentIsCorporate = true;
+      _invoicePaymentMethods
+        ..clear()
+        ..add(method);
+      _invoicePaymentAmounts
+        ..clear()
+        ..[method] = o.draftPosOrderTotalDisplay;
+    }
+  }
+
+  /// Ensures payment dialog opens with sensible defaults for the given order.
+  /// For corporate orders: Corporate tab + preferred method (or monthly billing).
+  void ensureInvoicePaymentPrefillForOrder(PosOrder order) {
+    _selectedOrder = order;
+    if (_invoicePaymentWasUserEdited &&
+        _invoicePaymentIsCorporate != null &&
+        _invoicePaymentMethods.isNotEmpty) {
+      return;
+    }
+    if (order.isCorporateWalkIn) {
+      final preferred = _preferredCorporatePaymentMethodForOrder(order);
+      final method = preferred ?? PaymentMethod.monthlyBilling;
+      _invoicePaymentIsCorporate = true;
+      _invoicePaymentMethods
+        ..clear()
+        ..add(method);
+      _invoicePaymentAmounts
+        ..clear()
+        ..[method] = order.draftPosOrderTotalDisplay;
+      notifyListeners();
+    }
+  }
+
+  PaymentMethod? _preferredCorporatePaymentMethodForOrder(PosOrder order) {
+    final orderLevel = (order.paymentMethod ?? '').trim();
+    if (orderLevel.isNotEmpty) {
+      final fromOrder = _paymentMethodFromBackendLabel(orderLevel);
+      if (fromOrder != null) return fromOrder;
+    }
+
+    CashierCorporateAccount? account;
+    final corporateId = (order.corporateAccountId ?? '').trim();
+    if (corporateId.isNotEmpty) {
+      for (final a in _corporateAccounts) {
+        if (a.id.trim() == corporateId) {
+          account = a;
+          break;
+        }
+      }
+    }
+    account ??= _corporateAccounts.cast<CashierCorporateAccount?>().firstWhere(
+      (a) =>
+          (a?.companyName.trim().toLowerCase() ?? '') ==
+          (order.corporateCompanyName ?? order.customerName).trim().toLowerCase(),
+      orElse: () => null,
+    );
+    final raw = account?.preferredPaymentMethod?.trim() ?? '';
+    if (raw.isEmpty) return null;
+    return _paymentMethodFromBackendLabel(raw);
+  }
+
+  PaymentMethod? _paymentMethodFromBackendLabel(String raw) {
+    final k = raw.trim().toLowerCase().replaceAll('_', ' ');
+    if (k.contains('monthly')) return PaymentMethod.monthlyBilling;
+    if (k.contains('bank')) return PaymentMethod.bankTransfer;
+    if (k.contains('cash')) return PaymentMethod.cash;
+    if (k.contains('card')) return PaymentMethod.card;
+    if (k.contains('wallet')) return PaymentMethod.wallet;
+    if (k.contains('tabby')) return PaymentMethod.tabby;
+    if (k.contains('tamara')) return PaymentMethod.tamara;
+    return null;
+  }
+
+  int suggestedOdometerForOrder(PosOrder order) {
+    if (order.odometerReading > 0) return order.odometerReading;
+    final targetPlate = order.plateNumber.trim().toLowerCase();
+    if (targetPlate.isEmpty) return 0;
+    var best = 0;
+    for (final o in _orders) {
+      if (o.plateNumber.trim().toLowerCase() != targetPlate) continue;
+      if (o.odometerReading > best) best = o.odometerReading;
+    }
+    return best;
   }
 
   void _clearWalkInBillingOverlayFields() {
@@ -339,6 +440,7 @@ class PosViewModel extends ChangeNotifier {
     required Set<PaymentMethod> payments,
     Map<PaymentMethod, double> paymentAmounts = const {},
   }) {
+    _invoicePaymentWasUserEdited = true;
     _invoicePaymentIsCorporate = isCorporate;
     _invoicePaymentMethods
       ..clear()
@@ -350,6 +452,7 @@ class PosViewModel extends ChangeNotifier {
   }
 
   void _clearInvoicePaymentPreferences() {
+    _invoicePaymentWasUserEdited = false;
     _invoicePaymentIsCorporate = null;
     _invoicePaymentMethods.clear();
     _invoicePaymentAmounts.clear();
@@ -402,8 +505,35 @@ class PosViewModel extends ChangeNotifier {
   final TextEditingController _homeSearchController = TextEditingController();
   final FocusNode _homeSearchFocusNode = FocusNode();
 
+  /// Live invoice "Total discount" field — must stay in sync with [_globalDiscount] / [_mainTabGlobalDiscount]
+  /// after async hydration ( [TextFormField.initialValue] does not update after first frame).
+  final TextEditingController _globalDiscountTextController =
+      TextEditingController();
+  final TextEditingController _mainTabGlobalDiscountTextController =
+      TextEditingController();
+
   TextEditingController get homeSearchController => _homeSearchController;
   FocusNode get homeSearchFocusNode => _homeSearchFocusNode;
+
+  TextEditingController globalDiscountTextController(bool isMainTab) =>
+      isMainTab
+          ? _mainTabGlobalDiscountTextController
+          : _globalDiscountTextController;
+
+  /// Call after loading order/job discount in a post-frame callback so the text field matches the model.
+  void refreshGlobalDiscountFieldText(bool isMainTab) {
+    final c = globalDiscountTextController(isMainTab);
+    final v =
+        isMainTab ? _mainTabGlobalDiscount : _globalDiscount;
+    final t = v > 0
+        ? (v % 1 == 0 ? v.toInt().toString() : v.toString())
+        : '';
+    if (c.text == t) return;
+    c.value = TextEditingValue(
+      text: t,
+      selection: TextSelection.collapsed(offset: t.length),
+    );
+  }
 
   @override
   void dispose() {
@@ -415,6 +545,8 @@ class PosViewModel extends ChangeNotifier {
     _realtimeService.disconnect();
     _homeSearchController.dispose();
     _homeSearchFocusNode.dispose();
+    _globalDiscountTextController.dispose();
+    _mainTabGlobalDiscountTextController.dispose();
     _searchDebounce?.cancel();
     _ordersRealtimeDebounce?.cancel();
     _broadcastWaitingTicker?.cancel();
@@ -628,6 +760,25 @@ class PosViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void primeCorporateWalkInDraftFromOrder(PosOrder order) {
+    _corporateAccountId = (order.corporateAccountId ?? '').trim().isNotEmpty
+        ? order.corporateAccountId!.trim()
+        : null;
+    setCustomerData(
+      name: order.customerName,
+      vat: order.customer?.vatNumber ?? '',
+      mobile: order.customer?.mobile ?? '',
+      vehicleNumber: order.plateNumber,
+      vinNumber: order.vehicle?.vin ?? '',
+      make: order.vehicle?.make ?? '',
+      model: order.vehicle?.model ?? '',
+      odometer: order.odometerReading,
+      previousOrderId: order.id,
+      vehicleYear: order.vehicle?.year ?? '',
+      vehicleColor: order.vehicle?.color ?? '',
+    );
+  }
+
   void clearCustomerData() {
     _walkInBillingSnapshotsByOrderId.clear();
     _clearWalkInBillingOverlayFields();
@@ -639,6 +790,7 @@ class PosViewModel extends ChangeNotifier {
     _activePromoCode = '';
     _promoDiscount = 0.0;
     _globalDiscount = 0.0;
+    _globalDiscountTextController.clear();
     notifyListeners();
   }
 
@@ -1339,7 +1491,7 @@ class PosViewModel extends ChangeNotifier {
           corporateAccountId: _corporateAccountId!.trim(),
         );
 
-        final corpRes = await posRepository.submitWalkInCorporateForApproval(request, token);
+        final corpRes = await posRepository.saveWalkInCorporateUnapproved(request, token);
         if (corpRes.success) {
           _applyWalkInOrderSuccess(
             corpRes,
@@ -2075,6 +2227,7 @@ class PosViewModel extends ChangeNotifier {
       _mainTabPromoContextDepartmentId = null;
       _mainTabGlobalDiscount = 0.0;
       _mainTabIsGlobalDiscountPercent = false;
+      _mainTabGlobalDiscountTextController.clear();
     } else {
       _activePromoCode = '';
       _activePromoCodeId = null;
@@ -2084,6 +2237,7 @@ class PosViewModel extends ChangeNotifier {
       _promoContextDepartmentId = null;
       _globalDiscount = 0.0;
       _isGlobalDiscountPercent = false;
+      _globalDiscountTextController.clear();
     }
     notifyListeners();
   }
@@ -2254,7 +2408,8 @@ class PosViewModel extends ChangeNotifier {
           case 'Cancelled':
             return status.contains('rejected') || status.contains('cancelled');
           case 'Corp. pending approval':
-            return o.status.toLowerCase().contains('waiting for corporate');
+            final s = o.status.toLowerCase();
+            return s.contains('waiting for corporate') || s.trim() == 'unapproved';
           case 'Corporate approved':
             return o.status.toLowerCase().trim() == 'corporate approved';
           case 'Rejected by corporate':
@@ -2431,6 +2586,41 @@ class PosViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> sendCorporateOrderForApproval(
+    BuildContext context, {
+    required String orderId,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final token = await sessionService.getToken();
+      if (token == null) throw Exception('Token not found');
+      final res = await posRepository.sendWalkInCorporateForApproval(orderId, token);
+      final ok = res['success'] == true;
+      final msg = res['message']?.toString() ??
+          (ok ? 'Sent for corporate approval' : 'Failed to send for approval');
+      if (context.mounted) {
+        if (ok) {
+          ToastService.showSuccess(context, msg);
+        } else {
+          ToastService.showError(context, msg);
+        }
+      }
+      if (ok) {
+        await fetchOrders(silent: true, preferredOrderId: orderId);
+      }
+      return ok;
+    } catch (e) {
+      _errorMessage = _extractErrorMessage(e.toString());
+      if (context.mounted) ToastService.showError(context, _errorMessage!);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void setOrderSearchQuery(String query) {
     _orderSearchQuery = query;
     notifyListeners();
@@ -2444,6 +2634,7 @@ class PosViewModel extends ChangeNotifier {
   void setOrdersListTab(String tab) {
     if (tab != 'All' && tab != 'Pending' && tab != 'Completed') return;
     _ordersListTab = tab;
+    notifyListeners();
   }
 
   Future<void> searchCustomers(String query) async {

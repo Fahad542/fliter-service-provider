@@ -1,8 +1,6 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
@@ -13,7 +11,7 @@ import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Order Screen/pos_invoice_payment_dialog.dart';
 import '../Order Screen/pos_order_review_view.dart'
-    show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
+show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
 import '../Promo/promo_code_dialog.dart';
 import '../Promo/promo_view_model.dart';
 import 'takeaway_view_model.dart';

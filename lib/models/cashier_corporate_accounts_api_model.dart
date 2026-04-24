@@ -28,6 +28,7 @@ class CashierCorporateAccount {
   final String contactPerson;
   final String? vatNumber;
   final String? taxId;
+  final String? preferredPaymentMethod;
   final CashierCorporateAccountCustomer? customer;
 
   CashierCorporateAccount({
@@ -40,6 +41,7 @@ class CashierCorporateAccount {
     required this.contactPerson,
     this.vatNumber,
     this.taxId,
+    this.preferredPaymentMethod,
     this.customer,
   });
 
@@ -62,11 +64,30 @@ class CashierCorporateAccount {
       contactPerson: json['contactPerson']?.toString() ?? 'N/A',
       vatNumber: json['vatNumber']?.toString(),
       taxId: json['taxId']?.toString(),
+      preferredPaymentMethod:
+          _pickFirstNonEmptyString(json, const [
+            'preferredPaymentMethod',
+            'defaultPaymentMethod',
+            'paymentMethod',
+            'billingType',
+            'paymentPreference',
+          ]),
       customer: json['customer'] != null
           ? CashierCorporateAccountCustomer.fromJson(json['customer'])
           : null,
     );
   }
+}
+
+String? _pickFirstNonEmptyString(
+  Map<String, dynamic> json,
+  List<String> keys,
+) {
+  for (final key in keys) {
+    final value = json[key]?.toString().trim();
+    if (value != null && value.isNotEmpty) return value;
+  }
+  return null;
 }
 
 class CashierCorporateAccountCustomer {

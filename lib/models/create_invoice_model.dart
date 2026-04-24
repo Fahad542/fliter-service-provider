@@ -34,6 +34,30 @@ String _invoicePickYear(
   return '';
 }
 
+int? _invoicePickOdometer(
+  Map<String, dynamic> vehicle,
+  Map<String, dynamic> salesOrder,
+  Map<String, dynamic> root,
+) {
+  const keys = [
+    'odometerReading',
+    'odometer',
+    'mileage',
+    'mileageReading',
+    'odo',
+    'odometer_reading',
+  ];
+  for (final k in keys) {
+    final raw = vehicle[k] ?? salesOrder[k] ?? root[k];
+    if (raw == null) continue;
+    final n = raw is num
+        ? raw.toInt()
+        : int.tryParse(raw.toString().replaceAll(RegExp(r'[^0-9-]'), ''));
+    if (n != null && n > 0) return n;
+  }
+  return null;
+}
+
 class CreateInvoiceRequest {
   final String orderId;
   final double discountAmount;
@@ -268,9 +292,7 @@ class Invoice {
           'Individual',
       customerMobile: customer['mobile']?.toString(),
       customerTaxId: customer['taxId']?.toString(),
-      odometerReading: int.tryParse(
-        salesOrder['odometerReading']?.toString() ?? '',
-      ),
+      odometerReading: _invoicePickOdometer(vehicle, salesOrder, json),
       vehicleInfo: '${vehicle['make'] ?? ""} ${vehicle['model'] ?? ""}'.trim(),
       vehicleMake: vehicle['make']?.toString() ?? '',
       vehicleModel: vehicle['model']?.toString() ?? '',

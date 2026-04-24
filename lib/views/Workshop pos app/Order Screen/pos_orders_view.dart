@@ -22,7 +22,12 @@ import 'pos_order_review_view.dart'
     show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
 
 bool _orderIsListableForOrdersList(PosOrder o) =>
-    o.status.toLowerCase() != 'cancelled';
+    o.status.toLowerCase() != 'cancelled' &&
+    (o.jobsAggregateBadgeLabel != 'DRAFT' ||
+        (o.isCorporateWalkIn &&
+            (o.isCorporateUnapproved ||
+                o.isWaitingCorporateApproval ||
+                o.isRejectedByCorporate)));
 
 /// Detail panel when this tab has no orders but other tabs do.
 String _ordersTabDetailEmptyMessage(String tab) {
@@ -92,6 +97,7 @@ class _PosOrdersViewState extends State<PosOrdersView> {
         ),
       );
     }
+    final visibleOrders = vm.orders.where(_orderIsListableForOrdersList).toList();
     return Column(
       children: [
         Padding(
@@ -112,10 +118,10 @@ class _PosOrdersViewState extends State<PosOrdersView> {
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.all(12),
-            itemCount: vm.orders.length,
+            itemCount: visibleOrders.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final order = vm.orders[index];
+              final order = visibleOrders[index];
               return OrderItemCard(order: order, isTablet: false);
             },
           ),
@@ -205,8 +211,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
     }
 
     final filteredOrders = vm.orders.where((order) {
-      final isCancelled = order.status.toLowerCase() == 'cancelled';
-      if (isCancelled) return false;
+      if (!_orderIsListableForOrdersList(order)) return false;
       if (_selectedTab == 'All') return true;
       final isCompleted = order.jobsAggregateBadgeLabel == 'COMPLETED';
       if (_selectedTab == 'Pending') {
@@ -374,75 +379,57 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final order = vm.selectedOrder;
     final enabled = order != null;
+    final corporateBillingLocked = order != null &&
+        order.isCorporateWalkIn &&
+        !order.isCorporateApproved;
 
     Future<void> openAddCustomer() async {
       if (order == null) return;
-      if (vm.isStandardWalkInOrderForBilling(order)) {
-        final result = await showDialog<WalkInInvoiceFormResult?>(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => WalkInInvoiceDetailsDialog(
-            order: order,
-            posVm: vm,
-          ),
-        );
-        if (!context.mounted) return;
-        if (result != null) {
-          vm.updateWalkInBillingContact(
-            forOrderId: order.id,
-            name: result.name,
-            mobile: result.mobile,
-            vat: result.vat,
-            vehicleNumber: result.vehicleNumber,
-            vin: result.vin,
-            make: result.make,
-            model: result.model,
-            odometer: result.odometer,
-            year: result.year,
-            color: result.color,
-          );
-          final patchErr = await vm.submitWalkInOrderBillingPatch(order);
-          if (!context.mounted) return;
-          if (patchErr != null) {
-            ToastService.showError(context, patchErr);
-          } else {
-            ToastService.showSuccess(context, 'Customer details saved');
-          }
-        }
-        return;
-      }
-      vm.setCustomerData(
-        name: order.customer?.name ?? order.customerName,
-        vat: order.customer?.vatNumber ?? '',
-        mobile: order.customer?.mobile ?? '',
-        vehicleNumber: order.plateNumber.isNotEmpty
-            ? order.plateNumber
-            : vm.vehicleNumber,
-        vinNumber: order.vehicle?.vin ?? '',
-        make: order.vehicle?.make ?? '',
-        model: order.vehicle?.model ?? '',
-        odometer: order.odometerReading,
-        previousOrderId: order.id,
-        vehicleYear: order.vehicle?.year ?? '',
-        vehicleColor: order.vehicle?.color ?? '',
-      );
-      await Navigator.push<void>(
-        context,
-        MaterialPageRoute<void>(
-          builder: (_) => const PosAddCustomerView(),
+      final result = await showDialog<WalkInInvoiceFormResult?>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => WalkInInvoiceDetailsDialog(
+          order: order,
+          posVm: vm,
         ),
       );
+      if (!context.mounted) return;
+      if (result == null) return;
+
+      vm.updateWalkInBillingContact(
+        forOrderId: order.id,
+        name: result.name,
+        mobile: result.mobile,
+        vat: result.vat,
+        vehicleNumber: result.vehicleNumber,
+        vin: result.vin,
+        make: result.make,
+        model: result.model,
+        odometer: result.odometer,
+        year: result.year,
+        color: result.color,
+      );
+
+      // Backend billing PATCH only applies to standard walk-in orders.
+      if (vm.isStandardWalkInOrderForBilling(order)) {
+        final patchErr = await vm.submitWalkInOrderBillingPatch(order);
+        if (!context.mounted) return;
+        if (patchErr != null) {
+          ToastService.showError(context, patchErr);
+          return;
+        }
+      }
+      ToastService.showSuccess(context, 'Customer details saved');
     }
 
     Future<void> openPayment() async {
       if (order == null) return;
+      vm.ensureInvoicePaymentPrefillForOrder(order);
       final result = await showInvoicePaymentChoiceDialog(
         context,
         initialIsCorporate: vm.invoicePaymentIsCorporate,
-        initialPayments:
-            vm.invoicePaymentIsCorporate != null ? vm.invoicePaymentMethods : null,
-        initialPaymentAmounts:
-            vm.invoicePaymentIsCorporate != null ? vm.invoicePaymentAmounts : null,
+        initialPayments: vm.invoicePaymentMethods,
+        initialPaymentAmounts: vm.invoicePaymentAmounts,
         totalAmount: order.draftPosOrderTotalDisplay,
       );
       if (!context.mounted) return;
@@ -495,7 +482,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: ElevatedButton(
-            onPressed: enabled ? openPayment : null,
+            onPressed: (enabled && !corporateBillingLocked) ? openPayment : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryLight,
               foregroundColor: AppColors.onPrimaryLight,
@@ -762,10 +749,22 @@ class _OrderDetailPanel extends StatelessWidget {
               final innerW = constraints.maxWidth - pad.horizontal;
               final tileW = (innerW - crossSpacing) / 2;
               final showAdd = _canAddDepartmentToOrder(order);
+              final hasRealJobs =
+                  order.jobs.any((j) => !j.isCancelledJob);
+              final showCorporateProposalCards = order.isCorporateWalkIn &&
+                  !hasRealJobs &&
+                  order.selectedDepartmentNames.isNotEmpty;
 
               final items = [
                 for (final j in order.jobs.where((j) => !j.isCancelledJob))
                   _JobCard(order: order, job: j),
+                if (showCorporateProposalCards)
+                  for (final dept in order.selectedDepartmentEntries)
+                    _CorporatePendingJobCard(
+                      order: order,
+                      departmentName: dept['name'] ?? '',
+                      departmentId: dept['id'] ?? '',
+                    ),
                 if (showAdd) _AddDepartmentCard(order: order),
               ];
 
@@ -916,6 +915,239 @@ class _AddDepartmentCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CorporatePendingJobCard extends StatelessWidget {
+  final PosOrder order;
+  final String departmentName;
+  final String departmentId;
+  const _CorporatePendingJobCard({
+    required this.order,
+    required this.departmentName,
+    required this.departmentId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final orderItems = order.items
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    final deptId = departmentId.trim();
+    final deptNameLower = departmentName.trim().toLowerCase();
+    final deptItems = orderItems.where((item) {
+      final itemDeptId = (item['departmentId'] ?? '').toString().trim();
+      final itemDeptName =
+          (item['departmentName'] ?? '').toString().trim().toLowerCase();
+      if (deptId.isNotEmpty && itemDeptId.isNotEmpty) {
+        return itemDeptId == deptId;
+      }
+      return itemDeptName == deptNameLower;
+    }).toList();
+    final hasDeptItems = deptItems.isNotEmpty;
+    final deptItemCount = deptItems.length;
+    final deptTotal = deptItems.fold<double>(0.0, (sum, item) {
+      final lineTotal = double.tryParse(item['lineTotal']?.toString() ?? '');
+      if (lineTotal != null) return sum + lineTotal;
+      final qty = double.tryParse(item['qty']?.toString() ?? '0') ?? 0;
+      final unitPrice =
+          double.tryParse(item['unitPrice']?.toString() ?? '0') ?? 0;
+      return sum + (qty * unitPrice);
+    });
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE8ECF3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.settings_rounded,
+                      color: Color(0xFFFF9800),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          departmentName.toUpperCase(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.4,
+                            color: Color(0xFF1E2124),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        posOrdersJobStatusBadge('pending'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+              child: Column(
+                children: [
+                  _ModernActionChip(
+                    icon: Icons.add_shopping_cart_rounded,
+                    label: hasDeptItems
+                        ? '$deptItemCount ${deptItemCount == 1 ? 'item' : 'items'}'
+                        : 'Products & Services',
+                    trailing: hasDeptItems
+                        ? Text(
+                            'SAR ${deptTotal.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1E2124),
+                            ),
+                          )
+                        : null,
+                    onTap: () {
+                      final vm = context.read<PosViewModel>();
+                      vm.primeCorporateWalkInDraftFromOrder(order);
+                      vm.clearCart();
+                      PosOrderJob? matchedJob;
+                      for (final j in order.jobs) {
+                        final jid = (j.departmentId ?? '').trim();
+                        final jname = j.department.trim().toLowerCase();
+                        final wantId = departmentId.trim();
+                        final wantName = departmentName.trim().toLowerCase();
+                        if (wantId.isNotEmpty && jid.isNotEmpty && jid == wantId) {
+                          matchedJob = j;
+                          break;
+                        }
+                        if (jname.isNotEmpty && jname == wantName) {
+                          matchedJob = j;
+                          break;
+                        }
+                      }
+
+                      if (matchedJob != null && matchedJob.id.trim().isNotEmpty) {
+                        final preSelected = <dynamic>[];
+                        for (final item in matchedJob.items) {
+                          preSelected.add({
+                            item.itemType == 'service' ? 'serviceId' : 'productId':
+                                item.productId,
+                            'quantity': item.qty,
+                            'discountType': item.discountType,
+                            'discountValue': item.discountValue ?? 0.0,
+                            if (item.itemType == 'service' && item.unitPrice > 0)
+                              'unitPrice': item.unitPrice,
+                          });
+                        }
+                        vm.setEditOrderContext(
+                          departmentId: departmentId.trim().isNotEmpty
+                              ? departmentId
+                              : (matchedJob.departmentId ?? ''),
+                          preSelectedItems: preSelected,
+                          order: order,
+                          completingOrderId: matchedJob.id,
+                        );
+                      } else {
+                        vm.clearEditOrderContext(notify: false);
+                      }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => PosProductGridView(
+                            departmentName: departmentName,
+                            departmentId:
+                                departmentId.trim().isNotEmpty ? departmentId : null,
+                            selectedDepartmentIds: order.selectedDepartmentEntries
+                                .map((e) => e['id'] ?? '')
+                                .where((id) => id.trim().isNotEmpty)
+                                .toList(),
+                            selectedDepartmentNames: order.selectedDepartmentEntries
+                                .map((e) => e['name'] ?? '')
+                                .where((name) => name.trim().isNotEmpty)
+                                .toList(),
+                            completingOrder: matchedJob != null ? order : null,
+                            completingOrderId: matchedJob?.id,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _ModernActionChip(
+                    icon: Icons.engineering_rounded,
+                    label: 'Assign Technicians',
+                    onTap: () => ToastService.showError(
+                      context,
+                      'This corporate walk-in has no real jobId yet. Send for approval first, then assign technicians as normal.',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 2, 12, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _JobFooterButton(
+                      label: 'Cancel',
+                      backgroundColor: const Color(0xFF23262D),
+                      textColor: Colors.white,
+                      enabled: true,
+                      onTap: () => showCashierCancelOrderDialog(context, order.id),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _JobFooterButton(
+                      label: 'Mark Complete',
+                      backgroundColor: const Color(0xFFFCC247),
+                      textColor: const Color(0xFF23262D),
+                      enabled: true,
+                      onTap: () => ToastService.showError(
+                        context,
+                        'Corporate order must be approved before completing jobs.',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1076,7 +1308,7 @@ void _openJobProductGrid(BuildContext context, PosOrder order, PosOrderJob job) 
   final deptName = resolved.name;
 
   final preSelected = <dynamic>[];
-  for (final item in job.items) {
+  for (final item in dedupeCashierServiceLinesForPosDisplay(job.items)) {
     preSelected.add({
       item.itemType == 'service' ? 'serviceId' : 'productId': item.productId,
       'quantity': item.qty,
@@ -1129,6 +1361,16 @@ Future<void> _onMarkJobComplete(
   PosOrder order,
   PosOrderJob job,
 ) async {
+  if (order.isCorporateWalkIn &&
+      (order.isCorporateUnapproved ||
+          order.isWaitingCorporateApproval ||
+          order.isRejectedByCorporate)) {
+    ToastService.showError(
+      context,
+      'Corporate order must be approved before completing jobs.',
+    );
+    return;
+  }
   if (job.items.isEmpty) {
     ToastService.showError(context, 'This job has no line items.');
     return;
@@ -1310,7 +1552,7 @@ class _JobCard extends StatelessWidget {
     final isCancelled = job.isCancelledJob;
     final isLocked = isInvoiced || isCancelled;
 
-    final jobLineItems = job.items;
+    final jobLineItems = dedupeCashierServiceLinesForPosDisplay(job.items);
     final hasLineItems = jobLineItems.isNotEmpty;
     final lineItemCount = jobLineItems.length;
     final linesSubtotalFallback = jobLineItems.fold<double>(
@@ -1633,13 +1875,23 @@ class _JobFooterButton extends StatelessWidget {
 String _draftFmtQty(double q) =>
     q == q.roundToDouble() ? q.toInt().toString() : q.toStringAsFixed(2);
 
-double _draftLineDisplayTotal(PosOrderJobItem item) {
-  if (item.lineTotal > 0) return item.lineTotal;
+double _draftLineDisplayTotal(PosOrderJob job, PosOrderJobItem item) {
+  if (item.lineTotalExcludingVat > 0.0001) return item.lineTotalExcludingVat;
+  final exVatFromUnit = _draftLineUnitPriceExVat(job, item) * item.qty;
+  if (exVatFromUnit > 0.0001) return exVatFromUnit;
+  if (item.lineTotal > 0) {
+    final pct = job.vatPercent;
+    if (pct > 0) {
+      return item.lineTotal / (1.0 + pct / 100.0);
+    }
+    return item.lineTotal;
+  }
   return item.qty * item.unitPrice;
 }
 
 /// Unit price for ORDER SUMMARY qty row — line [unitPrice] from API is often VAT-inclusive.
 double _draftLineUnitPriceExVat(PosOrderJob job, PosOrderJobItem item) {
+  if (item.unitPriceExcludingVat > 0.0001) return item.unitPriceExcludingVat;
   final pct = job.vatPercent;
   if (pct <= 0 || item.unitPrice <= 0) return item.unitPrice;
   return item.unitPrice / (1.0 + pct / 100.0);
@@ -1700,7 +1952,29 @@ double _draftOrderLevelDiscountAmount(PosOrder order) {
 /// Per job: taxable total after discounts/promo, before VAT ([PosOrderJob.amountAfterPromo]).
 double _draftJobTotalBeforeVat(PosOrderJob job) {
   if (job.amountAfterPromo > 0.0001) return job.amountAfterPromo;
-  return (job.totalAmount - job.vatAmount).clamp(0.0, double.infinity);
+  final apiDerived = (job.totalAmount - job.vatAmount).clamp(0.0, double.infinity);
+  if (apiDerived > 0.0001) return apiDerived;
+  final lineFallback = dedupeCashierServiceLinesForPosDisplay(job.items)
+      .fold<double>(
+    0.0,
+    (s, item) => s + _draftLineDisplayTotal(job, item),
+  );
+  return lineFallback.clamp(0.0, double.infinity);
+}
+
+/// Per job total including VAT, matching the department summary rows exactly.
+double _draftJobTotalInclVat(PosOrderJob job) {
+  final beforeVat = _draftJobTotalBeforeVat(job);
+  final vatFromLines = dedupeCashierServiceLinesForPosDisplay(job.items).fold<double>(
+    0.0,
+    (s, item) => s + item.lineVatAmount,
+  );
+  final vatAmount = job.vatAmount > 0.0001
+      ? job.vatAmount
+      : vatFromLines > 0.0001
+          ? vatFromLines
+          : (job.vatPercent > 0 ? beforeVat * (job.vatPercent / 100.0) : 0.0);
+  return job.totalAmount > 0.0001 ? job.totalAmount : (beforeVat + vatAmount);
 }
 
 /// Plain totals under dept discount (no highlight strip) — same label typography as dept discount.
@@ -1721,6 +1995,18 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
   final pctLabel = (pct - pct.round()).abs() < 0.001
       ? pct.round().toString()
       : pct.toStringAsFixed(1);
+  final beforeVat = _draftJobTotalBeforeVat(job);
+  final vatFromLines = dedupeCashierServiceLinesForPosDisplay(job.items)
+      .fold<double>(
+    0.0,
+    (s, item) => s + item.lineVatAmount,
+  );
+  final vatAmount = job.vatAmount > 0.0001
+      ? job.vatAmount
+      : vatFromLines > 0.0001
+          ? vatFromLines
+      : (pct > 0 ? beforeVat * (pct / 100.0) : 0.0);
+  final totalInclVat = _draftJobTotalInclVat(job);
   return Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
@@ -1729,7 +2015,7 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
         children: [
           Expanded(child: Text('Total before VAT', style: labelStyle)),
           Text(
-            '${_draftJobTotalBeforeVat(job).toStringAsFixed(2)} SAR',
+            '${beforeVat.toStringAsFixed(2)} SAR',
             style: valueStyle,
           ),
         ],
@@ -1740,7 +2026,7 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
         children: [
           Expanded(child: Text('VAT ($pctLabel%)', style: labelStyle)),
           Text(
-            '+ ${job.vatAmount.toStringAsFixed(2)} SAR',
+            '+ ${vatAmount.toStringAsFixed(2)} SAR',
             style: valueStyle.copyWith(color: Colors.red.shade700),
           ),
         ],
@@ -1761,7 +2047,7 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
             ),
           ),
           Text(
-            '${job.totalAmount.toStringAsFixed(2)} SAR',
+            '${totalInclVat.toStringAsFixed(2)} SAR',
             style: GoogleFonts.manrope(
               fontSize: 10,
               fontWeight: FontWeight.w800,
@@ -2100,6 +2386,16 @@ Future<void> _generateInvoiceFromOrdersSummary(
   PosViewModel vm,
   PosOrder order,
 ) async {
+  if (order.isCorporateWalkIn &&
+      (order.isCorporateUnapproved ||
+          order.isWaitingCorporateApproval ||
+          order.isRejectedByCorporate)) {
+    ToastService.showError(
+      context,
+      'Corporate order must be approved before invoicing.',
+    );
+    return;
+  }
   if (!order.meetsCashierInvoicePrerequisites) {
     ToastService.showError(context, 'Order is not ready for invoicing.');
     return;
@@ -2215,16 +2511,28 @@ class _OrderSummaryPanel extends StatelessWidget {
     final meetsPrereq = order.meetsCashierInvoicePrerequisites;
     final billingOk = vm.walkInBillingReadyForInvoice(order);
     final paymentOk = vm.invoicePaymentSelectionReady;
+    final corporateApprovedForBilling =
+        !order.isCorporateWalkIn || order.isCorporateApproved;
+    final canSendForApproval =
+        order.isCorporateWalkIn && order.isCorporateUnapproved;
     final canGenerateInvoice = allDepartmentsComplete &&
         meetsPrereq &&
         billingOk &&
-        paymentOk;
+        paymentOk &&
+        corporateApprovedForBilling;
 
     final orderPromoName = (order.promoCodeName ?? '').trim();
     final orderPromoAmt = order.promoDiscountAmount ?? 0;
     final orderDiscAmt = _draftOrderLevelDiscountAmount(order);
 
-    final grandTotal = order.draftPosOrderTotalDisplay;
+    final grandTotalFromJobs = activeJobs.fold<double>(
+      0.0,
+      (sum, job) => sum + _draftJobTotalInclVat(job),
+    );
+    // Keep footer in sync with department sections shown above.
+    final grandTotal = grandTotalFromJobs > 0.0001
+        ? grandTotalFromJobs
+        : order.draftPosOrderTotalDisplay;
 
     final detailChildren = <Widget>[];
 
@@ -2322,6 +2630,39 @@ class _OrderSummaryPanel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (canSendForApproval) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 42,
+            child: ElevatedButton.icon(
+              onPressed: vm.isLoading
+                  ? null
+                  : () => vm.sendCorporateOrderForApproval(
+                        context,
+                        orderId: order.id,
+                      ),
+              icon: const Icon(Icons.send_rounded, size: 16),
+              label: const Text(
+                'Send for Approval',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secondaryLight,
+                foregroundColor: AppColors.onSecondaryLight,
+                disabledBackgroundColor: const Color(0xFFCBD5E1),
+                disabledForegroundColor: const Color(0xFF64748B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
         _orderSummaryHighlightBox(
           emphasized: true,
           secondaryBackground: true,
@@ -2354,7 +2695,7 @@ class _OrderSummaryPanel extends StatelessWidget {
         const SizedBox(height: 12),
         _OrdersHeaderCustomerPaymentRow(
           vm: vm,
-          showPaymentMethodButton: allDepartmentsComplete,
+          showPaymentMethodButton: true,
         ),
         if (allDepartmentsComplete) ...[
           const SizedBox(height: 12),
@@ -2500,7 +2841,7 @@ class _DraftDepartmentSection extends StatelessWidget {
     final jobPromoAmt = job.promoDiscountAmount;
     final jobDiscAmt = _draftJobOrderLevelDiscountAmount(job);
 
-    final items = job.items;
+    final items = dedupeCashierServiceLinesForPosDisplay(job.items);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2543,7 +2884,7 @@ class _DraftDepartmentSection extends StatelessWidget {
             final item = items[i];
             final discLabel = _draftLineDiscountLabel(item);
             final discAmt = _draftLineDiscountAmountSar(item);
-            final lineTot = _draftLineDisplayTotal(item);
+            final lineTot = _draftLineDisplayTotal(job, item);
             final isLast = i == items.length - 1;
             return Padding(
               padding: EdgeInsets.only(
@@ -2763,7 +3104,18 @@ class _DraftDepartmentSection extends StatelessWidget {
 }
 
 Widget _orderStripStatusBadge(PosOrder order, {required bool isSelected}) {
-  final label = order.jobsAggregateBadgeLabel;
+  String label = order.jobsAggregateBadgeLabel;
+  if (order.isCorporateWalkIn) {
+    if (order.isCorporateUnapproved) {
+      label = 'UNAPPROVED';
+    } else if (order.isWaitingCorporateApproval) {
+      label = 'WAITING APPROVAL';
+    } else if (order.isCorporateApproved) {
+      label = 'CORP APPROVED';
+    } else if (order.isRejectedByCorporate) {
+      label = 'REJECTED';
+    }
+  }
   final Color fg;
   final Color bg;
 
@@ -2825,6 +3177,9 @@ class _HorizontalOrderTile extends StatelessWidget {
         })
         .length;
     final jobProgressLabel = '$completedActive/${activeJobs.length}';
+    final deptNames = order.selectedDepartmentNames;
+    final showDeptLine = order.isCorporateWalkIn && deptNames.isNotEmpty;
+    final rightMetaLabel = showDeptLine ? '${deptNames.length} dept' : jobProgressLabel;
     final canCancel = posOrderCanCashierCancel(order);
 
     return Stack(
@@ -2902,7 +3257,7 @@ class _HorizontalOrderTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      jobProgressLabel,
+                      rightMetaLabel,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
@@ -2911,6 +3266,22 @@ class _HorizontalOrderTile extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (showDeptLine) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'Dept: ${deptNames.join(', ')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 8,
+                      height: 1.1,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? const Color(0xFF23262D).withOpacity(0.78)
+                          : const Color(0xFF475569),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Row(
                   children: [

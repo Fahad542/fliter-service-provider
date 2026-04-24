@@ -1,14 +1,16 @@
 class ApiConstants {
   /// Local dev — change the port to match your backend (e.g. 8080, 5000).
-  //static const String baseUrl = 'http://localhost:3000';
-  static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+  static const String baseUrl = 'http://localhost:3000';
+  // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
 
   //// workshop pos ////
   static const String loginEndpoint = '/auth/cashier/login';
   static const String servicesEndpoint = '/services';
   static const String walkInCustomerEndpoint = '/cashier/walk-in-order';
-  static const String cashierWalkInCorporateSubmitForApprovalEndpoint =
-      '/cashier/walk-in-corporate/submit-for-approval';
+  static const String cashierWalkInCorporateUnapprovedEndpoint =
+      '/cashier/walk-in-corporate/unapproved';
+  static String cashierWalkInCorporateSendForApprovalEndpoint(String orderId) =>
+      '/cashier/walk-in-corporate/order/$orderId/send-for-approval';
   static String cashierWalkInCorporateStartDepartmentEndpoint(String orderId) =>
       '/cashier/walk-in-corporate/order/$orderId/start-department';
   static String cashierOrderDetailEndpoint(String orderId) => '/cashier/order/$orderId';
@@ -82,6 +84,8 @@ class ApiConstants {
   static const String cashierCorporateAccountsEndpoint =
       '/cashier/corporate-accounts';
   static const String corporateBookingsEndpoint = '/cashier/corporate-bookings';
+  static String corporateWalkInOrderEndpoint(String orderId) =>
+      '/corporate/walk-in-orders/$orderId';
   static String approveCorporateBookingEndpoint(String id) =>
       '/cashier/corporate-bookings/$id/approve';
   static String rejectCorporateBookingEndpoint(String id) =>
