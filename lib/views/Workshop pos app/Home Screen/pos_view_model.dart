@@ -1391,8 +1391,57 @@ class PosViewModel extends ChangeNotifier {
         throw Exception('Authentication token not found');
       }
 
-      final isCorpSubmit =
-          _corporateAccountId != null && _corporateAccountId!.trim().isNotEmpty;
+      // Keep corporate edit context sticky: if caller forgot to hydrate VM corporate id,
+      // recover it from the existing order being edited (same orderId in POS list).
+      final existingOrderId = (_previousOrderId ?? '').trim();
+      if ((_corporateAccountId == null || _corporateAccountId!.trim().isEmpty) &&
+          existingOrderId.isNotEmpty) {
+        PosOrder? existing;
+        try {
+          existing = _orders.firstWhere((o) => o.id == existingOrderId);
+        } catch (_) {}
+        existing ??= _selectedOrder?.id == existingOrderId ? _selectedOrder : null;
+        final recoveredCorporateId = (existing?.corporateAccountId ?? '').trim();
+        if (recoveredCorporateId.isNotEmpty) {
+          _corporateAccountId = recoveredCorporateId;
+        }
+      }
+
+      final contextOrderId = (_previousOrderId ?? '').trim();
+      PosOrder? contextOrder;
+      if (contextOrderId.isNotEmpty) {
+        try {
+          contextOrder = _orders.firstWhere((o) => o.id == contextOrderId);
+        } catch (_) {
+          if (_selectedOrder?.id == contextOrderId) {
+            contextOrder = _selectedOrder;
+          } else if (_editingOrder?.id == contextOrderId) {
+            contextOrder = _editingOrder;
+          }
+        }
+      }
+      final forceCorporateByContext =
+          contextOrder?.isCorporateWalkIn == true;
+
+      final isCorpSubmit = forceCorporateByContext ||
+          (_corporateAccountId != null && _corporateAccountId!.trim().isNotEmpty);
+
+      // Hard safety: never allow an existing corporate draft/edit context
+      // to fall through to the normal walk-in branch.
+      if (forceCorporateByContext &&
+          (_corporateAccountId == null || _corporateAccountId!.trim().isEmpty)) {
+        final recovered = (contextOrder?.corporateAccountId ?? '').trim();
+        if (recovered.isNotEmpty) {
+          _corporateAccountId = recovered;
+        } else {
+          _errorMessage = 'Corporate account is missing for this corporate draft.';
+          _isLoading = false;
+          if (forInvoicePanelSave) _invoicePanelSaveBusy = false;
+          notifyListeners();
+          if (context.mounted) ToastService.showError(context, _errorMessage!);
+          return false;
+        }
+      }
       if (isCorpSubmit && _customerName.trim().isEmpty) {
         _errorMessage = 'Contact name is required for corporate quote';
         _isLoading = false;
@@ -1489,9 +1538,10 @@ class PosViewModel extends ChangeNotifier {
           vat: vatPercent,
           totalAmount: totalAmount,
           corporateAccountId: _corporateAccountId!.trim(),
+          sendForApproval: false,
         );
 
-        final corpRes = await posRepository.saveWalkInCorporateUnapproved(request, token);
+        final corpRes = await posRepository.createWalkInOrder(request, token);
         if (corpRes.success) {
           _applyWalkInOrderSuccess(
             corpRes,
@@ -2596,10 +2646,16 @@ class PosViewModel extends ChangeNotifier {
     try {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Token not found');
-      final res = await posRepository.sendWalkInCorporateForApproval(orderId, token);
-      final ok = res['success'] == true;
-      final msg = res['message']?.toString() ??
-          (ok ? 'Sent for corporate approval' : 'Failed to send for approval');
+      final detail = await loadCashierOrderDetail(orderId);
+      if (detail == null) {
+        throw Exception('Order details not found');
+      }
+      final req = _buildCorporateWalkInApprovalRequest(detail, sendForApproval: true);
+      final res = await posRepository.createWalkInOrder(req, token);
+      final ok = res.success;
+      final msg = res.message.isNotEmpty
+          ? res.message
+          : (ok ? 'Sent for corporate approval' : 'Failed to send for approval');
       if (context.mounted) {
         if (ok) {
           ToastService.showSuccess(context, msg);
@@ -2619,6 +2675,86 @@ class PosViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  WalkInCustomerRequest _buildCorporateWalkInApprovalRequest(
+    PosOrder order, {
+    required bool sendForApproval,
+  }) {
+    final products = <RequestedProduct>[];
+    final services = <RequestedService>[];
+    for (final raw in order.items) {
+      if (raw is! Map) continue;
+      final item = Map<String, dynamic>.from(raw);
+      final itemType = (item['itemType'] ?? '').toString().trim().toLowerCase();
+      final departmentId = (item['departmentId'] ?? '').toString().trim();
+      final qty = double.tryParse(item['qty']?.toString() ?? '') ??
+          double.tryParse(item['quantity']?.toString() ?? '') ??
+          0.0;
+      if (departmentId.isEmpty || qty <= 0) continue;
+      final discountType = item['discountType']?.toString();
+      final discountValue =
+          double.tryParse(item['discountValue']?.toString() ?? '');
+      if (itemType == 'service') {
+        final sid = (item['serviceId'] ?? item['productId'] ?? '').toString().trim();
+        if (sid.isEmpty) continue;
+        services.add(
+          RequestedService(
+            serviceId: sid,
+            departmentId: departmentId,
+            qty: qty,
+            discountType: discountType,
+            discountValue: discountValue,
+            unitPrice: double.tryParse(item['unitPrice']?.toString() ?? ''),
+          ),
+        );
+      } else {
+        final pid = (item['productId'] ?? '').toString().trim();
+        if (pid.isEmpty) continue;
+        products.add(
+          RequestedProduct(
+            productId: pid,
+            departmentId: departmentId,
+            qty: qty,
+            discountType: discountType,
+            discountValue: discountValue,
+          ),
+        );
+      }
+    }
+
+    final deptIds = order.selectedDepartmentEntries
+        .map((e) => e['id'] ?? '')
+        .where((id) => id.trim().isNotEmpty)
+        .toSet()
+        .toList();
+
+    return WalkInCustomerRequest(
+      orderId: order.id,
+      customerName: order.customerName,
+      vatNumber: order.customer?.vatNumber,
+      mobile: order.customer?.mobile,
+      vehicleNumber: order.plateNumber,
+      vinNumber: order.vehicle?.vin,
+      make: order.vehicle?.make,
+      model: order.vehicle?.model,
+      odometerReading: order.odometerReading > 0 ? order.odometerReading : null,
+      departmentIds: deptIds,
+      products: products.isNotEmpty ? products : null,
+      services: services.isNotEmpty ? services : null,
+      totalDiscountType: order.totalDiscountType,
+      totalDiscountValue: order.totalDiscountValue,
+      promoCodeId: order.promoCodeId,
+      amountBeforeDiscount: order.subtotal > 0 ? order.subtotal : null,
+      amountAfterDiscount: order.subtotal > 0 ? order.subtotal : null,
+      amountAfterPromo: order.subtotal > 0 ? order.subtotal : null,
+      vat: 15.0,
+      totalAmount: order.totalAmount > 0 ? order.totalAmount : null,
+      corporateAccountId: (order.corporateAccountId ?? '').trim().isNotEmpty
+          ? order.corporateAccountId!.trim()
+          : null,
+      sendForApproval: sendForApproval,
+    );
   }
 
   void setOrderSearchQuery(String query) {
@@ -2773,11 +2909,15 @@ class PosViewModel extends ChangeNotifier {
     return _cartItems.any((item) => item.product.id == productId);
   }
 
-  /// Billing PATCH applies only to `walk_in` orders without `corporateAccountId`.
+  /// Billing PATCH applies to walk-in orders and corporate walk-in orders.
   bool _isStandardWalkInOrderForBilling(PosOrder o) {
-    if ((o.corporateAccountId ?? '').trim().isNotEmpty) return false;
-    final s = o.source.toLowerCase().replaceAll('-', '_');
-    return s == 'walk_in';
+    final s = o.source
+        .toLowerCase()
+        .replaceAll('-', '_')
+        .replaceAll(' ', '_')
+        .trim();
+    if (o.isCorporateWalkIn) return true;
+    return s == 'walk_in' || s == 'walkin' || s.contains('walk_in');
   }
 
   bool isStandardWalkInOrderForBilling(PosOrder o) =>

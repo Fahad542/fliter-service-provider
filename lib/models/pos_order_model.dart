@@ -924,6 +924,9 @@ class PosOrder {
   }
 
   String get displayJobStatus {
+    if (isCorporateWalkIn && isRejectedByCorporate) {
+      return status;
+    }
     return _latestJobStatus;
   }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../../../utils/toast_service.dart';
 import '../../../models/pos_product_model.dart';
 import '../../../utils/app_colors.dart';
@@ -1711,7 +1712,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                                 finalDeptId = vm.products.first.departmentId ?? '1';
                                                               }
                                                             }
-                                                            final success = await vm.submitWalkInOrder([finalDeptId], context);
+                                                            final keepDraftContext = vm.corporateAccountId != null &&
+                                                                (vm.walkInDraftOrderId?.trim().isNotEmpty ?? false);
+                                                            final success = await vm.submitWalkInOrder(
+                                                              [finalDeptId],
+                                                              context,
+                                                              clearCustomerOnSuccess: !keepDraftContext,
+                                                              forInvoicePanelSave: true,
+                                                            );
                                                             if (success && context.mounted) {
                                                               vm.fetchOrders();
                                                               navigateToPosShellOrdersTab(context);

@@ -2164,6 +2164,9 @@ bool posOrderCanCashierCancel(PosOrder order) {
   if (normalizedStatus == 'cancelled' || normalizedStatus == 'invoiced') {
     return false;
   }
+  if (order.isCorporateWalkIn && order.isRejectedByCorporate) {
+    return true;
+  }
   if (order.isCorporateWalkIn && order.isCorporateUnapproved) {
     return true;
   }

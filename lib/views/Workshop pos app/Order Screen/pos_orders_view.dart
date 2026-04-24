@@ -379,6 +379,9 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final order = vm.selectedOrder;
     final enabled = order != null;
+    final isRejectedCorporateOrder = order != null &&
+        order.isCorporateWalkIn &&
+        order.isRejectedByCorporate;
     final corporateBillingLocked = order != null &&
         order.isCorporateWalkIn &&
         !order.isCorporateApproved;
@@ -410,7 +413,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
         color: result.color,
       );
 
-      // Backend billing PATCH only applies to standard walk-in orders.
+      // Backend billing PATCH applies to walk-in orders (including corporate walk-in).
       if (vm.isStandardWalkInOrderForBilling(order)) {
         final patchErr = await vm.submitWalkInOrderBillingPatch(order);
         if (!context.mounted) return;
@@ -445,7 +448,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
 
     final addCustomerBtn = Expanded(
       child: ElevatedButton(
-        onPressed: enabled ? openAddCustomer : null,
+        onPressed: (enabled && !isRejectedCorporateOrder) ? openAddCustomer : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryLight,
           foregroundColor: AppColors.onPrimaryLight,
@@ -603,6 +606,10 @@ Widget posOrdersJobStatusBadge(String statusRaw) {
   var s = statusRaw.toLowerCase().replaceAll(' ', '_');
   if (s == 'complete') s = 'completed';
   if (s == 'job_edited') s = 'edited';
+  final isRejected =
+      s == 'rejected_by_corporate' ||
+      s == 'rejected' ||
+      statusRaw.toLowerCase().contains('rejected');
   final isComplete = s == 'completed' || s == 'invoiced';
   final isEdited = s == 'edited';
   final isCancelled = s == 'cancelled' || s == 'canceled';
@@ -614,7 +621,12 @@ Widget posOrdersJobStatusBadge(String statusRaw) {
   late Color border;
   late String label;
 
-  if (isCancelled) {
+  if (isRejected) {
+    fg = Colors.white;
+    bg = const Color(0xFFD32F2F);
+    border = const Color(0xFFB71C1C);
+    label = 'REJECTED';
+  } else if (isCancelled) {
     fg = Colors.white;
     bg = const Color(0xFFD32F2F);
     border = const Color(0xFFB71C1C);
@@ -807,6 +819,7 @@ bool _canAddDepartmentToOrder(PosOrder order) {
   if (order.id.trim().isEmpty) return false;
   final src = order.source.toLowerCase().replaceAll('-', '_');
   if (!src.contains('walk')) return false;
+  if (order.isCorporateWalkIn && order.isRejectedByCorporate) return false;
   final st = order.status.toLowerCase();
   if (st == 'invoiced' || st == 'cancelled' || st == 'completed' || st == 'edited') return false;
   if ((order.invoiceNo ?? '').trim().isNotEmpty) return false;
@@ -933,6 +946,8 @@ class _CorporatePendingJobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRejectedCorporateOrder =
+        order.isCorporateWalkIn && order.isRejectedByCorporate;
     final orderItems = order.items
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
@@ -1039,12 +1054,26 @@ class _CorporatePendingJobCard extends StatelessWidget {
                             ),
                           )
                         : null,
-                    onTap: () {
+                    onTap: () async {
+                      if (isRejectedCorporateOrder) {
+                        ToastService.showError(
+                          context,
+                          'Rejected corporate orders are read-only. Remove the order from the list.',
+                        );
+                        return;
+                      }
                       final vm = context.read<PosViewModel>();
                       vm.primeCorporateWalkInDraftFromOrder(order);
                       vm.clearCart();
                       PosOrderJob? matchedJob;
-                      for (final j in order.jobs) {
+
+                      PosOrder sourceOrder = order;
+                      var latestOrder = await vm.loadCashierOrderDetail(order.id);
+                      if (latestOrder != null) {
+                        sourceOrder = latestOrder;
+                      }
+
+                      for (final j in sourceOrder.jobs) {
                         final jid = (j.departmentId ?? '').trim();
                         final jname = j.department.trim().toLowerCase();
                         final wantId = departmentId.trim();
@@ -1077,11 +1106,17 @@ class _CorporatePendingJobCard extends StatelessWidget {
                               ? departmentId
                               : (matchedJob.departmentId ?? ''),
                           preSelectedItems: preSelected,
-                          order: order,
+                          order: sourceOrder,
                           completingOrderId: matchedJob.id,
                         );
                       } else {
                         vm.clearEditOrderContext(notify: false);
+                        if (context.mounted) {
+                          ToastService.showError(
+                            context,
+                            'Job ID not available for this department yet. Pricing API cannot run without job.',
+                          );
+                        }
                       }
                       Navigator.push(
                         context,
@@ -1098,7 +1133,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
                                 .map((e) => e['name'] ?? '')
                                 .where((name) => name.trim().isNotEmpty)
                                 .toList(),
-                            completingOrder: matchedJob != null ? order : null,
+                            completingOrder: matchedJob != null ? sourceOrder : null,
                             completingOrderId: matchedJob?.id,
                           ),
                         ),
@@ -1111,42 +1146,46 @@ class _CorporatePendingJobCard extends StatelessWidget {
                     label: 'Assign Technicians',
                     onTap: () => ToastService.showError(
                       context,
-                      'This corporate walk-in has no real jobId yet. Send for approval first, then assign technicians as normal.',
+                      isRejectedCorporateOrder
+                          ? 'Rejected corporate orders are read-only. Remove the order from the list.'
+                          : 'This corporate walk-in has no real jobId yet. Send for approval first, then assign technicians as normal.',
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 2, 12, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _JobFooterButton(
-                      label: 'Cancel',
-                      backgroundColor: const Color(0xFF23262D),
-                      textColor: Colors.white,
-                      enabled: true,
-                      onTap: () => showCashierCancelOrderDialog(context, order.id),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _JobFooterButton(
-                      label: 'Mark Complete',
-                      backgroundColor: const Color(0xFFFCC247),
-                      textColor: const Color(0xFF23262D),
-                      enabled: true,
-                      onTap: () => ToastService.showError(
-                        context,
-                        'Corporate order must be approved before completing jobs.',
+            if (!isRejectedCorporateOrder) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 2, 12, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _JobFooterButton(
+                        label: 'Cancel',
+                        backgroundColor: const Color(0xFF23262D),
+                        textColor: Colors.white,
+                        enabled: true,
+                        onTap: () => showCashierCancelOrderDialog(context, order.id),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _JobFooterButton(
+                        label: 'Mark Complete',
+                        backgroundColor: const Color(0xFFFCC247),
+                        textColor: const Color(0xFF23262D),
+                        enabled: true,
+                        onTap: () => ToastService.showError(
+                          context,
+                          'Corporate order must be approved before completing jobs.',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -1543,6 +1582,10 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusForUi =
+        (order.isCorporateWalkIn && order.isRejectedByCorporate)
+            ? order.status
+            : job.status;
     var st = job.status.toLowerCase().trim();
     if (st == 'complete') st = 'completed';
     if (st == 'job_edited') st = 'edited';
@@ -1550,7 +1593,9 @@ class _JobCard extends StatelessWidget {
     final isComplete = st == 'completed';
     final isEdited = st == 'edited';
     final isCancelled = job.isCancelledJob;
-    final isLocked = isInvoiced || isCancelled;
+    final isRejectedCorporateOrder =
+        order.isCorporateWalkIn && order.isRejectedByCorporate;
+    final isLocked = isInvoiced || isCancelled || isRejectedCorporateOrder;
 
     final jobLineItems = dedupeCashierServiceLinesForPosDisplay(job.items);
     final hasLineItems = jobLineItems.isNotEmpty;
@@ -1622,7 +1667,7 @@ class _JobCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      posOrdersJobStatusBadge(job.status),
+                      posOrdersJobStatusBadge(statusForUi),
                     ],
                   ),
                 ),
@@ -1699,8 +1744,18 @@ class _JobCard extends StatelessWidget {
                                 : const Color(0xFF23262D),
                             textColor: Colors.white,
                             isBusy: false, // Cancellation happens in a dialog now
-                            enabled: !isCancelled && !completing,
-                            onTap: () => _onCancelJob(context, job),
+                            enabled:
+                                !isCancelled && !completing && !isRejectedCorporateOrder,
+                            onTap: () {
+                              if (isRejectedCorporateOrder) {
+                                ToastService.showError(
+                                  context,
+                                  'Rejected corporate orders are read-only. Remove the order from the list.',
+                                );
+                                return;
+                              }
+                              _onCancelJob(context, job);
+                            },
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -1730,16 +1785,25 @@ class _JobCard extends StatelessWidget {
                                   !isComplete &&
                                   !isEdited &&
                                   !isCancelled,
-                          enabled: !completing,
+                          enabled: !completing && !isRejectedCorporateOrder,
                           onTap: (isComplete || isEdited)
-                              ? () => _openJobProductGrid(
+                              ? () {
+                                  if (isRejectedCorporateOrder) {
+                                    ToastService.showError(
+                                      context,
+                                      'Rejected corporate orders are read-only. Remove the order from the list.',
+                                    );
+                                    return;
+                                  }
+                                  _openJobProductGrid(
                                     context,
                                     order,
                                     job,
-                                  )
-                            : isCancelled
-                                ? () {}
-                                : () => _onMarkJobComplete(context, order, job),
+                                  );
+                                }
+                              : isCancelled
+                                  ? () {}
+                                  : () => _onMarkJobComplete(context, order, job),
                       ),
                     ),
                   ],
@@ -2618,7 +2682,7 @@ class _OrderSummaryPanel extends StatelessWidget {
 
     for (var ji = 0; ji < activeJobs.length; ji++) {
       final job = activeJobs[ji];
-      detailChildren.add(_DraftDepartmentSection(job: job));
+      detailChildren.add(_DraftDepartmentSection(job: job, sourceOrder: order));
       if (ji < activeJobs.length - 1) {
         detailChildren.add(const SizedBox(height: 14));
         detailChildren.add(const Divider(height: 1, color: Color(0xFFE8ECF3)));
@@ -2828,10 +2892,16 @@ class _OrderSummaryPanel extends StatelessWidget {
 
 class _DraftDepartmentSection extends StatelessWidget {
   final PosOrderJob job;
-  const _DraftDepartmentSection({required this.job});
+  final PosOrder? sourceOrder;
+  const _DraftDepartmentSection({required this.job, this.sourceOrder});
 
   @override
   Widget build(BuildContext context) {
+    final statusForUi = (sourceOrder != null &&
+            sourceOrder!.isCorporateWalkIn &&
+            sourceOrder!.isRejectedByCorporate)
+        ? sourceOrder!.status
+        : job.status;
     final techs = job.distinctActiveTechnicians;
     final techLabel = techs.isEmpty
         ? 'No technicians assigned'
@@ -2847,7 +2917,7 @@ class _DraftDepartmentSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _orderSummaryHighlightBox(
-          departmentStatusHeaderTint: job.status,
+          departmentStatusHeaderTint: statusForUi,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -2865,7 +2935,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              posOrdersJobStatusBadge(job.status),
+              posOrdersJobStatusBadge(statusForUi),
             ],
           ),
         ),

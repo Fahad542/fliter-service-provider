@@ -658,17 +658,22 @@ class PosRepository {
   }
 
   Future<CreateInvoiceResponse> getInvoiceByOrder(String orderId, String token) async {
+    final endpoint = ApiConstants.getInvoiceByOrderEndpoint;
+    final body = {'orderId': orderId};
+    _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.post(
-        ApiConstants.getInvoiceByOrderEndpoint,
-        {'orderId': orderId},
+        endpoint,
+        body,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
+      _logWalkInResponse(endpoint, response);
       return CreateInvoiceResponse.fromJson(response);
     } catch (e) {
+      _logWalkInError(endpoint, e);
       rethrow;
     }
   }

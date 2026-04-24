@@ -20,8 +20,12 @@ class WalkInCustomerRequest {
   final double? amountAfterPromo;
   final double? vat;
   final double? totalAmount;
-  /// When set, use POST /cashier/walk-in-corporate/submit-for-approval instead of walk-in-order.
+  /// When set, request is treated as corporate flow on POST /cashier/walk-in-order.
   final String? corporateAccountId;
+  /// Shared walk-in endpoint behavior for corporate flow:
+  /// - false / null => keep as `unapproved`
+  /// - true => transition to `waiting for corporate approval`
+  final bool? sendForApproval;
 
   WalkInCustomerRequest({
     this.orderId,
@@ -46,6 +50,7 @@ class WalkInCustomerRequest {
     this.vat,
     this.totalAmount,
     this.corporateAccountId,
+    this.sendForApproval,
   });
 
   Map<String, dynamic> toJson() {
@@ -103,6 +108,9 @@ class WalkInCustomerRequest {
     if (totalAmount != null) data['TotalAmount'] = totalAmount;
     if (corporateAccountId != null && corporateAccountId!.isNotEmpty) {
       data['corporateAccountId'] = corporateAccountId;
+      if (sendForApproval != null) {
+        data['sendForApproval'] = sendForApproval;
+      }
     }
 
     return data;

@@ -288,6 +288,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
   @override
   Widget build(BuildContext context) {
     final isCorporateLocked = widget.order?.isCorporateWalkIn == true;
+    final vehicleFieldsLocked = false;
     final mq = MediaQuery.sizeOf(context);
     // Compact card; same max-width formula as payment dialog.
     final maxW = min(520.0, mq.width - 40);
@@ -376,7 +377,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _plateCtrl,
-                      readOnly: isCorporateLocked,
+                      readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Plate number',
@@ -384,18 +385,16 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       ),
                       textCapitalization: TextCapitalization.characters,
                       validator: (s) =>
-                          isCorporateLocked
-                              ? null
-                              : (s == null || s.trim().isEmpty)
-                                  ? 'Plate is required'
-                                  : null,
+                          (s == null || s.trim().isEmpty)
+                              ? 'Plate is required'
+                              : null,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextFormField(
                       controller: _odoCtrl,
-                      readOnly: isCorporateLocked,
+                      readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Odometer',
@@ -414,7 +413,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _makeCtrl,
-                      readOnly: isCorporateLocked,
+                      readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Make',
@@ -428,7 +427,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _modelCtrl,
-                      readOnly: isCorporateLocked,
+                      readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Model',
@@ -447,7 +446,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _yearCtrl,
-                      readOnly: isCorporateLocked,
+                      readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'Year',
@@ -456,7 +455,6 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       ),
                       keyboardType: TextInputType.number,
                       validator: (s) {
-                        if (isCorporateLocked) return null;
                         if (s == null || s.trim().isEmpty) return null;
                         final yi = int.tryParse(s.trim());
                         if (yi == null || yi < 1900 || yi > 2100) {
@@ -470,7 +468,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _vinCtrl,
-                      readOnly: isCorporateLocked,
+                      readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
                         'VIN',
@@ -570,8 +568,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       ),
                     ),
                     onPressed: () {
-                      if (!isCorporateLocked &&
-                          _formKey.currentState?.validate() != true) {
+                      if (_formKey.currentState?.validate() != true) {
                         return;
                       }
                       if (!widget.showVehicleSection) {
@@ -3201,7 +3198,7 @@ class _PrintButton extends StatelessWidget {
   }
 }
 
-// ── Mock Print Dialog ─────────────────────────────────────────────────────────
+// ── Mock Print Dialog ───────────────────────────────────────────────────
 
 class _MockInvoicePrintDialog extends StatelessWidget {
   final PosOrder order;
