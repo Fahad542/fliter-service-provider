@@ -287,7 +287,10 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
 
   @override
   Widget build(BuildContext context) {
-    final isCorporateLocked = widget.order?.isCorporateWalkIn == true;
+    // Lock billing only for corporate **walk-in** approval flow, not corporate bookings.
+    final isCorporateLocked = widget.order != null &&
+        widget.order!.isCorporateWalkIn &&
+        !widget.order!.isCorporateBookingOrder;
     final vehicleFieldsLocked = false;
     final mq = MediaQuery.sizeOf(context);
     // Compact card; same max-width formula as payment dialog.
@@ -1015,9 +1018,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   }
 
   bool _isStandardWalkInOrder(PosOrder o) {
-    if ((o.corporateAccountId ?? '').trim().isNotEmpty) return false;
-    final s = o.source.toLowerCase().replaceAll('-', '_');
-    return s == 'walk_in';
+    return Provider.of<pvm.PosViewModel>(context, listen: false)
+        .isStandardWalkInOrderForBilling(o);
   }
 
   /// Standard walk-in: confirm billing + vehicle (merged into billing PATCH before invoice).
@@ -1416,6 +1418,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
   void _generateInvoice() async {
     if (widget.order.isCorporateWalkIn &&
+        !widget.order.isCorporateBookingOrder &&
         (widget.order.isCorporateUnapproved ||
             widget.order.isWaitingCorporateApproval ||
             widget.order.isRejectedByCorporate)) {
@@ -2206,7 +2209,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   isLoading: _isLoading,
                   enabled: widget.order.meetsCashierInvoicePrerequisites &&
                       (!widget.order.isCorporateWalkIn ||
-                          widget.order.isCorporateApproved),
+                          widget.order.isCorporateApproved ||
+                          widget.order.isCorporateBookingOrder),
                 ),
                 const SizedBox(height: 24),
               ],

@@ -382,9 +382,14 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
     final isRejectedCorporateOrder = order != null &&
         order.isCorporateWalkIn &&
         order.isRejectedByCorporate;
+    // Only block payment for corporate **walk-in** while waiting on corporate approval
+    // (or rejected). Corporate bookings and post-approval walk-in behave like normal checkout.
     final corporateBillingLocked = order != null &&
         order.isCorporateWalkIn &&
-        !order.isCorporateApproved;
+        !order.isCorporateBookingOrder &&
+        (order.isCorporateUnapproved ||
+            order.isWaitingCorporateApproval ||
+            order.isRejectedByCorporate);
 
     Future<void> openAddCustomer() async {
       if (order == null) return;
@@ -1401,6 +1406,7 @@ Future<void> _onMarkJobComplete(
   PosOrderJob job,
 ) async {
   if (order.isCorporateWalkIn &&
+      !order.isCorporateBookingOrder &&
       (order.isCorporateUnapproved ||
           order.isWaitingCorporateApproval ||
           order.isRejectedByCorporate)) {
@@ -2451,6 +2457,7 @@ Future<void> _generateInvoiceFromOrdersSummary(
   PosOrder order,
 ) async {
   if (order.isCorporateWalkIn &&
+      !order.isCorporateBookingOrder &&
       (order.isCorporateUnapproved ||
           order.isWaitingCorporateApproval ||
           order.isRejectedByCorporate)) {
@@ -2575,10 +2582,17 @@ class _OrderSummaryPanel extends StatelessWidget {
     final meetsPrereq = order.meetsCashierInvoicePrerequisites;
     final billingOk = vm.walkInBillingReadyForInvoice(order);
     final paymentOk = vm.invoicePaymentSelectionReady;
-    final corporateApprovedForBilling =
-        !order.isCorporateWalkIn || order.isCorporateApproved;
-    final canSendForApproval =
-        order.isCorporateWalkIn && order.isCorporateUnapproved;
+    // Same rule as payment: only block invoicing for corporate **walk-in** while waiting on
+    // corporate approval (or rejected). Do not require literal `corporate approved` status
+    // (cashier orders often stay `in progress` / `completed` on jobs while invoice is due).
+    final corporateApprovedForBilling = !(order.isCorporateWalkIn &&
+        !order.isCorporateBookingOrder &&
+        (order.isCorporateUnapproved ||
+            order.isWaitingCorporateApproval ||
+            order.isRejectedByCorporate));
+    final canSendForApproval = order.isCorporateWalkIn &&
+        !order.isCorporateBookingOrder &&
+        order.isCorporateUnapproved;
     final canGenerateInvoice = allDepartmentsComplete &&
         meetsPrereq &&
         billingOk &&

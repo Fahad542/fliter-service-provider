@@ -21,6 +21,13 @@ String? _firstNonEmptyString(List<dynamic> values) {
   return null;
 }
 
+bool _asBool(dynamic value) {
+  if (value == true) return true;
+  if (value == false || value == null) return false;
+  final s = value.toString().trim().toLowerCase();
+  return s == 'true' || s == '1' || s == 'yes';
+}
+
 int _firstNonZeroInt(List<dynamic> values) {
   for (final v in values) {
     if (v == null) continue;
@@ -574,6 +581,8 @@ class PosOrder {
   final String? corporateApprovalRejectionReason;
   final String? corporateOrderId;
   final String? paymentMethod;
+  /// Backend may set when this cashier order was created from Corporate Bookings (not walk-in corporate).
+  final bool fromCorporateBooking;
   final List<dynamic> pendingDepartments;
   final List<dynamic> proposalDepartments;
 
@@ -608,6 +617,7 @@ class PosOrder {
     this.corporateApprovalRejectionReason,
     this.corporateOrderId,
     this.paymentMethod,
+    this.fromCorporateBooking = false,
     this.pendingDepartments = const [],
     this.proposalDepartments = const [],
   });
@@ -623,6 +633,48 @@ class PosOrder {
     final parsedJobs =
         (json['jobs'] as List?)?.map((j) => PosOrderJob.fromJson(j)).toList() ??
         [];
+    final originHints = [
+      json['origin'],
+      json['orderType'],
+      json['orderSource'],
+      corporate['origin'],
+      corporateOrder['origin'],
+    ];
+    var fromBooking = _asBool(json['fromCorporateBooking']) ||
+        _asBool(json['isCorporateBooking']) ||
+        _asBool(json['corporateBooking']) ||
+        _asBool(corporateOrder['fromCorporateBooking']) ||
+        _asBool(corporate['fromCorporateBooking']);
+    if (!fromBooking) {
+      for (final h in originHints) {
+        if (h == null) continue;
+        final t = h.toString().toLowerCase();
+        if (t.contains('corporate_booking') ||
+            t.contains('corp_booking') ||
+            (t.contains('booking') && t.contains('corporate'))) {
+          fromBooking = true;
+          break;
+        }
+      }
+    }
+    if (!fromBooking) {
+      final w = json['walkIn'] ?? json['isWalkIn'] ?? json['isWalkInOrder'];
+      if (w == false &&
+          (corporateOrder.isNotEmpty ||
+              (json['corporateAccountId']?.toString().trim().isNotEmpty ?? false) ||
+              (corporate['accountId']?.toString().trim().isNotEmpty ?? false))) {
+        fromBooking = true;
+      }
+    }
+    final resolvedCorporateOrderId = _firstNonEmptyString([
+      corporateOrder['id'],
+      corporateOrder['_id'],
+      corporateOrder['orderId'],
+      json['corporateOrderId'],
+      json['corporate_order_id'],
+      salesOrder['corporateOrderId'],
+      salesOrder['corporate_order_id'],
+    ]);
     return PosOrder(
       id: json['id']?.toString() ?? '',
       status: json['status'] ?? '',
@@ -691,14 +743,19 @@ class PosOrder {
         corporate['companyName'],
       ]),
       corporateApprovalRejectionReason: json['corporateApprovalRejectionReason']?.toString(),
-      corporateOrderId: _firstNonEmptyString([
-        corporateOrder['id'],
-        json['corporateOrderId'],
-      ]),
+      corporateOrderId: resolvedCorporateOrderId,
       paymentMethod: _firstNonEmptyString([
         json['paymentMethod'],
+        json['payment_method'],
+        json['preferredPaymentMethod'],
+        json['bookingPaymentMethod'],
         corporateOrder['paymentMethod'],
+        corporateOrder['payment_method'],
+        corporateOrder['preferredPaymentMethod'],
+        corporate['paymentMethod'],
+        corporate['preferredPaymentMethod'],
       ]),
+      fromCorporateBooking: fromBooking,
       pendingDepartments: json['pendingDepartments'] is List
           ? List<dynamic>.from(json['pendingDepartments'] as List)
           : const [],
@@ -739,6 +796,7 @@ class PosOrder {
     String? corporateApprovalRejectionReason,
     String? corporateOrderId,
     String? paymentMethod,
+    bool? fromCorporateBooking,
     List<dynamic>? pendingDepartments,
     List<dynamic>? proposalDepartments,
   }) {
@@ -774,6 +832,7 @@ class PosOrder {
           corporateApprovalRejectionReason ?? this.corporateApprovalRejectionReason,
       corporateOrderId: corporateOrderId ?? this.corporateOrderId,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      fromCorporateBooking: fromCorporateBooking ?? this.fromCorporateBooking,
       pendingDepartments: pendingDepartments ?? this.pendingDepartments,
       proposalDepartments: proposalDepartments ?? this.proposalDepartments,
     );
@@ -784,6 +843,55 @@ class PosOrder {
       (corporateAccountId != null && corporateAccountId!.isNotEmpty) ||
       (corporateOrderId != null && corporateOrderId!.isNotEmpty) ||
       (corporateCompanyName != null && corporateCompanyName!.trim().isNotEmpty);
+
+  /// Corporate **booking** (Corporate Bookings → cashier). When true, skip walk-in billing PATCH.
+  /// Not the same as cashier-initiated corporate walk-in (`unapproved` / `waiting…` quote flow).
+  bool get isCorporateBookingOrder {
+    if (fromCorporateBooking) return true;
+
+    final s =
+        source.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_').trim();
+    if (s.isEmpty) return false;
+
+    if (s.contains('corporate_booking') || s.contains('corp_booking')) return true;
+    if (s.contains('booking') && s.contains('corporate')) return true;
+    if (s.contains('booking') && (corporateAccountId ?? '').trim().isNotEmpty) {
+      return true;
+    }
+
+    // Cashier corporate walk-in quote — keep billing API.
+    if (isCorporateUnapproved || isWaitingCorporateApproval || isRejectedByCorporate) {
+      return false;
+    }
+    // After corporate approval, walk-in-shaped orders use billing PATCH again.
+    if (isCorporateApproved) return false;
+
+    // `walk_in_corporate` / similar: execution pipeline from booking, not the quote states above.
+    if ((s.contains('walk_in') || s.contains('walkin')) && s.contains('corporate')) {
+      return true;
+    }
+
+    // Booking fulfillment: corporate payload but `source` is not a cashier walk-in string
+    // (backend rejects PATCH /billing for these orders).
+    final walkInLike = s == 'walk_in' ||
+        s == 'walkin' ||
+        (s.contains('walk_in') && s.isNotEmpty);
+    if (!walkInLike) {
+      if (isCorporateUnapproved ||
+          isWaitingCorporateApproval ||
+          isRejectedByCorporate ||
+          isCorporateApproved) {
+        return false;
+      }
+      if ((corporateAccountId ?? '').trim().isNotEmpty ||
+          (corporateCompanyName ?? '').trim().isNotEmpty ||
+          (corporateOrderId ?? '').trim().isNotEmpty) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   String get normalizedOrderStatus => status.trim().toLowerCase();
 

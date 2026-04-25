@@ -302,8 +302,9 @@ class PosViewModel extends ChangeNotifier {
     if (o == null) return;
     if (_invoicePaymentWasUserEdited) return;
 
-    // Corporate orders default to corporate monthly billing in payment dialog.
-    if (o.isCorporateWalkIn) {
+    // Corporate walk-in + corporate booking: default invoice payment dialog to corporate
+    // methods, prefilling from order/booking payload or corporate account when possible.
+    if (o.isCorporateWalkIn || o.isCorporateBookingOrder) {
       if (_corporateAccounts.isEmpty) {
         unawaited(fetchCorporateAccounts(silent: true));
       }
@@ -328,7 +329,7 @@ class PosViewModel extends ChangeNotifier {
         _invoicePaymentMethods.isNotEmpty) {
       return;
     }
-    if (order.isCorporateWalkIn) {
+    if (order.isCorporateWalkIn || order.isCorporateBookingOrder) {
       final preferred = _preferredCorporatePaymentMethodForOrder(order);
       final method = preferred ?? PaymentMethod.monthlyBilling;
       _invoicePaymentIsCorporate = true;
@@ -372,10 +373,28 @@ class PosViewModel extends ChangeNotifier {
 
   PaymentMethod? _paymentMethodFromBackendLabel(String raw) {
     final k = raw.trim().toLowerCase().replaceAll('_', ' ');
-    if (k.contains('monthly')) return PaymentMethod.monthlyBilling;
-    if (k.contains('bank')) return PaymentMethod.bankTransfer;
+    if (k.contains('monthly') ||
+        k.contains('account receivable') ||
+        k.contains('on account') ||
+        k.contains('invoice to company')) {
+      return PaymentMethod.monthlyBilling;
+    }
+    if (k.contains('bank') ||
+        k.contains('wire') ||
+        k.contains('transfer') ||
+        k.contains('iban') ||
+        k.contains('swift')) {
+      return PaymentMethod.bankTransfer;
+    }
     if (k.contains('cash')) return PaymentMethod.cash;
-    if (k.contains('card')) return PaymentMethod.card;
+    if (k.contains('card') ||
+        k.contains('credit') ||
+        k.contains('debit') ||
+        k.contains('mada') ||
+        k.contains('visa') ||
+        k.contains('master')) {
+      return PaymentMethod.card;
+    }
     if (k.contains('wallet')) return PaymentMethod.wallet;
     if (k.contains('tabby')) return PaymentMethod.tabby;
     if (k.contains('tamara')) return PaymentMethod.tamara;
@@ -696,10 +715,11 @@ class PosViewModel extends ChangeNotifier {
   }
 
   /// PATCH `/cashier/order/:orderId/billing` after **Add customer details** / Invoice details (Orders).
-  /// Walk-in without corporate only; skipped if an invoice already exists on [order].
+  /// Skipped for corporate **booking** orders (billing owned by booking / corporate portal).
   /// Call after [updateWalkInBillingContact] so [_buildWalkInBillingPatchBody] sees the new snapshot.
   /// Returns `null` on success, otherwise a user-facing error string.
   Future<String?> submitWalkInOrderBillingPatch(PosOrder order) async {
+    if (order.isCorporateBookingOrder) return null;
     if (!_isStandardWalkInOrderForBilling(order)) return null;
     if ((order.invoiceNo ?? '').trim().isNotEmpty) {
       return 'Billing cannot be edited after an invoice exists.';
@@ -902,6 +922,10 @@ class PosViewModel extends ChangeNotifier {
     bool isMainTab = false,
     PosOrderJob? sourceJob,
     PosOrder? sourceOrder,
+    /// When true (e.g. **Mark complete** from Orders with an empty cart), copy lines from
+    /// [sourceJob] into the pricing body. Otherwise an empty cart + non-null [sourceOrder]
+    /// means the user cleared lines in the product grid and we must not resurrect them.
+    bool hydrateFromJobWhenLinesEmpty = false,
   }) {
     final products = <Map<String, dynamic>>[];
     final services = <Map<String, dynamic>>[];
@@ -938,10 +962,14 @@ class PosViewModel extends ChangeNotifier {
       }
     }
 
-    // Only fall back to existing job items for NEW orders (submitWalkInOrder)
-    // where the user hasn't touched the cart at all. For edits, an empty cart
-    // means the user intentionally removed everything.
-    if (products.isEmpty && services.isEmpty && sourceJob != null && sourceOrder == null) {
+    // Fall back to existing job lines when there is no cart data:
+    // - new walk-in submit (sourceOrder == null), or
+    // - complete-from-Orders (hydrateFromJobWhenLinesEmpty) so PATCH/ready checks see billable lines.
+    // For product-grid edits, an empty cart + sourceOrder and hydrate false means intentional clear.
+    if (products.isEmpty &&
+        services.isEmpty &&
+        sourceJob != null &&
+        (sourceOrder == null || hydrateFromJobWhenLinesEmpty)) {
       for (final item in sourceJob.items) {
         final lineDept = item.departmentId.trim().isNotEmpty
             ? item.departmentId.trim()
@@ -2909,15 +2937,31 @@ class PosViewModel extends ChangeNotifier {
     return _cartItems.any((item) => item.product.id == productId);
   }
 
-  /// Billing PATCH applies to walk-in orders and corporate walk-in orders.
+  /// True only when this order may use PATCH `/cashier/order/:id/billing` (walk-in per backend).
+  /// Corporate **booking** fulfillment often has corporate flags but a non–walk-in `source` — must stay false.
   bool _isStandardWalkInOrderForBilling(PosOrder o) {
+    if (o.isCorporateBookingOrder) return false;
+
     final s = o.source
         .toLowerCase()
         .replaceAll('-', '_')
         .replaceAll(' ', '_')
         .trim();
-    if (o.isCorporateWalkIn) return true;
-    return s == 'walk_in' || s == 'walkin' || s.contains('walk_in');
+    final walkInLike =
+        s == 'walk_in' || s == 'walkin' || (s.contains('walk_in') && s.isNotEmpty);
+
+    if (o.isCorporateWalkIn) {
+      if (o.isCorporateUnapproved ||
+          o.isWaitingCorporateApproval ||
+          o.isRejectedByCorporate) {
+        return true;
+      }
+      if (o.isCorporateApproved) return true;
+      if (walkInLike && s.contains('corporate')) return true;
+      return walkInLike;
+    }
+
+    return walkInLike;
   }
 
   bool isStandardWalkInOrderForBilling(PosOrder o) =>
@@ -2926,9 +2970,12 @@ class PosViewModel extends ChangeNotifier {
   /// Plate, name, and mobile required for walk-in invoice (VM fields or order payload).
   bool walkInBillingReadyForInvoice(PosOrder order) {
     if (!_isStandardWalkInOrderForBilling(order)) return true;
-    final name = _customerName.trim().isNotEmpty
+    var name = _customerName.trim().isNotEmpty
         ? _customerName.trim()
         : (order.customer?.name ?? '').trim();
+    if (name.isEmpty) {
+      name = (order.corporateCompanyName ?? '').trim();
+    }
     final mobile = _mobile.trim().isNotEmpty
         ? _mobile.trim()
         : (order.customer?.mobile ?? '').trim();
@@ -3154,7 +3201,9 @@ class PosViewModel extends ChangeNotifier {
       }
       orderCtx ??= await loadCashierOrderDetail(orderId);
 
-      if (orderCtx != null && _isStandardWalkInOrderForBilling(orderCtx)) {
+      if (orderCtx != null &&
+          _isStandardWalkInOrderForBilling(orderCtx) &&
+          !orderCtx.isCorporateBookingOrder) {
         try {
           final billingBody = _buildWalkInBillingPatchBody(orderCtx);
           final cn = (billingBody['customerName'] as String? ?? '').trim();
@@ -3419,13 +3468,17 @@ class PosViewModel extends ChangeNotifier {
         isMainTab: isMainTab,
         sourceJob: sourceJob,
         sourceOrder: sourceOrder,
+        hydrateFromJobWhenLinesEmpty: true,
       );
 
-      // 2) Persist/refresh job-level pricing — skip if the cart is empty
-      //    but the job already has items (user is completing from Orders screen
-      //    without going through the Product Grid).
+      // 2) Persist/refresh job-level pricing. When the cart is empty but the job already has
+      //    lines (complete from Orders), [pricingBody] may still contain those lines via hydration
+      //    so the server billable state matches before checkJobCompleteReady.
       final jobAlreadyHasItems = sourceJob != null && sourceJob.items.isNotEmpty;
-      if (itemsForJob.isNotEmpty || !jobAlreadyHasItems) {
+      final pricingBodyHasLines =
+          ((pricingBody['products'] as List?)?.isNotEmpty ?? false) ||
+          ((pricingBody['services'] as List?)?.isNotEmpty ?? false);
+      if (itemsForJob.isNotEmpty || !jobAlreadyHasItems || pricingBodyHasLines) {
         await posRepository.updateJobPricing(jobId, pricingBody, token);
       }
 
@@ -3443,11 +3496,13 @@ class PosViewModel extends ChangeNotifier {
         );
       }
 
-      // 4) Complete cashier job — only send pricing body when we actually have cart items
+      // 4) Complete cashier job — send pricing when cart has lines or body was hydrated from job.
       final response = await posRepository.completeCashierJob(
         jobId,
         token,
-        body: itemsForJob.isNotEmpty ? pricingBody : <String, dynamic>{},
+        body: (itemsForJob.isNotEmpty || pricingBodyHasLines)
+            ? pricingBody
+            : <String, dynamic>{},
       );
       if (response.success) {
         // Refresh orders — keep the same order selected

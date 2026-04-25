@@ -3242,6 +3242,7 @@ void _showCompletionBottomSheet(
                                       ? null
                                       : () async {
                                           if (order.isCorporateWalkIn &&
+                                              !order.isCorporateBookingOrder &&
                                               (order.isCorporateUnapproved ||
                                                   order.isWaitingCorporateApproval ||
                                                   order.isRejectedByCorporate)) {

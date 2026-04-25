@@ -1,7 +1,7 @@
 class ApiConstants {
-  /// Local dev — change the port to match your backend (e.g. 8080, 5000).
-  static const String baseUrl = 'http://localhost:3000';
-  // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+  /// Production API.
+  static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+  // static const String baseUrl = 'http://localhost:3000'; // local dev
 
   //// workshop pos ////
   static const String loginEndpoint = '/auth/cashier/login';
