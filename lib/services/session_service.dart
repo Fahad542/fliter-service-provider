@@ -25,7 +25,6 @@ class SessionService {
     return token;
   }
 
-
   Future<User?> getUser({String role = 'cashier'}) async {
     final prefs = await SharedPreferences.getInstance();
     final userData = prefs.getString('${role}_user_data');
@@ -35,7 +34,6 @@ class SessionService {
     }
     return null;
   }
-
 
   Future<void> clearSession({String role = 'cashier'}) async {
     if (kDebugMode) {
@@ -47,31 +45,26 @@ class SessionService {
     await prefs.remove('${role}_user_data');
   }
 
-
   Future<bool> isLoggedIn({String role = 'cashier'}) async {
     final token = await getToken(role: role);
     return token != null;
   }
-
 
   Future<void> saveLastPortal(String portal) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('last_portal', portal);
   }
 
-
   Future<String?> getLastPortal() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('last_portal');
   }
-
 
   Future<void> saveCredentials(String email, String password) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pos_user_email', email);
     await prefs.setString('pos_user_password', password);
   }
-
 
   Future<Map<String, String>?> getCredentials() async {
     final prefs = await SharedPreferences.getInstance();
@@ -83,4 +76,18 @@ class SessionService {
     return null;
   }
 
+  // ── Locale helpers ─────────────────────────────────────────────────────────
+
+  /// Persists the app locale ('en' or 'ar') so translation services
+  /// can read it without needing a BuildContext.
+  static Future<void> saveLocale(String languageCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_locale', languageCode);
+  }
+
+  /// Returns the persisted locale language code, defaulting to 'en'.
+  static Future<String> getLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('app_locale') ?? 'en';
+  }
 }

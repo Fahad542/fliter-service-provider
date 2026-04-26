@@ -1,7 +1,7 @@
 class ApiConstants {
-  /// Production API.
+  /// Local dev — change the port to match your backend (e.g. 8080, 5000).
+ // static const String baseUrl = 'http://localhost:3000';
   static const String baseUrl = 'https://filterbackend-production.up.railway.app';
-  // static const String baseUrl = 'http://localhost:3000'; // local dev
 
   //// workshop pos ////
   static const String loginEndpoint = '/auth/cashier/login';
@@ -182,4 +182,32 @@ class ApiConstants {
       '/super-admin/departments';
   static const String superAdminCorporateCustomersEndpoint =
       '/super-admin/corporate-customers';
+
+  // ── Locker ────────────────────────────────────────────────────────────────
+
+  static const String lockerLoginEndpoint = '/auth/login';
+  static const String lockerDashboardEndpoint = '/locker/dashboard';
+  static const String lockerCollectionRequestsEndpoint =
+      '/locker/collection-requests';
+  static const String lockerFieldOfficersEndpoint = '/locker/field-officers';
+  static const String lockerRecordCollectionEndpoint =
+      '/locker/record-collection';
+  static const String lockerFinancialHistoryEndpoint =
+      '/locker/financial/history';
+  static const String lockerFinancialAnalyticsEndpoint =
+      '/locker/financial/analytics';
+  static const String lockerApprovalsEndpoint = '/locker/approvals';
+  static const String lockerApproveDifferenceEndpoint =
+      '/locker/approve-difference';
+  static const String lockerBranchesEndpoint = '/locker/branches';
+
+  // Notifications
+  static const String lockerNotificationsEndpoint = '/locker/notifications';
+
+  /// Path-based paginated endpoint: /locker/get_notifications/:page/:limit
+  static String lockerGetNotificationsEndpoint(int page, int limit) =>
+      '/locker/get_notifications/$page/$limit';
+
+  static const String lockerNotificationsMarkReadEndpoint =
+      '/locker/notifications/mark-read';
 }

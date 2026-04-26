@@ -19,6 +19,22 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  Future<AuthResponse> lockerLogin(String email, String password) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.lockerLoginEndpoint,
+        {
+          'email': email,
+          'password': password,
+        },
+      );
+      return AuthResponse.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<AuthResponse> adminLogin(String email, String password) async {
     try {
       final response = await _apiService.post(

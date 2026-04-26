@@ -4,9 +4,11 @@ import '../../l10n/app_localizations.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/widgets.dart';
+import '../../services/session_service.dart';
 import '../Workshop pos app/Login/login_view.dart';
 import '../Workshop pos app/More Tab/settings_view_model.dart';
 import '../Locker App/Auth/locker_login_view.dart';
+import '../Locker App/Dashboard/locker_dashboard_view.dart';
 import '../Workshop Owner/Auth/owner_login_view.dart';
 import '../Workshop Owner/owner_shell.dart';
 import '../Technician App/Auth/tech_login_view.dart';
@@ -23,7 +25,7 @@ class MenuView extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final isLandscape = screenWidth > screenHeight;
-    
+
     final crossAxisCount = isTablet ? (isLandscape ? 3 : 2) : 2;
     final childAspectRatio = isTablet ? (isLandscape ? 1.15 : 1.15) : 0.85;
     final horizontalPadding = isTablet
@@ -118,11 +120,16 @@ class MenuView extends StatelessWidget {
                         MenuCard(
                           title: 'Locker\nPortal',
                           icon: Icons.lock_rounded,
-                          onTap: () {
+                          onTap: () async {
+                            final isLoggedIn =
+                            await SessionService().isLoggedIn(role: 'locker');
+                            if (!context.mounted) return;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const LockerLoginView(),
+                                builder: (_) => isLoggedIn
+                                    ? const LockerDashboardView()
+                                    : const LockerLoginView(),
                               ),
                             );
                           },
