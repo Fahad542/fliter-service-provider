@@ -177,7 +177,7 @@ class _BillingManagementViewState extends State<BillingManagementView> {
 
   Widget _buildRecentActivity(BillingManagementViewModel vm, {int? limit}) {
     final count = limit != null && vm.monthlyBills.length > limit ? limit : vm.monthlyBills.length;
-    
+
     if (count == 0) {
       return const Center(
         child: Padding(
@@ -224,12 +224,12 @@ class _BillingManagementViewState extends State<BillingManagementView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      bill.customerName, 
+                      bill.translatedCustomerName ?? bill.customerName,
                       style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.secondaryLight),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Billing Period: ${bill.month}/${bill.year}', 
+                      'Billing Period: ${bill.month}/${bill.year}',
                       style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -239,7 +239,7 @@ class _BillingManagementViewState extends State<BillingManagementView> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'SAR ${bill.totalAmount}', 
+                    'SAR ${bill.totalAmount}',
                     style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight),
                   ),
                   const SizedBox(height: 4),
@@ -250,7 +250,7 @@ class _BillingManagementViewState extends State<BillingManagementView> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      bill.status.replaceAll('_', ' ').toUpperCase(), 
+                      (bill.translatedStatus ?? bill.status).replaceAll('_', ' ').toUpperCase(),
                       style: TextStyle(color: _getStatusColor(bill.status), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                     ),
                   ),

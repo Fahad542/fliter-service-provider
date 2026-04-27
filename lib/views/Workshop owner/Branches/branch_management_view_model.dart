@@ -5,18 +5,19 @@ import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../services/owner_data_service.dart';
 import '../../../../services/google_places_service.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
-class BranchManagementViewModel extends ChangeNotifier {
+class BranchManagementViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
   final GooglePlacesService googlePlacesService = GooglePlacesService('AIzaSyDfxcDdlq5IDIHjpRQKeAHepYIFaSYvVMQ');
-  
+
   final TextEditingController branchNameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController gpsLatController = TextEditingController();
   final TextEditingController gpsLngController = TextEditingController();
-  
+
   bool _isActive = true;
   bool get isActive => _isActive;
 
@@ -24,7 +25,7 @@ class BranchManagementViewModel extends ChangeNotifier {
     _isActive = value;
     notifyListeners();
   }
-  
+
   String? _editingBranchId;
   bool get isEditing => _editingBranchId != null;
 
@@ -37,14 +38,18 @@ class BranchManagementViewModel extends ChangeNotifier {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
+  /// Cache of translated branches keyed by branch id, so re-renders don't
+  /// re-translate on every notifyListeners call.
+  final Map<String, Branch> _translatedBranchCache = {};
+
   List<Branch> get branches {
-    if (_searchQuery.isEmpty) {
-      return ownerDataService.branches;
-    }
-    return ownerDataService.branches.where((b) => 
-      b.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      b.location.toLowerCase().contains(_searchQuery.toLowerCase())
-    ).toList();
+    final raw = _searchQuery.isEmpty
+        ? ownerDataService.branches
+        : ownerDataService.branches.where((b) =>
+    b.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        b.location.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    // Return translated version when cached, raw otherwise.
+    return raw.map((b) => _translatedBranchCache[b.id] ?? b).toList();
   }
 
   void updateSearchQuery(String query) {
@@ -83,7 +88,25 @@ class BranchManagementViewModel extends ChangeNotifier {
 
   Future<void> fetchBranches({bool silent = false}) async {
     await ownerDataService.fetchBranches(silent: silent);
+    await _translateBranches(ownerDataService.branches);
     notifyListeners();
+  }
+
+  /// Translates name and location for every branch and caches the results.
+  Future<void> _translateBranches(List<Branch> raw) async {
+    final translated = await Future.wait(raw.map(_translateBranch));
+    for (final b in translated) {
+      _translatedBranchCache[b.id] = b;
+    }
+  }
+
+  Future<Branch> _translateBranch(Branch branch) async {
+    final name     = await tBranch(branch.name);
+    final location = await tBranch(branch.location);
+    return branch.copyWith(
+      translatedName:     name,
+      translatedLocation: location,
+    );
   }
 
   void clearForm() {
@@ -164,8 +187,8 @@ class BranchManagementViewModel extends ChangeNotifier {
 
       final response = await ownerRepository.deleteBranch(token, id);
       final successMessage = (response is Map<String, dynamic> &&
-              response['message'] != null &&
-              response['message'].toString().trim().isNotEmpty)
+          response['message'] != null &&
+          response['message'].toString().trim().isNotEmpty)
           ? response['message'].toString()
           : 'Branch Deleted Successfully';
 

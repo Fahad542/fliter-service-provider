@@ -717,4 +717,189 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lockerExcelExportFailed => 'Excel export failed';
+
+  @override
+  String get accountingTitle => 'Accounting';
+
+  @override
+  String get accountingTabPayables => 'Payables';
+
+  @override
+  String get accountingTabReceivables => 'Receivables';
+
+  @override
+  String get accountingTabExpenses => 'Expenses';
+
+  @override
+  String get accountingTabAdvances => 'Advances';
+
+  @override
+  String get accountingPayables => 'Payables';
+
+  @override
+  String get accountingReceivables => 'Receivables';
+
+  @override
+  String get accountingOverdue => 'Overdue';
+
+  @override
+  String get accountingNoEntries => 'No entries found';
+
+  @override
+  String accountingRefPrefix(String ref, String date) {
+    return 'Ref: $ref • $date';
+  }
+
+  @override
+  String get accountingStatusOverdue => 'OVERDUE';
+
+  @override
+  String get accountingStatusSettled => 'SETTLED';
+
+  @override
+  String get accountingStatusPending => 'PENDING';
+
+  @override
+  String get approvalsTitle => 'Approvals';
+
+  @override
+  String get approvalsQueueLabel => 'Queue';
+
+  @override
+  String get approvalsStatusLabel => 'Status';
+
+  @override
+  String get approvalsQueueAll => 'All';
+
+  @override
+  String get approvalsQueueTopUps => 'Top-ups';
+
+  @override
+  String get approvalsQueueExpenses => 'Expenses';
+
+  @override
+  String get approvalsStatusAll => 'All';
+
+  @override
+  String get approvalsStatusPending => 'Pending';
+
+  @override
+  String get approvalsStatusApproved => 'Approved';
+
+  @override
+  String get approvalsStatusRejected => 'Rejected';
+
+  @override
+  String get approvalsEmptyExpenses => 'No expense approvals';
+
+  @override
+  String get approvalsEmptyPettyCash => 'No petty cash requests';
+
+  @override
+  String get approvalsEmptySubtitle => 'No records for this queue and status.';
+
+  @override
+  String get approvalsNoAddressesFound => 'No addresses found.';
+
+  @override
+  String get ownerLoginTitle => 'Workshop Owner';
+
+  @override
+  String get ownerLoginSubtitle => 'Sign in to your dashboard';
+
+  @override
+  String get ownerLoginEmail => 'Email';
+
+  @override
+  String get ownerLoginEmailHint => 'Enter your email';
+
+  @override
+  String get ownerLoginEmailRequired => 'Please enter your email';
+
+  @override
+  String get ownerLoginPassword => 'Password';
+
+  @override
+  String get ownerLoginPasswordHint => 'Enter your password';
+
+  @override
+  String get ownerLoginPasswordRequired => 'Please enter your password';
+
+  @override
+  String get ownerLoginForgotPassword => 'Forgot Password?';
+
+  @override
+  String get ownerLoginSignIn => 'Sign In';
+
+  @override
+  String get ownerLoginSuccess => 'Login successful';
+
+  @override
+  String get ownerLoginFailed => 'Login failed';
+
+  @override
+  String get ownerLoginNoAccount => 'Don\'t have an account? Sign up';
+
+  @override
+  String get ownerRegisterTitle => 'Create Account';
+
+  @override
+  String get ownerRegisterSubtitle => 'Register your workshop';
+
+  @override
+  String get ownerRegisterWorkshopName => 'Workshop Name';
+
+  @override
+  String get ownerRegisterWorkshopNameHint => 'Enter workshop name';
+
+  @override
+  String get ownerRegisterOwnerName => 'Owner Name';
+
+  @override
+  String get ownerRegisterOwnerNameHint => 'Enter full name';
+
+  @override
+  String get ownerRegisterEmail => 'Email Address';
+
+  @override
+  String get ownerRegisterEmailHint => 'Enter email address';
+
+  @override
+  String get ownerRegisterMobile => 'Mobile Number';
+
+  @override
+  String get ownerRegisterMobileHint => '+966...';
+
+  @override
+  String get ownerRegisterTaxId => 'Tax ID';
+
+  @override
+  String get ownerRegisterTaxIdHint => 'Enter Tax ID';
+
+  @override
+  String get ownerRegisterAddress => 'Address';
+
+  @override
+  String get ownerRegisterAddressHint => 'Search and select full address';
+
+  @override
+  String get ownerRegisterPassword => 'Password';
+
+  @override
+  String get ownerRegisterPasswordHint => 'Create a password';
+
+  @override
+  String get ownerRegisterButton => 'Register';
+
+  @override
+  String get ownerRegisterSuccess => 'Registration successful. Please login.';
+
+  @override
+  String get ownerRegisterFailed => 'Registration failed';
+
+  @override
+  String get ownerRegisterFieldRequired => 'Required';
+
+  @override
+  String get ownerRegisterHaveAccount => 'Already have an account? Sign in';
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
@@ -26,12 +27,13 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
   }
 
   Future<void> _handleLogin() async {
+    final l10n      = AppLocalizations.of(context)!;
     final viewModel = context.read<OwnerLoginViewModel>();
     if (!viewModel.formKey.currentState!.validate()) return;
     final success = await viewModel.login();
     if (success) {
       if (mounted) {
-        ToastService.showSuccess(context, 'Login successful');
+        ToastService.showSuccess(context, l10n.ownerLoginSuccess);
         await context.read<SessionService>().saveLastPortal('owner');
         Navigator.pushReplacement(
           context,
@@ -40,17 +42,21 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
       }
     } else {
       if (mounted) {
-        ToastService.showError(context, viewModel.errorMessage ?? 'Login failed');
+        ToastService.showError(
+          context,
+          viewModel.errorMessage ?? l10n.ownerLoginFailed,
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n        = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 600;
+    final isTablet    = screenWidth > 600;
     final horizontalPadding = isTablet ? screenWidth * 0.1 : 24.0;
-    final viewModel = context.watch<OwnerLoginViewModel>();
+    final viewModel   = context.watch<OwnerLoginViewModel>();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -61,10 +67,10 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                // Yellow header — same as POS Login
+                // Yellow header
                 CustomAuthHeader(
-                  title: 'Workshop Owner',
-                  subtitle: 'Sign in to your dashboard',
+                  title: l10n.ownerLoginTitle,
+                  subtitle: l10n.ownerLoginSubtitle,
                   showBackButton: true,
                   height: MediaQuery.of(context).size.height *
                       (isTablet ? 0.37 : 0.42),
@@ -97,25 +103,26 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                         children: [
                           const SizedBox(height: 8),
                           CustomTextField(
-                            label: 'Email',
-                            hint: 'Enter your email',
+                            label: l10n.ownerLoginEmail,
+                            hint: l10n.ownerLoginEmailHint,
                             controller: viewModel.emailController,
                             keyboardType: TextInputType.emailAddress,
                             prefixIcon: const Icon(Icons.email_outlined),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
+                                return l10n.ownerLoginEmailRequired;
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(
-                            label: 'Password',
-                            hint: 'Enter your password',
+                            label: l10n.ownerLoginPassword,
+                            hint: l10n.ownerLoginPasswordHint,
                             controller: viewModel.passwordController,
                             obscureText: viewModel.obscurePassword,
-                            prefixIcon: const Icon(Icons.lock_outline_rounded),
+                            prefixIcon:
+                            const Icon(Icons.lock_outline_rounded),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 viewModel.obscurePassword
@@ -126,7 +133,7 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
+                                return l10n.ownerLoginPasswordRequired;
                               }
                               return null;
                             },
@@ -137,7 +144,7 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                             child: TextButton(
                               onPressed: () {},
                               child: Text(
-                                'Forgot Password?',
+                                l10n.ownerLoginForgotPassword,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.primaryLight,
                                   fontWeight: FontWeight.w600,
@@ -149,7 +156,7 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                           SizedBox(
                             width: double.infinity,
                             child: CustomButton(
-                              text: 'Sign In',
+                              text: l10n.ownerLoginSignIn,
                               isLoading: viewModel.isLoading,
                               onPressed: _handleLogin,
                             ),
@@ -162,12 +169,12 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) =>
-                                        const OwnerRegistrationView(),
+                                    const OwnerRegistrationView(),
                                   ),
                                 );
                               },
                               child: Text(
-                                "Don't have an account? Sign up",
+                                l10n.ownerLoginNoAccount,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.backgroundDark,
                                   fontWeight: FontWeight.w600,
@@ -190,4 +197,3 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
     );
   }
 }
-

@@ -2,8 +2,17 @@ import 'package:flutter/material.dart';
 import '../../../../models/workshop_owner_models.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
-class BillingManagementViewModel extends ChangeNotifier {
+// ---------------------------------------------------------------------------
+// BillingManagementViewModel
+//
+// Static UI labels are resolved in the View. Dynamic API strings —
+// customer names and status values — are translated here using
+// [TranslatableMixin] before being exposed to the UI.
+// ---------------------------------------------------------------------------
+
+class BillingManagementViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
 
@@ -40,7 +49,7 @@ class BillingManagementViewModel extends ChangeNotifier {
   Future<void> fetchDashboardData() async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) throw Exception('No token found');
@@ -54,9 +63,11 @@ class BillingManagementViewModel extends ChangeNotifier {
         _overdueAmount = double.tryParse(response['overdue']?.toString() ?? '0') ?? 0.0;
 
         if (response['recentBillingActivity'] != null) {
-          _monthlyBills = (response['recentBillingActivity'] as List)
+          final raw = (response['recentBillingActivity'] as List)
               .map((activity) => MonthlyBill.fromJson(activity))
               .toList();
+          // ── Translate dynamic API strings ──────────────────────────────
+          _monthlyBills = await Future.wait(raw.map(_translateBill));
         }
       }
     } catch (e) {
@@ -65,6 +76,16 @@ class BillingManagementViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Translates the mutable display fields of a single [MonthlyBill].
+  Future<MonthlyBill> _translateBill(MonthlyBill bill) async {
+    final customerName = await tParty(bill.customerName);
+    final status       = await tStatus(bill.status);
+    return bill.copyWith(
+      translatedCustomerName: customerName,
+      translatedStatus:       status,
+    );
   }
 
   @override

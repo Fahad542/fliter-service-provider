@@ -137,7 +137,7 @@ class _BranchManagementViewState extends State<BranchManagementView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        branch.name,
+                        branch.translatedName ?? branch.name,
                         style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -150,7 +150,7 @@ class _BranchManagementViewState extends State<BranchManagementView> {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              branch.location,
+                              branch.translatedLocation ?? branch.location,
                               style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -335,109 +335,109 @@ class _AddBranchSheet extends StatelessWidget {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(vm.isEditing ? 'Update Branch' : 'Register New Branch', style: AppTextStyles.h2.copyWith(fontSize: 18)),
-                      const SizedBox(height: 8),
-                      Text(
-                        vm.isEditing ? 'Modify existing branch details.' : 'Enter branch details.',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                     const SizedBox(height: 30),
-                      _buildTextField('Branch Name / Area', Icons.location_on_rounded, controller: vm.branchNameController),
-                      
-                      // Address with Google Places Autocomplete
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: TypeAheadField<Map<String, dynamic>>(
-                          controller: vm.addressController,
-                          builder: (context, controller, focusNode) {
-                            return TextField(
-                              controller: controller,
-                              focusNode: focusNode,
-                              decoration: InputDecoration(
-                                labelText: 'Address',
-                                prefixIcon: const Icon(Icons.map_rounded, color: AppColors.secondaryLight, size: 20),
-                                filled: true,
-                                fillColor: Colors.grey.withOpacity(0.05),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide.none,
-                                ),
-                                labelStyle: const TextStyle(color: Colors.grey),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(vm.isEditing ? 'Update Branch' : 'Register New Branch', style: AppTextStyles.h2.copyWith(fontSize: 18)),
+                    const SizedBox(height: 8),
+                    Text(
+                      vm.isEditing ? 'Modify existing branch details.' : 'Enter branch details.',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 30),
+                    _buildTextField('Branch Name / Area', Icons.location_on_rounded, controller: vm.branchNameController),
+
+                    // Address with Google Places Autocomplete
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: TypeAheadField<Map<String, dynamic>>(
+                        controller: vm.addressController,
+                        builder: (context, controller, focusNode) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              labelText: 'Address',
+                              prefixIcon: const Icon(Icons.map_rounded, color: AppColors.secondaryLight, size: 20),
+                              filled: true,
+                              fillColor: Colors.grey.withOpacity(0.05),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
                               ),
-                            );
-                          },
-                          suggestionsCallback: (search) async {
-                            if (search.length < 3) return [];
-                            return await vm.getAddressSuggestions(search);
-                          },
-                          itemBuilder: (context, suggestion) {
-                            return ListTile(
-                              leading: const Icon(Icons.location_on_rounded, color: AppColors.primaryLight, size: 20),
-                              title: Text(
-                                suggestion['description'] ?? '',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                            );
-                          },
-                          onSelected: (suggestion) {
-                            vm.setSelectedAddress(
+                              labelStyle: const TextStyle(color: Colors.grey),
+                            ),
+                          );
+                        },
+                        suggestionsCallback: (search) async {
+                          if (search.length < 3) return [];
+                          return await vm.getAddressSuggestions(search);
+                        },
+                        itemBuilder: (context, suggestion) {
+                          return ListTile(
+                            leading: const Icon(Icons.location_on_rounded, color: AppColors.primaryLight, size: 20),
+                            title: Text(
                               suggestion['description'] ?? '',
-                              suggestion['place_id'] ?? '',
-                            );
-                          },
-                          emptyBuilder: (context) => const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text('No addresses found', style: TextStyle(color: Colors.grey)),
-                          ),
-                          decorationBuilder: (context, child) => Material(
-                            type: MaterialType.card,
-                            elevation: 8,
-                            borderRadius: BorderRadius.circular(16),
-                            child: child,
-                          ),
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          );
+                        },
+                        onSelected: (suggestion) {
+                          vm.setSelectedAddress(
+                            suggestion['description'] ?? '',
+                            suggestion['place_id'] ?? '',
+                          );
+                        },
+                        emptyBuilder: (context) => const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text('No addresses found', style: TextStyle(color: Colors.grey)),
+                        ),
+                        decorationBuilder: (context, child) => Material(
+                          type: MaterialType.card,
+                          elevation: 8,
+                          borderRadius: BorderRadius.circular(16),
+                          child: child,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      _buildSwitchTile('Active Status', vm.isActive, (val) => vm.toggleStatus(val)),
-                    ],
-                 ),
-               ),
-             ),
-             Padding(
-               padding: EdgeInsets.only(
-                 left: 24,
-                 right: 24,
-                 top: 16,
-                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-               ),
-                child: ElevatedButton(
-                  onPressed: vm.isActionLoading ? null : () => vm.submitBranchForm(context),
-                  style: ElevatedButton.styleFrom(
-                   backgroundColor: AppColors.primaryLight,
-                   disabledBackgroundColor: AppColors.primaryLight,
-                   foregroundColor: AppColors.secondaryLight,
-                   disabledForegroundColor: AppColors.secondaryLight,
-                   minimumSize: const Size.fromHeight(56),
-                   elevation: 0,
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                 ),
-                 child: vm.isActionLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: AppColors.secondaryLight,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          vm.isEditing ? 'Update Branch' : 'Submit for Approval',
-                          style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildSwitchTile('Active Status', vm.isActive, (val) => vm.toggleStatus(val)),
+                  ],
                 ),
-             ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: ElevatedButton(
+                onPressed: vm.isActionLoading ? null : () => vm.submitBranchForm(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  disabledBackgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.secondaryLight,
+                  disabledForegroundColor: AppColors.secondaryLight,
+                  minimumSize: const Size.fromHeight(56),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: vm.isActionLoading
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: AppColors.secondaryLight,
+                    strokeWidth: 2,
+                  ),
+                )
+                    : Text(
+                  vm.isEditing ? 'Update Branch' : 'Submit for Approval',
+                  style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -505,4 +505,3 @@ class _AddBranchSheet extends StatelessWidget {
     );
   }
 }
-

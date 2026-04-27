@@ -45,6 +45,11 @@ class Branch {
   final String status;
   final double salesMTD;
 
+  /// Translated display fields — set by the ViewModel after fetching,
+  /// never populated from JSON.
+  final String? translatedName;
+  final String? translatedLocation;
+
   Branch({
     required this.id,
     required this.name,
@@ -55,7 +60,37 @@ class Branch {
     this.gpsLng,
     required this.status,
     required this.salesMTD,
+    this.translatedName,
+    this.translatedLocation,
   });
+
+  Branch copyWith({
+    String? id,
+    String? name,
+    String? location,
+    String? vat,
+    String? cr,
+    double? gpsLat,
+    double? gpsLng,
+    String? status,
+    double? salesMTD,
+    String? translatedName,
+    String? translatedLocation,
+  }) {
+    return Branch(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      location: location ?? this.location,
+      vat: vat ?? this.vat,
+      cr: cr ?? this.cr,
+      gpsLat: gpsLat ?? this.gpsLat,
+      gpsLng: gpsLng ?? this.gpsLng,
+      status: status ?? this.status,
+      salesMTD: salesMTD ?? this.salesMTD,
+      translatedName: translatedName ?? this.translatedName,
+      translatedLocation: translatedLocation ?? this.translatedLocation,
+    );
+  }
 
   factory Branch.fromJson(Map<String, dynamic> json) {
     return Branch(
@@ -118,7 +153,7 @@ class OwnerEmployee {
   bool get isOnline => isAvailable == true;
   bool get isTechnicianAvailable =>
       technicianStatus.toLowerCase() == 'available' ||
-      technicianStatus.toLowerCase() == 'online';
+          technicianStatus.toLowerCase() == 'online';
 
   String get technicianStatusLabel {
     final s = technicianStatus.trim().toLowerCase();
@@ -140,7 +175,7 @@ class OwnerEmployee {
       if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
       if (difference.inHours < 24) return '${difference.inHours}h ago';
       if (difference.inDays < 7) return '${difference.inDays}d ago';
-      
+
       return lastSeenAt.split('T')[0];
     } catch (e) {
       return '';
@@ -193,8 +228,8 @@ class OwnerEmployee {
           json['status']?['status'] == 'available' ||
           json['is_available'] == true,
       technicianStatus: (json['technicianStatus']?['status'] ??
-              json['status']?['status'] ??
-              '')
+          json['status']?['status'] ??
+          '')
           .toString(),
       lastSeenAt: json['technicianStatus']?['lastSeenAt'] ?? json['status']?['lastSeenAt'] ?? '',
       isActive: () {
@@ -344,8 +379,8 @@ class OwnerCategory {
       type: json['type'] ?? '',
       workshopId: json['workshopId']?.toString() ?? '',
       subCategories: (json['subCategories'] as List?)
-              ?.map((e) => OwnerSubCategory.fromJson(e))
-              .toList() ??
+          ?.map((e) => OwnerSubCategory.fromJson(e))
+          .toList() ??
           [],
     );
   }
@@ -423,6 +458,11 @@ class MonthlyBill {
   final String status; // 'Pending', 'Partially Paid', 'Paid', 'Overdue'
   final String? pdfUrl;
 
+  /// Translated display fields — set by the ViewModel after fetching,
+  /// never populated from JSON.
+  final String? translatedCustomerName;
+  final String? translatedStatus;
+
   MonthlyBill({
     required this.id,
     required this.corporateCustomerId,
@@ -434,12 +474,44 @@ class MonthlyBill {
     required this.dueDate,
     this.status = 'Pending',
     this.pdfUrl,
+    this.translatedCustomerName,
+    this.translatedStatus,
   });
+
+  MonthlyBill copyWith({
+    String? id,
+    String? corporateCustomerId,
+    String? customerName,
+    int? month,
+    int? year,
+    double? totalAmount,
+    double? paidAmount,
+    DateTime? dueDate,
+    String? status,
+    String? pdfUrl,
+    String? translatedCustomerName,
+    String? translatedStatus,
+  }) {
+    return MonthlyBill(
+      id: id ?? this.id,
+      corporateCustomerId: corporateCustomerId ?? this.corporateCustomerId,
+      customerName: customerName ?? this.customerName,
+      month: month ?? this.month,
+      year: year ?? this.year,
+      totalAmount: totalAmount ?? this.totalAmount,
+      paidAmount: paidAmount ?? this.paidAmount,
+      dueDate: dueDate ?? this.dueDate,
+      status: status ?? this.status,
+      pdfUrl: pdfUrl ?? this.pdfUrl,
+      translatedCustomerName: translatedCustomerName ?? this.translatedCustomerName,
+      translatedStatus: translatedStatus ?? this.translatedStatus,
+    );
+  }
 
   factory MonthlyBill.fromJson(Map<String, dynamic> json) {
     int parsedMonth = 1;
     int parsedYear = 2026;
-    
+
     final periodStr = json['billingPeriod']?.toString() ?? '';
     // Expected format: "Month: 2/2025"
     if (periodStr.contains('/')) {
@@ -453,7 +525,7 @@ class MonthlyBill {
     // Capitalize status
     String statusStr = json['status']?.toString() ?? 'Pending';
     if (statusStr.isNotEmpty) {
-       statusStr = statusStr[0].toUpperCase() + statusStr.substring(1);
+      statusStr = statusStr[0].toUpperCase() + statusStr.substring(1);
     }
 
     return MonthlyBill(
@@ -702,8 +774,8 @@ class PosCounter {
     final reconTotal = json['reconciliationTotalDifference'] != null
         ? _d(json['reconciliationTotalDifference'])
         : (json['lockerDiff'] != null
-            ? _d(json['lockerDiff'])
-            : dCash + dBank + dCorp + dTamara + dTabby);
+        ? _d(json['lockerDiff'])
+        : dCash + dBank + dCorp + dTamara + dTabby);
 
     return PosCounter(
       id: json['posSessionId']?.toString() ?? '',
@@ -766,12 +838,12 @@ class PosMonitoringResponse {
       openOrdersCount: int.tryParse(json['openOrdersCount']?.toString() ?? '0') ?? 0,
       todaySales: double.tryParse(json['todaySales']?.toString() ?? '0') ?? 0.0,
       liveCounters: (json['liveCounters'] as List?)
-              ?.map((e) => PosCounter.fromJson(e))
-              .toList() ??
+          ?.map((e) => PosCounter.fromJson(e))
+          .toList() ??
           [],
       closingReports: (json['closingReports'] as List?)
-              ?.map((e) => PosCounter.fromJson(e))
-              .toList() ??
+          ?.map((e) => PosCounter.fromJson(e))
+          .toList() ??
           [],
     );
   }
@@ -994,6 +1066,11 @@ class AccountEntry {
   final String status; // 'pending', 'settled', 'overdue'
   final String? notes;
 
+  /// Translated display fields — set by the ViewModel after fetching,
+  /// never populated from JSON.
+  final String? translatedParty;
+  final String? translatedStatus;
+
   AccountEntry({
     required this.id,
     required this.type,
@@ -1003,7 +1080,35 @@ class AccountEntry {
     required this.reference,
     required this.status,
     this.notes,
+    this.translatedParty,
+    this.translatedStatus,
   });
+
+  AccountEntry copyWith({
+    String? id,
+    String? type,
+    String? party,
+    double? amount,
+    DateTime? date,
+    String? reference,
+    String? status,
+    String? notes,
+    String? translatedParty,
+    String? translatedStatus,
+  }) {
+    return AccountEntry(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      party: party ?? this.party,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      reference: reference ?? this.reference,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      translatedParty: translatedParty ?? this.translatedParty,
+      translatedStatus: translatedStatus ?? this.translatedStatus,
+    );
+  }
 
   factory AccountEntry.fromJson(Map<String, dynamic> json) {
     return AccountEntry(
@@ -1096,8 +1201,8 @@ class OwnerDashboardResponse {
       pendingInvoicesCount: int.tryParse(json['pendingInvoicesCount']?.toString() ?? '0') ?? 0,
       lowStockAlertsCount: int.tryParse(json['lowStockAlertsCount']?.toString() ?? '0') ?? 0,
       branchPerformance: (json['branchPerformance'] as List?)
-              ?.map((e) => BranchPerformance.fromJson(e))
-              .toList() ??
+          ?.map((e) => BranchPerformance.fromJson(e))
+          .toList() ??
           [],
     );
   }
@@ -1191,6 +1296,18 @@ class PettyCashRequestItem {
   final String? employeeName;
   final String? proofUrl;
 
+  /// Translated display fields — set by the ViewModel after fetching,
+  /// never populated from JSON.
+  final String? translatedPartyName;
+  final String? translatedBranchName;
+  final String? translatedCashierName;
+  final String? translatedStatus;
+
+  /// Alias used by ApprovalsViewModel for the request party name.
+  /// Falls back to [cashierName] since petty-cash requests have no separate
+  /// party — the cashier is the requesting party.
+  String? get partyName => cashierName.isNotEmpty ? cashierName : null;
+
   PettyCashRequestItem({
     required this.id,
     required this.amount,
@@ -1208,7 +1325,57 @@ class PettyCashRequestItem {
     this.categoryLabel,
     this.employeeName,
     this.proofUrl,
+    this.translatedPartyName,
+    this.translatedBranchName,
+    this.translatedCashierName,
+    this.translatedStatus,
   });
+
+  PettyCashRequestItem copyWith({
+    String? id,
+    double? amount,
+    String? reason,
+    String? status,
+    DateTime? requestedAt,
+    DateTime? approvedAt,
+    String? rejectionReason,
+    String? branchId,
+    String? branchName,
+    String? cashierId,
+    String? cashierName,
+    String? approvedBy,
+    String? kind,
+    String? categoryLabel,
+    String? employeeName,
+    String? proofUrl,
+    String? translatedPartyName,
+    String? translatedBranchName,
+    String? translatedCashierName,
+    String? translatedStatus,
+  }) {
+    return PettyCashRequestItem(
+      id: id ?? this.id,
+      amount: amount ?? this.amount,
+      reason: reason ?? this.reason,
+      status: status ?? this.status,
+      requestedAt: requestedAt ?? this.requestedAt,
+      approvedAt: approvedAt ?? this.approvedAt,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
+      branchId: branchId ?? this.branchId,
+      branchName: branchName ?? this.branchName,
+      cashierId: cashierId ?? this.cashierId,
+      cashierName: cashierName ?? this.cashierName,
+      approvedBy: approvedBy ?? this.approvedBy,
+      kind: kind ?? this.kind,
+      categoryLabel: categoryLabel ?? this.categoryLabel,
+      employeeName: employeeName ?? this.employeeName,
+      proofUrl: proofUrl ?? this.proofUrl,
+      translatedPartyName: translatedPartyName ?? this.translatedPartyName,
+      translatedBranchName: translatedBranchName ?? this.translatedBranchName,
+      translatedCashierName: translatedCashierName ?? this.translatedCashierName,
+      translatedStatus: translatedStatus ?? this.translatedStatus,
+    );
+  }
 
   bool get isExpenseKind {
     final k = kind?.toLowerCase() ?? '';
@@ -1296,4 +1463,3 @@ class PettyCashRequestsResponse {
     );
   }
 }
-

@@ -1469,6 +1469,372 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Excel export failed'**
   String get lockerExcelExportFailed;
+
+  /// No description provided for @accountingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounting'**
+  String get accountingTitle;
+
+  /// No description provided for @accountingTabPayables.
+  ///
+  /// In en, this message translates to:
+  /// **'Payables'**
+  String get accountingTabPayables;
+
+  /// No description provided for @accountingTabReceivables.
+  ///
+  /// In en, this message translates to:
+  /// **'Receivables'**
+  String get accountingTabReceivables;
+
+  /// No description provided for @accountingTabExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get accountingTabExpenses;
+
+  /// No description provided for @accountingTabAdvances.
+  ///
+  /// In en, this message translates to:
+  /// **'Advances'**
+  String get accountingTabAdvances;
+
+  /// No description provided for @accountingPayables.
+  ///
+  /// In en, this message translates to:
+  /// **'Payables'**
+  String get accountingPayables;
+
+  /// No description provided for @accountingReceivables.
+  ///
+  /// In en, this message translates to:
+  /// **'Receivables'**
+  String get accountingReceivables;
+
+  /// No description provided for @accountingOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get accountingOverdue;
+
+  /// No description provided for @accountingNoEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries found'**
+  String get accountingNoEntries;
+
+  /// No description provided for @accountingRefPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Ref: {ref} • {date}'**
+  String accountingRefPrefix(String ref, String date);
+
+  /// No description provided for @accountingStatusOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'OVERDUE'**
+  String get accountingStatusOverdue;
+
+  /// No description provided for @accountingStatusSettled.
+  ///
+  /// In en, this message translates to:
+  /// **'SETTLED'**
+  String get accountingStatusSettled;
+
+  /// No description provided for @accountingStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'PENDING'**
+  String get accountingStatusPending;
+
+  /// No description provided for @approvalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals'**
+  String get approvalsTitle;
+
+  /// No description provided for @approvalsQueueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get approvalsQueueLabel;
+
+  /// No description provided for @approvalsStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get approvalsStatusLabel;
+
+  /// No description provided for @approvalsQueueAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get approvalsQueueAll;
+
+  /// No description provided for @approvalsQueueTopUps.
+  ///
+  /// In en, this message translates to:
+  /// **'Top-ups'**
+  String get approvalsQueueTopUps;
+
+  /// No description provided for @approvalsQueueExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get approvalsQueueExpenses;
+
+  /// No description provided for @approvalsStatusAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get approvalsStatusAll;
+
+  /// No description provided for @approvalsStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get approvalsStatusPending;
+
+  /// No description provided for @approvalsStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get approvalsStatusApproved;
+
+  /// No description provided for @approvalsStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get approvalsStatusRejected;
+
+  /// No description provided for @approvalsEmptyExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'No expense approvals'**
+  String get approvalsEmptyExpenses;
+
+  /// No description provided for @approvalsEmptyPettyCash.
+  ///
+  /// In en, this message translates to:
+  /// **'No petty cash requests'**
+  String get approvalsEmptyPettyCash;
+
+  /// No description provided for @approvalsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No records for this queue and status.'**
+  String get approvalsEmptySubtitle;
+
+  /// No description provided for @approvalsNoAddressesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No addresses found.'**
+  String get approvalsNoAddressesFound;
+
+  /// No description provided for @ownerLoginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop Owner'**
+  String get ownerLoginTitle;
+
+  /// No description provided for @ownerLoginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your dashboard'**
+  String get ownerLoginSubtitle;
+
+  /// No description provided for @ownerLoginEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get ownerLoginEmail;
+
+  /// No description provided for @ownerLoginEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email'**
+  String get ownerLoginEmailHint;
+
+  /// No description provided for @ownerLoginEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email'**
+  String get ownerLoginEmailRequired;
+
+  /// No description provided for @ownerLoginPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get ownerLoginPassword;
+
+  /// No description provided for @ownerLoginPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get ownerLoginPasswordHint;
+
+  /// No description provided for @ownerLoginPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password'**
+  String get ownerLoginPasswordRequired;
+
+  /// No description provided for @ownerLoginForgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password?'**
+  String get ownerLoginForgotPassword;
+
+  /// No description provided for @ownerLoginSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get ownerLoginSignIn;
+
+  /// No description provided for @ownerLoginSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Login successful'**
+  String get ownerLoginSuccess;
+
+  /// No description provided for @ownerLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed'**
+  String get ownerLoginFailed;
+
+  /// No description provided for @ownerLoginNoAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? Sign up'**
+  String get ownerLoginNoAccount;
+
+  /// No description provided for @ownerRegisterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get ownerRegisterTitle;
+
+  /// No description provided for @ownerRegisterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register your workshop'**
+  String get ownerRegisterSubtitle;
+
+  /// No description provided for @ownerRegisterWorkshopName.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop Name'**
+  String get ownerRegisterWorkshopName;
+
+  /// No description provided for @ownerRegisterWorkshopNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter workshop name'**
+  String get ownerRegisterWorkshopNameHint;
+
+  /// No description provided for @ownerRegisterOwnerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner Name'**
+  String get ownerRegisterOwnerName;
+
+  /// No description provided for @ownerRegisterOwnerNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter full name'**
+  String get ownerRegisterOwnerNameHint;
+
+  /// No description provided for @ownerRegisterEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get ownerRegisterEmail;
+
+  /// No description provided for @ownerRegisterEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter email address'**
+  String get ownerRegisterEmailHint;
+
+  /// No description provided for @ownerRegisterMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile Number'**
+  String get ownerRegisterMobile;
+
+  /// No description provided for @ownerRegisterMobileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'+966...'**
+  String get ownerRegisterMobileHint;
+
+  /// No description provided for @ownerRegisterTaxId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax ID'**
+  String get ownerRegisterTaxId;
+
+  /// No description provided for @ownerRegisterTaxIdHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Tax ID'**
+  String get ownerRegisterTaxIdHint;
+
+  /// No description provided for @ownerRegisterAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get ownerRegisterAddress;
+
+  /// No description provided for @ownerRegisterAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and select full address'**
+  String get ownerRegisterAddressHint;
+
+  /// No description provided for @ownerRegisterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get ownerRegisterPassword;
+
+  /// No description provided for @ownerRegisterPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a password'**
+  String get ownerRegisterPasswordHint;
+
+  /// No description provided for @ownerRegisterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get ownerRegisterButton;
+
+  /// No description provided for @ownerRegisterSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration successful. Please login.'**
+  String get ownerRegisterSuccess;
+
+  /// No description provided for @ownerRegisterFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration failed'**
+  String get ownerRegisterFailed;
+
+  /// No description provided for @ownerRegisterFieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get ownerRegisterFieldRequired;
+
+  /// No description provided for @ownerRegisterHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Sign in'**
+  String get ownerRegisterHaveAccount;
 }
 
 class _AppLocalizationsDelegate

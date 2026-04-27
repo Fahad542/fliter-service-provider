@@ -716,4 +716,189 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get lockerExcelExportFailed => 'فشل تصدير إكسل';
+
+  @override
+  String get accountingTitle => 'المحاسبة';
+
+  @override
+  String get accountingTabPayables => 'المستحقات';
+
+  @override
+  String get accountingTabReceivables => 'المديونيات';
+
+  @override
+  String get accountingTabExpenses => 'المصروفات';
+
+  @override
+  String get accountingTabAdvances => 'السلف';
+
+  @override
+  String get accountingPayables => 'المستحقات';
+
+  @override
+  String get accountingReceivables => 'المديونيات';
+
+  @override
+  String get accountingOverdue => 'المتأخرات';
+
+  @override
+  String get accountingNoEntries => 'لا توجد إدخالات';
+
+  @override
+  String accountingRefPrefix(String ref, String date) {
+    return 'مرجع: $ref • $date';
+  }
+
+  @override
+  String get accountingStatusOverdue => 'متأخر';
+
+  @override
+  String get accountingStatusSettled => 'مسوَّى';
+
+  @override
+  String get accountingStatusPending => 'قيد الانتظار';
+
+  @override
+  String get approvalsTitle => 'الموافقات';
+
+  @override
+  String get approvalsQueueLabel => 'قائمة الانتظار';
+
+  @override
+  String get approvalsStatusLabel => 'الحالة';
+
+  @override
+  String get approvalsQueueAll => 'الكل';
+
+  @override
+  String get approvalsQueueTopUps => 'شحن الرصيد';
+
+  @override
+  String get approvalsQueueExpenses => 'المصروفات';
+
+  @override
+  String get approvalsStatusAll => 'الكل';
+
+  @override
+  String get approvalsStatusPending => 'قيد الانتظار';
+
+  @override
+  String get approvalsStatusApproved => 'معتمد';
+
+  @override
+  String get approvalsStatusRejected => 'مرفوض';
+
+  @override
+  String get approvalsEmptyExpenses => 'لا توجد موافقات مصروفات';
+
+  @override
+  String get approvalsEmptyPettyCash => 'لا توجد طلبات صندوق صغير';
+
+  @override
+  String get approvalsEmptySubtitle => 'لا توجد سجلات لهذه القائمة والحالة.';
+
+  @override
+  String get approvalsNoAddressesFound => 'لم يتم العثور على عناوين.';
+
+  @override
+  String get ownerLoginTitle => 'صاحب الورشة';
+
+  @override
+  String get ownerLoginSubtitle => 'سجّل الدخول إلى لوحة التحكم';
+
+  @override
+  String get ownerLoginEmail => 'البريد الإلكتروني';
+
+  @override
+  String get ownerLoginEmailHint => 'أدخل بريدك الإلكتروني';
+
+  @override
+  String get ownerLoginEmailRequired => 'يرجى إدخال البريد الإلكتروني';
+
+  @override
+  String get ownerLoginPassword => 'كلمة المرور';
+
+  @override
+  String get ownerLoginPasswordHint => 'أدخل كلمة المرور';
+
+  @override
+  String get ownerLoginPasswordRequired => 'يرجى إدخال كلمة المرور';
+
+  @override
+  String get ownerLoginForgotPassword => 'نسيت كلمة المرور؟';
+
+  @override
+  String get ownerLoginSignIn => 'تسجيل الدخول';
+
+  @override
+  String get ownerLoginSuccess => 'تم تسجيل الدخول بنجاح';
+
+  @override
+  String get ownerLoginFailed => 'فشل تسجيل الدخول';
+
+  @override
+  String get ownerLoginNoAccount => 'ليس لديك حساب؟ سجّل الآن';
+
+  @override
+  String get ownerRegisterTitle => 'إنشاء حساب';
+
+  @override
+  String get ownerRegisterSubtitle => 'تسجيل ورشتك';
+
+  @override
+  String get ownerRegisterWorkshopName => 'اسم الورشة';
+
+  @override
+  String get ownerRegisterWorkshopNameHint => 'أدخل اسم الورشة';
+
+  @override
+  String get ownerRegisterOwnerName => 'اسم المالك';
+
+  @override
+  String get ownerRegisterOwnerNameHint => 'أدخل الاسم الكامل';
+
+  @override
+  String get ownerRegisterEmail => 'البريد الإلكتروني';
+
+  @override
+  String get ownerRegisterEmailHint => 'أدخل البريد الإلكتروني';
+
+  @override
+  String get ownerRegisterMobile => 'رقم الجوال';
+
+  @override
+  String get ownerRegisterMobileHint => '+966...';
+
+  @override
+  String get ownerRegisterTaxId => 'الرقم الضريبي';
+
+  @override
+  String get ownerRegisterTaxIdHint => 'أدخل الرقم الضريبي';
+
+  @override
+  String get ownerRegisterAddress => 'العنوان';
+
+  @override
+  String get ownerRegisterAddressHint => 'ابحث عن العنوان الكامل واختره';
+
+  @override
+  String get ownerRegisterPassword => 'كلمة المرور';
+
+  @override
+  String get ownerRegisterPasswordHint => 'أنشئ كلمة مرور';
+
+  @override
+  String get ownerRegisterButton => 'تسجيل';
+
+  @override
+  String get ownerRegisterSuccess => 'تم التسجيل بنجاح. يرجى تسجيل الدخول.';
+
+  @override
+  String get ownerRegisterFailed => 'فشل التسجيل';
+
+  @override
+  String get ownerRegisterFieldRequired => 'مطلوب';
+
+  @override
+  String get ownerRegisterHaveAccount => 'لديك حساب بالفعل؟ سجّل الدخول';
 }

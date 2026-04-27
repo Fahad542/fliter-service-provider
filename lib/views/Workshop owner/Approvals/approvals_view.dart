@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../widgets/owner_app_bar.dart';
 import '../widgets/owner_petty_cash_approval_card.dart';
@@ -13,12 +14,15 @@ class ApprovalsView extends StatefulWidget {
 }
 
 class _ApprovalsViewState extends State<ApprovalsView> {
-  final List<String> _filters = ['all', 'pending', 'approved', 'rejected'];
-  final List<MapEntry<String, String>> _queueOptions = const [
-    MapEntry('all', 'All'),
-    MapEntry('fund', 'Top-ups'),
-    MapEntry('expense', 'Expenses'),
+  /// Raw API keys — never shown to the user directly.
+  static const List<String> _statusKeys = [
+    'all',
+    'pending',
+    'approved',
+    'rejected',
   ];
+
+  static const List<String> _queueKeys = ['all', 'fund', 'expense'];
 
   @override
   void initState() {
@@ -40,13 +44,33 @@ class _ApprovalsViewState extends State<ApprovalsView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final vm = context.watch<ApprovalsViewModel>();
     final requests = vm.requests;
+
+    /// Queue options built from l10n — key stays as API value.
+    final queueOptions = [
+      MapEntry(_queueKeys[0], l10n.approvalsQueueAll),
+      MapEntry(_queueKeys[1], l10n.approvalsQueueTopUps),
+      MapEntry(_queueKeys[2], l10n.approvalsQueueExpenses),
+    ];
+
+    /// Status options built from l10n.
+    final statusLabels = [
+      l10n.approvalsStatusAll,
+      l10n.approvalsStatusPending,
+      l10n.approvalsStatusApproved,
+      l10n.approvalsStatusRejected,
+    ];
+    final statusOptions = List.generate(
+      _statusKeys.length,
+          (i) => MapEntry(_statusKeys[i], statusLabels[i]),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
       appBar: OwnerAppBar(
-        title: 'Approvals',
+        title: l10n.approvalsTitle,
         showGlobalLeft: false,
         showNotification: false,
         showBackButton: false,
@@ -59,21 +83,18 @@ class _ApprovalsViewState extends State<ApprovalsView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSegmentLabel('Queue'),
+                _buildSegmentLabel(l10n.approvalsQueueLabel),
                 const SizedBox(height: 8),
                 _buildApprovalSegmentedRow(
-                  options: _queueOptions,
+                  options: queueOptions,
                   selectedKey: vm.queueFilter,
                   onSelect: vm.setQueueFilter,
                 ),
                 const SizedBox(height: 12),
-                _buildSegmentLabel('Status'),
+                _buildSegmentLabel(l10n.approvalsStatusLabel),
                 const SizedBox(height: 8),
                 _buildApprovalSegmentedRow(
-                  options: [
-                    for (final f in _filters)
-                      MapEntry(f, f[0].toUpperCase() + f.substring(1)),
-                  ],
+                  options: statusOptions,
                   selectedKey: vm.statusFilter,
                   onSelect: vm.setStatusFilter,
                 ),
@@ -106,46 +127,41 @@ class _ApprovalsViewState extends State<ApprovalsView> {
             child: vm.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : Stack(
-                    children: [
-                      RefreshIndicator(
-                        onRefresh: () => vm.fetchRequests(),
-                        child: requests.isEmpty
-                            ? ListView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                children: const [
-                                  SizedBox(height: 600),
-                                ],
-                              )
-                            : ListView.builder(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.fromLTRB(
-                                  20,
-                                  4,
-                                  20,
-                                  32,
-                                ),
-                                itemCount: requests.length,
-                                itemBuilder: (context, index) {
-                                  final req = requests[index];
-                                  return OwnerPettyCashApprovalCard(
-                                    request: req,
-                                    currency: vm.currency,
-                                    hasApprovalActionInFlight:
-                                        vm.hasApprovalActionInFlight,
-                                    isApprovingThis:
-                                        vm.isApprovingRequest(req.id),
-                                    isRejectingThis:
-                                        vm.isRejectingRequest(req.id),
-                                    onApprove: () => vm.approveRequest(req.id),
-                                    onReject: (reason) =>
-                                        vm.rejectRequest(req.id, reason),
-                                  );
-                                },
-                              ),
-                      ),
-                      if (requests.isEmpty) _buildEmptyState(vm),
-                    ],
+              children: [
+                RefreshIndicator(
+                  onRefresh: () => vm.fetchRequests(),
+                  child: requests.isEmpty
+                      ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [SizedBox(height: 600)],
+                  )
+                      : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(
+                        20, 4, 20, 32),
+                    itemCount: requests.length,
+                    itemBuilder: (context, index) {
+                      final req = requests[index];
+                      return OwnerPettyCashApprovalCard(
+                        request: req,
+                        currency: vm.currency,
+                        hasApprovalActionInFlight:
+                        vm.hasApprovalActionInFlight,
+                        isApprovingThis:
+                        vm.isApprovingRequest(req.id),
+                        isRejectingThis:
+                        vm.isRejectingRequest(req.id),
+                        onApprove: () =>
+                            vm.approveRequest(req.id),
+                        onReject: (reason) =>
+                            vm.rejectRequest(req.id, reason),
+                      );
+                    },
                   ),
+                ),
+                if (requests.isEmpty) _buildEmptyState(vm, l10n),
+              ],
+            ),
           ),
         ],
       ),
@@ -164,7 +180,6 @@ class _ApprovalsViewState extends State<ApprovalsView> {
     );
   }
 
-  /// Same pattern as [AccountingView] / owner admin tab pills: white bar + primary selected segment.
   Widget _buildApprovalSegmentedRow({
     required List<MapEntry<String, String>> options,
     required String selectedKey,
@@ -204,9 +219,12 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.easeOutCubic,
                   alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10, horizontal: 2),
                   decoration: BoxDecoration(
-                    color: selected ? AppColors.primaryLight : Colors.transparent,
+                    color: selected
+                        ? AppColors.primaryLight
+                        : Colors.transparent,
                     borderRadius: pillRadius,
                   ),
                   child: Text(
@@ -217,7 +235,7 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                     style: TextStyle(
                       fontSize: selected ? 12.5 : 11,
                       fontWeight:
-                          selected ? FontWeight.w800 : FontWeight.w600,
+                      selected ? FontWeight.w800 : FontWeight.w600,
                       color: selected
                           ? AppColors.secondaryLight
                           : const Color(0xFF9CA3AF),
@@ -232,7 +250,7 @@ class _ApprovalsViewState extends State<ApprovalsView> {
     );
   }
 
-  Widget _buildEmptyState(ApprovalsViewModel vm) {
+  Widget _buildEmptyState(ApprovalsViewModel vm, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 120),
       child: Center(
@@ -247,8 +265,8 @@ class _ApprovalsViewState extends State<ApprovalsView> {
             const SizedBox(height: 16),
             Text(
               vm.queueFilter == 'expense'
-                  ? 'No expense approvals'
-                  : 'No petty cash requests',
+                  ? l10n.approvalsEmptyExpenses
+                  : l10n.approvalsEmptyPettyCash,
               style: const TextStyle(
                 color: Colors.grey,
                 fontWeight: FontWeight.w700,
@@ -256,9 +274,9 @@ class _ApprovalsViewState extends State<ApprovalsView> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'No records for this queue and status.',
-              style: TextStyle(color: Colors.grey, fontSize: 13),
+            Text(
+              l10n.approvalsEmptySubtitle,
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
           ],
         ),
