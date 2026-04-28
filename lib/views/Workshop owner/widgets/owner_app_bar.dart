@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
-
+import '../../../views/Workshop pos app/More Tab/settings_view_model.dart';
 import '../owner_shell.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// OwnerAppBar
+//
+// The app bar used across all Workshop Owner screens.
+//
+// The globe (🌐) button in the top-right toggles between English and Arabic.
+// When the locale changes, SettingsViewModel notifies all listeners, which
+// causes every ChangeNotifier-based ViewModel (AccountingViewModel,
+// ApprovalsViewModel, etc.) that observes locale to re-translate their cached
+// API data automatically.
+// ─────────────────────────────────────────────────────────────────────────────
+
 class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final dynamic title; // Can be String or Widget
+  final dynamic title; // String or Widget
   final List<Widget>? actions;
   final VoidCallback? onMenuPressed;
   final VoidCallback? onNotificationPressed;
@@ -23,11 +36,11 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onMenuPressed,
     this.onNotificationPressed,
     this.onBackPressed,
-    this.showDrawer = true,
-    this.showBackButton = false,
+    this.showDrawer      = true,
+    this.showBackButton  = false,
     this.showNotification = false,
-    this.showGlobalLeft = false,
-    this.height = 70,
+    this.showGlobalLeft  = false,
+    this.height          = 70,
   });
 
   @override
@@ -45,34 +58,37 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
             fit: StackFit.expand,
             alignment: Alignment.center,
             children: [
-              // Center Title (Only if it's a String)
+              // ── Centred String title ──────────────────────────────────────
               if (title is String)
                 Center(
                   child: Text(
                     (title as String).toUpperCase(),
                     textAlign: TextAlign.center,
                     style: AppTextStyles.h2.copyWith(
-                      fontSize: 16, 
+                      fontSize: 16,
                       color: AppColors.secondaryLight,
                       letterSpacing: 0.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                
-              // Left & Right Icons, plus Custom Title (Dashboard)
+
+              // ── Left / Right icons + Widget title (Dashboard) ─────────────
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (showGlobalLeft) _buildGlobalButton()
-                  else if (showDrawer || showBackButton) _buildDrawerButton(context),
-                  
+                  if (showGlobalLeft)
+                    _buildGlobalButton(context)
+                  else if (showDrawer || showBackButton)
+                    _buildDrawerButton(context),
+
                   if (title is Widget) const SizedBox(width: 16),
                   if (title is Widget) Expanded(child: title as Widget),
-                  if (title is String) const Spacer(), // Pushes icons to right
-                  
-                  if (!showGlobalLeft) _buildGlobalButton(),
-                  if (!showGlobalLeft && showNotification) const SizedBox(width: 12),
+                  if (title is String) const Spacer(),
+
+                  if (!showGlobalLeft) _buildGlobalButton(context),
+                  if (!showGlobalLeft && showNotification)
+                    const SizedBox(width: 12),
                   if (showNotification) _buildNotificationButton(),
                 ],
               ),
@@ -82,8 +98,6 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-
-  // _buildTitle method removed as it's now handled inline inside the Stack
 
   Widget _buildDrawerButton(BuildContext context) {
     if (showBackButton) {
@@ -96,16 +110,14 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
           size: 30,
         ),
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(), // Removes default extra padding
+        constraints: const BoxConstraints(),
       );
     }
 
     return Builder(
       builder: (innerContext) {
-        final onTap = onMenuPressed ??
-            () {
-              OwnerShell.openDrawer(innerContext);
-            };
+        final onTap =
+            onMenuPressed ?? () => OwnerShell.openDrawer(innerContext);
         return InkWell(
           onTap: onTap,
           child: Container(
@@ -122,7 +134,8 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
+            child:
+            const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
           ),
         );
       },
@@ -142,8 +155,16 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Image.asset('assets/images/notifications.png', width: 22, color: Colors.black,
-              errorBuilder: (_, __, ___) => const Icon(Icons.notifications_rounded, size: 22, color: Colors.black)),
+            Image.asset(
+              'assets/images/notifications.png',
+              width: 22,
+              color: Colors.black,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.notifications_rounded,
+                size: 22,
+                color: Colors.black,
+              ),
+            ),
             Positioned(
               top: 8,
               right: 8,
@@ -162,21 +183,46 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildGlobalButton() {
-    return InkWell(
-      onTap: () {},
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.3),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Image.asset('assets/images/global.png', width: 22, color: Colors.black,
-            errorBuilder: (_, __, ___) => const Icon(Icons.language, size: 22, color: Colors.black)),
-        ),
-      ),
+  // ── Globe / language toggle ───────────────────────────────────────────────
+  //
+  // Reads the current locale from SettingsViewModel and toggles between
+  // 'en' and 'ar' on tap — identical to the implementation in CustomAppBar.
+  // Using Consumer so the button itself re-renders when locale changes,
+  // though the visual is the same globe icon in both locales.
+
+  Widget _buildGlobalButton(BuildContext context) {
+    return Consumer<SettingsViewModel>(
+      builder: (context, settings, _) {
+        return InkWell(
+          onTap: () {
+            final newLocale = settings.locale.languageCode == 'en'
+                ? const Locale('ar')
+                : const Locale('en');
+            settings.updateLocale(newLocale);
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Image.asset(
+                'assets/images/global.png',
+                width: 22,
+                color: Colors.black,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.language,
+                  size: 22,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -184,7 +230,10 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => Size.fromHeight(height);
 }
 
-// Extension to help with Dashboard's specific title style
+// ─────────────────────────────────────────────────────────────────────────────
+// OwnerDashboardTitle — used as a Widget title on the dashboard screen.
+// ─────────────────────────────────────────────────────────────────────────────
+
 class OwnerDashboardTitle extends StatelessWidget {
   final String subtitle;
   const OwnerDashboardTitle({super.key, required this.subtitle});

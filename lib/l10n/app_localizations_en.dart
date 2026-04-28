@@ -9,6 +9,237 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get ownerShellHome => 'Home';
+
+  @override
+  String get ownerShellBranches => 'Branches';
+
+  @override
+  String get ownerShellDepartments => 'Departments';
+
+  @override
+  String get ownerShellEmployees => 'Employees';
+
+  @override
+  String get ownerShellCorporate => 'Corporate';
+
+  @override
+  String get ownerShellInventory => 'Inventory';
+
+  @override
+  String get ownerShellPosMonitoring => 'POS Monitoring';
+
+  @override
+  String get ownerShellSuppliers => 'Suppliers';
+
+  @override
+  String get ownerShellAccounting => 'Accounting';
+
+  @override
+  String get ownerShellPromoCodes => 'Promo Codes';
+
+  @override
+  String get ownerShellApprovals => 'Approvals';
+
+  @override
+  String get ownerShellNotifications => 'Notifications';
+
+  @override
+  String get ownerShellLogout => 'Logout';
+
+  @override
+  String get ownerShellRoleLabel => 'Workshop Owner';
+
+  @override
+  String get ownerShellVersion => 'v1.0.0 • Workshop OS';
+
+  @override
+  String get ownerShellLogoutTitle => 'Logout';
+
+  @override
+  String get ownerShellLogoutBody =>
+      'Are you sure you want to logout from your account?';
+
+  @override
+  String get ownerShellLogoutCancel => 'Cancel';
+
+  @override
+  String get ownerShellLogoutConfirm => 'Logout';
+
+  @override
+  String get lockerDefaultUser => 'Owner';
+
+  @override
+  String get billingDashboardTitle => 'Billing Dashboard';
+
+  @override
+  String get billingGenerateTitle => 'Generate Bills';
+
+  @override
+  String get billingMonthlyTitle => 'Monthly Bills';
+
+  @override
+  String get billingOverdueTitle => 'Overdue Payments';
+
+  @override
+  String get billingDefaultTitle => 'Billing';
+
+  @override
+  String get billingSummaryTotalBilled => 'Total Billed';
+
+  @override
+  String get billingSummaryTotalReceived => 'Total Received';
+
+  @override
+  String get billingSummaryOutstanding => 'Outstanding';
+
+  @override
+  String get billingSummaryOverdue => 'Overdue';
+
+  @override
+  String get billingQuickActions => 'Quick Actions';
+
+  @override
+  String get billingRecentActivity => 'Recent Billing Activity';
+
+  @override
+  String get billingSeeAll => 'See All';
+
+  @override
+  String get billingNoRecentActivity => 'No recent activity';
+
+  @override
+  String get billingActionGenerate => 'Generate Bills';
+
+  @override
+  String get billingActionViewAll => 'View All Bills';
+
+  @override
+  String get billingActionRecordPayment => 'Record Payment';
+
+  @override
+  String get billingActionSendReminders => 'Send Reminders';
+
+  @override
+  String get billingGeneratorStep1 => 'Step 1: Select Billing Period';
+
+  @override
+  String get billingGeneratorStep2 => 'Step 2: Preview Eligible Invoices';
+
+  @override
+  String get billingGeneratorPendingInvoices =>
+      'Pending Invoices: 15 • Est. Total: SAR 12,450';
+
+  @override
+  String get billingGeneratorPostAll => 'Generate & Post All';
+
+  @override
+  String billingPeriodLabel(String month, String year) {
+    return 'Billing Period: $month/$year';
+  }
+
+  @override
+  String get billingStatusPaid => 'Paid';
+
+  @override
+  String get billingStatusOverdue => 'Overdue';
+
+  @override
+  String get billingStatusPartiallyPaid => 'Partially Paid';
+
+  @override
+  String get billingStatusPending => 'Pending';
+
+  @override
+  String get branchManagementTitle => 'Branches';
+
+  @override
+  String get branchSearchHint => 'Search branches…';
+
+  @override
+  String get branchAddButton => 'Add Branch';
+
+  @override
+  String get branchEditButton => 'Edit';
+
+  @override
+  String get branchDeleteButton => 'Delete';
+
+  @override
+  String get branchNoBranches => 'No branches found';
+
+  @override
+  String get branchStatusActive => 'Active';
+
+  @override
+  String get branchStatusInactive => 'Inactive';
+
+  @override
+  String get branchFormTitleAdd => 'Add Branch';
+
+  @override
+  String get branchFormTitleEdit => 'Edit Branch';
+
+  @override
+  String get branchFormNameLabel => 'Branch Name';
+
+  @override
+  String get branchFormNameHint => 'Enter branch name';
+
+  @override
+  String get branchFormAddressLabel => 'Address';
+
+  @override
+  String get branchFormAddressHint => 'Search address…';
+
+  @override
+  String get branchFormLatLabel => 'GPS Latitude';
+
+  @override
+  String get branchFormLngLabel => 'GPS Longitude';
+
+  @override
+  String get branchFormStatusLabel => 'Active';
+
+  @override
+  String get branchFormSaveButton => 'Save Branch';
+
+  @override
+  String get branchFormUpdateButton => 'Update Branch';
+
+  @override
+  String get branchFormValidationError =>
+      'Branch Name and Address are required';
+
+  @override
+  String get branchCreateSuccess => 'Branch Created Successfully';
+
+  @override
+  String get branchUpdateSuccess => 'Branch Updated Successfully';
+
+  @override
+  String get branchDeleteSuccess => 'Branch Deleted Successfully';
+
+  @override
+  String get branchSaveError => 'Failed to save branch';
+
+  @override
+  String get branchDeleteError => 'Failed to delete branch';
+
+  @override
+  String get branchDeleteConfirmTitle => 'Delete Branch';
+
+  @override
+  String get branchDeleteConfirmBody =>
+      'Are you sure you want to delete this branch?';
+
+  @override
+  String get branchDeleteConfirmCancel => 'Cancel';
+
+  @override
+  String get branchDeleteConfirmDelete => 'Delete';
+
+  @override
   String get lockerPortalTitle => 'Locker Portal';
 
   @override
@@ -58,9 +289,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lockerRefresh => 'Refresh';
-
-  @override
-  String get lockerDefaultUser => 'User';
 
   @override
   String get lockerSupervisorTab => 'SUPERVISOR';
@@ -760,6 +988,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountingStatusPending => 'PENDING';
 
   @override
+  String get accountingLoadingError => 'Failed to load accounting data';
+
+  @override
+  String accountingAmountLabel(String amount) {
+    return 'SAR $amount';
+  }
+
+  @override
   String get approvalsTitle => 'Approvals';
 
   @override
@@ -800,6 +1036,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get approvalsNoAddressesFound => 'No addresses found.';
+
+  @override
+  String get approvalsLoadingError => 'Failed to load approvals';
+
+  @override
+  String get approvalsApproveConfirm => 'Approve this request?';
+
+  @override
+  String get approvalsRejectTitle => 'Reject Request';
+
+  @override
+  String get approvalsRejectHint => 'Enter rejection reason (optional)';
+
+  @override
+  String get approvalsConfirmReject => 'Confirm Reject';
+
+  @override
+  String get approvalsCancel => 'Cancel';
 
   @override
   String get ownerLoginTitle => 'Workshop Owner';
@@ -902,4 +1156,226 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownerRegisterHaveAccount => 'Already have an account? Sign in';
+
+  @override
+  String get corporateManagementTitle => 'Corporate Management';
+
+  @override
+  String get corporateSearchHint => 'Search by Company or VAT...';
+
+  @override
+  String get corporateAddButton => 'Add Corporate';
+
+  @override
+  String get corporateNoneFound => 'No corporate customers found.';
+
+  @override
+  String corporateVatLabel(String vat) {
+    return 'VAT: $vat';
+  }
+
+  @override
+  String get corporateVehiclesLabel => 'VEHICLES';
+
+  @override
+  String get corporateRevenueLabel => 'REVENUE';
+
+  @override
+  String get corporateAddUser => 'Add User';
+
+  @override
+  String get corporateEdit => 'Edit';
+
+  @override
+  String get corporateRegisterTitle => 'Register Corporate Partner';
+
+  @override
+  String get corporateRegisterSubtitle =>
+      'Fill in the details to create a new corporate account.';
+
+  @override
+  String get corporateFieldCompanyName => 'Company Name';
+
+  @override
+  String get corporateFieldCustomerName => 'Customer Name';
+
+  @override
+  String get corporateFieldMobile => 'Mobile Number';
+
+  @override
+  String get corporateFieldVat => 'VAT Number';
+
+  @override
+  String get corporateFieldEmail => 'Email Address';
+
+  @override
+  String get corporateFieldPassword => 'Password';
+
+  @override
+  String get corporateFieldReferral => 'Referral';
+
+  @override
+  String get corporateSelectBranches => 'Select Branches';
+
+  @override
+  String corporateSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get corporateNoBranches => 'No branches found';
+
+  @override
+  String get corporateCreateButton => 'Create Partner';
+
+  @override
+  String get corporateAddUserTitle => 'Add Corporate User';
+
+  @override
+  String get corporateAddUserSubtitle =>
+      'Create credentials for a user associated with this corporate account.';
+
+  @override
+  String get corporateUserFieldName => 'Full Name';
+
+  @override
+  String get corporateUserFieldEmail => 'Email Address';
+
+  @override
+  String get corporateUserFieldPassword => 'Password';
+
+  @override
+  String get corporateCreateUserButton => 'Create User';
+
+  @override
+  String get corporateEditTitle => 'Edit Corporate Account';
+
+  @override
+  String get corporateEditSubtitle =>
+      'Update the details below. Only changed fields will be sent.';
+
+  @override
+  String get corporateFieldMobileMobile => 'Mobile';
+
+  @override
+  String get corporateFieldTaxId => 'Tax ID (VAT)';
+
+  @override
+  String get corporateFieldStatus => 'Status';
+
+  @override
+  String get corporateSaveChanges => 'Save Changes';
+
+  @override
+  String get corporateStatusPending => 'Pending';
+
+  @override
+  String get corporateStatusActive => 'Active';
+
+  @override
+  String get corporateStatusRejected => 'Rejected';
+
+  @override
+  String get corporateCreateSuccess => 'Corporate Account Created Successfully';
+
+  @override
+  String get corporateCreateError => 'Failed to create corporate account';
+
+  @override
+  String get corporateUpdateSuccess => 'Corporate Account Updated Successfully';
+
+  @override
+  String get corporateUpdateError => 'Failed to update corporate account';
+
+  @override
+  String get corporateUserCreateSuccess =>
+      'Corporate User Created Successfully';
+
+  @override
+  String get corporateUserCreateError => 'Failed to create corporate user';
+
+  @override
+  String get corporateValidationRequired =>
+      'Please fill in all required fields';
+
+  @override
+  String get corporateValidationBranch => 'Please select at least one branch';
+
+  @override
+  String get corporateValidationCompanyName => 'Company name is required';
+
+  @override
+  String get dashboardAllBranches => 'All Branches';
+
+  @override
+  String get dashboardViewingDataFor => 'Viewing Data For';
+
+  @override
+  String get dashboardAllBranchesAggregated => 'All Branches Aggregated';
+
+  @override
+  String get dashboardSelectBranch => 'Select Branch';
+
+  @override
+  String get dashboardKpiTotalSalesToday => 'Total Sales Today';
+
+  @override
+  String get dashboardKpiThisMonth => 'This Month';
+
+  @override
+  String get dashboardKpiPendingInvoices => 'Pending Invoices';
+
+  @override
+  String get dashboardKpiLowStockAlerts => 'Low Stock Alerts';
+
+  @override
+  String get dashboardKpiTodaysSales => 'Today\'s Sales';
+
+  @override
+  String get dashboardKpiActiveOrders => 'Active Orders';
+
+  @override
+  String get dashboardKpiTechWorkload => 'Tech Workload';
+
+  @override
+  String get dashboardKpiPendingApproval => 'Pending Approval';
+
+  @override
+  String get dashboardPendingApprovalsTitle => 'Pending Approvals';
+
+  @override
+  String get dashboardViewAll => 'View All';
+
+  @override
+  String get dashboardNoPendingApprovals =>
+      'No pending petty-cash approvals right now.';
+
+  @override
+  String dashboardMoreApprovals(int count) {
+    return '+$count more in Approvals';
+  }
+
+  @override
+  String get dashboardBranchPerformance => 'Branch Performance';
+
+  @override
+  String get dashboardBranchHighlights => 'Branch Highlights';
+
+  @override
+  String get dashboardBranchStatus => 'Branch Status';
+
+  @override
+  String get dashboardTotalStaff => 'Total Staff';
+
+  @override
+  String get dashboardSalesTarget => 'Sales Target';
+
+  @override
+  String get dashboardSalesTargetValue => '85% Achieved';
+
+  @override
+  String get branchPerformanceListTitle => 'Branch Performance';
+
+  @override
+  String get branchPerformanceNoBranches => 'No branches yet.';
 }

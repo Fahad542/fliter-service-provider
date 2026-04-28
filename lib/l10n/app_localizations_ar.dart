@@ -9,6 +9,236 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get ownerShellHome => 'الرئيسية';
+
+  @override
+  String get ownerShellBranches => 'الفروع';
+
+  @override
+  String get ownerShellDepartments => 'الأقسام';
+
+  @override
+  String get ownerShellEmployees => 'الموظفون';
+
+  @override
+  String get ownerShellCorporate => 'الشركات';
+
+  @override
+  String get ownerShellInventory => 'المخزون';
+
+  @override
+  String get ownerShellPosMonitoring => 'مراقبة نقاط البيع';
+
+  @override
+  String get ownerShellSuppliers => 'الموردون';
+
+  @override
+  String get ownerShellAccounting => 'المحاسبة';
+
+  @override
+  String get ownerShellPromoCodes => 'رموز العروض';
+
+  @override
+  String get ownerShellApprovals => 'الموافقات';
+
+  @override
+  String get ownerShellNotifications => 'الإشعارات';
+
+  @override
+  String get ownerShellLogout => 'تسجيل الخروج';
+
+  @override
+  String get ownerShellRoleLabel => 'مالك الورشة';
+
+  @override
+  String get ownerShellVersion => 'v1.0.0 • نظام الورشة';
+
+  @override
+  String get ownerShellLogoutTitle => 'تسجيل الخروج';
+
+  @override
+  String get ownerShellLogoutBody =>
+      'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟';
+
+  @override
+  String get ownerShellLogoutCancel => 'إلغاء';
+
+  @override
+  String get ownerShellLogoutConfirm => 'تسجيل الخروج';
+
+  @override
+  String get lockerDefaultUser => 'المالك';
+
+  @override
+  String get billingDashboardTitle => 'لوحة الفوترة';
+
+  @override
+  String get billingGenerateTitle => 'إنشاء فواتير';
+
+  @override
+  String get billingMonthlyTitle => 'الفواتير الشهرية';
+
+  @override
+  String get billingOverdueTitle => 'المدفوعات المتأخرة';
+
+  @override
+  String get billingDefaultTitle => 'الفوترة';
+
+  @override
+  String get billingSummaryTotalBilled => 'إجمالي المفوتر';
+
+  @override
+  String get billingSummaryTotalReceived => 'إجمالي المستلم';
+
+  @override
+  String get billingSummaryOutstanding => 'المبالغ المعلقة';
+
+  @override
+  String get billingSummaryOverdue => 'المتأخرات';
+
+  @override
+  String get billingQuickActions => 'إجراءات سريعة';
+
+  @override
+  String get billingRecentActivity => 'آخر نشاط في الفوترة';
+
+  @override
+  String get billingSeeAll => 'عرض الكل';
+
+  @override
+  String get billingNoRecentActivity => 'لا يوجد نشاط حديث';
+
+  @override
+  String get billingActionGenerate => 'إنشاء فواتير';
+
+  @override
+  String get billingActionViewAll => 'عرض كل الفواتير';
+
+  @override
+  String get billingActionRecordPayment => 'تسجيل دفعة';
+
+  @override
+  String get billingActionSendReminders => 'إرسال تذكيرات';
+
+  @override
+  String get billingGeneratorStep1 => 'الخطوة 1: اختر فترة الفوترة';
+
+  @override
+  String get billingGeneratorStep2 => 'الخطوة 2: معاينة الفواتير المؤهلة';
+
+  @override
+  String get billingGeneratorPendingInvoices =>
+      'فواتير معلقة: 15 • الإجمالي المتوقع: 12,450 ر.س';
+
+  @override
+  String get billingGeneratorPostAll => 'إنشاء وترحيل الكل';
+
+  @override
+  String billingPeriodLabel(String month, String year) {
+    return 'فترة الفوترة: $month/$year';
+  }
+
+  @override
+  String get billingStatusPaid => 'مدفوع';
+
+  @override
+  String get billingStatusOverdue => 'متأخر';
+
+  @override
+  String get billingStatusPartiallyPaid => 'مدفوع جزئياً';
+
+  @override
+  String get billingStatusPending => 'قيد الانتظار';
+
+  @override
+  String get branchManagementTitle => 'الفروع';
+
+  @override
+  String get branchSearchHint => 'البحث في الفروع…';
+
+  @override
+  String get branchAddButton => 'إضافة فرع';
+
+  @override
+  String get branchEditButton => 'تعديل';
+
+  @override
+  String get branchDeleteButton => 'حذف';
+
+  @override
+  String get branchNoBranches => 'لا توجد فروع';
+
+  @override
+  String get branchStatusActive => 'نشط';
+
+  @override
+  String get branchStatusInactive => 'غير نشط';
+
+  @override
+  String get branchFormTitleAdd => 'إضافة فرع';
+
+  @override
+  String get branchFormTitleEdit => 'تعديل الفرع';
+
+  @override
+  String get branchFormNameLabel => 'اسم الفرع';
+
+  @override
+  String get branchFormNameHint => 'أدخل اسم الفرع';
+
+  @override
+  String get branchFormAddressLabel => 'العنوان';
+
+  @override
+  String get branchFormAddressHint => 'ابحث عن العنوان…';
+
+  @override
+  String get branchFormLatLabel => 'خط العرض GPS';
+
+  @override
+  String get branchFormLngLabel => 'خط الطول GPS';
+
+  @override
+  String get branchFormStatusLabel => 'نشط';
+
+  @override
+  String get branchFormSaveButton => 'حفظ الفرع';
+
+  @override
+  String get branchFormUpdateButton => 'تحديث الفرع';
+
+  @override
+  String get branchFormValidationError => 'اسم الفرع والعنوان مطلوبان';
+
+  @override
+  String get branchCreateSuccess => 'تم إنشاء الفرع بنجاح';
+
+  @override
+  String get branchUpdateSuccess => 'تم تحديث الفرع بنجاح';
+
+  @override
+  String get branchDeleteSuccess => 'تم حذف الفرع بنجاح';
+
+  @override
+  String get branchSaveError => 'فشل حفظ الفرع';
+
+  @override
+  String get branchDeleteError => 'فشل حذف الفرع';
+
+  @override
+  String get branchDeleteConfirmTitle => 'حذف الفرع';
+
+  @override
+  String get branchDeleteConfirmBody =>
+      'هل أنت متأكد من رغبتك في حذف هذا الفرع؟';
+
+  @override
+  String get branchDeleteConfirmCancel => 'إلغاء';
+
+  @override
+  String get branchDeleteConfirmDelete => 'حذف';
+
+  @override
   String get lockerPortalTitle => 'بوابة الخزينة';
 
   @override
@@ -58,9 +288,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get lockerRefresh => 'تحديث';
-
-  @override
-  String get lockerDefaultUser => 'مستخدم';
 
   @override
   String get lockerSupervisorTab => 'المشرف';
@@ -759,6 +986,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accountingStatusPending => 'قيد الانتظار';
 
   @override
+  String get accountingLoadingError => 'فشل تحميل بيانات المحاسبة';
+
+  @override
+  String accountingAmountLabel(String amount) {
+    return 'ر.س $amount';
+  }
+
+  @override
   String get approvalsTitle => 'الموافقات';
 
   @override
@@ -799,6 +1034,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get approvalsNoAddressesFound => 'لم يتم العثور على عناوين.';
+
+  @override
+  String get approvalsLoadingError => 'فشل تحميل الموافقات';
+
+  @override
+  String get approvalsApproveConfirm => 'الموافقة على هذا الطلب؟';
+
+  @override
+  String get approvalsRejectTitle => 'رفض الطلب';
+
+  @override
+  String get approvalsRejectHint => 'أدخل سبب الرفض (اختياري)';
+
+  @override
+  String get approvalsConfirmReject => 'تأكيد الرفض';
+
+  @override
+  String get approvalsCancel => 'إلغاء';
 
   @override
   String get ownerLoginTitle => 'صاحب الورشة';
@@ -901,4 +1154,224 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownerRegisterHaveAccount => 'لديك حساب بالفعل؟ سجّل الدخول';
+
+  @override
+  String get corporateManagementTitle => 'إدارة الشركات';
+
+  @override
+  String get corporateSearchHint => 'البحث بالاسم أو الرقم الضريبي...';
+
+  @override
+  String get corporateAddButton => 'إضافة شركة';
+
+  @override
+  String get corporateNoneFound => 'لا يوجد عملاء شركات.';
+
+  @override
+  String corporateVatLabel(String vat) {
+    return 'ض.ق.م: $vat';
+  }
+
+  @override
+  String get corporateVehiclesLabel => 'المركبات';
+
+  @override
+  String get corporateRevenueLabel => 'الإيرادات';
+
+  @override
+  String get corporateAddUser => 'إضافة مستخدم';
+
+  @override
+  String get corporateEdit => 'تعديل';
+
+  @override
+  String get corporateRegisterTitle => 'تسجيل شريك مؤسسي';
+
+  @override
+  String get corporateRegisterSubtitle =>
+      'أدخل التفاصيل لإنشاء حساب مؤسسي جديد.';
+
+  @override
+  String get corporateFieldCompanyName => 'اسم الشركة';
+
+  @override
+  String get corporateFieldCustomerName => 'اسم العميل';
+
+  @override
+  String get corporateFieldMobile => 'رقم الجوال';
+
+  @override
+  String get corporateFieldVat => 'الرقم الضريبي';
+
+  @override
+  String get corporateFieldEmail => 'البريد الإلكتروني';
+
+  @override
+  String get corporateFieldPassword => 'كلمة المرور';
+
+  @override
+  String get corporateFieldReferral => 'المحيل';
+
+  @override
+  String get corporateSelectBranches => 'اختر الفروع';
+
+  @override
+  String corporateSelectedCount(int count) {
+    return '$count مختار';
+  }
+
+  @override
+  String get corporateNoBranches => 'لا توجد فروع';
+
+  @override
+  String get corporateCreateButton => 'إنشاء الشريك';
+
+  @override
+  String get corporateAddUserTitle => 'إضافة مستخدم مؤسسي';
+
+  @override
+  String get corporateAddUserSubtitle =>
+      'أنشئ بيانات اعتماد لمستخدم مرتبط بهذا الحساب المؤسسي.';
+
+  @override
+  String get corporateUserFieldName => 'الاسم الكامل';
+
+  @override
+  String get corporateUserFieldEmail => 'البريد الإلكتروني';
+
+  @override
+  String get corporateUserFieldPassword => 'كلمة المرور';
+
+  @override
+  String get corporateCreateUserButton => 'إنشاء المستخدم';
+
+  @override
+  String get corporateEditTitle => 'تعديل الحساب المؤسسي';
+
+  @override
+  String get corporateEditSubtitle =>
+      'حدِّث التفاصيل أدناه. سيُرسَل فقط ما تم تغييره.';
+
+  @override
+  String get corporateFieldMobileMobile => 'الجوال';
+
+  @override
+  String get corporateFieldTaxId => 'الرقم الضريبي (ض.ق.م)';
+
+  @override
+  String get corporateFieldStatus => 'الحالة';
+
+  @override
+  String get corporateSaveChanges => 'حفظ التغييرات';
+
+  @override
+  String get corporateStatusPending => 'قيد الانتظار';
+
+  @override
+  String get corporateStatusActive => 'نشط';
+
+  @override
+  String get corporateStatusRejected => 'مرفوض';
+
+  @override
+  String get corporateCreateSuccess => 'تم إنشاء الحساب المؤسسي بنجاح';
+
+  @override
+  String get corporateCreateError => 'فشل إنشاء الحساب المؤسسي';
+
+  @override
+  String get corporateUpdateSuccess => 'تم تحديث الحساب المؤسسي بنجاح';
+
+  @override
+  String get corporateUpdateError => 'فشل تحديث الحساب المؤسسي';
+
+  @override
+  String get corporateUserCreateSuccess => 'تم إنشاء المستخدم المؤسسي بنجاح';
+
+  @override
+  String get corporateUserCreateError => 'فشل إنشاء المستخدم المؤسسي';
+
+  @override
+  String get corporateValidationRequired => 'يرجى ملء جميع الحقول المطلوبة';
+
+  @override
+  String get corporateValidationBranch => 'يرجى اختيار فرع واحد على الأقل';
+
+  @override
+  String get corporateValidationCompanyName => 'اسم الشركة مطلوب';
+
+  @override
+  String get dashboardAllBranches => 'جميع الفروع';
+
+  @override
+  String get dashboardViewingDataFor => 'عرض بيانات';
+
+  @override
+  String get dashboardAllBranchesAggregated => 'جميع الفروع مجمّعة';
+
+  @override
+  String get dashboardSelectBranch => 'اختر الفرع';
+
+  @override
+  String get dashboardKpiTotalSalesToday => 'إجمالي مبيعات اليوم';
+
+  @override
+  String get dashboardKpiThisMonth => 'هذا الشهر';
+
+  @override
+  String get dashboardKpiPendingInvoices => 'الفواتير المعلقة';
+
+  @override
+  String get dashboardKpiLowStockAlerts => 'تنبيهات نقص المخزون';
+
+  @override
+  String get dashboardKpiTodaysSales => 'مبيعات اليوم';
+
+  @override
+  String get dashboardKpiActiveOrders => 'الطلبات النشطة';
+
+  @override
+  String get dashboardKpiTechWorkload => 'حمل الفني';
+
+  @override
+  String get dashboardKpiPendingApproval => 'بانتظار الموافقة';
+
+  @override
+  String get dashboardPendingApprovalsTitle => 'الموافقات المعلقة';
+
+  @override
+  String get dashboardViewAll => 'عرض الكل';
+
+  @override
+  String get dashboardNoPendingApprovals =>
+      'لا توجد طلبات صندوق صغير معلقة الآن.';
+
+  @override
+  String dashboardMoreApprovals(int count) {
+    return '+$count أخرى في الموافقات';
+  }
+
+  @override
+  String get dashboardBranchPerformance => 'أداء الفروع';
+
+  @override
+  String get dashboardBranchHighlights => 'أبرز الفرع';
+
+  @override
+  String get dashboardBranchStatus => 'حالة الفرع';
+
+  @override
+  String get dashboardTotalStaff => 'إجمالي الموظفين';
+
+  @override
+  String get dashboardSalesTarget => 'هدف المبيعات';
+
+  @override
+  String get dashboardSalesTargetValue => '85% محقق';
+
+  @override
+  String get branchPerformanceListTitle => 'أداء الفروع';
+
+  @override
+  String get branchPerformanceNoBranches => 'لا توجد فروع بعد.';
 }

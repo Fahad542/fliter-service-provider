@@ -3,6 +3,7 @@ import '../../../../models/workshop_owner_models.dart';
 import '../../../../utils/toast_service.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ReferralOption {
   final String id;
@@ -84,7 +85,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
   Future<void> _init() async {
     _isListLoading = true;
     notifyListeners();
-    
+
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token != null) {
@@ -165,17 +166,19 @@ class CorporateManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> submitCorporateForm(BuildContext context) async {
-    if (companyNameController.text.trim().isEmpty || 
+    final l10n = AppLocalizations.of(context)!;
+
+    if (companyNameController.text.trim().isEmpty ||
         contactNameController.text.trim().isEmpty ||
         mobileController.text.trim().isEmpty ||
         vatNumberController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
-      ToastService.showError(context, 'Please fill in all required fields');
+      ToastService.showError(context, l10n.corporateValidationRequired);
       return;
     }
     if (_selectedBranchIds.isEmpty) {
-      ToastService.showError(context, 'Please select at least one branch');
+      ToastService.showError(context, l10n.corporateValidationBranch);
       return;
     }
 
@@ -194,7 +197,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
         'email': emailController.text.trim(),
         'password': passwordController.text.trim(),
         'selectedStoreIds':
-            _selectedBranchIds.map((id) => id.toString()).toList(),
+        _selectedBranchIds.map((id) => id.toString()).toList(),
         'referralId': referralId,
         'referrerId': referralId,
         'mobile': mobileController.text.trim(),
@@ -203,14 +206,14 @@ class CorporateManagementViewModel extends ChangeNotifier {
       await ownerRepository.createCorporateAccount(data, token);
 
       if (context.mounted) {
-        ToastService.showSuccess(context, 'Corporate Account Created Successfully');
+        ToastService.showSuccess(context, l10n.corporateCreateSuccess);
         clearForm();
-        Navigator.pop(context); // Close the sheet
+        Navigator.pop(context);
         _init();
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, 'Failed to create corporate account');
+        ToastService.showError(context, l10n.corporateCreateError);
       }
     } finally {
       _isActionLoading = false;
@@ -219,10 +222,12 @@ class CorporateManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> submitCorporateUserForm(BuildContext context, String corporateAccountId) async {
-    if (userNameController.text.trim().isEmpty || 
+    final l10n = AppLocalizations.of(context)!;
+
+    if (userNameController.text.trim().isEmpty ||
         userEmailController.text.trim().isEmpty ||
         userPasswordController.text.trim().isEmpty) {
-      ToastService.showError(context, 'Please fill in all required fields');
+      ToastService.showError(context, l10n.corporateValidationRequired);
       return;
     }
 
@@ -234,22 +239,22 @@ class CorporateManagementViewModel extends ChangeNotifier {
       if (token == null) throw Exception('No token found');
 
       final data = {
-        "name": userNameController.text.trim(),
-        "email": userEmailController.text.trim(),
-        "password": userPasswordController.text.trim(),
-        "corporateAccountId": corporateAccountId,
+        'name': userNameController.text.trim(),
+        'email': userEmailController.text.trim(),
+        'password': userPasswordController.text.trim(),
+        'corporateAccountId': corporateAccountId,
       };
 
       await ownerRepository.createCorporateUser(data, token);
 
       if (context.mounted) {
-        ToastService.showSuccess(context, 'Corporate User Created Successfully');
+        ToastService.showSuccess(context, l10n.corporateUserCreateSuccess);
         clearForm();
-        Navigator.pop(context); // Close the sheet
+        Navigator.pop(context);
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, 'Failed to create corporate user');
+        ToastService.showError(context, l10n.corporateUserCreateError);
       }
     } finally {
       _isActionLoading = false;
@@ -264,7 +269,8 @@ class CorporateManagementViewModel extends ChangeNotifier {
     editCustomerNameController.text = customer.contactName;
     editMobileController.text = customer.mobile;
     editTaxIdController.text = customer.vatNumber;
-    editCreditLimitController.text = customer.creditLimit > 0 ? customer.creditLimit.toStringAsFixed(0) : '';
+    editCreditLimitController.text =
+    customer.creditLimit > 0 ? customer.creditLimit.toStringAsFixed(0) : '';
     editAddressController.text = customer.address;
     editContactPersonController.text = customer.contactPerson;
     _editStatus = customer.status.isEmpty ? 'active' : customer.status;
@@ -289,9 +295,11 @@ class CorporateManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> submitEditCorporateForm(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_editingCorporateId == null) return;
     if (editCompanyNameController.text.trim().isEmpty) {
-      ToastService.showError(context, 'Company name is required');
+      ToastService.showError(context, l10n.corporateValidationCompanyName);
       return;
     }
 
@@ -312,7 +320,8 @@ class CorporateManagementViewModel extends ChangeNotifier {
         if (editTaxIdController.text.trim().isNotEmpty)
           'taxId': editTaxIdController.text.trim(),
         if (editCreditLimitController.text.trim().isNotEmpty)
-          'creditLimit': double.tryParse(editCreditLimitController.text.trim()) ?? 0,
+          'creditLimit':
+          double.tryParse(editCreditLimitController.text.trim()) ?? 0,
         if (editAddressController.text.trim().isNotEmpty)
           'address': editAddressController.text.trim(),
         if (editContactPersonController.text.trim().isNotEmpty)
@@ -325,14 +334,14 @@ class CorporateManagementViewModel extends ChangeNotifier {
       await ownerRepository.updateCorporateAccount(token, _editingCorporateId!, data);
 
       if (context.mounted) {
-        ToastService.showSuccess(context, 'Corporate Account Updated Successfully');
+        ToastService.showSuccess(context, l10n.corporateUpdateSuccess);
         _editingCorporateId = null;
         Navigator.pop(context);
         _init();
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, 'Failed to update corporate account');
+        ToastService.showError(context, l10n.corporateUpdateError);
       }
     } finally {
       _isActionLoading = false;

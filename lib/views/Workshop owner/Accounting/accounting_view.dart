@@ -7,6 +7,19 @@ import '../../../models/workshop_owner_models.dart';
 import '../widgets/owner_app_bar.dart';
 import 'accounting_view_model.dart';
 
+// ---------------------------------------------------------------------------
+// AccountingView
+//
+// ── Translation safety rules ────────────────────────────────────────────────
+// 1. Static UI strings  → AppLocalizations (l10n.*). Never hardcoded.
+// 2. Dynamic API data   → entry.translatedParty / entry.translatedStatus
+//    (set by AccountingViewModel after translation).
+// 3. ALL switch / if-else conditions compare against the RAW entry.status
+//    and entry.type fields (English API values: 'overdue', 'settled',
+//    'payable', etc.). They NEVER compare translated strings — this ensures
+//    Arabic mode never breaks any colour/icon conditional.
+// ---------------------------------------------------------------------------
+
 class AccountingView extends StatefulWidget {
   const AccountingView({super.key});
 
@@ -18,7 +31,8 @@ class _AccountingViewState extends State<AccountingView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  /// Keys sent to the API — never translated.
+  /// Raw API type keys — used for API calls and switch/if logic.
+  /// NEVER translated; NEVER shown directly to the user.
   final List<String> _types = ['payable', 'receivable', 'expense', 'advance'];
 
   int _lastFetchedIndex = 0;
@@ -43,6 +57,7 @@ class _AccountingViewState extends State<AccountingView>
     if (idx == _lastFetchedIndex) return;
     _lastFetchedIndex = idx;
     final vm = Provider.of<AccountingViewModel>(context, listen: false);
+    // Pass RAW type key — never a translated string.
     vm.fetchTransactions(_types[idx]);
   }
 
@@ -57,7 +72,9 @@ class _AccountingViewState extends State<AccountingView>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    /// Tab labels resolved from localizations — order matches [_types].
+    /// Tab labels from localizations — order matches [_types].
+    /// These are localized display strings only; selection logic always uses
+    /// the raw key from [_types].
     final List<String> tabs = [
       l10n.accountingTabPayables,
       l10n.accountingTabReceivables,
@@ -76,6 +93,28 @@ class _AccountingViewState extends State<AccountingView>
           if (vm.isLoading) {
             return const Center(
               child: CircularProgressIndicator(color: AppColors.primaryLight),
+            );
+          }
+
+          if (vm.error != null && vm.summaryResponse == null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    l10n.accountingLoadingError,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      vm.fetchSummary();
+                      vm.fetchTransactions(_types[_tabController.index]);
+                    },
+                    child: Text(l10n.lockerRetry),
+                  ),
+                ],
+              ),
             );
           }
 
@@ -233,6 +272,8 @@ class _AccountingViewState extends State<AccountingView>
                           borderRadius: pillRadius,
                         ),
                         child: Text(
+                          // Display localized tab label.
+                          // Selection/fetch logic uses raw key from [_types].
                           tabs[i],
                           textAlign: TextAlign.center,
                           maxLines: 1,
@@ -261,6 +302,7 @@ class _AccountingViewState extends State<AccountingView>
 
   Widget _buildEntryList(
       String type, AccountingViewModel vm, AppLocalizations l10n) {
+    // [type] is a raw API key — safe for isLoadingType comparison.
     if (vm.isLoadingType(type)) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryLight),
@@ -299,7 +341,9 @@ class _AccountingViewState extends State<AccountingView>
   }
 
   Widget _buildEntryCard(AccountEntry entry, AppLocalizations l10n) {
-    // Status colour — driven by translated status key from VM.
+    // ── Status colour ────────────────────────────────────────────────────────
+    // ALWAYS compare against the RAW entry.status (English API value).
+    // NEVER compare against the translated string — would break in Arabic.
     Color statusColor;
     switch (entry.status) {
       case 'overdue':
@@ -308,11 +352,12 @@ class _AccountingViewState extends State<AccountingView>
       case 'settled':
         statusColor = Colors.green;
         break;
-      default:
+      default: // 'pending' and any future statuses
         statusColor = Colors.orange;
     }
 
-    // Type colour + icon.
+    // ── Type colour + icon ───────────────────────────────────────────────────
+    // Same rule: compare against RAW entry.type.
     Color typeColor;
     IconData icon;
     switch (entry.type) {
@@ -328,18 +373,20 @@ class _AccountingViewState extends State<AccountingView>
         typeColor = Colors.red;
         icon = Icons.receipt_rounded;
         break;
-      default: // advance
+      default: // 'advance'
         typeColor = Colors.purple;
         icon = Icons.person_rounded;
     }
 
-    final date = entry.date;
+    final date    = entry.date;
     final dateStr = '${date.day}/${date.month}/${date.year}';
 
-    // Translated status label (resolved by VM in Arabic locale).
-    final translatedStatus = entry.translatedStatus;
-    // Translated party name (resolved by VM in Arabic locale).
-    final displayParty = entry.translatedParty;
+    // ── Display strings ──────────────────────────────────────────────────────
+    // Use the translated fields set by the ViewModel.
+    // Fall back to raw fields only as a safety net — the ViewModel always sets
+    // translated* fields when translation is available.
+    final displayStatus = entry.translatedStatus ?? entry.status;
+    final displayParty  = entry.translatedParty  ?? entry.party;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -372,12 +419,13 @@ class _AccountingViewState extends State<AccountingView>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  displayParty!,
+                  displayParty,
                   style: AppTextStyles.h2
                       .copyWith(fontSize: 16, color: AppColors.secondaryLight),
                 ),
                 const SizedBox(height: 3),
                 Text(
+                  // l10n key handles locale-specific Ref prefix formatting.
                   l10n.accountingRefPrefix(entry.reference, dateStr),
                   style: const TextStyle(
                     color: Colors.grey,
@@ -405,7 +453,8 @@ class _AccountingViewState extends State<AccountingView>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  translatedStatus!.toUpperCase(),
+                  // Display the translated status — already uppercase-friendly.
+                  displayStatus.toUpperCase(),
                   style: TextStyle(
                     color: statusColor,
                     fontSize: 9,

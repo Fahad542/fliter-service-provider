@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import 'billing_management_view_model.dart';
@@ -16,102 +17,116 @@ class BillingManagementView extends StatefulWidget {
 }
 
 class _BillingManagementViewState extends State<BillingManagementView> {
-  int _currentScreen = 0; // 0: Dashboard, 1: Generate, 2: List, 3: Overdue
+  int _currentScreen = 0; // 0: Dashboard, 1: Generate, 2: List
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Consumer<BillingManagementViewModel>(
       builder: (context, vm, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FD),
           appBar: OwnerAppBar(
-            title: _getScreenTitle(),
-            showGlobalLeft: _currentScreen == 0,
+            title: _getScreenTitle(l10n),
+            showGlobalLeft:   _currentScreen == 0,
             showNotification: _currentScreen == 0,
-            showDrawer: false,
-            showBackButton: _currentScreen != 0,
+            showDrawer:       false,
+            showBackButton:   _currentScreen != 0,
             onNotificationPressed: () => OwnerShell.goToNotifications(context),
             onBackPressed: _currentScreen != 0
-                ? () { setState(() => _currentScreen = 0); }
+                ? () => setState(() => _currentScreen = 0)
                 : null,
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
           ),
-          body: _buildCurrentScreen(vm),
+          body: _buildCurrentScreen(l10n, vm),
         );
       },
     );
   }
 
-  String _getScreenTitle() {
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  String _getScreenTitle(AppLocalizations l10n) {
     switch (_currentScreen) {
-      case 0: return 'Billing Dashboard';
-      case 1: return 'Generate Bills';
-      case 2: return 'Monthly Bills';
-      case 3: return 'Overdue Payments';
-      default: return 'Billing';
+      case 0: return l10n.billingDashboardTitle;
+      case 1: return l10n.billingGenerateTitle;
+      case 2: return l10n.billingMonthlyTitle;
+      case 3: return l10n.billingOverdueTitle;
+      default: return l10n.billingDefaultTitle;
     }
   }
 
-  Widget _buildCurrentScreen(BillingManagementViewModel vm) {
+  Widget _buildCurrentScreen(AppLocalizations l10n, BillingManagementViewModel vm) {
     if (vm.isLoading && _currentScreen == 0) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryLight),
+      );
     }
     switch (_currentScreen) {
-      case 0: return _buildDashboard(vm);
-      case 1: return _buildGenerator(vm);
-      case 2: return _buildBillsList(vm);
-      default: return _buildDashboard(vm);
+      case 0: return _buildDashboard(l10n, vm);
+      case 1: return _buildGenerator(l10n, vm);
+      case 2: return _buildBillsList(l10n, vm);
+      default: return _buildDashboard(l10n, vm);
     }
   }
 
-  // --- SCREEN 1: DASHBOARD ---
-  Widget _buildDashboard(BillingManagementViewModel vm) {
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+
+  Widget _buildDashboard(AppLocalizations l10n, BillingManagementViewModel vm) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSummaryCards(vm),
+          _buildSummaryCards(l10n, vm),
           const SizedBox(height: 32),
-          Text('Quick Actions', style: AppTextStyles.h2.copyWith(fontSize: 18)),
+          Text(l10n.billingQuickActions, style: AppTextStyles.h2.copyWith(fontSize: 18)),
           const SizedBox(height: 16),
-          _buildActionGrid(),
+          _buildActionGrid(l10n),
           const SizedBox(height: 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('Recent Billing Activity', style: AppTextStyles.h2.copyWith(fontSize: 18)),
+              Text(l10n.billingRecentActivity, style: AppTextStyles.h2.copyWith(fontSize: 18)),
               InkWell(
                 onTap: () => setState(() => _currentScreen = 2),
                 borderRadius: BorderRadius.circular(4),
-                child: const Text('See All', style: TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.w800, fontSize: 14)),
+                child: Text(
+                  l10n.billingSeeAll,
+                  style: const TextStyle(
+                    color: AppColors.primaryLight,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildRecentActivity(vm, limit: 3),
+          _buildRecentActivity(l10n, vm, limit: 3),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryCards(BillingManagementViewModel vm) {
+  Widget _buildSummaryCards(AppLocalizations l10n, BillingManagementViewModel vm) {
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _buildSummaryCard('Total Billed', 'SAR ${vm.totalBilledMonth}', Icons.receipt_rounded, Colors.blue)),
+            Expanded(child: _buildSummaryCard(l10n.billingSummaryTotalBilled,   'SAR ${vm.totalBilledMonth}',   Icons.receipt_rounded,         Colors.blue)),
             const SizedBox(width: 16),
-            Expanded(child: _buildSummaryCard('Total Received', 'SAR ${vm.totalReceivedMonth}', Icons.payments_rounded, Colors.green)),
+            Expanded(child: _buildSummaryCard(l10n.billingSummaryTotalReceived, 'SAR ${vm.totalReceivedMonth}', Icons.payments_rounded,         Colors.green)),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildSummaryCard('Outstanding', 'SAR ${vm.totalOutstanding}', Icons.pending_actions_rounded, Colors.orange)),
+            Expanded(child: _buildSummaryCard(l10n.billingSummaryOutstanding, 'SAR ${vm.totalOutstanding}', Icons.pending_actions_rounded,  Colors.orange)),
             const SizedBox(width: 16),
-            Expanded(child: _buildSummaryCard('Overdue', 'SAR ${vm.overdueAmount}', Icons.warning_amber_rounded, Colors.red)),
+            Expanded(child: _buildSummaryCard(l10n.billingSummaryOverdue,     'SAR ${vm.overdueAmount}',    Icons.warning_amber_rounded,    Colors.red)),
           ],
         ),
       ],
@@ -124,7 +139,9 @@ class _BillingManagementViewState extends State<BillingManagementView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: color.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,25 +149,25 @@ class _BillingManagementViewState extends State<BillingManagementView> {
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 12),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+          Text(title,  style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  Widget _buildActionGrid() {
+  Widget _buildActionGrid(AppLocalizations l10n) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
+      crossAxisCount:  2,
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
       childAspectRatio: 2.5,
       children: [
-        _buildActionButton('Generate Bills', Icons.add_circle_outline_rounded, () => setState(() => _currentScreen = 1)),
-        _buildActionButton('View All Bills', Icons.list_alt_rounded, () => setState(() => _currentScreen = 2)),
-        _buildActionButton('Record Payment', Icons.account_balance_wallet_rounded, () {}),
-        _buildActionButton('Send Reminders', Icons.notification_important_rounded, () {}),
+        _buildActionButton(l10n.billingActionGenerate,       Icons.add_circle_outline_rounded,      () => setState(() => _currentScreen = 1)),
+        _buildActionButton(l10n.billingActionViewAll,        Icons.list_alt_rounded,                () => setState(() => _currentScreen = 2)),
+        _buildActionButton(l10n.billingActionRecordPayment,  Icons.account_balance_wallet_rounded,  () {}),
+        _buildActionButton(l10n.billingActionSendReminders,  Icons.notification_important_rounded,  () {}),
       ],
     );
   }
@@ -168,21 +185,35 @@ class _BillingManagementViewState extends State<BillingManagementView> {
           children: [
             Icon(icon, color: AppColors.primaryLight, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRecentActivity(BillingManagementViewModel vm, {int? limit}) {
-    final count = limit != null && vm.monthlyBills.length > limit ? limit : vm.monthlyBills.length;
+  Widget _buildRecentActivity(
+      AppLocalizations l10n,
+      BillingManagementViewModel vm, {
+        int? limit,
+      }) {
+    final count = (limit != null && vm.monthlyBills.length > limit)
+        ? limit
+        : vm.monthlyBills.length;
 
     if (count == 0) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Text('No recent activity', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+          padding: const EdgeInsets.all(20),
+          child: Text(
+            l10n.billingNoRecentActivity,
+            style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+          ),
         ),
       );
     }
@@ -193,6 +224,13 @@ class _BillingManagementViewState extends State<BillingManagementView> {
       itemCount: count,
       itemBuilder: (context, index) {
         final bill = vm.monthlyBills[index];
+
+        // Status colour / icon use the raw API status (locale-agnostic enum).
+        // Display text uses the pre-translated field from the VM.
+        final rawStatus         = bill.status;
+        final displayStatus     = bill.translatedStatus ?? bill.status;
+        final displayCustomer   = bill.translatedCustomerName ?? bill.customerName;
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -210,13 +248,18 @@ class _BillingManagementViewState extends State<BillingManagementView> {
           ),
           child: Row(
             children: [
+              // Icon keyed on rawStatus so it never breaks when locale is AR.
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(bill.status).withValues(alpha: 0.1),
+                  color: _getStatusColor(rawStatus).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(_getStatusIconData(bill.status), color: _getStatusColor(bill.status), size: 20),
+                child: Icon(
+                  _getStatusIconData(rawStatus),
+                  color: _getStatusColor(rawStatus),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -224,13 +267,24 @@ class _BillingManagementViewState extends State<BillingManagementView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      bill.translatedCustomerName ?? bill.customerName,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.secondaryLight),
+                      displayCustomer,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: AppColors.secondaryLight,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Billing Period: ${bill.month}/${bill.year}',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600),
+                      l10n.billingPeriodLabel(
+                        bill.month.toString(),
+                        bill.year.toString(),
+                      ),
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -240,18 +294,28 @@ class _BillingManagementViewState extends State<BillingManagementView> {
                 children: [
                   Text(
                     'SAR ${bill.totalAmount}',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppColors.secondaryLight,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(bill.status).withValues(alpha: 0.1),
+                      color: _getStatusColor(rawStatus).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      (bill.translatedStatus ?? bill.status).replaceAll('_', ' ').toUpperCase(),
-                      style: TextStyle(color: _getStatusColor(bill.status), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                      // Remove underscores from translated text, then uppercase.
+                      displayStatus.replaceAll('_', ' ').toUpperCase(),
+                      style: TextStyle(
+                        color: _getStatusColor(rawStatus),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ],
@@ -263,36 +327,48 @@ class _BillingManagementViewState extends State<BillingManagementView> {
     );
   }
 
-  // --- SCREEN 2: GENERATOR ---
-  Widget _buildGenerator(BillingManagementViewModel vm) {
+  // ── Generator ─────────────────────────────────────────────────────────────
+
+  Widget _buildGenerator(AppLocalizations l10n, BillingManagementViewModel vm) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Step 1: Select Billing Period', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(l10n.billingGeneratorStep1,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               filled: true,
               fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
             ),
             value: 'January 2026',
-            items: ['January 2026', 'December 2025'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            items: ['January 2026', 'December 2025']
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
             onChanged: (val) {},
           ),
           const SizedBox(height: 32),
-          const Text('Step 2: Preview Eligible Invoices', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(l10n.billingGeneratorStep2,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 12),
           Expanded(
             child: ListView.builder(
-              itemCount: context.read<CorporateManagementViewModel>().corporateCustomers.length,
+              itemCount:
+              context.read<CorporateManagementViewModel>().corporateCustomers.length,
               itemBuilder: (context, index) {
-                final c = context.read<CorporateManagementViewModel>().corporateCustomers[index];
+                final c = context
+                    .read<CorporateManagementViewModel>()
+                    .corporateCustomers[index];
                 return CheckboxListTile(
-                  title: Text(c.companyName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Pending Invoices: 15 • Est. Total: SAR 12,450'),
+                  title: Text(c.companyName,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(l10n.billingGeneratorPendingInvoices),
                   value: true,
                   onChanged: (val) {},
                 );
@@ -309,15 +385,19 @@ class _BillingManagementViewState extends State<BillingManagementView> {
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            child: const Text('Generate & Post All', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+            child: Text(
+              l10n.billingGeneratorPostAll,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // --- SCREEN 3: BILLS LIST ---
-  Widget _buildBillsList(BillingManagementViewModel vm) {
+  // ── Bills list ────────────────────────────────────────────────────────────
+
+  Widget _buildBillsList(AppLocalizations l10n, BillingManagementViewModel vm) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -326,38 +406,47 @@ class _BillingManagementViewState extends State<BillingManagementView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Monthly Bills', style: AppTextStyles.h2.copyWith(fontSize: 18)),
+              Text(l10n.billingMonthlyTitle, style: AppTextStyles.h2.copyWith(fontSize: 18)),
               DropdownButton<String>(
                 value: 'January 2026',
-                style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: AppColors.primaryLight, fontWeight: FontWeight.bold),
                 underline: const SizedBox(),
-                items: ['January 2026', 'December 2025'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                items: ['January 2026', 'December 2025']
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
                 onChanged: (val) {},
               ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildRecentActivity(vm),
+          _buildRecentActivity(l10n, vm),
         ],
       ),
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Paid': return Colors.green;
-      case 'Overdue': return Colors.red;
+  // ── Status helpers — always keyed on the RAW English status value ─────────
+  //
+  // The VM stores the original API value in [MonthlyBill.status].
+  // Only [translatedStatus] changes with locale. Colour/icon logic always
+  // reads the raw field so UI never breaks after a locale switch to Arabic.
+
+  Color _getStatusColor(String rawStatus) {
+    switch (rawStatus) {
+      case 'Paid':           return Colors.green;
+      case 'Overdue':        return Colors.red;
       case 'Partially Paid': return Colors.orange;
-      default: return Colors.blue;
+      default:               return Colors.blue;
     }
   }
 
-  IconData _getStatusIconData(String status) {
-    switch (status) {
-      case 'Paid': return Icons.check_rounded;
-      case 'Overdue': return Icons.priority_high_rounded;
+  IconData _getStatusIconData(String rawStatus) {
+    switch (rawStatus) {
+      case 'Paid':           return Icons.check_rounded;
+      case 'Overdue':        return Icons.priority_high_rounded;
       case 'Partially Paid': return Icons.hourglass_bottom_rounded;
-      default: return Icons.receipt_rounded;
+      default:               return Icons.receipt_rounded;
     }
   }
 }

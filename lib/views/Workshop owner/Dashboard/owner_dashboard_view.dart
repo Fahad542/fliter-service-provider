@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
+import '../../../l10n/app_localizations.dart';
 import '../widgets/owner_app_bar.dart';
 import '../widgets/owner_branch_performance_tile.dart';
 import '../widgets/owner_petty_cash_approval_card.dart';
@@ -19,6 +20,7 @@ class OwnerDashboardView extends StatefulWidget {
 class _OwnerDashboardViewState extends State<OwnerDashboardView> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<OwnerDashboardViewModel>(
       builder: (context, vm, child) {
         if (vm.isLoading) {
@@ -31,130 +33,131 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           backgroundColor: const Color(0xFFF8F9FD),
           appBar: OwnerAppBar(
             title: OwnerDashboardTitle(
-              subtitle: vm.selectedBranch?.name ?? 'All Branches',
+              subtitle: vm.selectedBranch?.name ?? l10n.dashboardAllBranches,
             ),
             showBackButton: false,
             showNotification: true,
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
           ),
-          body: vm.isLoading 
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
-            : RefreshIndicator(
-                onRefresh: vm.init,
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildBranchSelector(context, vm),
-                      const SizedBox(height: 24),
-                      _buildKPIGrid(vm),
-                      const SizedBox(height: 24),
-                      _buildPendingApprovalsSection(vm),
-                      if (vm.branches.isNotEmpty) ...[
-                        const SizedBox(height: 32),
-                        vm.selectedBranch == null
-                            ? _buildSectionTitle(
-                                'Branch Performance',
-                                onViewAll: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (ctx) =>
-                                          OwnerBranchPerformanceListView(
-                                        branches: vm.branches,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
-                            : _buildSectionTitle('Branch Highlights'),
-                        const SizedBox(height: 16),
-                        vm.selectedBranch == null
-                            ? _buildBranchListPreview(vm)
-                            : _buildBranchHighlights(vm),
-                      ],
-                    ],
-                  ),
-                ),
+          body: RefreshIndicator(
+            onRefresh: vm.init,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildBranchSelector(context, vm, l10n),
+                  const SizedBox(height: 24),
+                  _buildKPIGrid(vm, l10n),
+                  const SizedBox(height: 24),
+                  _buildPendingApprovalsSection(vm, l10n),
+                  if (vm.branches.isNotEmpty) ...[
+                    const SizedBox(height: 32),
+                    vm.selectedBranch == null
+                        ? _buildSectionTitle(
+                      l10n.dashboardBranchPerformance,
+                      onViewAll: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (ctx) => OwnerBranchPerformanceListView(
+                              branches: vm.branches,
+                            ),
+                          ),
+                        );
+                      },
+                      l10n: l10n,
+                    )
+                        : _buildSectionTitle(l10n.dashboardBranchHighlights, l10n: l10n),
+                    const SizedBox(height: 16),
+                    vm.selectedBranch == null
+                        ? _buildBranchListPreview(vm)
+                        : _buildBranchHighlights(vm, l10n),
+                  ],
+                ],
               ),
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildKPIGrid(OwnerDashboardViewModel vm) {
+  Widget _buildKPIGrid(OwnerDashboardViewModel vm, AppLocalizations l10n) {
     final metrics = vm.selectedBranch == null
         ? <({String title, String value, IconData icon})>[
-            (
-              title: 'Total Sales Today',
-              value: 'SAR ${vm.totalSalesToday.toStringAsFixed(0)}',
-              icon: Icons.payments_rounded,
-            ),
-            (
-              title: 'This Month',
-              value: 'SAR ${vm.totalSalesMonth.toStringAsFixed(0)}',
-              icon: Icons.calendar_today_rounded,
-            ),
-            (
-              title: 'Pending Invoices',
-              value: vm.pendingInvoices.toString(),
-              icon: Icons.receipt_long_rounded,
-            ),
-            (
-              title: 'Low Stock Alerts',
-              value: vm.lowStockAlerts.toString(),
-              icon: Icons.inventory_2_rounded,
-            ),
-          ]
+      (
+      title: l10n.dashboardKpiTotalSalesToday,
+      value: 'SAR ${vm.totalSalesToday.toStringAsFixed(0)}',
+      icon: Icons.payments_rounded,
+      ),
+      (
+      title: l10n.dashboardKpiThisMonth,
+      value: 'SAR ${vm.totalSalesMonth.toStringAsFixed(0)}',
+      icon: Icons.calendar_today_rounded,
+      ),
+      (
+      title: l10n.dashboardKpiPendingInvoices,
+      value: vm.pendingInvoices.toString(),
+      icon: Icons.receipt_long_rounded,
+      ),
+      (
+      title: l10n.dashboardKpiLowStockAlerts,
+      value: vm.lowStockAlerts.toString(),
+      icon: Icons.inventory_2_rounded,
+      ),
+    ]
         : <({String title, String value, IconData icon})>[
-            (
-              title: 'Today\'s Sales',
-              value: 'SAR ${vm.totalSalesToday.toStringAsFixed(0)}',
-              icon: Icons.payments_rounded,
-            ),
-            (
-              title: 'Active Orders',
-              value: vm.activeOrders.toString(),
-              icon: Icons.assignment_rounded,
-            ),
-            (
-              title: 'Tech Workload',
-              value: '${(vm.technicianWorkload * 100).toStringAsFixed(0)}%',
-              icon: Icons.engineering_rounded,
-            ),
-            (
-              title: 'Pending Approval',
-              value: vm.pendingApprovals.toString(),
-              icon: Icons.verified_user_rounded,
-            ),
-          ];
+      (
+      title: l10n.dashboardKpiTodaysSales,
+      value: 'SAR ${vm.totalSalesToday.toStringAsFixed(0)}',
+      icon: Icons.payments_rounded,
+      ),
+      (
+      title: l10n.dashboardKpiActiveOrders,
+      value: vm.activeOrders.toString(),
+      icon: Icons.assignment_rounded,
+      ),
+      (
+      title: l10n.dashboardKpiTechWorkload,
+      value: '${(vm.technicianWorkload * 100).toStringAsFixed(0)}%',
+      icon: Icons.engineering_rounded,
+      ),
+      (
+      title: l10n.dashboardKpiPendingApproval,
+      value: vm.pendingApprovals.toString(),
+      icon: Icons.verified_user_rounded,
+      ),
+    ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          for (var i = 0; i < metrics.length; i++) ...[
-            SizedBox(
-              width: 158,
-              child: _buildMetricCard(
-                metrics[i].title,
-                metrics[i].value,
-                metrics[i].icon,
-                AppColors.primaryLight,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < metrics.length; i++) ...[
+              SizedBox(
+                width: 158,
+                child: _buildMetricCard(
+                  metrics[i].title,
+                  metrics[i].value,
+                  metrics[i].icon,
+                  AppColors.primaryLight,
+                ),
               ),
-            ),
-            if (i < metrics.length - 1) const SizedBox(width: 12),
+              if (i < metrics.length - 1) const SizedBox(width: 12),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
     return Container(
-      height: 110,
+      constraints: const BoxConstraints(minHeight: 110),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -170,6 +173,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -193,7 +197,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           const SizedBox(height: 3),
           Text(
             title,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bodyMedium.copyWith(
               fontSize: 9.5,
@@ -206,7 +210,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     );
   }
 
-  Widget _buildPendingApprovalsSection(OwnerDashboardViewModel vm) {
+  Widget _buildPendingApprovalsSection(OwnerDashboardViewModel vm, AppLocalizations l10n) {
     final requests = vm.pendingPettyCashRequests;
     final visible = requests.take(2).toList();
 
@@ -222,7 +226,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                 children: [
                   Flexible(
                     child: Text(
-                      'Pending Approvals',
+                      l10n.dashboardPendingApprovalsTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.h2.copyWith(
@@ -233,10 +237,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(999),
@@ -260,12 +261,9 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text(
-                'View All',
-                style: TextStyle(
-                  color: AppColors.primaryLight,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Text(
+                l10n.dashboardViewAll,
+                style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -273,7 +271,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
         const SizedBox(height: 12),
         if (requests.isEmpty)
           Text(
-            'No pending petty-cash approvals right now.',
+            l10n.dashboardNoPendingApprovals,
             style: AppTextStyles.bodyMedium.copyWith(
               color: Colors.grey.shade600,
               fontSize: 12,
@@ -282,7 +280,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           )
         else ...[
           ...visible.map(
-            (r) => OwnerPettyCashApprovalCard(
+                (r) => OwnerPettyCashApprovalCard(
               request: r,
               currency: vm.pettyCashCurrency,
               hasApprovalActionInFlight: vm.hasApprovalActionInFlight,
@@ -296,7 +294,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Text(
-                '+${requests.length - 2} more in Approvals',
+                l10n.dashboardMoreApprovals(requests.length - 2),
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: 11,
@@ -309,17 +307,14 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     );
   }
 
-  Widget _buildSectionTitle(String title, {VoidCallback? onViewAll}) {
+  Widget _buildSectionTitle(String title, {VoidCallback? onViewAll, required AppLocalizations l10n}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: Text(
             title,
-            style: AppTextStyles.h2.copyWith(
-              fontSize: 18,
-              color: AppColors.secondaryLight,
-            ),
+            style: AppTextStyles.h2.copyWith(fontSize: 18, color: AppColors.secondaryLight),
           ),
         ),
         if (onViewAll != null)
@@ -330,21 +325,18 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text(
-              'View All',
-              style: TextStyle(
-                color: AppColors.primaryLight,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Text(
+              l10n.dashboardViewAll,
+              style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildBranchSelector(BuildContext context, OwnerDashboardViewModel vm) {
+  Widget _buildBranchSelector(BuildContext context, OwnerDashboardViewModel vm, AppLocalizations l10n) {
     return GestureDetector(
-      onTap: () => _showBranchPicker(context, vm),
+      onTap: () => _showBranchPicker(context, vm, l10n),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -375,11 +367,11 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Viewing Data For',
+                    l10n.dashboardViewingDataFor,
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    vm.selectedBranch?.name ?? 'All Branches Aggregated',
+                    vm.selectedBranch?.name ?? l10n.dashboardAllBranchesAggregated,
                     style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.secondaryLight),
                   ),
                 ],
@@ -392,15 +384,13 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     );
   }
 
-  void _showBranchPicker(BuildContext context, OwnerDashboardViewModel vm) {
+  void _showBranchPicker(BuildContext context, OwnerDashboardViewModel vm, AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.55,
-        ),
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.55),
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -410,7 +400,10 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Select Branch', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.secondaryLight)),
+            Text(
+              l10n.dashboardSelectBranch,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.secondaryLight),
+            ),
             const SizedBox(height: 20),
             Flexible(
               child: SingleChildScrollView(
@@ -418,18 +411,18 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildPickerItem(
-                      context, 
-                      'All Branches', 
-                      null, 
+                      context,
+                      l10n.dashboardAllBranches,
+                      null,
                       vm.selectedBranch == null,
-                      () => vm.setSelectedBranch(null),
+                          () => vm.setSelectedBranch(null),
                     ),
                     ...vm.branches.map((b) => _buildPickerItem(
-                      context, 
-                      b.name, 
-                      b.location, 
+                      context,
+                      b.name,
+                      b.location,
                       vm.selectedBranch?.id == b.id,
-                      () => vm.setSelectedBranch(b),
+                          () => vm.setSelectedBranch(b),
                     )),
                   ],
                 ),
@@ -442,7 +435,13 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     );
   }
 
-  Widget _buildPickerItem(BuildContext context, String title, String? subtitle, bool isSelected, VoidCallback onTap) {
+  Widget _buildPickerItem(
+      BuildContext context,
+      String title,
+      String? subtitle,
+      bool isSelected,
+      VoidCallback onTap,
+      ) {
     return ListTile(
       onTap: () {
         onTap();
@@ -457,7 +456,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
-          subtitle == null ? Icons.business_rounded : Icons.location_on_rounded, 
+          subtitle == null ? Icons.business_rounded : Icons.location_on_rounded,
           color: isSelected ? AppColors.secondaryLight : Colors.grey,
           size: 20,
         ),
@@ -468,7 +467,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     );
   }
 
-  Widget _buildBranchHighlights(OwnerDashboardViewModel vm) {
+  Widget _buildBranchHighlights(OwnerDashboardViewModel vm, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -484,11 +483,23 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
       ),
       child: Column(
         children: [
-          _buildHighlightRow('Branch Status', vm.selectedBranch?.status.toUpperCase() ?? 'ACTIVE', Icons.info_outline_rounded),
+          _buildHighlightRow(
+            l10n.dashboardBranchStatus,
+            vm.selectedBranch?.status.toUpperCase() ?? l10n.corporateStatusActive.toUpperCase(),
+            Icons.info_outline_rounded,
+          ),
           const SizedBox(height: 16),
-          _buildHighlightRow('Total Staff', vm.employees.where((e) => e.branchId == vm.selectedBranch?.id).length.toString(), Icons.people_outline_rounded),
+          _buildHighlightRow(
+            l10n.dashboardTotalStaff,
+            vm.employees.where((e) => e.branchId == vm.selectedBranch?.id).length.toString(),
+            Icons.people_outline_rounded,
+          ),
           const SizedBox(height: 16),
-          _buildHighlightRow('Sales Target', '85% Achieved', Icons.track_changes_rounded),
+          _buildHighlightRow(
+            l10n.dashboardSalesTarget,
+            l10n.dashboardSalesTargetValue,
+            Icons.track_changes_rounded,
+          ),
         ],
       ),
     );
@@ -499,8 +510,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final branch in preview)
-          OwnerBranchPerformanceTile(branch: branch),
+        for (final branch in preview) OwnerBranchPerformanceTile(branch: branch),
       ],
     );
   }

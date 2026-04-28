@@ -1,11 +1,94 @@
 {
   "@@locale": "ar",
-
+  "ownerShellHome": "الرئيسية",
+  "ownerShellBranches": "الفروع",
+  "ownerShellDepartments": "الأقسام",
+  "ownerShellEmployees": "الموظفون",
+  "ownerShellCorporate": "الشركات",
+  "ownerShellInventory": "المخزون",
+  "ownerShellPosMonitoring": "مراقبة نقاط البيع",
+  "ownerShellSuppliers": "الموردون",
+  "ownerShellAccounting": "المحاسبة",
+  "ownerShellPromoCodes": "رموز العروض",
+  "ownerShellApprovals": "الموافقات",
+  "ownerShellNotifications": "الإشعارات",
+  "ownerShellLogout": "تسجيل الخروج",
+  "ownerShellRoleLabel": "مالك الورشة",
+  "ownerShellVersion": "v1.0.0 • نظام الورشة",
+  "ownerShellLogoutTitle": "تسجيل الخروج",
+  "ownerShellLogoutBody": "هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟",
+  "ownerShellLogoutCancel": "إلغاء",
+  "ownerShellLogoutConfirm": "تسجيل الخروج",
+  "lockerDefaultUser": "المالك",
+  "billingDashboardTitle": "لوحة الفوترة",
+  "billingGenerateTitle": "إنشاء فواتير",
+  "billingMonthlyTitle": "الفواتير الشهرية",
+  "billingOverdueTitle": "المدفوعات المتأخرة",
+  "billingDefaultTitle": "الفوترة",
+  "billingSummaryTotalBilled": "إجمالي المفوتر",
+  "billingSummaryTotalReceived": "إجمالي المستلم",
+  "billingSummaryOutstanding": "المبالغ المعلقة",
+  "billingSummaryOverdue": "المتأخرات",
+  "billingQuickActions": "إجراءات سريعة",
+  "billingRecentActivity": "آخر نشاط في الفوترة",
+  "billingSeeAll": "عرض الكل",
+  "billingNoRecentActivity": "لا يوجد نشاط حديث",
+  "billingActionGenerate": "إنشاء فواتير",
+  "billingActionViewAll": "عرض كل الفواتير",
+  "billingActionRecordPayment": "تسجيل دفعة",
+  "billingActionSendReminders": "إرسال تذكيرات",
+  "billingGeneratorStep1": "الخطوة 1: اختر فترة الفوترة",
+  "billingGeneratorStep2": "الخطوة 2: معاينة الفواتير المؤهلة",
+  "billingGeneratorPendingInvoices": "فواتير معلقة: 15 • الإجمالي المتوقع: 12,450 ر.س",
+  "billingGeneratorPostAll": "إنشاء وترحيل الكل",
+  "billingPeriodLabel": "فترة الفوترة: {month}/{year}",
+  "@billingPeriodLabel": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "billingStatusPaid": "مدفوع",
+  "billingStatusOverdue": "متأخر",
+  "billingStatusPartiallyPaid": "مدفوع جزئياً",
+  "billingStatusPending": "قيد الانتظار",
+  "branchManagementTitle": "الفروع",
+  "branchSearchHint": "البحث في الفروع…",
+  "branchAddButton": "إضافة فرع",
+  "branchEditButton": "تعديل",
+  "branchDeleteButton": "حذف",
+  "branchNoBranches": "لا توجد فروع",
+  "branchStatusActive": "نشط",
+  "branchStatusInactive": "غير نشط",
+  "branchFormTitleAdd": "إضافة فرع",
+  "branchFormTitleEdit": "تعديل الفرع",
+  "branchFormNameLabel": "اسم الفرع",
+  "branchFormNameHint": "أدخل اسم الفرع",
+  "branchFormAddressLabel": "العنوان",
+  "branchFormAddressHint": "ابحث عن العنوان…",
+  "branchFormLatLabel": "خط العرض GPS",
+  "branchFormLngLabel": "خط الطول GPS",
+  "branchFormStatusLabel": "نشط",
+  "branchFormSaveButton": "حفظ الفرع",
+  "branchFormUpdateButton": "تحديث الفرع",
+  "branchFormValidationError": "اسم الفرع والعنوان مطلوبان",
+  "branchCreateSuccess": "تم إنشاء الفرع بنجاح",
+  "branchUpdateSuccess": "تم تحديث الفرع بنجاح",
+  "branchDeleteSuccess": "تم حذف الفرع بنجاح",
+  "branchSaveError": "فشل حفظ الفرع",
+  "branchDeleteError": "فشل حذف الفرع",
+  "branchDeleteConfirmTitle": "حذف الفرع",
+  "branchDeleteConfirmBody": "هل أنت متأكد من رغبتك في حذف هذا الفرع؟",
+  "branchDeleteConfirmCancel": "إلغاء",
+  "branchDeleteConfirmDelete": "حذف",
   "lockerPortalTitle": "بوابة الخزينة",
   "lockerPortalSubtitle": "إدارة الأصول الآمنة للفرع",
   "lockerPortalAppBarTitle": "بوابة الخزينة",
   "lockerSecureAssetManagement": "إدارة الأصول الآمنة",
-
   "lockerEmail": "البريد الإلكتروني",
   "lockerEmailHint": "أدخل بريدك الإلكتروني",
   "lockerEmailRequired": "البريد الإلكتروني مطلوب",
@@ -14,24 +97,18 @@
   "lockerPasswordRequired": "كلمة المرور مطلوبة",
   "lockerForgotPassword": "نسيت كلمة المرور؟",
   "lockerContinue": "متابعة",
-
   "lockerLoadingDashboard": "جارٍ تحميل لوحة التحكم…",
   "lockerFailedLoadDashboard": "فشل تحميل لوحة التحكم",
   "lockerUnexpectedError": "حدث خطأ غير متوقع.",
   "lockerRetry": "إعادة المحاولة",
   "lockerRefresh": "تحديث",
-  "lockerDefaultUser": "مستخدم",
-
   "lockerSupervisorTab": "المشرف",
   "lockerCollectorTab": "المحصِّل",
-
   "lockerLogOut": "تسجيل الخروج",
   "lockerLogOutConfirm": "هل أنت متأكد من تسجيل الخروج من بوابة الخزينة؟",
   "lockerCancel": "إلغاء",
   "lockerLogOutButton": "تسجيل الخروج",
-
   "lockerWelcomeBack": "مرحباً بعودتك",
-
   "lockerRoleSupervisor": "مشرف",
   "lockerRoleManager": "مدير",
   "lockerRoleWorkshopOwner": "صاحب الورشة",
@@ -39,10 +116,8 @@
   "lockerRoleCollector": "محصِّل",
   "lockerRoleCollectionOfficer": "موظف التحصيل",
   "lockerRoleWorkshopCollector": "محصِّل الورشة",
-
   "lockerSupervisorOverview": "نظرة عامة للمشرف",
   "lockerMyPerformance": "أدائي",
-
   "lockerKpiPending": "قيد الانتظار",
   "lockerKpiAwaiting": "في انتظار الموافقة",
   "lockerKpiOverdue": "متأخر",
@@ -51,14 +126,12 @@
   "lockerKpiPendingApproval": "في انتظار الموافقة",
   "lockerKpiTodaysCollections": "تحصيلات اليوم",
   "lockerKpiMonthlyCollected": "المحصَّل الشهري",
-
   "lockerCoreOperations": "العمليات الأساسية",
   "lockerManageAllRequests": "إدارة جميع الطلبات",
   "lockerStartCollection": "بدء التحصيل",
   "lockerAssignOfficers": "تعيين الموظفين",
   "lockerManageVarianceRequests": "إدارة طلبات الفوارق",
   "lockerFinancialAnalytics": "التحليلات المالية",
-
   "lockerSearchHint": "البحث في الطلبات…",
   "lockerLoadingRequests": "جارٍ تحميل الطلبات…",
   "lockerFailedLoadRequests": "فشل تحميل الطلبات",
@@ -66,7 +139,6 @@
   "lockerAdjustFilters": "جرِّب تعديل البحث أو عوامل التصفية.",
   "lockerLockedCashAsset": "النقد المحفوظ",
   "lockerTapToCollect": "انقر للتحصيل",
-
   "lockerStatusPending": "قيد الانتظار",
   "lockerStatusAssigned": "معيَّن",
   "lockerStatusAwaiting": "في انتظار الموافقة",
@@ -74,7 +146,6 @@
   "lockerStatusApproved": "معتمد",
   "lockerStatusRejected": "مرفوض",
   "lockerStatusMatched": "مطابق",
-
   "lockerLoadingRequest": "جارٍ تحميل الطلب…",
   "lockerFailedLoadDetails": "فشل تحميل تفاصيل الطلب",
   "lockerSystemStatus": "حالة النظام",
@@ -93,18 +164,15 @@
   "lockerSessionOpened": "وقت فتح الجلسة",
   "lockerSessionClosed": "وقت إغلاق الجلسة",
   "lockerAssignedOfficer": "الموظف المعيَّن",
-
   "lockerAssignCollectionOfficer": "تعيين موظف التحصيل",
   "lockerProceedToCollection": "المتابعة للتحصيل",
   "lockerGenerateAuditPdf": "إنشاء تقرير PDF",
-
   "lockerCollectionPendingApproval": "التحصيل في انتظار موافقة المشرف.",
   "lockerPendingSupervisorApproval": "في انتظار موافقة المشرف",
   "lockerCollectedSuccessfully": "تم تسجيل التحصيل بنجاح",
   "lockerVarianceApproved": "تمت الموافقة على الفارق",
   "lockerVarianceRejectedBanner": "تم رفض الفارق",
   "lockerVarianceDifferenceReview": "يوجد فارق في هذا التحصيل. يرجى المراجعة والموافقة أو الرفض.",
-
   "lockerApproveVariance": "تمت الموافقة على الفارق بنجاح",
   "lockerApprove": "موافقة",
   "lockerReject": "رفض",
@@ -113,12 +181,10 @@
   "lockerRejectionReasonHint": "أدخل سبب الرفض (اختياري)",
   "lockerConfirmReject": "تأكيد الرفض",
   "lockerVarianceRejected": "تم رفض الفارق",
-
   "lockerSelectOfficer": "اختر الموظف",
   "lockerSelectOfficerSubtitle": "اختر موظفاً ميدانياً لتعيينه لهذا طلب التحصيل.",
   "lockerOfficersLoadError": "تعذّر تحميل قائمة الموظفين.",
   "lockerAssignedTo": "تم التعيين إلى",
-
   "lockerLoaderAuditReport": "تقرير تدقيق الخزينة",
   "lockerGeneratedAt": "تاريخ الإنشاء",
   "lockerPage": "صفحة",
@@ -133,17 +199,24 @@
   "lockerAuditFootnote": "هذا التقرير مُولَّد آلياً ويُعدّ سجلاً رسمياً للتدقيق.",
   "lockerAuditFootnoteAmounts": "جميع المبالغ بالعملة: {currency}.",
   "@lockerAuditFootnoteAmounts": {
-    "placeholders": { "currency": { "type": "String" } }
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
   },
   "lockerCurrencyPrefix": "{currency} {amount}",
   "@lockerCurrencyPrefix": {
     "placeholders": {
-      "currency": { "type": "String" },
-      "amount": { "type": "String" }
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "lockerSarCurrency": "ريال",
-
   "lockerLoadingVariance": "جارٍ تحميل موافقات الفوارق…",
   "lockerFailedLoadVariance": "فشل تحميل موافقات الفوارق",
   "lockerAllClear": "لا توجد فوارق!",
@@ -151,14 +224,19 @@
   "lockerVarianceReviewBanner": "هذه التحصيلات تحتوي على فوارق نقدية وتتطلب موافقتك.",
   "lockerShortLabel": "ناقص",
   "lockerOverLabel": "زائد",
-
   "lockerApproveVarianceTitle": "الموافقة على الفارق",
   "lockerApproveVarianceConfirm": "الموافقة على فارق {type} بمبلغ {amount} ريال لـ{branch}؟",
   "@lockerApproveVarianceConfirm": {
     "placeholders": {
-      "type":   { "type": "String" },
-      "amount": { "type": "String" },
-      "branch": { "type": "String" }
+      "type": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "branch": {
+        "type": "String"
+      }
     }
   },
   "lockerApproveSuccess": "تمت الموافقة على الفارق بنجاح",
@@ -166,7 +244,11 @@
   "lockerRejectVarianceDialogTitle": "رفض الفارق",
   "lockerRejectingFor": "رفض الفارق الخاص بـ{branch}.",
   "@lockerRejectingFor": {
-    "placeholders": { "branch": { "type": "String" } }
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
   },
   "lockerRejectionReasonOptional": "السبب (اختياري)",
   "lockerShortVariance": "ناقص",
@@ -176,7 +258,6 @@
   "lockerExpected": "المتوقَّع",
   "lockerReceivedLabel": "المستلَم",
   "lockerDiffLabel": "الفارق",
-
   "lockerRecordCollectionTitle": "تسجيل التحصيل",
   "lockerExpectedAmount": "المبلغ المتوقَّع",
   "lockerVerifiedReceivedAmount": "المبلغ المستلَم الموثَّق",
@@ -195,14 +276,12 @@
   "lockerStatusOk": "موافق",
   "lockerStatusLabel": "الحالة",
   "lockerDone": "تم",
-
   "lockerNotificationsTitle": "الإشعارات",
   "lockerSessionExpired": "انتهت الجلسة. يرجى تسجيل الدخول مجدداً.",
   "lockerSomethingWentWrong": "حدث خطأ ما.",
   "lockerCouldNotRefresh": "تعذّر التحديث.",
   "lockerNoNotificationsYet": "لا توجد إشعارات بعد.",
   "lockerTryAgain": "حاول مجدداً",
-
   "lockerFinancialReports": "التقارير المالية",
   "lockerTabHistory": "السجل",
   "lockerTabAnalytics": "التحليلات",
@@ -210,7 +289,11 @@
   "lockerAuditLogs": "سجلات التدقيق",
   "lockerRecordsCount": "{count} سجل",
   "@lockerRecordsCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "lockerExportPdf": "PDF",
   "lockerExportExcel": "إكسل",
@@ -252,13 +335,15 @@
   "lockerOneCollection": "تحصيل واحد",
   "lockerNCollections": "{count} تحصيلات",
   "@lockerNCollections": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
-
   "lockerStoragePermissionRequired": "إذن التخزين مطلوب",
   "lockerStoragePermissionBody": "إذن التخزين مطلوب لحفظ الملفات المُصدَّرة. يرجى تفعيله من إعدادات التطبيق.",
   "lockerOpenSettings": "فتح الإعدادات",
-
   "lockerFinancialHistoryPdfTitle": "السجل المالي للخزينة",
   "lockerPdfGenerated": "تاريخ الإنشاء",
   "lockerPdfTotal": "الإجمالي",
@@ -278,7 +363,6 @@
   "lockerExcelDiffSar": "الفارق (ريال)",
   "lockerExcelRequestRef": "مرجع الطلب",
   "lockerExcelExportFailed": "فشل تصدير إكسل",
-
   "accountingTitle": "المحاسبة",
   "accountingTabPayables": "المستحقات",
   "accountingTabReceivables": "المديونيات",
@@ -291,14 +375,26 @@
   "accountingRefPrefix": "مرجع: {ref} • {date}",
   "@accountingRefPrefix": {
     "placeholders": {
-      "ref":  { "type": "String" },
-      "date": { "type": "String" }
+      "ref": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "accountingStatusOverdue": "متأخر",
   "accountingStatusSettled": "مسوَّى",
   "accountingStatusPending": "قيد الانتظار",
-
+  "accountingLoadingError": "فشل تحميل بيانات المحاسبة",
+  "accountingAmountLabel": "ر.س {amount}",
+  "@accountingAmountLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "approvalsTitle": "الموافقات",
   "approvalsQueueLabel": "قائمة الانتظار",
   "approvalsStatusLabel": "الحالة",
@@ -313,7 +409,12 @@
   "approvalsEmptyPettyCash": "لا توجد طلبات صندوق صغير",
   "approvalsEmptySubtitle": "لا توجد سجلات لهذه القائمة والحالة.",
   "approvalsNoAddressesFound": "لم يتم العثور على عناوين.",
-
+  "approvalsLoadingError": "فشل تحميل الموافقات",
+  "approvalsApproveConfirm": "الموافقة على هذا الطلب؟",
+  "approvalsRejectTitle": "رفض الطلب",
+  "approvalsRejectHint": "أدخل سبب الرفض (اختياري)",
+  "approvalsConfirmReject": "تأكيد الرفض",
+  "approvalsCancel": "إلغاء",
   "ownerLoginTitle": "صاحب الورشة",
   "ownerLoginSubtitle": "سجّل الدخول إلى لوحة التحكم",
   "ownerLoginEmail": "البريد الإلكتروني",
@@ -327,7 +428,6 @@
   "ownerLoginSuccess": "تم تسجيل الدخول بنجاح",
   "ownerLoginFailed": "فشل تسجيل الدخول",
   "ownerLoginNoAccount": "ليس لديك حساب؟ سجّل الآن",
-
   "ownerRegisterTitle": "إنشاء حساب",
   "ownerRegisterSubtitle": "تسجيل ورشتك",
   "ownerRegisterWorkshopName": "اسم الورشة",
@@ -348,5 +448,96 @@
   "ownerRegisterSuccess": "تم التسجيل بنجاح. يرجى تسجيل الدخول.",
   "ownerRegisterFailed": "فشل التسجيل",
   "ownerRegisterFieldRequired": "مطلوب",
-  "ownerRegisterHaveAccount": "لديك حساب بالفعل؟ سجّل الدخول"
+  "ownerRegisterHaveAccount": "لديك حساب بالفعل؟ سجّل الدخول",
+  "corporateManagementTitle": "إدارة الشركات",
+  "corporateSearchHint": "البحث بالاسم أو الرقم الضريبي...",
+  "corporateAddButton": "إضافة شركة",
+  "corporateNoneFound": "لا يوجد عملاء شركات.",
+  "corporateVatLabel": "ض.ق.م: {vat}",
+  "@corporateVatLabel": {
+    "placeholders": {
+      "vat": {
+        "type": "String"
+      }
+    }
+  },
+  "corporateVehiclesLabel": "المركبات",
+  "corporateRevenueLabel": "الإيرادات",
+  "corporateAddUser": "إضافة مستخدم",
+  "corporateEdit": "تعديل",
+  "corporateRegisterTitle": "تسجيل شريك مؤسسي",
+  "corporateRegisterSubtitle": "أدخل التفاصيل لإنشاء حساب مؤسسي جديد.",
+  "corporateFieldCompanyName": "اسم الشركة",
+  "corporateFieldCustomerName": "اسم العميل",
+  "corporateFieldMobile": "رقم الجوال",
+  "corporateFieldVat": "الرقم الضريبي",
+  "corporateFieldEmail": "البريد الإلكتروني",
+  "corporateFieldPassword": "كلمة المرور",
+  "corporateFieldReferral": "المحيل",
+  "corporateSelectBranches": "اختر الفروع",
+  "corporateSelectedCount": "{count} مختار",
+  "@corporateSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "corporateNoBranches": "لا توجد فروع",
+  "corporateCreateButton": "إنشاء الشريك",
+  "corporateAddUserTitle": "إضافة مستخدم مؤسسي",
+  "corporateAddUserSubtitle": "أنشئ بيانات اعتماد لمستخدم مرتبط بهذا الحساب المؤسسي.",
+  "corporateUserFieldName": "الاسم الكامل",
+  "corporateUserFieldEmail": "البريد الإلكتروني",
+  "corporateUserFieldPassword": "كلمة المرور",
+  "corporateCreateUserButton": "إنشاء المستخدم",
+  "corporateEditTitle": "تعديل الحساب المؤسسي",
+  "corporateEditSubtitle": "حدِّث التفاصيل أدناه. سيُرسَل فقط ما تم تغييره.",
+  "corporateFieldMobileMobile": "الجوال",
+  "corporateFieldTaxId": "الرقم الضريبي (ض.ق.م)",
+  "corporateFieldStatus": "الحالة",
+  "corporateSaveChanges": "حفظ التغييرات",
+  "corporateStatusPending": "قيد الانتظار",
+  "corporateStatusActive": "نشط",
+  "corporateStatusRejected": "مرفوض",
+  "corporateCreateSuccess": "تم إنشاء الحساب المؤسسي بنجاح",
+  "corporateCreateError": "فشل إنشاء الحساب المؤسسي",
+  "corporateUpdateSuccess": "تم تحديث الحساب المؤسسي بنجاح",
+  "corporateUpdateError": "فشل تحديث الحساب المؤسسي",
+  "corporateUserCreateSuccess": "تم إنشاء المستخدم المؤسسي بنجاح",
+  "corporateUserCreateError": "فشل إنشاء المستخدم المؤسسي",
+  "corporateValidationRequired": "يرجى ملء جميع الحقول المطلوبة",
+  "corporateValidationBranch": "يرجى اختيار فرع واحد على الأقل",
+  "corporateValidationCompanyName": "اسم الشركة مطلوب",
+  "dashboardAllBranches": "جميع الفروع",
+  "dashboardViewingDataFor": "عرض بيانات",
+  "dashboardAllBranchesAggregated": "جميع الفروع مجمّعة",
+  "dashboardSelectBranch": "اختر الفرع",
+  "dashboardKpiTotalSalesToday": "إجمالي مبيعات اليوم",
+  "dashboardKpiThisMonth": "هذا الشهر",
+  "dashboardKpiPendingInvoices": "الفواتير المعلقة",
+  "dashboardKpiLowStockAlerts": "تنبيهات نقص المخزون",
+  "dashboardKpiTodaysSales": "مبيعات اليوم",
+  "dashboardKpiActiveOrders": "الطلبات النشطة",
+  "dashboardKpiTechWorkload": "حمل الفني",
+  "dashboardKpiPendingApproval": "بانتظار الموافقة",
+  "dashboardPendingApprovalsTitle": "الموافقات المعلقة",
+  "dashboardViewAll": "عرض الكل",
+  "dashboardNoPendingApprovals": "لا توجد طلبات صندوق صغير معلقة الآن.",
+  "dashboardMoreApprovals": "+{count} أخرى في الموافقات",
+  "@dashboardMoreApprovals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardBranchPerformance": "أداء الفروع",
+  "dashboardBranchHighlights": "أبرز الفرع",
+  "dashboardBranchStatus": "حالة الفرع",
+  "dashboardTotalStaff": "إجمالي الموظفين",
+  "dashboardSalesTarget": "هدف المبيعات",
+  "dashboardSalesTargetValue": "85% محقق",
+  "branchPerformanceListTitle": "أداء الفروع",
+  "branchPerformanceNoBranches": "لا توجد فروع بعد."
 }

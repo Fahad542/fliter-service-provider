@@ -2,9 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
+import '../../Workshop Owner/Approvals/approvals_view_model.dart';
 import '../widgets/owner_app_bar.dart';
 import '../widgets/owner_petty_cash_approval_card.dart';
-import 'approvals_view_model.dart';
+
+// ---------------------------------------------------------------------------
+// ApprovalsView
+//
+// ── Filter keys vs display labels ───────────────────────────────────────────
+// [_statusKeys] and [_queueKeys] hold RAW API values ('all', 'pending', …).
+// These are passed to vm.setStatusFilter / vm.setQueueFilter and compared
+// against vm.statusFilter / vm.queueFilter.  They are NEVER translated.
+//
+// Display labels come exclusively from AppLocalizations (l10n.*) — static
+// strings that are already correct for the active locale.
+//
+// This design guarantees no switch/if ever breaks in Arabic mode.
+// ---------------------------------------------------------------------------
 
 class ApprovalsView extends StatefulWidget {
   const ApprovalsView({super.key});
@@ -14,7 +28,7 @@ class ApprovalsView extends StatefulWidget {
 }
 
 class _ApprovalsViewState extends State<ApprovalsView> {
-  /// Raw API keys — never shown to the user directly.
+  /// Raw API keys — never translated, always safe for comparison.
   static const List<String> _statusKeys = [
     'all',
     'pending',
@@ -45,26 +59,25 @@ class _ApprovalsViewState extends State<ApprovalsView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final vm = context.watch<ApprovalsViewModel>();
+    final vm   = context.watch<ApprovalsViewModel>();
     final requests = vm.requests;
 
-    /// Queue options built from l10n — key stays as API value.
+    /// Queue options: key = raw API value, value = localized label.
     final queueOptions = [
       MapEntry(_queueKeys[0], l10n.approvalsQueueAll),
       MapEntry(_queueKeys[1], l10n.approvalsQueueTopUps),
       MapEntry(_queueKeys[2], l10n.approvalsQueueExpenses),
     ];
 
-    /// Status options built from l10n.
-    final statusLabels = [
-      l10n.approvalsStatusAll,
-      l10n.approvalsStatusPending,
-      l10n.approvalsStatusApproved,
-      l10n.approvalsStatusRejected,
-    ];
+    /// Status options: key = raw API value, value = localized label.
     final statusOptions = List.generate(
       _statusKeys.length,
-          (i) => MapEntry(_statusKeys[i], statusLabels[i]),
+          (i) => MapEntry(_statusKeys[i], [
+        l10n.approvalsStatusAll,
+        l10n.approvalsStatusPending,
+        l10n.approvalsStatusApproved,
+        l10n.approvalsStatusRejected,
+      ][i]),
     );
 
     return Scaffold(
@@ -87,6 +100,7 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                 const SizedBox(height: 8),
                 _buildApprovalSegmentedRow(
                   options: queueOptions,
+                  // Compare with raw API key — always safe.
                   selectedKey: vm.queueFilter,
                   onSelect: vm.setQueueFilter,
                 ),
@@ -137,8 +151,8 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                   )
                       : ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(
-                        20, 4, 20, 32),
+                    padding:
+                    const EdgeInsets.fromLTRB(20, 4, 20, 32),
                     itemCount: requests.length,
                     itemBuilder: (context, index) {
                       final req = requests[index];
@@ -151,10 +165,14 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                         vm.isApprovingRequest(req.id),
                         isRejectingThis:
                         vm.isRejectingRequest(req.id),
-                        onApprove: () =>
-                            vm.approveRequest(req.id),
-                        onReject: (reason) =>
-                            vm.rejectRequest(req.id, reason),
+                        onApprove: () async {
+                          await vm.approveRequest(req.id);
+                          return true;
+                        },
+                        onReject: (reason) async {
+                          await vm.rejectRequest(req.id, reason);
+                          return true;
+                        },
                       );
                     },
                   ),
@@ -206,6 +224,7 @@ class _ApprovalsViewState extends State<ApprovalsView> {
       ),
       child: Row(
         children: options.map((e) {
+          // Compare key (raw API value) — never the translated label.
           final selected = selectedKey == e.key;
           return Expanded(
             child: Material(
@@ -228,6 +247,8 @@ class _ApprovalsViewState extends State<ApprovalsView> {
                     borderRadius: pillRadius,
                   ),
                   child: Text(
+                    // Display the localized label (e.value) —
+                    // selection logic always uses the raw key (e.key).
                     e.value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -264,6 +285,7 @@ class _ApprovalsViewState extends State<ApprovalsView> {
             ),
             const SizedBox(height: 16),
             Text(
+              // Compare against RAW queueFilter key — safe in any locale.
               vm.queueFilter == 'expense'
                   ? l10n.approvalsEmptyExpenses
                   : l10n.approvalsEmptyPettyCash,

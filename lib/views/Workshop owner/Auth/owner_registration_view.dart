@@ -10,6 +10,15 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../../services/session_service.dart';
 import 'owner_registration_view_model.dart';
 
+// ---------------------------------------------------------------------------
+// OwnerRegistrationView
+//
+// All user-visible strings are served via AppLocalizations (l10n.*).
+// No hardcoded English strings remain in this file.
+// Address suggestions come from Google Places and are in the user's locale
+// as provided by the Places API — no additional translation needed.
+// ---------------------------------------------------------------------------
+
 class OwnerRegistrationView extends StatelessWidget {
   const OwnerRegistrationView({super.key});
 
@@ -39,6 +48,7 @@ class _OwnerRegistrationViewContentState
     final l10n      = AppLocalizations.of(context)!;
     final viewModel = context.read<OwnerRegistrationViewModel>();
     if (!viewModel.formKey.currentState!.validate()) return;
+
     final success = await viewModel.register();
     if (success) {
       if (mounted) {
@@ -57,11 +67,11 @@ class _OwnerRegistrationViewContentState
 
   @override
   Widget build(BuildContext context) {
-    final l10n            = AppLocalizations.of(context)!;
-    final screenWidth     = MediaQuery.of(context).size.width;
-    final isTablet        = screenWidth > 600;
-    final horizontalPadding = isTablet ? screenWidth * 0.1 : 24.0;
-    final viewModel       = context.watch<OwnerRegistrationViewModel>();
+    final l10n              = AppLocalizations.of(context)!;
+    final screenWidth       = MediaQuery.of(context).size.width;
+    final isTablet          = screenWidth > 600;
+    final horizontalPad     = isTablet ? screenWidth * 0.1 : 24.0;
+    final viewModel         = context.watch<OwnerRegistrationViewModel>();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -72,7 +82,7 @@ class _OwnerRegistrationViewContentState
             Stack(
               clipBehavior: Clip.none,
               children: [
-                // Yellow header
+                // Branded header.
                 CustomAuthHeader(
                   title: l10n.ownerRegisterTitle,
                   subtitle: l10n.ownerRegisterSubtitle,
@@ -80,13 +90,13 @@ class _OwnerRegistrationViewContentState
                   height: MediaQuery.of(context).size.height *
                       (isTablet ? 0.32 : 0.35),
                 ),
-                // Floating white card
+                // Floating white card.
                 Padding(
                   padding: EdgeInsets.only(
                     top: MediaQuery.of(context).size.height *
                         (isTablet ? 0.25 : 0.26),
-                    left: horizontalPadding,
-                    right: horizontalPadding,
+                    left: horizontalPad,
+                    right: horizontalPad,
                   ),
                   child: Container(
                     padding: EdgeInsets.all(isTablet ? 48 : 24),
@@ -107,63 +117,70 @@ class _OwnerRegistrationViewContentState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 8),
+
+                          // ── Workshop name ──────────────────────────────
                           CustomTextField(
                             label: l10n.ownerRegisterWorkshopName,
                             hint: l10n.ownerRegisterWorkshopNameHint,
                             controller: viewModel.workshopNameController,
-                            prefixIcon:
-                            const Icon(Icons.store_rounded),
+                            prefixIcon: const Icon(Icons.store_rounded),
                             validator: (v) => (v == null || v.isEmpty)
                                 ? l10n.ownerRegisterFieldRequired
                                 : null,
                           ),
                           const SizedBox(height: 16),
+
+                          // ── Owner name ─────────────────────────────────
                           CustomTextField(
                             label: l10n.ownerRegisterOwnerName,
                             hint: l10n.ownerRegisterOwnerNameHint,
                             controller: viewModel.ownerNameController,
-                            prefixIcon:
-                            const Icon(Icons.person_rounded),
+                            prefixIcon: const Icon(Icons.person_rounded),
                             validator: (v) => (v == null || v.isEmpty)
                                 ? l10n.ownerRegisterFieldRequired
                                 : null,
                           ),
                           const SizedBox(height: 16),
+
+                          // ── Email ──────────────────────────────────────
                           CustomTextField(
                             label: l10n.ownerRegisterEmail,
                             hint: l10n.ownerRegisterEmailHint,
                             controller: viewModel.emailController,
                             keyboardType: TextInputType.emailAddress,
-                            prefixIcon:
-                            const Icon(Icons.email_rounded),
+                            prefixIcon: const Icon(Icons.email_rounded),
                             validator: (v) => (v == null || v.isEmpty)
                                 ? l10n.ownerRegisterFieldRequired
                                 : null,
                           ),
                           const SizedBox(height: 16),
+
+                          // ── Mobile ─────────────────────────────────────
                           CustomTextField(
                             label: l10n.ownerRegisterMobile,
                             hint: l10n.ownerRegisterMobileHint,
                             controller: viewModel.mobileController,
                             keyboardType: TextInputType.phone,
-                            prefixIcon:
-                            const Icon(Icons.phone_rounded),
+                            prefixIcon: const Icon(Icons.phone_rounded),
                             validator: (v) => (v == null || v.isEmpty)
                                 ? l10n.ownerRegisterFieldRequired
                                 : null,
                           ),
                           const SizedBox(height: 16),
+
+                          // ── Tax ID ─────────────────────────────────────
                           CustomTextField(
                             label: l10n.ownerRegisterTaxId,
                             hint: l10n.ownerRegisterTaxIdHint,
                             controller: viewModel.taxIdController,
-                            prefixIcon:
-                            const Icon(Icons.assignment_rounded),
+                            prefixIcon: const Icon(Icons.assignment_rounded),
                             validator: (v) => (v == null || v.isEmpty)
                                 ? l10n.ownerRegisterFieldRequired
                                 : null,
                           ),
                           const SizedBox(height: 16),
+
+                          // ── Address (typeahead) ────────────────────────
                           TypeAheadField<Map<String, dynamic>>(
                             controller: viewModel.addressController,
                             builder: (context, controller, focusNode) {
@@ -172,8 +189,8 @@ class _OwnerRegistrationViewContentState
                                 hint: l10n.ownerRegisterAddressHint,
                                 controller: controller,
                                 focusNode: focusNode,
-                                prefixIcon: const Icon(
-                                    Icons.location_on_rounded),
+                                prefixIcon:
+                                const Icon(Icons.location_on_rounded),
                                 validator: (v) => (v == null || v.isEmpty)
                                     ? l10n.ownerRegisterFieldRequired
                                     : null,
@@ -193,8 +210,7 @@ class _OwnerRegistrationViewContentState
                                 ),
                                 title: Text(
                                   suggestion['description'] ?? '',
-                                  style:
-                                  const TextStyle(fontSize: 14),
+                                  style: const TextStyle(fontSize: 14),
                                 ),
                               );
                             },
@@ -205,8 +221,7 @@ class _OwnerRegistrationViewContentState
                               padding: const EdgeInsets.all(16),
                               child: Text(
                                 l10n.approvalsNoAddressesFound,
-                                style: const TextStyle(
-                                    color: Colors.grey),
+                                style: const TextStyle(color: Colors.grey),
                               ),
                             ),
                             decorationBuilder: (context, child) {
@@ -219,27 +234,29 @@ class _OwnerRegistrationViewContentState
                             },
                           ),
                           const SizedBox(height: 16),
+
+                          // ── Password ───────────────────────────────────
                           CustomTextField(
                             label: l10n.ownerRegisterPassword,
                             hint: l10n.ownerRegisterPasswordHint,
                             controller: viewModel.passwordController,
                             obscureText: viewModel.obscurePassword,
-                            prefixIcon:
-                            const Icon(Icons.lock_rounded),
+                            prefixIcon: const Icon(Icons.lock_rounded),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 viewModel.obscurePassword
                                     ? Icons.visibility_off_rounded
                                     : Icons.visibility_rounded,
                               ),
-                              onPressed:
-                              viewModel.togglePasswordVisibility,
+                              onPressed: viewModel.togglePasswordVisibility,
                             ),
                             validator: (v) => (v == null || v.isEmpty)
                                 ? l10n.ownerRegisterFieldRequired
                                 : null,
                           ),
                           const SizedBox(height: 32),
+
+                          // ── Register button ────────────────────────────
                           SizedBox(
                             width: double.infinity,
                             child: CustomButton(
@@ -249,6 +266,8 @@ class _OwnerRegistrationViewContentState
                             ),
                           ),
                           const SizedBox(height: 24),
+
+                          // ── Already have account ───────────────────────
                           Center(
                             child: GestureDetector(
                               onTap: () => Navigator.pop(context),

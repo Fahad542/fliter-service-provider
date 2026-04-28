@@ -98,6 +98,456 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @ownerShellHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get ownerShellHome;
+
+  /// No description provided for @ownerShellBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get ownerShellBranches;
+
+  /// No description provided for @ownerShellDepartments.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments'**
+  String get ownerShellDepartments;
+
+  /// No description provided for @ownerShellEmployees.
+  ///
+  /// In en, this message translates to:
+  /// **'Employees'**
+  String get ownerShellEmployees;
+
+  /// No description provided for @ownerShellCorporate.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate'**
+  String get ownerShellCorporate;
+
+  /// No description provided for @ownerShellInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get ownerShellInventory;
+
+  /// No description provided for @ownerShellPosMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'POS Monitoring'**
+  String get ownerShellPosMonitoring;
+
+  /// No description provided for @ownerShellSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get ownerShellSuppliers;
+
+  /// No description provided for @ownerShellAccounting.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounting'**
+  String get ownerShellAccounting;
+
+  /// No description provided for @ownerShellPromoCodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Promo Codes'**
+  String get ownerShellPromoCodes;
+
+  /// No description provided for @ownerShellApprovals.
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals'**
+  String get ownerShellApprovals;
+
+  /// No description provided for @ownerShellNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get ownerShellNotifications;
+
+  /// No description provided for @ownerShellLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get ownerShellLogout;
+
+  /// No description provided for @ownerShellRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop Owner'**
+  String get ownerShellRoleLabel;
+
+  /// No description provided for @ownerShellVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'v1.0.0 • Workshop OS'**
+  String get ownerShellVersion;
+
+  /// No description provided for @ownerShellLogoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get ownerShellLogoutTitle;
+
+  /// No description provided for @ownerShellLogoutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to logout from your account?'**
+  String get ownerShellLogoutBody;
+
+  /// No description provided for @ownerShellLogoutCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get ownerShellLogoutCancel;
+
+  /// No description provided for @ownerShellLogoutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get ownerShellLogoutConfirm;
+
+  /// No description provided for @lockerDefaultUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get lockerDefaultUser;
+
+  /// No description provided for @billingDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing Dashboard'**
+  String get billingDashboardTitle;
+
+  /// No description provided for @billingGenerateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Bills'**
+  String get billingGenerateTitle;
+
+  /// No description provided for @billingMonthlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Bills'**
+  String get billingMonthlyTitle;
+
+  /// No description provided for @billingOverdueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue Payments'**
+  String get billingOverdueTitle;
+
+  /// No description provided for @billingDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get billingDefaultTitle;
+
+  /// No description provided for @billingSummaryTotalBilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Billed'**
+  String get billingSummaryTotalBilled;
+
+  /// No description provided for @billingSummaryTotalReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Received'**
+  String get billingSummaryTotalReceived;
+
+  /// No description provided for @billingSummaryOutstanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding'**
+  String get billingSummaryOutstanding;
+
+  /// No description provided for @billingSummaryOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get billingSummaryOverdue;
+
+  /// No description provided for @billingQuickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Actions'**
+  String get billingQuickActions;
+
+  /// No description provided for @billingRecentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Billing Activity'**
+  String get billingRecentActivity;
+
+  /// No description provided for @billingSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See All'**
+  String get billingSeeAll;
+
+  /// No description provided for @billingNoRecentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent activity'**
+  String get billingNoRecentActivity;
+
+  /// No description provided for @billingActionGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Bills'**
+  String get billingActionGenerate;
+
+  /// No description provided for @billingActionViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Bills'**
+  String get billingActionViewAll;
+
+  /// No description provided for @billingActionRecordPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Payment'**
+  String get billingActionRecordPayment;
+
+  /// No description provided for @billingActionSendReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Reminders'**
+  String get billingActionSendReminders;
+
+  /// No description provided for @billingGeneratorStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 1: Select Billing Period'**
+  String get billingGeneratorStep1;
+
+  /// No description provided for @billingGeneratorStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 2: Preview Eligible Invoices'**
+  String get billingGeneratorStep2;
+
+  /// No description provided for @billingGeneratorPendingInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Invoices: 15 • Est. Total: SAR 12,450'**
+  String get billingGeneratorPendingInvoices;
+
+  /// No description provided for @billingGeneratorPostAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate & Post All'**
+  String get billingGeneratorPostAll;
+
+  /// No description provided for @billingPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing Period: {month}/{year}'**
+  String billingPeriodLabel(String month, String year);
+
+  /// No description provided for @billingStatusPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get billingStatusPaid;
+
+  /// No description provided for @billingStatusOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get billingStatusOverdue;
+
+  /// No description provided for @billingStatusPartiallyPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially Paid'**
+  String get billingStatusPartiallyPaid;
+
+  /// No description provided for @billingStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get billingStatusPending;
+
+  /// No description provided for @branchManagementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get branchManagementTitle;
+
+  /// No description provided for @branchSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search branches…'**
+  String get branchSearchHint;
+
+  /// No description provided for @branchAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Branch'**
+  String get branchAddButton;
+
+  /// No description provided for @branchEditButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get branchEditButton;
+
+  /// No description provided for @branchDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get branchDeleteButton;
+
+  /// No description provided for @branchNoBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches found'**
+  String get branchNoBranches;
+
+  /// No description provided for @branchStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get branchStatusActive;
+
+  /// No description provided for @branchStatusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get branchStatusInactive;
+
+  /// No description provided for @branchFormTitleAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Branch'**
+  String get branchFormTitleAdd;
+
+  /// No description provided for @branchFormTitleEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Branch'**
+  String get branchFormTitleEdit;
+
+  /// No description provided for @branchFormNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Name'**
+  String get branchFormNameLabel;
+
+  /// No description provided for @branchFormNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter branch name'**
+  String get branchFormNameHint;
+
+  /// No description provided for @branchFormAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get branchFormAddressLabel;
+
+  /// No description provided for @branchFormAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search address…'**
+  String get branchFormAddressHint;
+
+  /// No description provided for @branchFormLatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS Latitude'**
+  String get branchFormLatLabel;
+
+  /// No description provided for @branchFormLngLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS Longitude'**
+  String get branchFormLngLabel;
+
+  /// No description provided for @branchFormStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get branchFormStatusLabel;
+
+  /// No description provided for @branchFormSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Branch'**
+  String get branchFormSaveButton;
+
+  /// No description provided for @branchFormUpdateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Branch'**
+  String get branchFormUpdateButton;
+
+  /// No description provided for @branchFormValidationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Name and Address are required'**
+  String get branchFormValidationError;
+
+  /// No description provided for @branchCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Created Successfully'**
+  String get branchCreateSuccess;
+
+  /// No description provided for @branchUpdateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Updated Successfully'**
+  String get branchUpdateSuccess;
+
+  /// No description provided for @branchDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Deleted Successfully'**
+  String get branchDeleteSuccess;
+
+  /// No description provided for @branchSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save branch'**
+  String get branchSaveError;
+
+  /// No description provided for @branchDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete branch'**
+  String get branchDeleteError;
+
+  /// No description provided for @branchDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Branch'**
+  String get branchDeleteConfirmTitle;
+
+  /// No description provided for @branchDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this branch?'**
+  String get branchDeleteConfirmBody;
+
+  /// No description provided for @branchDeleteConfirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get branchDeleteConfirmCancel;
+
+  /// No description provided for @branchDeleteConfirmDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get branchDeleteConfirmDelete;
+
   /// No description provided for @lockerPortalTitle.
   ///
   /// In en, this message translates to:
@@ -199,12 +649,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get lockerRefresh;
-
-  /// No description provided for @lockerDefaultUser.
-  ///
-  /// In en, this message translates to:
-  /// **'User'**
-  String get lockerDefaultUser;
 
   /// No description provided for @lockerSupervisorTab.
   ///
@@ -1548,6 +1992,18 @@ abstract class AppLocalizations {
   /// **'PENDING'**
   String get accountingStatusPending;
 
+  /// No description provided for @accountingLoadingError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load accounting data'**
+  String get accountingLoadingError;
+
+  /// No description provided for @accountingAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SAR {amount}'**
+  String accountingAmountLabel(String amount);
+
   /// No description provided for @approvalsTitle.
   ///
   /// In en, this message translates to:
@@ -1631,6 +2087,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No addresses found.'**
   String get approvalsNoAddressesFound;
+
+  /// No description provided for @approvalsLoadingError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load approvals'**
+  String get approvalsLoadingError;
+
+  /// No description provided for @approvalsApproveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this request?'**
+  String get approvalsApproveConfirm;
+
+  /// No description provided for @approvalsRejectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject Request'**
+  String get approvalsRejectTitle;
+
+  /// No description provided for @approvalsRejectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter rejection reason (optional)'**
+  String get approvalsRejectHint;
+
+  /// No description provided for @approvalsConfirmReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Reject'**
+  String get approvalsConfirmReject;
+
+  /// No description provided for @approvalsCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get approvalsCancel;
 
   /// No description provided for @ownerLoginTitle.
   ///
@@ -1835,6 +2327,426 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Already have an account? Sign in'**
   String get ownerRegisterHaveAccount;
+
+  /// No description provided for @corporateManagementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate Management'**
+  String get corporateManagementTitle;
+
+  /// No description provided for @corporateSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by Company or VAT...'**
+  String get corporateSearchHint;
+
+  /// No description provided for @corporateAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Corporate'**
+  String get corporateAddButton;
+
+  /// No description provided for @corporateNoneFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No corporate customers found.'**
+  String get corporateNoneFound;
+
+  /// No description provided for @corporateVatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT: {vat}'**
+  String corporateVatLabel(String vat);
+
+  /// No description provided for @corporateVehiclesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VEHICLES'**
+  String get corporateVehiclesLabel;
+
+  /// No description provided for @corporateRevenueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'REVENUE'**
+  String get corporateRevenueLabel;
+
+  /// No description provided for @corporateAddUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add User'**
+  String get corporateAddUser;
+
+  /// No description provided for @corporateEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get corporateEdit;
+
+  /// No description provided for @corporateRegisterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register Corporate Partner'**
+  String get corporateRegisterTitle;
+
+  /// No description provided for @corporateRegisterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the details to create a new corporate account.'**
+  String get corporateRegisterSubtitle;
+
+  /// No description provided for @corporateFieldCompanyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Name'**
+  String get corporateFieldCompanyName;
+
+  /// No description provided for @corporateFieldCustomerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Name'**
+  String get corporateFieldCustomerName;
+
+  /// No description provided for @corporateFieldMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile Number'**
+  String get corporateFieldMobile;
+
+  /// No description provided for @corporateFieldVat.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT Number'**
+  String get corporateFieldVat;
+
+  /// No description provided for @corporateFieldEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get corporateFieldEmail;
+
+  /// No description provided for @corporateFieldPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get corporateFieldPassword;
+
+  /// No description provided for @corporateFieldReferral.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral'**
+  String get corporateFieldReferral;
+
+  /// No description provided for @corporateSelectBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Branches'**
+  String get corporateSelectBranches;
+
+  /// No description provided for @corporateSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String corporateSelectedCount(int count);
+
+  /// No description provided for @corporateNoBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches found'**
+  String get corporateNoBranches;
+
+  /// No description provided for @corporateCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Partner'**
+  String get corporateCreateButton;
+
+  /// No description provided for @corporateAddUserTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Corporate User'**
+  String get corporateAddUserTitle;
+
+  /// No description provided for @corporateAddUserSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create credentials for a user associated with this corporate account.'**
+  String get corporateAddUserSubtitle;
+
+  /// No description provided for @corporateUserFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get corporateUserFieldName;
+
+  /// No description provided for @corporateUserFieldEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get corporateUserFieldEmail;
+
+  /// No description provided for @corporateUserFieldPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get corporateUserFieldPassword;
+
+  /// No description provided for @corporateCreateUserButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create User'**
+  String get corporateCreateUserButton;
+
+  /// No description provided for @corporateEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Corporate Account'**
+  String get corporateEditTitle;
+
+  /// No description provided for @corporateEditSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the details below. Only changed fields will be sent.'**
+  String get corporateEditSubtitle;
+
+  /// No description provided for @corporateFieldMobileMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get corporateFieldMobileMobile;
+
+  /// No description provided for @corporateFieldTaxId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax ID (VAT)'**
+  String get corporateFieldTaxId;
+
+  /// No description provided for @corporateFieldStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get corporateFieldStatus;
+
+  /// No description provided for @corporateSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get corporateSaveChanges;
+
+  /// No description provided for @corporateStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get corporateStatusPending;
+
+  /// No description provided for @corporateStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get corporateStatusActive;
+
+  /// No description provided for @corporateStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get corporateStatusRejected;
+
+  /// No description provided for @corporateCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate Account Created Successfully'**
+  String get corporateCreateSuccess;
+
+  /// No description provided for @corporateCreateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create corporate account'**
+  String get corporateCreateError;
+
+  /// No description provided for @corporateUpdateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate Account Updated Successfully'**
+  String get corporateUpdateSuccess;
+
+  /// No description provided for @corporateUpdateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update corporate account'**
+  String get corporateUpdateError;
+
+  /// No description provided for @corporateUserCreateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate User Created Successfully'**
+  String get corporateUserCreateSuccess;
+
+  /// No description provided for @corporateUserCreateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create corporate user'**
+  String get corporateUserCreateError;
+
+  /// No description provided for @corporateValidationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in all required fields'**
+  String get corporateValidationRequired;
+
+  /// No description provided for @corporateValidationBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one branch'**
+  String get corporateValidationBranch;
+
+  /// No description provided for @corporateValidationCompanyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Company name is required'**
+  String get corporateValidationCompanyName;
+
+  /// No description provided for @dashboardAllBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'All Branches'**
+  String get dashboardAllBranches;
+
+  /// No description provided for @dashboardViewingDataFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing Data For'**
+  String get dashboardViewingDataFor;
+
+  /// No description provided for @dashboardAllBranchesAggregated.
+  ///
+  /// In en, this message translates to:
+  /// **'All Branches Aggregated'**
+  String get dashboardAllBranchesAggregated;
+
+  /// No description provided for @dashboardSelectBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Branch'**
+  String get dashboardSelectBranch;
+
+  /// No description provided for @dashboardKpiTotalSalesToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Sales Today'**
+  String get dashboardKpiTotalSalesToday;
+
+  /// No description provided for @dashboardKpiThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This Month'**
+  String get dashboardKpiThisMonth;
+
+  /// No description provided for @dashboardKpiPendingInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Invoices'**
+  String get dashboardKpiPendingInvoices;
+
+  /// No description provided for @dashboardKpiLowStockAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock Alerts'**
+  String get dashboardKpiLowStockAlerts;
+
+  /// No description provided for @dashboardKpiTodaysSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Sales'**
+  String get dashboardKpiTodaysSales;
+
+  /// No description provided for @dashboardKpiActiveOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Orders'**
+  String get dashboardKpiActiveOrders;
+
+  /// No description provided for @dashboardKpiTechWorkload.
+  ///
+  /// In en, this message translates to:
+  /// **'Tech Workload'**
+  String get dashboardKpiTechWorkload;
+
+  /// No description provided for @dashboardKpiPendingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Approval'**
+  String get dashboardKpiPendingApproval;
+
+  /// No description provided for @dashboardPendingApprovalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Approvals'**
+  String get dashboardPendingApprovalsTitle;
+
+  /// No description provided for @dashboardViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View All'**
+  String get dashboardViewAll;
+
+  /// No description provided for @dashboardNoPendingApprovals.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending petty-cash approvals right now.'**
+  String get dashboardNoPendingApprovals;
+
+  /// No description provided for @dashboardMoreApprovals.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more in Approvals'**
+  String dashboardMoreApprovals(int count);
+
+  /// No description provided for @dashboardBranchPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Performance'**
+  String get dashboardBranchPerformance;
+
+  /// No description provided for @dashboardBranchHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Highlights'**
+  String get dashboardBranchHighlights;
+
+  /// No description provided for @dashboardBranchStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Status'**
+  String get dashboardBranchStatus;
+
+  /// No description provided for @dashboardTotalStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Staff'**
+  String get dashboardTotalStaff;
+
+  /// No description provided for @dashboardSalesTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales Target'**
+  String get dashboardSalesTarget;
+
+  /// No description provided for @dashboardSalesTargetValue.
+  ///
+  /// In en, this message translates to:
+  /// **'85% Achieved'**
+  String get dashboardSalesTargetValue;
+
+  /// No description provided for @branchPerformanceListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Performance'**
+  String get branchPerformanceListTitle;
+
+  /// No description provided for @branchPerformanceNoBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches yet.'**
+  String get branchPerformanceNoBranches;
 }
 
 class _AppLocalizationsDelegate

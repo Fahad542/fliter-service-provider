@@ -10,6 +10,13 @@ import 'owner_login_view_model.dart';
 import '../../../services/session_service.dart';
 import 'owner_registration_view.dart';
 
+// ---------------------------------------------------------------------------
+// OwnerLoginView
+//
+// All user-visible strings are served via AppLocalizations (l10n.*).
+// No hardcoded English strings remain in this file.
+// ---------------------------------------------------------------------------
+
 class OwnerLoginView extends StatefulWidget {
   const OwnerLoginView({super.key});
 
@@ -30,6 +37,7 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
     final l10n      = AppLocalizations.of(context)!;
     final viewModel = context.read<OwnerLoginViewModel>();
     if (!viewModel.formKey.currentState!.validate()) return;
+
     final success = await viewModel.login();
     if (success) {
       if (mounted) {
@@ -52,11 +60,11 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n        = AppLocalizations.of(context)!;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet    = screenWidth > 600;
-    final horizontalPadding = isTablet ? screenWidth * 0.1 : 24.0;
-    final viewModel   = context.watch<OwnerLoginViewModel>();
+    final l10n            = AppLocalizations.of(context)!;
+    final screenWidth     = MediaQuery.of(context).size.width;
+    final isTablet        = screenWidth > 600;
+    final horizontalPad   = isTablet ? screenWidth * 0.1 : 24.0;
+    final viewModel       = context.watch<OwnerLoginViewModel>();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -67,7 +75,7 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                // Yellow header
+                // Branded header — title/subtitle from l10n.
                 CustomAuthHeader(
                   title: l10n.ownerLoginTitle,
                   subtitle: l10n.ownerLoginSubtitle,
@@ -80,8 +88,8 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                   padding: EdgeInsets.only(
                     top: MediaQuery.of(context).size.height *
                         (isTablet ? 0.26 : 0.27),
-                    left: horizontalPadding,
-                    right: horizontalPadding,
+                    left: horizontalPad,
+                    right: horizontalPad,
                   ),
                   child: Container(
                     padding: EdgeInsets.all(isTablet ? 60 : 24),
@@ -102,6 +110,8 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 8),
+
+                          // ── Email field ──────────────────────────────────
                           CustomTextField(
                             label: l10n.ownerLoginEmail,
                             hint: l10n.ownerLoginEmailHint,
@@ -116,13 +126,14 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                             },
                           ),
                           const SizedBox(height: 16),
+
+                          // ── Password field ───────────────────────────────
                           CustomTextField(
                             label: l10n.ownerLoginPassword,
                             hint: l10n.ownerLoginPasswordHint,
                             controller: viewModel.passwordController,
                             obscureText: viewModel.obscurePassword,
-                            prefixIcon:
-                            const Icon(Icons.lock_outline_rounded),
+                            prefixIcon: const Icon(Icons.lock_outline_rounded),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 viewModel.obscurePassword
@@ -139,6 +150,8 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                             },
                           ),
                           const SizedBox(height: 24),
+
+                          // ── Forgot password ──────────────────────────────
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -153,6 +166,8 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                             ),
                           ),
                           const SizedBox(height: 16),
+
+                          // ── Sign In button ───────────────────────────────
                           SizedBox(
                             width: double.infinity,
                             child: CustomButton(
@@ -162,6 +177,8 @@ class _OwnerLoginViewState extends State<OwnerLoginView> {
                             ),
                           ),
                           const SizedBox(height: 16),
+
+                          // ── No account link ──────────────────────────────
                           Center(
                             child: GestureDetector(
                               onTap: () {

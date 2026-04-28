@@ -2,14 +2,15 @@ import 'package:translator/translator.dart';
 import 'session_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// lib/services/translation_service.dart
+// lib/services/locker_translation_mixin.dart
 //
-// Handles dynamic API data translation for ALL modules in the app.
+// App-wide dynamic translation service.
 //
-// Static UI strings are handled by AppLocalizations (ARB / gen-l10n).
-// Dynamic strings — branch names, cashier names, officer names, notes, status
-// labels from the DB — come back in English and are translated on the fly when
-// the app locale is Arabic.
+// Static UI strings → AppLocalizations (ARB / gen-l10n).
+// Dynamic strings (names, notes, status labels from the DB/API) come back in
+// English and are translated on the fly when the app locale is Arabic.
+//
+// Used by ALL modules: Locker, Owner, Accounting, Approvals, POS, etc.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Core translation service ──────────────────────────────────────────────────
@@ -28,9 +29,9 @@ class AppTranslationService {
   // ── Status map — instant lookup, no network call ──────────────────────────
 
   /// Canonical English status string → Arabic translation.
-  /// Covers both raw API values and formatted UI labels across all modules.
+  /// Covers raw API values and formatted UI labels across ALL modules.
   static const Map<String, String> _statusMapAr = {
-    // Locker / Petty Cash / Approvals statuses
+    // ── Locker / Petty Cash / Approvals ──────────────────────────────────
     'PENDING'           : 'قيد الانتظار',
     'ASSIGNED'          : 'معيَّن',
     'AWAITING'          : 'في انتظار الموافقة',
@@ -47,12 +48,12 @@ class AppTranslationService {
     'rejected'          : 'مرفوض',
     'SHORT'             : 'ناقص',
     'OVER'              : 'زائد',
-    // Accounting statuses
+    // ── Accounting ────────────────────────────────────────────────────────
     'overdue'           : 'متأخر',
     'settled'           : 'مسوَّى',
     'OVERDUE'           : 'متأخر',
     'SETTLED'           : 'مسوَّى',
-    // Accounting transaction types
+    // ── Accounting transaction types ──────────────────────────────────────
     'payable'           : 'مستحق الدفع',
     'receivable'        : 'مستحق القبض',
     'expense'           : 'مصروف',
@@ -61,16 +62,37 @@ class AppTranslationService {
     'RECEIVABLE'        : 'مستحق القبض',
     'EXPENSE'           : 'مصروف',
     'ADVANCE'           : 'سلفة',
-    // Queue types (Approvals)
+    // ── Approvals queue types ─────────────────────────────────────────────
     'fund'              : 'شحن رصيد',
     'all'               : 'الكل',
     'FUND'              : 'شحن رصيد',
+    // ── Employee / POS statuses ───────────────────────────────────────────
+    'active'            : 'نشط',
+    'inactive'          : 'غير نشط',
+    'ACTIVE'            : 'نشط',
+    'INACTIVE'          : 'غير نشط',
+    'online'            : 'متصل',
+    'offline'           : 'غير متصل',
+    'busy'              : 'مشغول',
+    'available'         : 'متاح',
+    'ONLINE'            : 'متصل',
+    'OFFLINE'           : 'غير متصل',
+    'BUSY'              : 'مشغول',
+    'AVAILABLE'         : 'متاح',
+    // ── Bill / Invoice statuses ───────────────────────────────────────────
+    'Pending'           : 'قيد الانتظار',
+    'Paid'              : 'مدفوع',
+    'Partially Paid'    : 'مدفوع جزئياً',
+    'Overdue'           : 'متأخر',
+    'paid'              : 'مدفوع',
+    'partially paid'    : 'مدفوع جزئياً',
   };
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  /// Translates a single text string to [targetLang] if not already that
-  /// language. Returns original text on error, empty input, or numeric input.
+  /// Translates [text] to [targetLang].
+  /// Returns the original on error, empty input, numeric input, or if the
+  /// text is already in the target script.
   static Future<String> translate(
       String text, {
         String targetLang = 'ar',
@@ -81,7 +103,7 @@ class AppTranslationService {
     if (double.tryParse(trimmed) != null) return text; // numbers unchanged
     if (_containsArabic(trimmed)) return text;          // already Arabic
 
-    // Status fast path
+    // Status fast-path — no network call needed.
     if (targetLang == 'ar' && _statusMapAr.containsKey(trimmed)) {
       return _statusMapAr[trimmed]!;
     }
@@ -104,7 +126,7 @@ class AppTranslationService {
         return out;
       }
     } catch (_) {
-      // Fall through to graceful fallback.
+      // Fall through — return original below.
     }
 
     return text;
@@ -136,8 +158,6 @@ class AppTranslationService {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  /// Reads the locale from SharedPreferences via [SessionService.getLocale].
-  /// Falls back to 'en' if prefs are unavailable.
   static Future<bool> _isArabic() async {
     final locale = await SessionService.getLocale();
     return locale == 'ar';
@@ -152,8 +172,8 @@ class AppTranslationService {
 
 // ── Lightweight translated DTOs ───────────────────────────────────────────────
 
-/// Holds only the translated display strings extracted from a request with
-/// branch/cashier/officer fields. Used by Locker and similar modules.
+/// Holds translated display strings for any request that has
+/// branch / cashier / officer fields (Locker, Approvals, etc.).
 class RequestTranslated {
   final String branchName;
   final String cashierName;
@@ -166,19 +186,17 @@ class RequestTranslated {
   });
 }
 
-// ── Backward-compatibility alias (Locker module used LockerRequestTranslated) ─
+// ── Backward-compatibility alias ──────────────────────────────────────────────
 typedef LockerRequestTranslated = RequestTranslated;
 
 // ── Mixin for ChangeNotifier view-models ─────────────────────────────────────
 
-/// Mix into any ChangeNotifier-based ViewModel across ANY module that loads
-/// dynamic string data from the API and needs on-the-fly Arabic translation.
+/// Mix into any ChangeNotifier-based ViewModel that loads dynamic string data
+/// from the API and needs on-the-fly Arabic translation.
 ///
-/// The mixin wraps [AppTranslationService] and is fully module-agnostic —
-/// use it in Locker, Accounting, Approvals, Owner, POS, or any other module
-/// without modification.
+/// Module-agnostic — use in Locker, Accounting, Approvals, Owner, POS, etc.
 ///
-/// Example:
+/// Usage:
 ///
 ///   class AccountingViewModel extends ChangeNotifier
 ///       with TranslatableMixin {
@@ -206,8 +224,7 @@ mixin TranslatableMixin {
 
   // ── Domain helpers ────────────────────────────────────────────────────────
 
-  /// Translates the human-readable fields of a dynamic request list.
-  /// Fields translated: branchName, cashierName, assignedOfficerName.
+  /// Translates branch / cashier / officer fields of a dynamic request list.
   Future<List<RequestTranslated>> translateRequests(
       List<dynamic> rawRequests,
       ) async {
@@ -238,15 +255,14 @@ mixin TranslatableMixin {
   /// Translates a UI status label (e.g. "Awaiting Approval", "overdue").
   Future<String> tUiStatus(String label) => tStatus(label);
 
-  /// Batch-translates a map of display fields coming from a detail endpoint.
-  /// Pass in only the string values you want translated.
+  /// Batch-translates a map of display fields.
   Future<Map<String, String>> tDetailFields(Map<String, String> fields) async {
     final keys   = fields.keys.toList();
     final values = await tAll(fields.values.toList());
     return Map.fromIterables(keys, values);
   }
 
-  /// Translates a user/person display name (e.g. for welcome header or party name).
+  /// Translates a user / person display name (e.g. welcome header).
   Future<String?> translateUserName(String? name) async {
     if (name == null) return null;
     return t(name);
@@ -255,10 +271,9 @@ mixin TranslatableMixin {
   /// Translates an accounting party name (vendor, customer, employee).
   Future<String> tParty(String partyName) => t(partyName);
 
-  /// Translates a reference string — skips translation if it looks like
-  /// a reference code (alphanumeric + dashes only).
+  /// Translates a reference string — skips translation for reference codes
+  /// like "INV-001" or "REF#2024" that should stay unchanged.
   Future<String> tReference(String ref) async {
-    // Reference codes like "INV-001" or "REF#2024" should not be translated.
     final isCode = RegExp(r'^[A-Z0-9#\-_/]+$').hasMatch(ref.trim());
     if (isCode) return ref;
     return t(ref);
@@ -266,8 +281,5 @@ mixin TranslatableMixin {
 }
 
 // ── Type aliases for backward-compatibility ───────────────────────────────────
-
-/// All previous Locker ViewModels that used [LockerTranslatableMixin] or
-/// [LockerTranslationMixin] continue to work without any renaming.
 typedef LockerTranslatableMixin = TranslatableMixin;
 typedef LockerTranslationMixin  = TranslatableMixin;

@@ -103,7 +103,7 @@ class _MyAppState extends State<MyApp> {
             sessionService: context.read<SessionService>(),
           ),
           update: (context, deptRepo, sessionService, previous) =>
-              previous ?? DepartmentViewModel(departmentRepository: deptRepo, sessionService: sessionService),
+          previous ?? DepartmentViewModel(departmentRepository: deptRepo, sessionService: sessionService),
         ),
         ChangeNotifierProxyProvider2<PosRepository, SessionService, PosViewModel>(
           create: (context) => PosViewModel(
@@ -111,7 +111,7 @@ class _MyAppState extends State<MyApp> {
             sessionService: context.read<SessionService>(),
           ),
           update: (context, posRepo, sessionService, previous) =>
-              previous ??
+          previous ??
               PosViewModel(
                   posRepository: posRepo, sessionService: sessionService),
         ),
@@ -122,7 +122,7 @@ class _MyAppState extends State<MyApp> {
             sessionService: context.read<SessionService>(),
           ),
           update: (context, posRepo, sessionService, previous) =>
-              previous ??
+          previous ??
               TechnicianViewModel(
                   posRepository: posRepo, sessionService: sessionService),
         ),
@@ -132,7 +132,7 @@ class _MyAppState extends State<MyApp> {
             sessionService: context.read<SessionService>(),
           ),
           update: (context, posRepo, sessionService, previous) =>
-              previous ?? CorporateBookingViewModel(repository: posRepo, sessionService: sessionService),
+          previous ?? CorporateBookingViewModel(repository: posRepo, sessionService: sessionService),
         ),
         ChangeNotifierProvider<NotificationsViewModel>(
           create: (_) => NotificationsViewModel(),
@@ -143,7 +143,7 @@ class _MyAppState extends State<MyApp> {
             sessionService: context.read<SessionService>(),
           ),
           update: (context, posRepo, sessionService, previous) =>
-              previous ?? PettyCashViewModel(posRepository: posRepo, sessionService: sessionService),
+          previous ?? PettyCashViewModel(posRepository: posRepo, sessionService: sessionService),
         ),
         ChangeNotifierProvider<StoreClosingViewModel>(
           create: (_) => StoreClosingViewModel(),
@@ -180,7 +180,7 @@ class _MyAppState extends State<MyApp> {
             sessionService: context.read<SessionService>(),
           ),
           update: (context, posRepo, sessionService, previous) =>
-              previous ?? SalesReturnListViewModel(posRepository: posRepo, sessionService: sessionService),
+          previous ?? SalesReturnListViewModel(posRepository: posRepo, sessionService: sessionService),
         ),
         ChangeNotifierProxyProvider2<PosRepository, SessionService, TakeawayViewModel>(
           create: (context) => TakeawayViewModel(
@@ -188,13 +188,13 @@ class _MyAppState extends State<MyApp> {
             sessionService: context.read<SessionService>(),
           ),
           update: (context, posRepo, sessionService, previous) =>
-              previous ??
+          previous ??
               TakeawayViewModel(
                 posRepository: posRepo,
                 sessionService: sessionService,
               ),
         ),
-        
+
         ChangeNotifierProxyProvider2<OwnerRepository, SessionService, OwnerDataService>(
           create: (context) => OwnerDataService(
             ownerRepository: context.read<OwnerRepository>(),
@@ -217,17 +217,19 @@ class _MyAppState extends State<MyApp> {
             ownerDataService: ownerData,
           ),
         ),
-        ChangeNotifierProxyProvider3<OwnerRepository, SessionService, OwnerDataService, BranchManagementViewModel>(
+        ChangeNotifierProxyProvider4<OwnerRepository, SessionService, OwnerDataService, SettingsViewModel, BranchManagementViewModel>(
           create: (context) => BranchManagementViewModel(
-            ownerRepository: context.read<OwnerRepository>(),
-            sessionService: context.read<SessionService>(),
-            ownerDataService: context.read<OwnerDataService>(),
+            ownerRepository:   context.read<OwnerRepository>(),
+            sessionService:    context.read<SessionService>(),
+            ownerDataService:  context.read<OwnerDataService>(),
+            settingsViewModel: context.read<SettingsViewModel>(),
           ),
-          update: (context, ownerRepo, sessionService, ownerData, previous) =>
+          update: (context, ownerRepo, sessionService, ownerData, settings, previous) =>
           previous ?? BranchManagementViewModel(
-            ownerRepository: ownerRepo,
-            sessionService: sessionService,
-            ownerDataService: ownerData,
+            ownerRepository:   ownerRepo,
+            sessionService:    sessionService,
+            ownerDataService:  ownerData,
+            settingsViewModel: settings,
           ),
         ),
         ChangeNotifierProxyProvider3<OwnerRepository, SessionService, OwnerDataService, EmployeeManagementViewModel>(
@@ -267,15 +269,17 @@ class _MyAppState extends State<MyApp> {
             ownerDataService: ownerData,
           ),
         ),
-        ChangeNotifierProxyProvider2<OwnerRepository, SessionService, BillingManagementViewModel>(
+        ChangeNotifierProxyProvider3<OwnerRepository, SessionService, SettingsViewModel, BillingManagementViewModel>(
           create: (context) => BillingManagementViewModel(
-            ownerRepository: context.read<OwnerRepository>(),
-            sessionService: context.read<SessionService>(),
+            ownerRepository:   context.read<OwnerRepository>(),
+            sessionService:    context.read<SessionService>(),
+            settingsViewModel: context.read<SettingsViewModel>(),
           ),
-          update: (context, ownerRepo, sessionService, previous) =>
+          update: (context, ownerRepo, sessionService, settings, previous) =>
           previous ?? BillingManagementViewModel(
-            ownerRepository: ownerRepo,
-            sessionService: sessionService,
+            ownerRepository:   ownerRepo,
+            sessionService:    sessionService,
+            settingsViewModel: settings,
           ),
         ),
         ChangeNotifierProxyProvider3<OwnerRepository, SessionService, OwnerDataService, DepartmentManagementViewModel>(
@@ -369,7 +373,7 @@ class _MyAppState extends State<MyApp> {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: settings.themeMode,
-            
+
             // Localization Configuration
             locale: settings.locale,
             localizationsDelegates: const [
