@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../services/session_service.dart';
 import '../../../models/pos_order_model.dart';
 import '../../../models/pos_technician_model.dart';
+import '../../../utils/toast_service.dart';
 
 class TechnicianViewModel extends ChangeNotifier {
   final PosRepository _posRepository;
@@ -24,6 +26,7 @@ class TechnicianViewModel extends ChangeNotifier {
   String? _assignmentMessage;
   bool _assignmentSuccess = false;
   List<JobTechnician> _lastCashierAssignTechnicians = [];
+  final Set<String> _presenceToggleBusyIds = {};
 
   List<PosTechnician> get technicians {
     if (_searchQuery.isEmpty) return _technicians;
@@ -60,6 +63,8 @@ class TechnicianViewModel extends ChangeNotifier {
 
   bool isAssigningTechnician(String id) => _isAssigning && _assigningTechnicianId == id;
 
+  bool isPresenceToggleBusy(String id) => _presenceToggleBusyIds.contains(id);
+
   void setSearchQuery(String query) {
     _searchQuery = query;
     notifyListeners();
@@ -77,7 +82,7 @@ class TechnicianViewModel extends ChangeNotifier {
         throw Exception('Token not found');
       }
 
-      final response = await _posRepository.getTechnicians(token);
+      final response = await _posRepository.getCashierTechnicians(token);
       if (response.success) {
         _technicians = response.technicians;
       } else {
@@ -260,6 +265,53 @@ class TechnicianViewModel extends ChangeNotifier {
       return false;
     } finally {
       _isAssigning = false;
+      notifyListeners();
+    }
+  }
+
+  /// PATCH /cashier/technicians/:employeeId/online-status then GET /cashier/technicians.
+  Future<void> setTechnicianPresence(
+    BuildContext context,
+    String technicianId,
+    bool online,
+  ) async {
+    if (_presenceToggleBusyIds.contains(technicianId)) return;
+    _presenceToggleBusyIds.add(technicianId);
+    notifyListeners();
+
+    try {
+      final token = await _sessionService.getToken();
+      if (token == null) {
+        throw Exception('Not signed in');
+      }
+      final status = online ? 'online' : 'offline';
+      final res = await _posRepository.patchCashierTechnicianOnlineStatus(
+        token,
+        technicianId,
+        status,
+      );
+      if (res['success'] == false) {
+        final err = res['message']?.toString();
+        throw Exception(
+          (err != null && err.isNotEmpty) ? err : 'Failed to update status',
+        );
+      }
+      await refreshTechniciansCatalogQuiet();
+      if (context.mounted) {
+        final msg = res['message']?.toString();
+        ToastService.showSuccess(
+          context,
+          (msg != null && msg.isNotEmpty)
+              ? msg
+              : (online ? 'Technician marked online' : 'Technician marked offline'),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, e.toString());
+      }
+    } finally {
+      _presenceToggleBusyIds.remove(technicianId);
       notifyListeners();
     }
   }

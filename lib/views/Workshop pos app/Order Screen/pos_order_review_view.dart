@@ -11,6 +11,9 @@ import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart' as pvm;
 import 'package:provider/provider.dart';
+import '../../../data/repositories/pos_repository.dart';
+import '../../../models/cashier_expense_models.dart';
+import '../../../services/session_service.dart';
 
 // ── Mock data models used exclusively for this review screen ─────────────────
 
@@ -664,6 +667,13 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
   // Inline split payment controllers (created/disposed as _selectedPayments changes)
   final Map<PaymentMethod, TextEditingController> _splitControllers = {};
 
+  /// Branch employees for "Employees" payment (GET /cashier/employees).
+  List<BranchEmployee> _branchEmployees = [];
+  bool _branchEmployeesLoading = false;
+  bool _branchEmployeesLoadFailed = false;
+  /// Single employee for Employees payment line (`employeeIds` payload uses one id).
+  String? _employeesPaymentEmployeeId;
+
   // Inline billing + vehicle form (walk-in orders)
   final _billingFormKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
@@ -701,12 +711,18 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         if (_isCorporate == true && _selectedPayments.isEmpty) {
           _selectedPayments = {PaymentMethod.monthlyBilling};
         }
+        final ids = posVm.invoicePaymentEmployeeIds;
+        _employeesPaymentEmployeeId =
+            ids.isEmpty ? null : ids.first;
         _syncSplitControllers();
         for (final entry in posVm.invoicePaymentAmounts.entries) {
           final c = _splitControllers[entry.key];
           if (c != null && entry.value > 0) {
             c.text = entry.value.toStringAsFixed(2);
           }
+        }
+        if (_selectedPayments.contains(PaymentMethod.employees)) {
+          _ensureBranchEmployeesLoaded();
         }
       });
     });
@@ -770,9 +786,66 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     }
   }
 
+  Map<String, dynamic> _paymentSplitLine(PaymentMethod pm, double amount) {
+    final m = <String, dynamic>{
+      'method': pm.label,
+      'amount': amount,
+    };
+    if (pm == PaymentMethod.employees &&
+        (_employeesPaymentEmployeeId ?? '').isNotEmpty) {
+      m['employeeIds'] = [_employeesPaymentEmployeeId!];
+    }
+    return m;
+  }
+
+  Future<void> _ensureBranchEmployeesLoaded() async {
+    if (_branchEmployees.isNotEmpty || _branchEmployeesLoading) return;
+    setState(() {
+      _branchEmployeesLoading = true;
+      _branchEmployeesLoadFailed = false;
+    });
+    try {
+      final session = Provider.of<SessionService>(context, listen: false);
+      final repo = Provider.of<PosRepository>(context, listen: false);
+      final token = await session.getToken(role: 'cashier');
+      if (!mounted) return;
+      if (token == null) throw Exception('Session');
+      final res = await repo.getCashierEmployees(token);
+      if (!mounted) return;
+      setState(() {
+        _branchEmployees = res.employees;
+        _branchEmployeesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _branchEmployeesLoading = false;
+        _branchEmployeesLoadFailed = true;
+      });
+    }
+  }
+
+  void _onRetailPaymentMethodsChanged(Set<PaymentMethod> pms) {
+    final wantsEmployees = pms.contains(PaymentMethod.employees);
+    setState(() {
+      _selectedPayments = pms;
+      if (!wantsEmployees) {
+        _employeesPaymentEmployeeId = null;
+      }
+      _syncSplitControllers();
+    });
+    if (wantsEmployees) {
+      _ensureBranchEmployeesLoaded();
+    }
+  }
+
   void _onCorporateCustomerChanged(bool? v) {
     setState(() {
       _isCorporate = v;
+      _employeesPaymentEmployeeId = null;
+      _branchEmployees.clear();
+      _branchEmployeesLoadFailed = false;
+      _branchEmployeesLoading = false;
       if (v == true) {
         _selectedPayments = {PaymentMethod.monthlyBilling};
       } else if (v == false) {
@@ -1062,7 +1135,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
   Future<List<Map<String, dynamic>>?> _promptForSplitAmounts() async {
     if (_selectedPayments.length == 1) {
-      return [{'method': _selectedPayments.first.label, 'amount': _totalAmount}];
+      return [
+        _paymentSplitLine(_selectedPayments.first, _totalAmount),
+      ];
     }
 
     final controllers = <PaymentMethod, TextEditingController>{};
@@ -1161,13 +1236,13 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 FilledButton(
                   onPressed: remaining.abs() > 0.05
                       ? null
-                      : () {
+                        : () {
                           final result = <Map<String, dynamic>>[];
                           for (final pm in _selectedPayments) {
-                            result.add({
-                              'method': pm.label,
-                              'amount': double.tryParse(controllers[pm]!.text.trim()) ?? 0.0,
-                            });
+                            final amt =
+                                double.tryParse(controllers[pm]!.text.trim()) ??
+                                    0.0;
+                            result.add(_paymentSplitLine(pm, amt));
                           }
                           Navigator.pop(ctx, result);
                         },
@@ -1292,6 +1367,170 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmployeesInvoiceSection() {
+    if (_branchEmployeesLoading && _branchEmployees.isEmpty) {
+      return _SectionCard(
+        title: 'Employees (payment)',
+        icon: Icons.groups_outlined,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+    if (_branchEmployeesLoadFailed && _branchEmployees.isEmpty) {
+      return _SectionCard(
+        title: 'Employees (payment)',
+        icon: Icons.groups_outlined,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Could not load branch employees.',
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.red.shade700),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                setState(() {
+                  _branchEmployeesLoadFailed = false;
+                  _branchEmployees.clear();
+                });
+                _ensureBranchEmployeesLoaded();
+              },
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primaryLight),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+    final list = _branchEmployees;
+    if (list.isEmpty) {
+      return _SectionCard(
+        title: 'Employees (payment)',
+        icon: Icons.groups_outlined,
+        child: Text(
+          'No branch employees listed.',
+          style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey.shade600),
+        ),
+      );
+    }
+
+    return _SectionCard(
+      title: 'Select employee',
+      icon: Icons.groups_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'One employee for the Employees payment line. Tap the selected card again to clear.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: Colors.grey.shade700,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 108,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: list.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final e = list[i];
+                final name =
+                    e.name.trim().isNotEmpty ? e.name.trim() : e.id;
+                final typeLabel = e.employeeTypeDisplay;
+                final selected = _employeesPaymentEmployeeId == e.id;
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _employeesPaymentEmployeeId =
+                            selected ? null : e.id;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 146,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppColors.primaryLight.withValues(alpha: 0.42)
+                            : const Color(0xFFF8F9FC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.primaryLight
+                              : const Color(0xFFE2E8F0),
+                          width: selected ? 2 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                selected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_off,
+                                size: 16,
+                                color: selected
+                                    ? AppColors.secondaryLight
+                                    : Colors.grey.shade400,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12.8,
+                                    fontWeight: FontWeight.w800,
+                                    color: selected
+                                        ? AppColors.secondaryLight
+                                        : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            typeLabel.isNotEmpty ? typeLabel : '—',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: typeLabel.isNotEmpty
+                                  ? Colors.grey.shade600
+                                  : Colors.grey.shade400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -1457,11 +1696,25 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       return;
     }
 
+    if (_isCorporate == false &&
+        _selectedPayments.contains(PaymentMethod.employees) &&
+        (_employeesPaymentEmployeeId == null ||
+            _employeesPaymentEmployeeId!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select one employee for the Employees payment.'),
+        ),
+      );
+      return;
+    }
+
     // 3. Validate split amounts sum when 2+ methods selected
     List<Map<String, dynamic>>? paymentSplits;
     if (_isCorporate != true) {
       if (_selectedPayments.length == 1) {
-        paymentSplits = [{'method': _selectedPayments.first.label, 'amount': _totalAmount}];
+        paymentSplits = [
+          _paymentSplitLine(_selectedPayments.first, _totalAmount),
+        ];
       } else {
         double splitSum = 0;
         for (final c in _splitControllers.values) {
@@ -1478,10 +1731,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
           return;
         }
         paymentSplits = _selectedPayments.map((pm) {
-          return {
-            'method': pm.label,
-            'amount': double.tryParse(_splitControllers[pm]?.text.trim() ?? '') ?? 0.0,
-          };
+          final amt =
+              double.tryParse(_splitControllers[pm]?.text.trim() ?? '') ?? 0.0;
+          return _paymentSplitLine(pm, amt);
         }).toList();
       }
     }
@@ -1523,10 +1775,11 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             ? (_selectedPayments.isNotEmpty
                 ? _selectedPayments.first.label
                 : 'Corporate')
-            : (paymentSplits?.length == 1 ? paymentSplits!.first['method'] : null),
-        payments: _isCorporate != true && paymentSplits != null && paymentSplits.length > 1
-            ? paymentSplits
-            : null,
+            : (paymentSplits != null && paymentSplits.length == 1
+                ? paymentSplits.first['method'] as String?
+                : null),
+        payments:
+            _isCorporate != true && paymentSplits != null ? paymentSplits : null,
       );
 
       if (response != null && response.success) {
@@ -2100,10 +2353,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                             icon: Icons.payment_rounded,
                             child: _PaymentMethodSelector(
                               selected: _selectedPayments,
-                              onChanged: (pms) => setState(() {
-                                _selectedPayments = pms;
-                                _syncSplitControllers();
-                              }),
+                              onChanged: _onRetailPaymentMethodsChanged,
                               isTablet: isTablet,
                             ),
                           ),
@@ -2153,6 +2403,11 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     _buildInlineSplitPaymentCard(),
                     const SizedBox(height: 16),
                   ],
+                  if (_isCorporate == false &&
+                      _selectedPayments.contains(PaymentMethod.employees)) ...[
+                    _buildEmployeesInvoiceSection(),
+                    const SizedBox(height: 16),
+                  ],
                 ] else ...[
                   _SectionCard(
                     title: 'Corporate Customer?',
@@ -2169,16 +2424,17 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       icon: Icons.payment_rounded,
                       child: _PaymentMethodSelector(
                         selected: _selectedPayments,
-                        onChanged: (pms) => setState(() {
-                          _selectedPayments = pms;
-                          _syncSplitControllers();
-                        }),
+                        onChanged: _onRetailPaymentMethodsChanged,
                         isTablet: isTablet,
                       ),
                     ),
                     const SizedBox(height: 16),
                     if (_selectedPayments.length >= 2) ...[
                       _buildInlineSplitPaymentCard(),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_selectedPayments.contains(PaymentMethod.employees)) ...[
+                      _buildEmployeesInvoiceSection(),
                       const SizedBox(height: 16),
                     ],
                   ],

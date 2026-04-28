@@ -34,9 +34,7 @@ class BroadcastOverlay extends StatelessWidget {
         if (!vm.hasActiveBroadcast) return const SizedBox();
 
         final b = vm.primaryBroadcast!;
-        final title = (b.serviceName != null && b.serviceName!.trim().isNotEmpty)
-            ? b.serviceName!.trim()
-            : 'New job request';
+        final title = b.displayTitle;
         final modeLabel = _modeLabel(b.broadcastMode);
         final amountLabel = b.amountLabel;
         final hasAmount = amountLabel != null && amountLabel.toString().trim().isNotEmpty;

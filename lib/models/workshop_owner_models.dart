@@ -607,12 +607,18 @@ class PosCounter {
   // Overall reconciliation difference (system − physical)
   final double reconciliationTotalDifference;
   final String? closingId;
-  final int schemaVersion; // 2 = new full payload, 1 = legacy cash-only
+  final int schemaVersion; // closingReportSchemaVersion: 1 legacy, 2 full breakdown, 3 + start/end times
 
   // Backend-computed summary fields (v2+)
   final double systemSummary;    // json['system'] = systemTotalSales headline
   final double physicalSummary;  // json['physicalTotal'] = sum of all 5 physical buckets
   final double lockerDiff;       // json['lockerDiff'] = system − physicalTotal
+
+  /// ISO timestamp from [`startTime`]; same instant as [openedAt] when API sends schema v3+.
+  final DateTime? startTime;
+
+  /// Session/counter close instant; **null while shift is OPEN** (live counters).
+  final DateTime? endTime;
 
   PosCounter({
     required this.id,
@@ -623,6 +629,8 @@ class PosCounter {
     this.openOrders = 0,
     required this.openedAt,
     this.closedAt,
+    this.startTime,
+    this.endTime,
     this.systemCash = 0,
     this.systemBank = 0,
     this.systemCorporate = 0,
@@ -650,6 +658,12 @@ class PosCounter {
   /// True when the backend returned the full v2 breakdown payload
   bool get isV2 => schemaVersion >= 2;
 
+  /// Prefer explicit `startTime`, else legacy [`openedAt`].
+  DateTime get sessionStart => startTime ?? openedAt;
+
+  /// Prefer API [`endTime`], else legacy [`closedAt`] (OPEN shifts omit both ends).
+  DateTime? get sessionEnd => endTime ?? closedAt;
+
   /// The single "SYSTEM" headline: prefer backend-computed summary, else sum of categories
   double get effectiveSystemTotal =>
       systemSummary > 0 ? systemSummary : systemTotalSales;
@@ -667,9 +681,34 @@ class PosCounter {
   static double _d(dynamic v) =>
       double.tryParse(v?.toString() ?? '0') ?? 0.0;
 
+  static DateTime? _parseDt(dynamic v) {
+    if (v == null) return null;
+    final s = v.toString().trim();
+    if (s.isEmpty) return null;
+    final p = DateTime.tryParse(s);
+    if (p != null) return p;
+    return null;
+  }
+
   factory PosCounter.fromJson(Map<String, dynamic> json) {
     final schemaVersion =
         int.tryParse(json['closingReportSchemaVersion']?.toString() ?? '1') ?? 1;
+
+    final startT = _parseDt(json['startTime']);
+    final endT = _parseDt(json['endTime']);
+
+    final legacyOpened =
+        _parseDt(json['openedAt'] ??
+            json['shiftStartedAt'] ??
+            json['startedAt'] ??
+            json['openTime']);
+    final openedFinal = legacyOpened ?? startT ?? DateTime.now();
+
+    final legacyClosed =
+        _parseDt(json['closedAt'] ??
+            json['shiftEndedAt'] ??
+            json['endedAt'] ??
+            json['closingTime']);
 
     final sysCash = _d(json['systemCash']);
     final sysBank = _d(json['systemBank']);
@@ -712,10 +751,10 @@ class PosCounter {
       status: json['shiftStatus']?.toString().toLowerCase() ?? 'open',
       shiftSales: _d(json['shiftSales']),
       openOrders: int.tryParse(json['shiftOpenOrders']?.toString() ?? '0') ?? 0,
-      openedAt: json['openedAt'] != null
-          ? DateTime.tryParse(json['openedAt']) ?? DateTime.now()
-          : DateTime.now(),
-      closedAt: json['closedAt'] != null ? DateTime.tryParse(json['closedAt']) : null,
+      openedAt: openedFinal,
+      closedAt: legacyClosed ?? endT,
+      startTime: startT,
+      endTime: endT,
       systemCash: sysCash,
       systemBank: sysBank,
       systemCorporate: sysCorp,
@@ -742,6 +781,22 @@ class PosCounter {
   }
 }
 
+/// Echo of UTC [`from`] / [`to`] (`YYYY-MM-DD`) when a filtered POS monitoring request succeeded.
+class PosMonitoringDateRangeEcho {
+  final String? from;
+  final String? to;
+
+  PosMonitoringDateRangeEcho({this.from, this.to});
+
+  factory PosMonitoringDateRangeEcho.fromJson(Map<String, dynamic>? json) {
+    if (json == null || json.isEmpty) return PosMonitoringDateRangeEcho();
+    return PosMonitoringDateRangeEcho(
+      from: json['from']?.toString(),
+      to: json['to']?.toString(),
+    );
+  }
+}
+
 class PosMonitoringResponse {
   final bool success;
   final int liveCountersCount;
@@ -750,6 +805,12 @@ class PosMonitoringResponse {
   final List<PosCounter> liveCounters;
   final List<PosCounter> closingReports;
 
+  /// Total invoice sales in UTC range when [`from`] / [`to`] query was sent (exclusive of unscoped todaySales semantics).
+  final double? salesInDateRange;
+
+  /// Present when backend echoes the applied UTC date filter strings.
+  final PosMonitoringDateRangeEcho? dateRangeFilter;
+
   PosMonitoringResponse({
     required this.success,
     required this.liveCountersCount,
@@ -757,9 +818,19 @@ class PosMonitoringResponse {
     required this.todaySales,
     required this.liveCounters,
     required this.closingReports,
+    this.salesInDateRange,
+    this.dateRangeFilter,
   });
 
   factory PosMonitoringResponse.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic>? rangeMap;
+    final rawRange = json['dateRangeFilter'];
+    if (rawRange is Map<String, dynamic>) {
+      rangeMap = rawRange;
+    } else if (rawRange is Map) {
+      rangeMap = Map<String, dynamic>.from(rawRange);
+    }
+
     return PosMonitoringResponse(
       success: json['success'] ?? false,
       liveCountersCount: int.tryParse(json['liveCountersCount']?.toString() ?? '0') ?? 0,
@@ -773,6 +844,11 @@ class PosMonitoringResponse {
               ?.map((e) => PosCounter.fromJson(e))
               .toList() ??
           [],
+      salesInDateRange: json['salesInDateRange'] == null
+          ? null
+          : double.tryParse(json['salesInDateRange'].toString()),
+      dateRangeFilter:
+          rangeMap != null ? PosMonitoringDateRangeEcho.fromJson(rangeMap) : null,
     );
   }
 }

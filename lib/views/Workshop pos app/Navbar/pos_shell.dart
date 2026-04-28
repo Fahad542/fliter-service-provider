@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:filter_service_providers/views/Workshop pos app/Home Screen/pos_view_model.dart';
 import 'package:filter_service_providers/views/Workshop pos app/Technician Screen/technician_view_model.dart';
+import 'package:filter_service_providers/views/Workshop%20pos%20app/Broadcast/cashier_broadcast_view_model.dart';
+import 'package:filter_service_providers/views/Workshop%20pos%20app/Broadcast/pos_cashier_broadcast_view.dart';
 
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
@@ -26,6 +29,8 @@ import '../Current Shift/pos_current_shift_view.dart';
 import '../Current Shift/current_shift_view_model.dart';
 import '../Takeaway/pos_takeaway_view.dart';
 import '../Takeaway/takeaway_view_model.dart';
+import '../Inventory Sales/inventory_sales_view_model.dart';
+import '../Inventory Sales/pos_inventory_sales_view.dart';
 // import '../../utils/app_colors.dart';
 // import '../../utils/app_text_styles.dart';
 // import '../Workshop pos app/Home Screen/pos_home_view.dart';
@@ -59,6 +64,19 @@ void navigateToPosShellOrdersTab(BuildContext context) {
   );
 }
 
+/// Cashier broadcast list tab (active technician broadcasts).
+void navigateToPosShellBroadcastTab(BuildContext context) {
+  final posVm = context.read<PosViewModel>();
+  posVm.setShellSelectedIndex(11);
+  final nav = Navigator.of(context, rootNavigator: true);
+  nav.pushAndRemoveUntil<void>(
+    MaterialPageRoute<void>(
+      builder: (_) => const PosShell(initialIndex: 11),
+    ),
+    (route) => false,
+  );
+}
+
 class PosShell extends StatefulWidget {
   final int initialIndex;
   const PosShell({super.key, this.initialIndex = 0});
@@ -75,10 +93,12 @@ class _PosShellState extends State<PosShell> {
   void initState() {
     super.initState();
     PosShellScaffoldRegistry.attach(_shellScaffoldKey);
+    _lockPosLandscape();
   }
 
   @override
   void dispose() {
+    _unlockOrientationForOtherPortals();
     PosShellScaffoldRegistry.detach(_shellScaffoldKey);
     super.dispose();
   }
@@ -114,11 +134,32 @@ class _PosShellState extends State<PosShell> {
     PosCurrentShiftView(),
     PosSalesReturnListView(),
     PosTakeawayView(),
+    PosCashierBroadcastView(),
+    PosInventorySalesView(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.width > 600;
+    final isTablet = _isTabletDevice(context);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    if (!isTablet) {
+      return const _PosDeviceRestrictionView(
+        title: 'Tablet required',
+        message:
+            'Workshop POS sirf tablet device par open hota hai.',
+      );
+    }
+
+    if (!isLandscape) {
+      return const _PosDeviceRestrictionView(
+        title: 'Landscape required',
+        message:
+            'Workshop POS ko landscape mode me rotate karein.',
+      );
+    }
+
     final posVm = context.watch<PosViewModel>();
     final isReconciled = context.watch<StoreClosingViewModel>().isReconciled;
     final currentIndex = posVm.shellSelectedIndex;
@@ -128,8 +169,9 @@ class _PosShellState extends State<PosShell> {
     final isStoreClosingTab = validIndex == 3;
     final isLockedInStoreClosing = isStoreClosingTab && isReconciled;
 
-    final hideBottomBar = [4, 5, 6, 7, 8, 9, 10].contains(validIndex) ||
-        isLockedInStoreClosing;
+    final hideBottomBar =
+        [4, 5, 6, 7, 8, 9, 10, 11, 12].contains(validIndex) ||
+            isLockedInStoreClosing;
 
     final stackBody = PosShellRailLayout(
       bodyLeftPadding: 0,
@@ -137,17 +179,6 @@ class _PosShellState extends State<PosShell> {
         index: validIndex,
         children: _screens,
       ),
-    );
-    final shellBodyWithBroadcastBanner = Stack(
-      children: [
-        stackBody,
-        if (posVm.hasActiveBroadcastWaiting)
-          Positioned(
-            left: isTablet ? 18 : 10,
-            bottom: isTablet ? 18 : 10,
-            child: _BroadcastWaitingBanner(posVm: posVm),
-          ),
-      ],
     );
 
     return PopScope(
@@ -159,12 +190,12 @@ class _PosShellState extends State<PosShell> {
       },
       child: Scaffold(
         key: _shellScaffoldKey,
-        drawer: _buildDrawer(isTablet),
+        drawer: isLockedInStoreClosing ? null : _buildDrawer(isTablet),
         body: MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: PosTabletLayout.textScaler(context),
           ),
-          child: shellBodyWithBroadcastBanner,
+          child: stackBody,
         ),
         bottomNavigationBar: hideBottomBar || isTablet
             ? const SizedBox.shrink()
@@ -177,6 +208,25 @@ class _PosShellState extends State<PosShell> {
               ),
       ),
     );
+  }
+
+  bool _isTabletDevice(BuildContext context) =>
+      MediaQuery.of(context).size.shortestSide >= 600;
+
+  void _lockPosLandscape() {
+    SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  void _unlockOrientationForOtherPortals() {
+    SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
   }
 
   void _triggerVisitFetch(BuildContext context, int index) {
@@ -217,6 +267,10 @@ class _PosShellState extends State<PosShell> {
       context.read<SalesReturnListViewModel>().fetchReturns(refresh: true);
     } else if (index == 10) {
       context.read<TakeawayViewModel>().loadCatalog();
+    } else if (index == 11) {
+      context.read<CashierBroadcastViewModel>().fetchActive();
+    } else if (index == 12) {
+      context.read<InventorySalesViewModel>().fetch();
     }
   }
 
@@ -242,6 +296,19 @@ class _PosShellState extends State<PosShell> {
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                     2, 'Orders', Icons.receipt_long_outlined, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    11,
+                    'Broadcast Technician',
+                    Icons.podcasts_rounded,
+                    isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                  12,
+                  'Inventory Sales',
+                  Icons.query_stats_rounded,
+                  isTablet,
+                ),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                     10,
@@ -423,98 +490,45 @@ class _PosShellState extends State<PosShell> {
   }
 }
 
-class _BroadcastWaitingBanner extends StatelessWidget {
-  final PosViewModel posVm;
-  const _BroadcastWaitingBanner({required this.posVm});
+class _PosDeviceRestrictionView extends StatelessWidget {
+  final String title;
+  final String message;
+
+  const _PosDeviceRestrictionView({
+    required this.title,
+    required this.message,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 360, minWidth: 280),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF111827),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF1F2937)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.22),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFCC247).withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.campaign_rounded,
-                size: 16,
-                color: Color(0xFFFCC247),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Waiting for technician acceptance',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Request expires in ${posVm.broadcastWaitingTimerLabel}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.78),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFCC247).withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                posVm.broadcastWaitingTimerLabel,
-                style: const TextStyle(
-                  color: Color(0xFFFCC247),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.screen_lock_rotation_rounded,
+                  size: 48,
                 ),
-              ),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            IconButton(
-              onPressed: () => posVm.clearBroadcastWaiting(),
-              icon: Icon(
-                Icons.close_rounded,
-                size: 17,
-                color: Colors.white.withValues(alpha: 0.75),
-              ),
-              visualDensity: VisualDensity.compact,
-              splashRadius: 16,
-            ),
-          ],
+          ),
         ),
       ),
     );

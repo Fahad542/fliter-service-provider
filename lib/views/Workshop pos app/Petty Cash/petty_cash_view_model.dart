@@ -157,7 +157,7 @@ class PettyCashViewModel extends ChangeNotifier {
     try {
       final token = await sessionService.getToken();
       if (token == null) return;
-      final res = await posRepository.getExpenseBranchEmployees(token);
+      final res = await posRepository.getCashierEmployees(token);
       if (res.success) {
         _branchEmployees = res.employees;
       }

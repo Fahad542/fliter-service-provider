@@ -5,7 +5,6 @@ import '../../data/repositories/technician_repository.dart';
 import '../../services/session_service.dart';
 import '../../services/realtime_service.dart';
 import '../../models/technician_performance_model.dart';
-import '../../models/technician_today_performance_model.dart';
 import '../../models/technician_profile_model.dart';
 import '../../models/technician_commission_history_model.dart';
 import '../../models/technician_broadcast_model.dart';
@@ -399,8 +398,12 @@ class TechAppViewModel extends ChangeNotifier {
   List<TechBroadcast> _broadcasts = [];
   int _broadcastTimerSeconds = 0;
   int _broadcastRingTotalSecs = 300;
-  DateTime? _broadcastCountdownStartedAt;
+  int _broadcastWindowSeconds = 300;
+  int _broadcastSoonThresholdSeconds = 60;
+  int _broadcastActiveCount = 0;
   Timer? _broadcastTimer;
+  final Set<String> _broadcastAcceptBusy = {};
+  final Set<String> _broadcastRejectBusy = {};
 
   List<TechBroadcast> get broadcasts => List.unmodifiable(_broadcasts);
   TechBroadcast? get primaryBroadcast =>
@@ -408,18 +411,56 @@ class TechAppViewModel extends ChangeNotifier {
 
   bool get hasActiveBroadcast => _broadcasts.isNotEmpty;
 
-  /// Accept/decline broadcast UI is disabled: assignments are handled on POS; jobs appear after invoice.
+  /// Full-screen overlay; dedicated [BroadcastTechnicianView] has its own Accept / Reject.
   bool get showBroadcastAcceptanceUi => false;
   int get broadcastTimerSeconds => _broadcastTimerSeconds;
   int get broadcastRingTotalSecs =>
       _broadcastRingTotalSecs <= 0 ? 300 : _broadcastRingTotalSecs;
+  int get broadcastWindowSeconds =>
+      _broadcastWindowSeconds <= 0 ? 300 : _broadcastWindowSeconds;
+  int get broadcastSoonThresholdSeconds =>
+      _broadcastSoonThresholdSeconds <= 0 ? 60 : _broadcastSoonThresholdSeconds;
+  int get broadcastActiveCountMeta => _broadcastActiveCount;
+
+  bool isBroadcastAcceptBusy(String jobId) =>
+      _broadcastAcceptBusy.contains(jobId);
+
+  bool isBroadcastRejectBusy(String jobId) =>
+      _broadcastRejectBusy.contains(jobId);
+
+  Duration remainingForBroadcast(TechBroadcast b) {
+    final exp = b.expiresAt;
+    if (exp != null) return exp.difference(DateTime.now());
+    if (b.remainingSecondsBootstrap > 0) {
+      return Duration(seconds: b.remainingSecondsBootstrap);
+    }
+    return Duration.zero;
+  }
+
+  bool broadcastExpired(TechBroadcast b) => remainingForBroadcast(b).isNegative;
+
+  bool broadcastShowSoon(TechBroadcast b) {
+    final r = remainingForBroadcast(b);
+    if (r.isNegative) return false;
+    if (b.serverIsSoon) return true;
+    return r.inSeconds <= _broadcastSoonThresholdSeconds;
+  }
+
+  double broadcastProgress(TechBroadcast b) {
+    final max = _broadcastWindowSeconds <= 0 ? 300 : _broadcastWindowSeconds;
+    final left = remainingForBroadcast(b).inSeconds.clamp(0, max);
+    return left / max;
+  }
 
   Future<void> fetchBroadcasts() async {
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token == null) return;
-      final list = await _repository.getBroadcasts(token);
-      _broadcasts = list;
+      final result = await _repository.getBroadcasts(token);
+      _broadcasts = result.broadcasts;
+      _broadcastWindowSeconds = result.windowSeconds;
+      _broadcastSoonThresholdSeconds = result.soonThresholdSeconds;
+      _broadcastActiveCount = result.activeCount;
       _restartBroadcastCountdown();
       notifyListeners();
     } catch (e) {
@@ -429,57 +470,141 @@ class TechAppViewModel extends ChangeNotifier {
 
   void _restartBroadcastCountdown() {
     _broadcastTimer?.cancel();
-    final b = primaryBroadcast;
-    if (b == null) {
+    _broadcastRingTotalSecs =
+        _broadcastWindowSeconds > 0 ? _broadcastWindowSeconds : 300;
+
+    void tickPrimaryTimer() {
+      final current = primaryBroadcast;
+      if (current == null) {
+        _broadcastTimerSeconds = 0;
+        return;
+      }
+      final left = remainingForBroadcast(current).inSeconds;
+      _broadcastTimerSeconds = left < 0 ? 0 : left;
+    }
+
+    if (_broadcasts.isEmpty) {
       _broadcastTimerSeconds = 0;
-      _broadcastRingTotalSecs = 300;
-      _broadcastCountdownStartedAt = null;
       return;
     }
 
-    if (b.expiresAt != null) {
-      final left = b.expiresAt!.difference(DateTime.now()).inSeconds;
-      _broadcastTimerSeconds = left < 0 ? 0 : left;
-      _broadcastRingTotalSecs = _broadcastTimerSeconds > 0 ? _broadcastTimerSeconds : 300;
-    } else {
-      _broadcastCountdownStartedAt = DateTime.now();
-      _broadcastTimerSeconds = 300;
-      _broadcastRingTotalSecs = 300;
-    }
-
+    tickPrimaryTimer();
     _broadcastTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final current = primaryBroadcast;
-      if (current == null) {
+      tickPrimaryTimer();
+      notifyListeners();
+      if (_broadcasts.isEmpty) {
         _broadcastTimer?.cancel();
         return;
       }
-      if (current.expiresAt != null) {
-        _broadcastTimerSeconds =
-            current.expiresAt!.difference(DateTime.now()).inSeconds;
-        if (_broadcastTimerSeconds < 0) _broadcastTimerSeconds = 0;
-      } else if (_broadcastCountdownStartedAt != null) {
-        final elapsed =
-            DateTime.now().difference(_broadcastCountdownStartedAt!).inSeconds;
-        _broadcastTimerSeconds = (300 - elapsed).clamp(0, 300);
-      }
-      notifyListeners();
-      if (_broadcastTimerSeconds <= 0) {
+      final anyLive =
+          _broadcasts.any((b) => !remainingForBroadcast(b).isNegative);
+      if (!anyLive) {
         _broadcastTimer?.cancel();
         fetchBroadcasts();
       }
     });
   }
 
+  Future<bool> acceptBroadcastJob(BuildContext context, String jobId) async {
+    if (jobId.isEmpty ||
+        _broadcastAcceptBusy.contains(jobId) ||
+        _broadcastRejectBusy.contains(jobId)) {
+      return false;
+    }
+    _broadcastAcceptBusy.add(jobId);
+    notifyListeners();
+    try {
+      final token = await _sessionService.getToken(role: 'tech');
+      if (token == null) return false;
+      await _repository.acceptBroadcast(token, jobId);
+      await fetchAssignedOrders(affectLoading: false);
+      await fetchBroadcasts();
+      if (context.mounted) {
+        ToastService.showSuccess(context, 'Job accepted');
+      }
+      return true;
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, e.toString());
+      }
+      return false;
+    } finally {
+      _broadcastAcceptBusy.remove(jobId);
+      notifyListeners();
+    }
+  }
+
+  Future<bool> rejectBroadcastJob(BuildContext context, String jobId) async {
+    if (jobId.isEmpty ||
+        _broadcastAcceptBusy.contains(jobId) ||
+        _broadcastRejectBusy.contains(jobId)) {
+      return false;
+    }
+    _broadcastRejectBusy.add(jobId);
+    notifyListeners();
+    try {
+      final token = await _sessionService.getToken(role: 'tech');
+      if (token == null) return false;
+      await _repository.rejectBroadcast(token, jobId);
+      await fetchBroadcasts();
+      if (context.mounted) {
+        ToastService.showInfo(context, 'Broadcast declined');
+      }
+      return true;
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, e.toString());
+      }
+      return false;
+    } finally {
+      _broadcastRejectBusy.remove(jobId);
+      notifyListeners();
+    }
+  }
+
   Future<bool> acceptCurrentBroadcast() async {
     final jobId = primaryBroadcast?.jobId;
     if (jobId == null) return false;
-    return acceptOrder(jobId);
+    _acceptingJobId = jobId;
+    _acceptMessage = null;
+    notifyListeners();
+    try {
+      final token = await _sessionService.getToken(role: 'tech');
+      if (token == null) return false;
+      await _repository.acceptBroadcast(token, jobId);
+      await fetchAssignedOrders(affectLoading: false);
+      await fetchBroadcasts();
+      return true;
+    } catch (e) {
+      debugPrint('Error accepting broadcast: $e');
+      _acceptMessage = e.toString();
+      return false;
+    } finally {
+      _acceptingJobId = null;
+      notifyListeners();
+    }
   }
 
   Future<bool> rejectCurrentBroadcast() async {
     final jobId = primaryBroadcast?.jobId;
     if (jobId == null) return false;
-    return cancelOrder(jobId);
+    _cancellingJobId = jobId;
+    _cancelMessage = null;
+    notifyListeners();
+    try {
+      final token = await _sessionService.getToken(role: 'tech');
+      if (token == null) return false;
+      await _repository.rejectBroadcast(token, jobId);
+      await fetchBroadcasts();
+      return true;
+    } catch (e) {
+      debugPrint('Error rejecting broadcast: $e');
+      _cancelMessage = e.toString();
+      return false;
+    } finally {
+      _cancellingJobId = null;
+      notifyListeners();
+    }
   }
 
   Future<void> fetchTodayPerformance({bool affectLoading = true}) async {

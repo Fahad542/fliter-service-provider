@@ -873,7 +873,23 @@ class _PosTechnicianAssignmentViewState
                         builder: (context, vm, _) {
                           final posVm = context.watch<PosViewModel>();
                           final busy = _saveFlowBusy(vm);
-                          final waitActive = posVm.hasActiveBroadcastWaiting;
+                          final effectiveJobId = widget.jobId.isNotEmpty
+                              ? widget.jobId
+                              : (_cachedJobIdFromSave ?? '');
+                          final broadcastCooldown =
+                              posVm.isBroadcastCooldownActive(
+                            departmentId: widget.departmentId,
+                            jobId: effectiveJobId,
+                          );
+                          final cooldownKey = posVm.broadcastCooldownKey(
+                            departmentId: widget.departmentId,
+                            jobId: effectiveJobId,
+                          );
+                          final cooldownLabel = broadcastCooldown &&
+                                  cooldownKey.isNotEmpty
+                              ? posVm
+                                  .broadcastCooldownTimerLabelForKey(cooldownKey)
+                              : '';
                           return Row(
                             children: [
                               if (_canTapBroadcast) ...[
@@ -883,7 +899,7 @@ class _PosTechnicianAssignmentViewState
                                     child: ElevatedButton(
                                       onPressed: (_broadcastingDuty == null &&
                                               !busy &&
-                                              !waitActive)
+                                              !broadcastCooldown)
                                           ? () => _broadcastOnCall(context)
                                           : null,
                                       style: ElevatedButton.styleFrom(
@@ -906,7 +922,7 @@ class _PosTechnicianAssignmentViewState
                                                 strokeWidth: 2.5,
                                               ),
                                             )
-                                          : waitActive
+                                          : broadcastCooldown
                                               ? Row(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,
@@ -918,11 +934,16 @@ class _PosTechnicianAssignmentViewState
                                                           AppColors.secondaryLight,
                                                     ),
                                                     const SizedBox(width: 6),
-                                                    Text(
-                                                      'Waiting ${posVm.broadcastWaitingTimerLabel}',
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w800,
+                                                    Flexible(
+                                                      child: Text(
+                                                        'Wait $cooldownLabel',
+                                                        maxLines: 1,
+                                                        overflow:
+                                                            TextOverflow.ellipsis,
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                        ),
                                                       ),
                                                     ),
                                                   ],
@@ -999,6 +1020,7 @@ class _PosTechnicianAssignmentViewState
             context,
             jobId,
             dutyMode: 'on_call',
+            departmentId: widget.departmentId,
           );
     } finally {
       if (mounted) setState(() => _broadcastingDuty = null);

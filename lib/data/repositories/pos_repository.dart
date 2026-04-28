@@ -24,6 +24,8 @@ import '../../models/invoiced_orders_model.dart';
 import '../../models/submit_sales_return_model.dart';
 import '../../models/sales_return_list_model.dart';
 import '../../models/takeaway_models.dart';
+import '../../models/cashier_active_broadcasts_model.dart';
+import '../../models/inventory_sales_api_model.dart';
 
 
 class PosRepository {
@@ -198,6 +200,32 @@ class PosRepository {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// PATCH /cashier/technicians/:employeeId/online-status — cashier sets technician presence.
+  /// Body: `{ "status": "online" | "offline" }`.
+  Future<Map<String, dynamic>> patchCashierTechnicianOnlineStatus(
+    String token,
+    String employeeId,
+    String status,
+  ) async {
+    final endpoint =
+        ApiConstants.cashierTechnicianOnlineStatusEndpoint(employeeId);
+    final body = {'status': status};
+    if (kDebugMode) {
+      debugPrint('[POS] PATCH $endpoint body=$body');
+    }
+    final response = await _apiService.patch(
+      endpoint,
+      body,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response is Map<String, dynamic>) return response;
+    if (response is Map) return Map<String, dynamic>.from(response);
+    return <String, dynamic>{};
   }
 
   /// POST body includes `{ employeeIds: [...], sync: true }` when [ApiConstants.cashierAssignSendSyncReplace].
@@ -807,16 +835,40 @@ class PosRepository {
     }
   }
 
-  Future<BranchEmployeesResponse> getExpenseBranchEmployees(String token) async {
+  /// Cashier JWT — active employees for current branch from [GET /cashier/employees].
+  ///
+  /// [employeeType] optional: `'staff'` or `'technician'`. Omit to include all roles
+  /// reported by the API (aligned with expense dropdown behaviour).
+  Future<BranchEmployeesResponse> getCashierEmployees(
+    String token, {
+    String? employeeType,
+  }) async {
     try {
+      final trimmed = employeeType?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        final response = await _apiService.getWithQueryParams(
+          ApiConstants.cashierEmployeesEndpoint,
+          {'employeeType': trimmed},
+          token,
+        );
+        return BranchEmployeesResponse.fromDynamic(response);
+      }
       final response = await _apiService.get(
-        ApiConstants.expenseBranchEmployeesEndpoint,
-        headers: {'Authorization': 'Bearer $token'},
+        ApiConstants.cashierEmployeesEndpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
       return BranchEmployeesResponse.fromDynamic(response);
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Legacy name — same as [getCashierEmployees] without filter (backend kept old path).
+  Future<BranchEmployeesResponse> getExpenseBranchEmployees(String token) async {
+    return getCashierEmployees(token);
   }
 
   Future<CashierExpenseHistoryResponse> getExpenseHistory(
@@ -1095,6 +1147,59 @@ class PosRepository {
       return TakeawayCheckoutResponse.fromJson(
         Map<String, dynamic>.from(response as Map),
       );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<CashierActiveBroadcastsResponse> getCashierActiveBroadcasts(String token) async {
+    const endpoint = ApiConstants.cashierBroadcastsActiveEndpoint;
+    try {
+      final response = await _apiService.get(
+        endpoint,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return CashierActiveBroadcastsResponse.fromJson(
+        Map<String, dynamic>.from(response as Map),
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  String _dateOnlyParam(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// Product-level sales by day for the cashier branch. Backend: [ApiConstants.cashierInventorySalesEndpoint].
+  Future<InventorySalesResponse> getCashierInventorySales(
+    String token, {
+    required DateTime from,
+    required DateTime toInclusive,
+  }) async {
+    final fromDay = DateTime(from.year, from.month, from.day);
+    final toDay = DateTime(toInclusive.year, toInclusive.month, toInclusive.day);
+    final query = <String, String>{
+      'from': _dateOnlyParam(fromDay),
+      'to': _dateOnlyParam(toDay),
+    };
+    try {
+      final dynamic response = await _apiService.getWithQueryParams(
+        ApiConstants.cashierInventorySalesEndpoint,
+        query,
+        token,
+      );
+      final Map<String, dynamic> normalized;
+      if (response is List) {
+        normalized = {'sales': List<dynamic>.from(response)};
+      } else if (response is Map) {
+        normalized = Map<String, dynamic>.from(response);
+      } else {
+        normalized = {};
+      }
+      return InventorySalesResponse.fromJson(normalized);
     } catch (e) {
       rethrow;
     }

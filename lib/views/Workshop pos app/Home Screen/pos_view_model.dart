@@ -19,6 +19,7 @@ import '../../../models/invoiced_orders_model.dart';
 import '../../../models/expense_category_model.dart'; // Added
 import '../../../models/cashier_complete_job_model.dart'; // Added
 import '../../../models/cashier_corporate_accounts_api_model.dart';
+import '../Navbar/pos_shell.dart' show navigateToPosShellBroadcastTab;
 
 class _DepartmentPromoState {
   final String code;
@@ -110,7 +111,8 @@ class PosViewModel extends ChangeNotifier {
     if (token == null) return;
     _realtimeService.connect(token);
     _realtimeService.on(RealtimeService.eventCashierOrdersUpdated, _onOrdersUpdated);
-    _realtimeService.on(RealtimeService.eventCashierBroadcastUpdated, _onOrdersUpdated);
+    _realtimeService.on(
+        RealtimeService.eventCashierBroadcastUpdated, _onCashierBroadcastUpdated);
     _realtimeService.on(RealtimeService.eventCorporateWalkInOrderUpdated, _onOrdersUpdated);
     _realtimeService.on(RealtimeService.eventCashierCorporateWalkInApproved, _onOrdersUpdated);
     _realtimeService.on(RealtimeService.eventCashierCorporateWalkInRejected, _onOrdersUpdated);
@@ -127,6 +129,131 @@ class PosViewModel extends ChangeNotifier {
       }
       fetchOrders(silent: true);
     });
+  }
+
+  /// Technician accepted/rejected broadcast or window closed — end cashier broadcast timer / cooldown.
+  void _onCashierBroadcastUpdated(Map<String, dynamic> payload) {
+    _maybeEndBroadcastCooldownFromSocketPayload(payload);
+    _onOrdersUpdated(payload);
+  }
+
+  String? _parseJobIdFromCashierBroadcastPayload(Map<String, dynamic> payload) {
+    for (final key in ['jobId', 'job_id']) {
+      final v = payload[key]?.toString();
+      if (v != null && v.isNotEmpty) return v;
+    }
+    final job = payload['job'];
+    if (job is Map) {
+      final m = Map<String, dynamic>.from(job);
+      final id = m['id']?.toString();
+      if (id != null && id.isNotEmpty) return id;
+    }
+    final data = payload['data'];
+    if (data is Map) {
+      return _parseJobIdFromCashierBroadcastPayload(
+          Map<String, dynamic>.from(data));
+    }
+    final broadcast = payload['broadcast'];
+    if (broadcast is Map) {
+      return _parseJobIdFromCashierBroadcastPayload(
+          Map<String, dynamic>.from(broadcast));
+    }
+    return null;
+  }
+
+  bool _payloadIndicatesBroadcastEnded(Map<String, dynamic> payload) {
+    final event = (payload['event'] ??
+            payload['type'] ??
+            payload['action'] ??
+            '')
+        .toString()
+        .toLowerCase();
+    if (event.contains('broadcast') && event.contains('create')) return false;
+    if (event.contains('pending') &&
+        !event.contains('accept') &&
+        !event.contains('reject') &&
+        !event.contains('close')) {
+      return false;
+    }
+
+    if (event.contains('accept')) return true;
+    if (event.contains('assign') && !event.contains('unassign')) return true;
+    if (event.contains('reject')) return true;
+    if (event.contains('declin')) return true;
+    if (event.contains('expir')) return true;
+    if (event.contains('cancel')) return true;
+    if (event.contains('closed')) return true;
+
+    final reason =
+        (payload['reason'] ?? payload['closeReason'])?.toString().toLowerCase();
+    if (reason != null) {
+      if (reason.contains('accept')) return true;
+      if (reason.contains('reject')) return true;
+      if (reason.contains('declin')) return true;
+      if (reason.contains('expir')) return true;
+    }
+
+    final status = (payload['status'] ?? payload['broadcastStatus'])
+        ?.toString()
+        .toLowerCase();
+    if (status != null) {
+      if (status.contains('accept')) return true;
+      if (status.contains('assign')) return true;
+      if (status.contains('reject') || status.contains('declin')) return true;
+      if (status.contains('expir') || status.contains('cancel')) return true;
+      if (status == 'closed' || status == 'completed') return true;
+    }
+
+    if (payload['accepted'] == true) return true;
+    return false;
+  }
+
+  void _maybeEndBroadcastCooldownFromSocketPayload(Map<String, dynamic> payload) {
+    if (!_payloadIndicatesBroadcastEnded(payload)) return;
+    final jobId = _parseJobIdFromCashierBroadcastPayload(payload);
+    if (jobId == null || jobId.isEmpty) return;
+    final rawDept = payload['departmentId'] ?? payload['department_id'];
+    final departmentId = rawDept?.toString().trim();
+    _clearBroadcastCooldownKeys(
+      jobId: jobId,
+      departmentId: (departmentId != null && departmentId.isNotEmpty)
+          ? departmentId
+          : null,
+    );
+    notifyListeners();
+  }
+
+  /// When orders show a technician has taken the job (accept / in progress), drop broadcast cooldown.
+  void _syncBroadcastCooldownWithOrdersAfterFetch(List<PosOrder> orders) {
+    if (_broadcastCooldownEndsAt.isEmpty) return;
+    var cleared = false;
+    for (final o in orders) {
+      for (final j in o.jobs) {
+        if (j.isCancelledJob) continue;
+        final jobKey = 'job:${j.id}';
+        final deptId = j.departmentId?.trim();
+        final deptKey =
+            (deptId != null && deptId.isNotEmpty) ? 'dept:$deptId' : null;
+        final hasCooldown = _broadcastCooldownEndsAt.containsKey(jobKey) ||
+            (deptKey != null &&
+                _broadcastCooldownEndsAt.containsKey(deptKey));
+        if (!hasCooldown) continue;
+
+        final st = j.status.trim().toLowerCase();
+        final waitingOnTech = st.contains('waiting') &&
+            (st.contains('technician') ||
+                st.contains('acception') ||
+                st.contains('acceptance'));
+        if (waitingOnTech) continue;
+        if (j.distinctActiveTechnicians.isEmpty) continue;
+
+        _clearBroadcastCooldownKeys(jobId: j.id, departmentId: deptId);
+        cleared = true;
+      }
+    }
+    if (cleared) {
+      notifyListeners();
+    }
   }
 
   List<CashierCorporateAccount> _corporateAccounts = [];
@@ -189,6 +316,7 @@ class PosViewModel extends ChangeNotifier {
   bool? _invoicePaymentIsCorporate;
   final Set<PaymentMethod> _invoicePaymentMethods = <PaymentMethod>{};
   final Map<PaymentMethod, double> _invoicePaymentAmounts = <PaymentMethod, double>{};
+  final Set<String> _invoicePaymentEmployeeIds = <String>{};
   bool _invoicePaymentWasUserEdited = false;
 
   /// Per–walk-in-order billing drafts (Add customer details / Final Review). Not global VM bleed.
@@ -219,6 +347,8 @@ class PosViewModel extends ChangeNotifier {
       Set<PaymentMethod>.unmodifiable(_invoicePaymentMethods);
   Map<PaymentMethod, double> get invoicePaymentAmounts =>
       Map<PaymentMethod, double>.unmodifiable(_invoicePaymentAmounts);
+  Set<String> get invoicePaymentEmployeeIds =>
+      Set<String>.unmodifiable(_invoicePaymentEmployeeIds);
   bool get invoicePaymentSelectionReady =>
       _invoicePaymentIsCorporate != null && _invoicePaymentMethods.isNotEmpty;
 
@@ -289,6 +419,7 @@ class PosViewModel extends ChangeNotifier {
       _invoicePaymentIsCorporate = null;
       _invoicePaymentMethods.clear();
       _invoicePaymentAmounts.clear();
+      _invoicePaymentEmployeeIds.clear();
       _invoicePaymentWasUserEdited = false;
     }
     _selectedOrder = order;
@@ -311,6 +442,7 @@ class PosViewModel extends ChangeNotifier {
       final preferred = _preferredCorporatePaymentMethodForOrder(o);
       final method = preferred ?? PaymentMethod.monthlyBilling;
       _invoicePaymentIsCorporate = true;
+      _invoicePaymentEmployeeIds.clear();
       _invoicePaymentMethods
         ..clear()
         ..add(method);
@@ -333,6 +465,7 @@ class PosViewModel extends ChangeNotifier {
       final preferred = _preferredCorporatePaymentMethodForOrder(order);
       final method = preferred ?? PaymentMethod.monthlyBilling;
       _invoicePaymentIsCorporate = true;
+      _invoicePaymentEmployeeIds.clear();
       _invoicePaymentMethods
         ..clear()
         ..add(method);
@@ -398,6 +531,7 @@ class PosViewModel extends ChangeNotifier {
     if (k.contains('wallet')) return PaymentMethod.wallet;
     if (k.contains('tabby')) return PaymentMethod.tabby;
     if (k.contains('tamara')) return PaymentMethod.tamara;
+    if (k.contains('employee')) return PaymentMethod.employees;
     return null;
   }
 
@@ -458,6 +592,7 @@ class PosViewModel extends ChangeNotifier {
     required bool isCorporate,
     required Set<PaymentMethod> payments,
     Map<PaymentMethod, double> paymentAmounts = const {},
+    Set<String> employeeIds = const <String>{},
   }) {
     _invoicePaymentWasUserEdited = true;
     _invoicePaymentIsCorporate = isCorporate;
@@ -467,6 +602,26 @@ class PosViewModel extends ChangeNotifier {
     _invoicePaymentAmounts
       ..clear()
       ..addAll(paymentAmounts);
+    _invoicePaymentEmployeeIds.clear();
+    if (payments.contains(PaymentMethod.employees)) {
+      for (final id in employeeIds) {
+        if (id.trim().isNotEmpty) {
+          _invoicePaymentEmployeeIds.add(id);
+          break;
+        }
+      }
+    }
+    notifyListeners();
+  }
+
+  /// Product grid sidebar: prefill Employees payment (`employeeIds`) without changing methods.
+  void setInvoicePaymentEmployeeSidebarId(String? employeeId) {
+    _invoicePaymentEmployeeIds.clear();
+    final id = employeeId?.trim();
+    if (id != null && id.isNotEmpty) {
+      _invoicePaymentEmployeeIds.add(id);
+    }
+    _invoicePaymentWasUserEdited = true;
     notifyListeners();
   }
 
@@ -475,6 +630,7 @@ class PosViewModel extends ChangeNotifier {
     _invoicePaymentIsCorporate = null;
     _invoicePaymentMethods.clear();
     _invoicePaymentAmounts.clear();
+    _invoicePaymentEmployeeIds.clear();
   }
 
   /// Merge technicians from POST /cashier/job/:id/assign before [fetchOrders] returns.
@@ -557,7 +713,8 @@ class PosViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _realtimeService.off(RealtimeService.eventCashierOrdersUpdated, _onOrdersUpdated);
-    _realtimeService.off(RealtimeService.eventCashierBroadcastUpdated, _onOrdersUpdated);
+    _realtimeService.off(
+        RealtimeService.eventCashierBroadcastUpdated, _onCashierBroadcastUpdated);
     _realtimeService.off(RealtimeService.eventCorporateWalkInOrderUpdated, _onOrdersUpdated);
     _realtimeService.off(RealtimeService.eventCashierCorporateWalkInApproved, _onOrdersUpdated);
     _realtimeService.off(RealtimeService.eventCashierCorporateWalkInRejected, _onOrdersUpdated);
@@ -568,7 +725,7 @@ class PosViewModel extends ChangeNotifier {
     _mainTabGlobalDiscountTextController.dispose();
     _searchDebounce?.cancel();
     _ordersRealtimeDebounce?.cancel();
-    _broadcastWaitingTicker?.cancel();
+    _broadcastCooldownTicker?.cancel();
     super.dispose();
   }
 
@@ -581,59 +738,108 @@ class PosViewModel extends ChangeNotifier {
 
   /// Coalesce rapid socket events (e.g. multiple job updates) into one list refresh.
   Timer? _ordersRealtimeDebounce;
-  Timer? _broadcastWaitingTicker;
-  DateTime? _broadcastWaitingEndsAt;
-  String? _broadcastWaitingJobId;
+  /// Per department (preferred) or per job: no second broadcast for 5 minutes.
+  final Map<String, DateTime> _broadcastCooldownEndsAt = {};
+  Timer? _broadcastCooldownTicker;
+  String? _latestBroadcastCooldownKey;
 
   DateTime? _lastCashierOrdersFetchedAt;
 
-  bool get hasActiveBroadcastWaiting {
-    final endsAt = _broadcastWaitingEndsAt;
-    if (endsAt == null) return false;
-    return DateTime.now().isBefore(endsAt);
+  /// Cooldown scope: `dept:<id>` when [departmentId] is set, else `job:<jobId>`.
+  String broadcastCooldownKey({
+    String? departmentId,
+    required String jobId,
+  }) {
+    final d = departmentId?.trim();
+    if (d != null && d.isNotEmpty) return 'dept:$d';
+    final j = jobId.trim();
+    if (j.isEmpty) return '';
+    return 'job:$j';
   }
 
-  Duration get broadcastWaitingRemaining {
-    final endsAt = _broadcastWaitingEndsAt;
-    if (endsAt == null) return Duration.zero;
-    final left = endsAt.difference(DateTime.now());
+  bool isBroadcastCooldownActiveForKey(String key) {
+    if (key.isEmpty) return false;
+    final end = _broadcastCooldownEndsAt[key];
+    if (end == null) return false;
+    if (DateTime.now().isBefore(end)) return true;
+    _broadcastCooldownEndsAt.remove(key);
+    return false;
+  }
+
+  bool isBroadcastCooldownActive({
+    String? departmentId,
+    required String jobId,
+  }) {
+    final ck = broadcastCooldownKey(departmentId: departmentId, jobId: jobId);
+    return isBroadcastCooldownActiveForKey(ck);
+  }
+
+  Duration broadcastCooldownRemainingForKey(String key) {
+    if (key.isEmpty) return Duration.zero;
+    final end = _broadcastCooldownEndsAt[key];
+    if (end == null) return Duration.zero;
+    final left = end.difference(DateTime.now());
     return left.isNegative ? Duration.zero : left;
   }
 
-  String get broadcastWaitingTimerLabel {
-    final left = broadcastWaitingRemaining;
+  String broadcastCooldownTimerLabelForKey(String key) {
+    final left = broadcastCooldownRemainingForKey(key);
     final m = left.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = left.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
   }
 
-  String? get broadcastWaitingJobId => _broadcastWaitingJobId;
-
-  void startBroadcastWaiting({
-    required String jobId,
-    Duration duration = const Duration(minutes: 5),
-  }) {
-    if (jobId.trim().isEmpty) return;
-    _broadcastWaitingTicker?.cancel();
-    _broadcastWaitingJobId = jobId.trim();
-    _broadcastWaitingEndsAt = DateTime.now().add(duration);
+  void _registerBroadcastCooldown(String key) {
+    if (key.isEmpty) return;
+    _broadcastCooldownEndsAt[key] =
+        DateTime.now().add(const Duration(minutes: 5));
+    _latestBroadcastCooldownKey = key;
+    _ensureBroadcastCooldownTicker();
     notifyListeners();
-    _broadcastWaitingTicker = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!hasActiveBroadcastWaiting) {
-        t.cancel();
-        _broadcastWaitingTicker = null;
-        _broadcastWaitingEndsAt = null;
-        _broadcastWaitingJobId = null;
+  }
+
+  void _ensureBroadcastCooldownTicker() {
+    if (_broadcastCooldownTicker != null) return;
+    _broadcastCooldownTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      final now = DateTime.now();
+      _broadcastCooldownEndsAt
+          .removeWhere((_, end) => !now.isBefore(end));
+      if (_latestBroadcastCooldownKey != null &&
+          !_broadcastCooldownEndsAt
+              .containsKey(_latestBroadcastCooldownKey)) {
+        _latestBroadcastCooldownKey = null;
       }
       notifyListeners();
+      if (_broadcastCooldownEndsAt.isEmpty) {
+        _broadcastCooldownTicker?.cancel();
+        _broadcastCooldownTicker = null;
+      }
     });
   }
 
-  void clearBroadcastWaiting() {
-    _broadcastWaitingTicker?.cancel();
-    _broadcastWaitingTicker = null;
-    _broadcastWaitingEndsAt = null;
-    _broadcastWaitingJobId = null;
+  void _clearBroadcastCooldownKeys({
+    required String jobId,
+    String? departmentId,
+  }) {
+    final j = jobId.trim();
+    if (j.isNotEmpty) {
+      _broadcastCooldownEndsAt.remove('job:$j');
+    }
+    final d = departmentId?.trim();
+    if (d != null && d.isNotEmpty) {
+      _broadcastCooldownEndsAt.remove('dept:$d');
+    }
+    if (_latestBroadcastCooldownKey != null &&
+        !_broadcastCooldownEndsAt.containsKey(_latestBroadcastCooldownKey)) {
+      _latestBroadcastCooldownKey =
+          _broadcastCooldownEndsAt.keys.isNotEmpty
+              ? _broadcastCooldownEndsAt.keys.first
+              : null;
+    }
+    if (_broadcastCooldownEndsAt.isEmpty) {
+      _broadcastCooldownTicker?.cancel();
+      _broadcastCooldownTicker = null;
+    }
     notifyListeners();
   }
 
@@ -2530,6 +2736,7 @@ class PosViewModel extends ChangeNotifier {
         _orders = response.orders;
         _orderStats = response.stats;
         _lastCashierOrdersFetchedAt = DateTime.now();
+        _syncBroadcastCooldownWithOrdersAfterFetch(_orders);
 
         if (_editingOrder != null) {
           try {
@@ -3151,10 +3358,16 @@ class PosViewModel extends ChangeNotifier {
         final amount =
             double.tryParse(p['amount']?.toString() ?? '') ?? 0.0;
         if (amount <= 0) continue;
-        normalizedPayments.add(<String, dynamic>{
+        final entry = <String, dynamic>{
           'method': method,
           'amount': amount,
-        });
+        };
+        final idsRaw = p['employeeIds'];
+        if (idsRaw is List && idsRaw.isNotEmpty) {
+          entry['employeeIds'] =
+              idsRaw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+        }
+        normalizedPayments.add(entry);
       }
     }
 
@@ -3537,12 +3750,26 @@ class PosViewModel extends ChangeNotifier {
     BuildContext context,
     String jobId, {
     required String dutyMode,
+    String? departmentId,
   }) async {
     if (jobId.isEmpty) {
       if (context.mounted) {
         ToastService.showError(
           context,
           'Save the order first before broadcasting.',
+        );
+      }
+      return false;
+    }
+    final cooldownKey =
+        broadcastCooldownKey(departmentId: departmentId, jobId: jobId);
+    if (cooldownKey.isNotEmpty &&
+        isBroadcastCooldownActiveForKey(cooldownKey)) {
+      if (context.mounted) {
+        final wait = broadcastCooldownTimerLabelForKey(cooldownKey);
+        ToastService.showError(
+          context,
+          'Please wait $wait before broadcasting this department again.',
         );
       }
       return false;
@@ -3560,8 +3787,13 @@ class PosViewModel extends ChangeNotifier {
           res['message']?.toString() ?? 'Broadcast sent to technicians',
         );
       }
-      startBroadcastWaiting(jobId: jobId);
+      if (cooldownKey.isNotEmpty) {
+        _registerBroadcastCooldown(cooldownKey);
+      }
       await fetchOrders(silent: true);
+      if (context.mounted) {
+        navigateToPosShellBroadcastTab(context);
+      }
       return true;
     } catch (e) {
       if (context.mounted) {
@@ -3572,7 +3804,11 @@ class PosViewModel extends ChangeNotifier {
   }
 
   /// Cancel an active broadcast and return job to pending assignment.
-  Future<bool> cancelJobBroadcast(BuildContext context, String jobId) async {
+  Future<bool> cancelJobBroadcast(
+    BuildContext context,
+    String jobId, {
+    String? departmentId,
+  }) async {
     if (jobId.isEmpty) return false;
     try {
       final token = await sessionService.getToken();
@@ -3587,7 +3823,7 @@ class PosViewModel extends ChangeNotifier {
           res['message']?.toString() ?? 'Broadcast cancelled',
         );
       }
-      clearBroadcastWaiting();
+      _clearBroadcastCooldownKeys(jobId: jobId, departmentId: departmentId);
       await fetchOrders(silent: true);
       return true;
     } catch (e) {

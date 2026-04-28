@@ -526,15 +526,36 @@ class OwnerRepository {
     }
   }
 
-  Future<dynamic> getPosMonitoring(String token) async {
+  /// Owner POS monitoring. Optional [from]/[to] as calendar days `yyyy-MM-dd` (passed as query params).
+  Future<dynamic> getPosMonitoring(
+    String token, {
+    DateTime? from,
+    DateTime? to,
+  }) async {
     try {
-      final response = await _apiService.get(
+      String ymd(DateTime d) =>
+          '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+
+      final qp = <String, String>{};
+      if (from != null) qp['from'] = ymd(from);
+      if (to != null) qp['to'] = ymd(to);
+
+      if (qp.isEmpty) {
+        final response = await _apiService.get(
+          ApiConstants.posMonitoringEndpoint,
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+        return response;
+      }
+      return await _apiService.getWithQueryParams(
         ApiConstants.posMonitoringEndpoint,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        qp,
+        token,
       );
-      return response;
     } catch (e) {
       rethrow;
     }

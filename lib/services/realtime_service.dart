@@ -4,7 +4,12 @@ import '../data/network/api_constants.dart';
 
 typedef RealtimeEventCallback = void Function(Map<String, dynamic> payload);
 
+/// Shared socket so cashier VMs (e.g. [PosViewModel], broadcast list) get the same connection.
 class RealtimeService {
+  RealtimeService._();
+  static final RealtimeService _instance = RealtimeService._();
+  factory RealtimeService() => _instance;
+
   static const String _namespace = '/realtime';
   static const String _socketPath = '/socket.io';
 
@@ -27,7 +32,7 @@ class RealtimeService {
   final Map<String, List<RealtimeEventCallback>> _listeners = {};
 
   void connect(String token) {
-    if (_socket != null && _isConnected) return;
+    if (_socket != null) return;
 
     _socket = IO.io(
       '${ApiConstants.baseUrl}$_namespace',

@@ -82,6 +82,8 @@ class PosTechnician {
   PosTechnician copyWith({
     int? slotsUsed,
     int? totalSlots,
+    PosTechnicianStatus? status,
+    bool? assignable,
   }) {
     return PosTechnician(
       id: id,
@@ -97,10 +99,10 @@ class PosTechnician {
       isActive: isActive,
       isEligible: isEligible,
       departments: departments,
-      status: status,
+      status: status ?? this.status,
       slotsUsed: slotsUsed ?? this.slotsUsed,
       totalSlots: totalSlots ?? this.totalSlots,
-      assignable: assignable,
+      assignable: assignable ?? this.assignable,
     );
   }
 

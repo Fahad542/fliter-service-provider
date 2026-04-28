@@ -31,6 +31,8 @@ import 'views/Workshop pos app/Product Grid/product_grid_view_model.dart';
 import 'views/Workshop pos app/Sales Return/sales_return_view_model.dart';
 import 'views/Workshop pos app/Sales Return/sales_return_list_view_model.dart';
 import 'views/Workshop pos app/Takeaway/takeaway_view_model.dart';
+import 'views/Workshop pos app/Broadcast/cashier_broadcast_view_model.dart';
+import 'views/Workshop pos app/Inventory Sales/inventory_sales_view_model.dart';
 import 'views/Workshop Owner/Dashboard/owner_dashboard_view_model.dart';
 import 'views/Workshop Owner/Branches/branch_management_view_model.dart';
 import 'views/Workshop Owner/Employees/employee_management_view_model.dart';
@@ -192,7 +194,31 @@ class _MyAppState extends State<MyApp> {
                 sessionService: sessionService,
               ),
         ),
-        
+        ChangeNotifierProxyProvider2<PosRepository, SessionService, CashierBroadcastViewModel>(
+          create: (context) => CashierBroadcastViewModel(
+            posRepository: context.read<PosRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, posRepo, sessionService, previous) =>
+              previous ??
+              CashierBroadcastViewModel(
+                posRepository: posRepo,
+                sessionService: sessionService,
+              ),
+        ),
+        ChangeNotifierProxyProvider2<PosRepository, SessionService, InventorySalesViewModel>(
+          create: (context) => InventorySalesViewModel(
+            posRepository: context.read<PosRepository>(),
+            sessionService: context.read<SessionService>(),
+          ),
+          update: (context, posRepo, sessionService, previous) =>
+              previous ??
+              InventorySalesViewModel(
+                posRepository: posRepo,
+                sessionService: sessionService,
+              ),
+        ),
+
         ChangeNotifierProxyProvider2<OwnerRepository, SessionService, OwnerDataService>(
           create: (context) => OwnerDataService(
             ownerRepository: context.read<OwnerRepository>(),

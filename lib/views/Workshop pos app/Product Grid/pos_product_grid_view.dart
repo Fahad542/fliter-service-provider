@@ -13,6 +13,9 @@ import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 
+import '../../../data/repositories/pos_repository.dart';
+import '../../../models/cashier_expense_models.dart';
+import '../../../services/session_service.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Navbar/pos_shell.dart';
 import '../Promo/promo_code_dialog.dart';
@@ -21,6 +24,14 @@ import '../Technician Assignment/pos_technician_assignment_view.dart';
 import '../Department/department_view_model.dart';
 import '../Department/pos_department_view.dart';
 import 'product_grid_view_model.dart';
+
+/// Same typography as order list empty state ([PosOrdersView] `_OrdersEmptyStateBody`).
+TextStyle _posCatalogEmptyMessageTextStyle() => TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+      color: Colors.grey.shade500,
+      height: 1.35,
+    );
 
 class PosProductGridView extends StatefulWidget {
   final String? departmentName;
@@ -741,20 +752,22 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           child: SizedBox(
             width: constraints.maxWidth,
             height: constraints.maxHeight,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: _buildProductSection(true),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 360,
-                  child: _buildLiveInvoicePanel(vm),
-                ),
-              ],
-            ),
+            child: vm.allProducts.isEmpty
+                ? _buildEmptyState(vm)
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: _buildProductSection(true),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 360,
+                        child: _buildLiveInvoicePanel(vm),
+                      ),
+                    ],
+                  ),
           ),
         );
       },
@@ -1066,6 +1079,27 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     ),
                   ],
                 ),
+                if (!widget.isReadOnly) ...[
+                  const SizedBox(height: 12),
+                  Divider(height: 1, color: Colors.grey.shade200),
+                  const SizedBox(height: 10),
+                  Text(
+                    'EMPLOYEES',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.55,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Select one employee for Employees payment (shown with type). Saves with your order.',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600, height: 1.3),
+                  ),
+                  const SizedBox(height: 8),
+                  _SidebarEmployeesStrip(isTablet: false),
+                ],
                 if (!widget.isReadOnly && !widget.isMainTab) ...[
                   const SizedBox(height: 12),
                   SizedBox(
@@ -1617,6 +1651,31 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     ),
                                   ],
                                 ),
+                                if (!widget.isReadOnly) ...[
+                                  SizedBox(height: isTablet ? 12 : 10),
+                                  Divider(height: 1, color: Colors.grey.shade200),
+                                  SizedBox(height: isTablet ? 10 : 8),
+                                  Text(
+                                    'EMPLOYEES',
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 10 : 9,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.55,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                  SizedBox(height: isTablet ? 6 : 4),
+                                  Text(
+                                    'Select one employee for Employees payment (with type).',
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 13 : 11,
+                                      color: Colors.grey.shade600,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                  SizedBox(height: isTablet ? 10 : 8),
+                                  _SidebarEmployeesStrip(isTablet: isTablet),
+                                ],
                               ],
                             ),
                           );
@@ -1948,12 +2007,16 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           SizedBox(height: isTablet ? 10 : 8),
           Expanded(
             child: vm.allProducts.isEmpty
-                ? _buildEmptyState(vm, true)
+                ? _buildEmptyState(vm)
                 : filteredProducts.isEmpty
                     ? Center(
-                        child: Text(
-                          'No products match your search.',
-                          style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          child: Text(
+                            'No products match your search.',
+                            textAlign: TextAlign.center,
+                            style: _posCatalogEmptyMessageTextStyle(),
+                          ),
                         ),
                       )
                     : Builder(
@@ -2046,12 +2109,16 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         const SizedBox(height: 8),
         Expanded(
           child: vm.allProducts.isEmpty
-              ? _buildEmptyState(vm, false)
+              ? _buildEmptyState(vm)
               : filteredProducts.isEmpty
                   ? Center(
-                      child: Text(
-                        'No products match your search.',
-                        style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 28),
+                        child: Text(
+                          'No products match your search.',
+                          textAlign: TextAlign.center,
+                          style: _posCatalogEmptyMessageTextStyle(),
+                        ),
                       ),
                     )
                   : ListView.separated(
@@ -2251,18 +2318,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     );
   }
 
-  Widget _buildEmptyState(PosViewModel vm, bool isTablet) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            vm.selectedProductType == 'Services' ? 'No services found' : 'No products found',
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+  Widget _buildEmptyState(PosViewModel vm) {
+    return ColoredBox(
+      color: const Color(0xFFFBFBFD),
+      child: SizedBox.expand(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Text(
+              vm.selectedProductType == 'Services' ? 'No services found' : 'No products found',
+              textAlign: TextAlign.center,
+              style: _posCatalogEmptyMessageTextStyle(),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -3268,6 +3337,199 @@ class _InlineGridQtyFieldState extends State<_InlineGridQtyField> {
       height: 24,
       width: 40,
       child: field,
+    );
+  }
+}
+
+/// Horizontal employee picker + type — product grid totals / invoice sheet (`GET /cashier/employees`).
+class _SidebarEmployeesStrip extends StatefulWidget {
+  final bool isTablet;
+
+  const _SidebarEmployeesStrip({this.isTablet = false});
+
+  @override
+  State<_SidebarEmployeesStrip> createState() => _SidebarEmployeesStripState();
+}
+
+class _SidebarEmployeesStripState extends State<_SidebarEmployeesStrip> {
+  List<BranchEmployee> _employees = [];
+  bool _loading = false;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmployees();
+  }
+
+  Future<void> _loadEmployees() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
+    try {
+      final session = Provider.of<SessionService>(context, listen: false);
+      final repo = Provider.of<PosRepository>(context, listen: false);
+      final token = await session.getToken(role: 'cashier');
+      if (!mounted) return;
+      if (token == null) throw Exception('Session');
+      final res = await repo.getCashierEmployees(token);
+      if (!mounted) return;
+      setState(() {
+        _employees = res.employees;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _failed = true;
+      });
+    }
+  }
+
+  double get _chipW => widget.isTablet ? 152 : 128;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading && _employees.isEmpty) {
+      return SizedBox(
+        height: widget.isTablet ? 44 : 40,
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+    if (_failed && _employees.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Could not load employees.',
+            style: TextStyle(color: Colors.red.shade700, fontSize: 11),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _employees.clear();
+                _failed = false;
+              });
+              _loadEmployees();
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      );
+    }
+    if (_employees.isEmpty) {
+      return Text(
+        'No branch employees.',
+        style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+      );
+    }
+
+    final fsName = widget.isTablet ? 12.8 : 11.8;
+    final fsType = widget.isTablet ? 10.8 : 9.8;
+
+    return Consumer<PosViewModel>(
+      builder: (context, vm, _) {
+        final ids = vm.invoicePaymentEmployeeIds;
+        final selectedId = ids.isEmpty ? null : ids.first;
+        return SizedBox(
+          height: widget.isTablet ? 112 : 100,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            itemCount: _employees.length,
+            separatorBuilder: (_, __) => SizedBox(width: widget.isTablet ? 8 : 6),
+            itemBuilder: (context, i) {
+              final e = _employees[i];
+              final name = e.name.trim().isNotEmpty ? e.name.trim() : e.id;
+              final typeLabel = e.employeeTypeDisplay;
+              final selected = selectedId == e.id;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    vm.setInvoicePaymentEmployeeSidebarId(
+                      selected ? null : e.id,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: _chipW,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.primaryLight.withValues(alpha: 0.45)
+                          : const Color(0xFFF8F9FC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color:
+                            selected ? AppColors.primaryLight : const Color(0xFFE2E8F0),
+                        width: selected ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              selected
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_off,
+                              size: widget.isTablet ? 17 : 15,
+                              color: selected
+                                  ? AppColors.secondaryLight
+                                  : Colors.grey.shade400,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: fsName,
+                                  fontWeight: FontWeight.w800,
+                                  color: selected
+                                      ? AppColors.secondaryLight
+                                      : Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          typeLabel.isNotEmpty ? typeLabel : '—',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: fsType,
+                            fontWeight: FontWeight.w600,
+                            color: typeLabel.isNotEmpty
+                                ? Colors.grey.shade600
+                                : Colors.grey.shade400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

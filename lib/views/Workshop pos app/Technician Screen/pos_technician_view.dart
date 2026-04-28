@@ -201,6 +201,8 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
                                 24,
                               ),
                               child: _buildTechnicianGrid(
+                                context,
+                                vm,
                                 technicians,
                                 isTablet,
                               ),
@@ -230,6 +232,8 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
   }
 
   Widget _buildTechnicianGrid(
+    BuildContext context,
+    TechnicianViewModel vm,
     List<PosTechnician> technicians,
     bool isTablet,
   ) {
@@ -249,10 +253,14 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         mainAxisSpacing: isTablet ? 18 : 12,
       ),
       itemBuilder: (context, index) {
+        final tech = technicians[index];
         return TechnicianCard(
-          tech: technicians[index],
-          // On mobile portrait always use compact to avoid overflow
+          tech: tech,
           compact: !isTablet && orientation == Orientation.portrait,
+          showPresenceToggle: true,
+          presenceBusy: vm.isPresenceToggleBusy(tech.id),
+          onPresenceChanged: (online) =>
+              vm.setTechnicianPresence(context, tech.id, online),
         );
       },
     );

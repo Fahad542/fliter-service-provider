@@ -268,43 +268,71 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           ),
 
           const SizedBox(height: 20),
-          _buildInputField(
-            label: 'Physical Cash Amount',
-            controller: closingVm.cashController,
-            icon: Icons.payments_outlined,
-            hint: summary != null ? 'Expected: SAR ${summary.systemCash.toStringAsFixed(2)}' : null,
-            onChanged: (_) => closingVm.updatePhysicalCount(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildInputField(
+                  label: 'Physical Cash Amount',
+                  controller: closingVm.cashController,
+                  icon: Icons.payments_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemCash.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildInputField(
+                  label: 'Bank / Card Slips',
+                  controller: closingVm.bankController,
+                  icon: Icons.credit_card_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemBank.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          _buildInputField(
-            label: 'Bank / Card Slips',
-            controller: closingVm.bankController,
-            icon: Icons.credit_card_outlined,
-            hint: summary != null ? 'Expected: SAR ${summary.systemBank.toStringAsFixed(2)}' : null,
-            onChanged: (_) => closingVm.updatePhysicalCount(),
-          ),
-          const SizedBox(height: 16),
-          _buildInputField(
-            label: 'Corporate Invoices',
-            controller: closingVm.corporateController,
-            icon: Icons.business_outlined,
-            hint: summary != null ? 'Expected: SAR ${summary.systemCorporate.toStringAsFixed(2)}' : null,
-            onChanged: (_) => closingVm.updatePhysicalCount(),
-          ),
-          const SizedBox(height: 16),
-          _buildInputField(
-            label: 'Tamara Credits',
-            controller: closingVm.tamaraController,
-            icon: Icons.receipt_long_outlined,
-            hint: summary != null ? 'Expected: SAR ${summary.systemTamara.toStringAsFixed(2)}' : null,
-            onChanged: (_) => closingVm.updatePhysicalCount(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildInputField(
+                  label: 'Corporate Invoices',
+                  controller: closingVm.corporateController,
+                  icon: Icons.business_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemCorporate.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildInputField(
+                  label: 'Tamara Credits',
+                  controller: closingVm.tamaraController,
+                  icon: Icons.receipt_long_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemTamara.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           _buildInputField(
             label: 'Tabby Credits',
             controller: closingVm.tabbyController,
             icon: Icons.receipt_long_outlined,
-            hint: summary != null ? 'Expected: SAR ${summary.systemTabby.toStringAsFixed(2)}' : null,
+            hint: summary != null
+                ? 'Expected: SAR ${summary.systemTabby.toStringAsFixed(2)}'
+                : null,
             onChanged: (_) => closingVm.updatePhysicalCount(),
           ),
           const SizedBox(height: 16),

@@ -193,7 +193,7 @@ class TechnicianRepository {
     }
   }
 
-  Future<List<TechBroadcast>> getBroadcasts(String token) async {
+  Future<TechnicianBroadcastsFetchResult> getBroadcasts(String token) async {
     try {
       final response = await _apiService.get(
         ApiConstants.technicianBroadcastsEndpoint,
@@ -202,19 +202,55 @@ class TechnicianRepository {
           'Content-Type': 'application/json',
         },
       );
-      final raw = response['broadcasts'] ?? response['data'] ?? response['items'];
-      if (raw is! List) return [];
-      return raw
-          .map((e) {
-            if (e is! Map) return null;
-            return TechBroadcast.fromJson(Map<String, dynamic>.from(e));
-          })
-          .whereType<TechBroadcast>()
-          .where((b) => b.jobId.isNotEmpty)
-          .toList();
+      final map = response is Map
+          ? Map<String, dynamic>.from(response)
+          : <String, dynamic>{};
+      final raw = map['broadcasts'] ?? map['data'] ?? map['items'];
+      final list = <TechBroadcast>[];
+      if (raw is List) {
+        for (final e in raw) {
+          if (e is! Map) continue;
+          final b = TechBroadcast.fromJson(Map<String, dynamic>.from(e));
+          if (b.jobId.isNotEmpty) list.add(b);
+        }
+      }
+      return TechnicianBroadcastsFetchResult(
+        broadcasts: list,
+        windowSeconds: _parseInt(map['windowSeconds'], 300),
+        soonThresholdSeconds: _parseInt(map['soonThresholdSeconds'], 60),
+        activeCount: _parseInt(map['activeCount'], list.length),
+      );
     } catch (e) {
       rethrow;
     }
+  }
+
+  int _parseInt(dynamic v, int fallback) {
+    if (v is int) return v;
+    if (v is double) return v.round();
+    return int.tryParse(v?.toString() ?? '') ?? fallback;
+  }
+
+  Future<void> acceptBroadcast(String token, String jobId) async {
+    await _apiService.post(
+      ApiConstants.technicianBroadcastAcceptEndpoint(jobId),
+      {},
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+  }
+
+  Future<void> rejectBroadcast(String token, String jobId) async {
+    await _apiService.post(
+      ApiConstants.technicianBroadcastRejectEndpoint(jobId),
+      {},
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
   }
 
   static String _commissionQueryDate(DateTime d) {

@@ -438,6 +438,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
         initialIsCorporate: vm.invoicePaymentIsCorporate,
         initialPayments: vm.invoicePaymentMethods,
         initialPaymentAmounts: vm.invoicePaymentAmounts,
+        initialEmployeeIds: vm.invoicePaymentEmployeeIds,
         totalAmount: order.draftPosOrderTotalDisplay,
       );
       if (!context.mounted) return;
@@ -446,6 +447,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
           isCorporate: result.isCorporate,
           payments: result.payments,
           paymentAmounts: result.paymentAmounts,
+          employeeIds: result.employeeIds,
         );
         ToastService.showSuccess(context, 'Payment method saved');
       }
@@ -1509,7 +1511,9 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _isBusy ? null : () => Navigator.pop(context),
+                    onPressed: () {
+                      if (!_isBusy) Navigator.of(context).pop();
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.secondaryLight,

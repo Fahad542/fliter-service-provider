@@ -4436,7 +4436,19 @@ class InvoiceDialog extends StatelessWidget {
 class TechnicianCard extends StatelessWidget {
   final PosTechnician tech;
   final bool compact;
-  const TechnicianCard({super.key, required this.tech, this.compact = false});
+  /// When true (e.g. POS Technicians tab), shows online/offline switch.
+  final bool showPresenceToggle;
+  final bool presenceBusy;
+  final ValueChanged<bool>? onPresenceChanged;
+
+  const TechnicianCard({
+    super.key,
+    required this.tech,
+    this.compact = false,
+    this.showPresenceToggle = false,
+    this.presenceBusy = false,
+    this.onPresenceChanged,
+  });
 
   Color _getStatusColor(String status) {
     final lowerStatus = status.toLowerCase();
@@ -4514,17 +4526,81 @@ class TechnicianCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  lastSeenText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: isTablet ? 10.0 : 9.0,
-                    fontWeight: FontWeight.w600,
-                    color: tech.isOnline
-                        ? Colors.green.shade700
-                        : Colors.grey.shade600,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        lastSeenText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isTablet ? 10.0 : 9.0,
+                          fontWeight: FontWeight.w600,
+                          color: tech.isOnline
+                              ? Colors.green.shade700
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    if (showPresenceToggle && onPresenceChanged != null)
+                      SizedBox(
+                        height: compact ? 30 : 34,
+                        width: presenceBusy ? (compact ? 36 : 40) : null,
+                        child: presenceBusy
+                            ? Center(
+                                child: SizedBox(
+                                  width: compact ? 20 : 22,
+                                  height: compact ? 20 : 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: AppColors.primaryLight,
+                                  ),
+                                ),
+                              )
+                            : FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: Switch(
+                                  value: tech.isOnline,
+                                  onChanged: onPresenceChanged,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  thumbColor:
+                                      MaterialStateProperty.resolveWith(
+                                    (states) {
+                                      if (states
+                                          .contains(MaterialState.disabled)) {
+                                        return Colors.grey.shade400;
+                                      }
+                                      if (states
+                                          .contains(MaterialState.selected)) {
+                                        return Colors.white;
+                                      }
+                                      return Colors.grey.shade200;
+                                    },
+                                  ),
+                                  trackColor:
+                                      MaterialStateProperty.resolveWith(
+                                    (states) {
+                                      if (states
+                                          .contains(MaterialState.disabled)) {
+                                        return Colors.grey.shade300;
+                                      }
+                                      if (states
+                                          .contains(MaterialState.selected)) {
+                                        return Colors.green.shade600;
+                                      }
+                                      return Colors.grey.shade500;
+                                    },
+                                  ),
+                                  trackOutlineColor:
+                                      MaterialStateProperty.all(
+                                          Colors.transparent),
+                                ),
+                              ),
+                      ),
+                  ],
                 ),
                 SizedBox(height: isTablet ? 4 : 2),
                 Text(
@@ -4589,12 +4665,6 @@ class TechnicianCard extends StatelessWidget {
               ],
             ),
           ),
-          if (!compact)
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.grey.shade300,
-              size: 20,
-            ),
         ],
       ),
     );

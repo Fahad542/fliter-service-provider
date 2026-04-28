@@ -1,19 +1,44 @@
-/// Branch employees for Salary Advances (GET /cashier/expense/branch-employees).
+/// Branch-level employee row from GET /cashier/employees (or legacy branch-employees alias).
+///
+/// Typical API: `{ id, name, mobile, employeeType }` (sorted by name).
 class BranchEmployee {
   final String id;
   final String name;
+  final String? mobile;
+  /// e.g. `staff`, `technician`, `cashier`; only when backend sends it.
+  final String? employeeType;
 
-  const BranchEmployee({required this.id, required this.name});
+  BranchEmployee({
+    required this.id,
+    required this.name,
+    this.mobile,
+    this.employeeType,
+  });
 
   factory BranchEmployee.fromJson(Map<String, dynamic> json) {
+    final mob = json['mobile'];
+    final mobileRaw =
+        mob == null || mob.toString().trim().isEmpty ? null : mob.toString().trim();
+    final et = json['employeeType'];
+    final typeRaw =
+        et == null || et.toString().trim().isEmpty ? null : et.toString().trim();
     return BranchEmployee(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? json['fullName']?.toString() ?? '',
+      mobile: mobileRaw,
+      employeeType: typeRaw,
     );
+  }
+
+  /// Human-readable badge for chips (`staff` → Staff).
+  String get employeeTypeDisplay {
+    final t = employeeType?.trim();
+    if (t == null || t.isEmpty) return '';
+    return '${t[0].toUpperCase()}${t.substring(1).toLowerCase()}';
   }
 }
 
-/// Parsed list from branch-employees endpoint (flexible shapes).
+/// Parsed list from `/cashier/employees` or legacy expense branch-employees (flexible shapes).
 class BranchEmployeesResponse {
   final bool success;
   final List<BranchEmployee> employees;

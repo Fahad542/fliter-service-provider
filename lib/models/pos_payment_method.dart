@@ -9,6 +9,7 @@ enum PaymentMethod {
   wallet,
   tabby,
   tamara,
+  employees,
 }
 
 extension PaymentMethodLabel on PaymentMethod {
@@ -28,6 +29,8 @@ extension PaymentMethodLabel on PaymentMethod {
         return 'Tabby';
       case PaymentMethod.tamara:
         return 'Tamara';
+      case PaymentMethod.employees:
+        return 'Employees';
     }
   }
 
@@ -47,6 +50,8 @@ extension PaymentMethodLabel on PaymentMethod {
         return Icons.splitscreen_rounded;
       case PaymentMethod.tamara:
         return Icons.shopping_bag_rounded;
+      case PaymentMethod.employees:
+        return Icons.groups_outlined;
     }
   }
 

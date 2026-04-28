@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -63,6 +64,7 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
           return Column(
             children: [
               _buildSummaryBar(vm),
+              _buildDateFilterBar(vm),
               _buildTabBar(),
               Expanded(
                 child: TabBarView(
@@ -81,9 +83,33 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
   }
 
   Widget _buildSummaryBar(PosMonitoringViewModel vm) {
-    final int activeCounters = vm.monitoringResponse?.liveCountersCount ?? _liveCounters.where((c) => c.status == 'open').length;
-    final int openOrders = vm.monitoringResponse?.openOrdersCount ?? _liveCounters.fold<int>(0, (s, c) => s + c.openOrders);
-    final double totalSales = vm.monitoringResponse?.todaySales ?? _liveCounters.fold<double>(0.0, (s, c) => s + c.shiftSales);
+    final liveRaw = vm.monitoringResponse?.liveCounters ?? _liveCounters;
+    final closingRaw = vm.monitoringResponse?.closingReports ?? _closingReports;
+    final liveFiltered = vm.filterLiveCounters(liveRaw);
+    final closingFiltered = vm.filterClosingReports(closingRaw);
+    final filtered = vm.filterFrom != null && vm.filterTo != null;
+
+    final int activeCounters = filtered
+        ? liveFiltered.length
+        : (vm.monitoringResponse?.liveCountersCount ??
+            liveRaw.where((c) => c.status == 'open' || c.status == 'closing').length);
+
+    final int openOrders = filtered
+        ? liveFiltered.fold<int>(0, (s, c) => s + c.openOrders)
+        : (vm.monitoringResponse?.openOrdersCount ?? liveRaw.fold<int>(0, (s, c) => s + c.openOrders));
+
+    final totalSalesApi = vm.monitoringResponse?.todaySales;
+    final rangeSalesApi = vm.monitoringResponse?.salesInDateRange;
+    final fallbackLiveSum =
+        liveRaw.fold<double>(0.0, (s, c) => s + c.shiftSales);
+    final double totalSalesShown = filtered
+        ? (rangeSalesApi ??
+            [...liveFiltered, ...closingFiltered]
+                .fold<double>(0.0, (s, c) => s + c.shiftSales))
+        : (totalSalesApi ?? fallbackLiveSum);
+
+    final salesLabel =
+        filtered ? 'Sales in range' : 'Today sales';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -93,7 +119,7 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
           const SizedBox(width: 12),
           _buildSummaryCard('Open Orders', '$openOrders', Icons.pending_actions_rounded, Colors.orange),
           const SizedBox(width: 12),
-          _buildSummaryCard('Today Sales', 'SAR ${(totalSales).toInt()}', Icons.payments_rounded, AppColors.primaryLight),
+          _buildSummaryCard(salesLabel, 'SAR ${totalSalesShown.toInt()}', Icons.payments_rounded, AppColors.primaryLight),
         ],
       ),
     );
@@ -121,6 +147,93 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
             Text(value, style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight)),
             Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.w600)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateFilterBar(PosMonitoringViewModel vm) {
+    final hasRange = vm.filterFrom != null && vm.filterTo != null;
+    final label = hasRange
+        ? '${DateFormat('dd/MM/y').format(vm.filterFrom!)} → ${DateFormat('dd/MM/y').format(vm.filterTo!)}'
+        : 'Showing all dates — UTC range filter (closing by close date)';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.withOpacity(0.12)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.filter_alt_rounded, size: 20, color: Colors.grey.shade600),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Date range', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.35, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.secondaryLight.withOpacity(0.9))),
+                  ],
+                ),
+              ),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  foregroundColor: AppColors.secondaryLight,
+                  side: BorderSide(color: AppColors.secondaryLight.withOpacity(0.4)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () async {
+                  final now = DateTime.now();
+                  final r = await showDateRangePicker(
+                    context: context,
+                    initialDateRange: hasRange ? DateTimeRange(start: vm.filterFrom!, end: vm.filterTo!) : null,
+                    firstDate: DateTime(now.year - 5),
+                    lastDate: DateTime(now.year + 2, 12, 31),
+                    saveText: 'Apply',
+                    helpText: 'Filter live & closing reports',
+                  );
+                  if (r != null && mounted) {
+                    final inclusiveDays =
+                        r.end.difference(r.start).inDays + 1;
+                    if (inclusiveDays > 366) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Pick a date range of 366 calendar days or less',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    await context.read<PosMonitoringViewModel>().fetchPosMonitoring(
+                          from: r.start,
+                          to: r.end,
+                        );
+                  }
+                },
+                child: Text(hasRange ? 'Change' : 'Pick range'),
+              ),
+              if (hasRange) ...[
+                const SizedBox(width: 6),
+                TextButton(
+                  onPressed: () async {
+                    final v = context.read<PosMonitoringViewModel>();
+                    v.clearDateFilter();
+                    await v.fetchPosMonitoring();
+                  },
+                  child: const Text('Clear'),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -155,7 +268,8 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
   }
 
   Widget _buildLiveCounters(PosMonitoringViewModel vm) {
-    final counters = vm.monitoringResponse?.liveCounters ?? _liveCounters;
+    final counters =
+        vm.filterLiveCounters(vm.monitoringResponse?.liveCounters ?? _liveCounters);
 
     if (counters.isEmpty) {
       return const Center(
@@ -175,7 +289,7 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
     final isClosing = counter.status == 'closing';
     final color = isOpen ? Colors.green : isClosing ? Colors.orange : Colors.grey;
 
-    final elapsed = DateTime.now().difference(counter.openedAt);
+    final elapsed = DateTime.now().difference(counter.sessionStart);
     final hours = elapsed.inHours;
     final mins = elapsed.inMinutes % 60;
 
@@ -216,7 +330,75 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          Divider(height: 20, thickness: 1, color: Colors.grey.withOpacity(0.15)),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.play_circle_outline_rounded, size: 17, color: Colors.green.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            const TextSpan(
+                              text: 'Start ',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey),
+                            ),
+                            TextSpan(
+                              text: _fmtSession(counter.sessionStart),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E2124)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.stop_circle_outlined,
+                      size: 17,
+                      color: counter.sessionEnd != null ? Colors.grey.shade700 : Colors.orange.shade700,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            const TextSpan(
+                              text: 'End ',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey),
+                            ),
+                            TextSpan(
+                              text: counter.sessionEnd != null
+                                  ? _fmtSession(counter.sessionEnd!)
+                                  : 'still open · counter active',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: counter.sessionEnd != null ? const Color(0xFF1E2124) : Colors.orange.shade800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -230,6 +412,9 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
     );
   }
 
+  String _fmtSession(DateTime d) =>
+      DateFormat('dd/MM/yyyy  hh:mm a').format(d);
+
   Widget _buildCounterStat(String label, String value, Color color) {
     return Column(
       children: [
@@ -241,7 +426,8 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
   }
 
   Widget _buildClosingReports(PosMonitoringViewModel vm) {
-    final reports = vm.monitoringResponse?.closingReports ?? _closingReports;
+    final reports = vm.filterClosingReports(
+        vm.monitoringResponse?.closingReports ?? _closingReports);
 
     if (reports.isEmpty) {
       return const Center(
@@ -291,7 +477,33 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(counter.cashierName, style: AppTextStyles.h2.copyWith(fontSize: 15, color: AppColors.secondaryLight)),
-                    Text('${counter.branchName} • Closed', style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text(counter.branchName, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'Started ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey)),
+                          TextSpan(
+                            text: _fmtSession(counter.sessionStart),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E2124)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'Ended ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey)),
+                          TextSpan(
+                            text: counter.sessionEnd != null
+                                ? _fmtSession(counter.sessionEnd!)
+                                : '—',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E2124)),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

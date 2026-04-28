@@ -16,6 +16,14 @@ import '../Promo/promo_code_dialog.dart';
 import '../Promo/promo_view_model.dart';
 import 'takeaway_view_model.dart';
 
+/// Same typography as [PosOrdersView] empty list and catalog empty in [PosProductGridView].
+TextStyle _takeawayCatalogEmptyMessageTextStyle() => TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+      color: Colors.grey.shade500,
+      height: 1.35,
+    );
+
 extension _TakeawayStockUi on TakeawayProduct {
   Color get _stockColor {
     if (!isActive) return Colors.grey;
@@ -134,6 +142,20 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     if (isTablet) {
       final isPortrait =
           MediaQuery.of(context).orientation == Orientation.portrait;
+      if (vm.catalog != null && !vm.catalogHasProducts) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(0, 0, 14, 10),
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                child: _buildEmptyState(),
+              ),
+            );
+          },
+        );
+      }
       return Padding(
         padding: const EdgeInsets.fromLTRB(0, 0, 14, 10),
         child: Row(
@@ -216,9 +238,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                   ],
                   const SizedBox(height: 10),
                   Expanded(
-                    child: vm.catalog != null && !vm.catalogHasProducts
-                        ? _buildEmptyState(true)
-                        : _buildListBody(context, vm, isTablet, isPortrait),
+                    child: _buildListBody(context, vm, isTablet, isPortrait),
                   ),
                 ],
               ),
@@ -298,7 +318,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         const SizedBox(height: 8),
         Expanded(
           child: vm.catalog != null && !vm.catalogHasProducts
-              ? _buildEmptyState(false)
+              ? _buildEmptyState()
               : _buildListBody(context, vm, isTablet, true),
         ),
       ],
@@ -814,18 +834,20 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     );
   }
 
-  Widget _buildEmptyState(bool isTablet) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            'No products found',
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+  Widget _buildEmptyState() {
+    return ColoredBox(
+      color: const Color(0xFFFBFBFD),
+      child: SizedBox.expand(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Text(
+              'No products found',
+              textAlign: TextAlign.center,
+              style: _takeawayCatalogEmptyMessageTextStyle(),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -848,9 +870,13 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.35,
               child: Center(
-                child: Text(
-                  'No products match your search.',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Text(
+                    'No products match your search.',
+                    textAlign: TextAlign.center,
+                    style: _takeawayCatalogEmptyMessageTextStyle(),
+                  ),
                 ),
               ),
             ),

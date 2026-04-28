@@ -1,6 +1,6 @@
 class ApiConstants {
   /// Production API.
-  static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+  static const String baseUrl = 'http://localhost:3000';
   // static const String baseUrl = 'http://localhost:3000'; // local dev
 
   //// workshop pos ////
@@ -18,7 +18,7 @@ class ApiConstants {
       '/cashier/job/$jobId/assign';
 
   /// When true, [PosRepository.assignTechnicians] sends `sync: true` so the server should treat
-  /// `employeeIds` as the **full desired roster** (remove unlisted, add missing). Required for
+  /// `employeeIds` as the **full desired roster** (remove unliste\],]d, add missing). Required for
   /// “keep Zaid only” after Jabbar+Taha were assigned — add-only APIs return “No new assignments”.
   /// Backend DTO must accept `sync`; set to false if validation rejects unknown fields.
   static const bool cashierAssignSendSyncReplace = true;
@@ -27,6 +27,8 @@ class ApiConstants {
       '/cashier/jobs/$jobId/broadcast';
   static String cashierJobBroadcastCancelEndpoint(String jobId) =>
       '/cashier/jobs/$jobId/broadcast/cancel';
+  static const String cashierBroadcastsActiveEndpoint =
+      '/cashier/broadcasts/active';
   static String cashierCompleteJobEndpoint(String jobId) =>
       '/cashier/job/$jobId/complete-cashier'; // newly added mapping
   static String cashierJobPricingEndpoint(String jobId) =>
@@ -53,6 +55,9 @@ class ApiConstants {
       '/cashier/order/$orderId/jobs';
   /// GET — cashier assign picker; pass [departmentId] as query param.
   static const String cashierTechniciansEndpoint = '/cashier/technicians';
+  /// PATCH body `{ "status": "online" | "offline" }` — [employeeId] = [technicians].[id] from GET.
+  static String cashierTechnicianOnlineStatusEndpoint(String employeeId) =>
+      '/cashier/technicians/$employeeId/online-status';
   /// PATCH — cancel a single job before invoice.
   static String cashierJobCancelEndpoint(String jobId) =>
       '/cashier/job/$jobId/cancel';
@@ -75,6 +80,10 @@ class ApiConstants {
   static const String salesReturnListEndpoint = '/cashier/return/list';
   static const String promoCodeApplyEndpoint = '/cashier/promo-code/apply';
   static const String expenseCategoriesEndpoint = '/cashier/expense-categories';
+  /// Branch employees for cashier POS (payments, petty cash, advances).
+  /// Optional query: `?employeeType=staff` | `technician`; omit for all active branch employees.
+  static const String cashierEmployeesEndpoint = '/cashier/employees';
+  /// Deprecated for new code — backend aliases to [cashierEmployeesEndpoint]; kept for compatibility.
   static const String expenseBranchEmployeesEndpoint = '/cashier/expense/branch-employees';
   static const String expenseHistoryEndpoint = '/cashier/expense/history';
   static const String expenseSubmitEndpoint = '/cashier/expense/submit';
@@ -97,6 +106,12 @@ class ApiConstants {
       '/cashier/takeaway/products-catalog';
   static const String cashierTakeawayCheckoutEndpoint =
       '/cashier/takeaway/checkout';
+  /// GET `?from=yyyy-MM-dd&to=yyyy-MM-dd` — product quantities sold per day (cashier).
+  ///
+  /// Backend may return `{ "sales": [ ... ] }` or a raw JSON array. Each line:
+  /// `productName`, optional `sku` / `productId`, `quantitySold` | `qty`, `soldDate` | `saleDate`.
+  static const String cashierInventorySalesEndpoint =
+      '/cashier/inventory-sales';
 
   ///// workshop-owner //////
   static const String adminLoginEndpoint = '/auth/workshop/login';
@@ -123,6 +138,8 @@ class ApiConstants {
   static const String categoriesEndpoint = '/workshop-staff/categories';
   static const String getSubCategoriesEndpoint = '/workshop-staff/sub-categories';
   static const String techniciansEndpoint = '/workshop-staff/technicians';
+  static String workshopStaffTechnicianByIdEndpoint(String id) =>
+      '/workshop-staff/technician/$id';
   static const String employeesEndpoint = '/workshop-staff/employees';
   static const String referrersEndpoint = '/workshop-staff/referrers';
   static const String productsEndpoint = '/workshop-staff/products';
@@ -169,6 +186,10 @@ class ApiConstants {
   static const String technicianCommissionHistoryEndpoint =
       '/technician/commission-history';
   static const String technicianBroadcastsEndpoint = '/technician/broadcasts';
+  static String technicianBroadcastAcceptEndpoint(String jobId) =>
+      '/technician/broadcasts/$jobId/accept';
+  static String technicianBroadcastRejectEndpoint(String jobId) =>
+      '/technician/broadcasts/$jobId/reject';
 
   //// super admin /////
   static const String superAdminLoginEndpoint = '/auth/admin/login';

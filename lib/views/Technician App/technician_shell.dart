@@ -9,6 +9,7 @@ import 'Dashboard/tech_dashboard_view.dart';
 import 'History/commission_history_view.dart';
 import 'History/performance_view.dart';
 import 'Orders/assigned_orders_view.dart';
+import 'Broadcast/broadcast_technician_view.dart';
 import '../Menu/menu_view.dart';
 import '../../services/session_service.dart';
 import '../../../utils/restart_widget.dart';
@@ -30,6 +31,7 @@ class TechShellState extends State<TechShell> {
     const TechPerformanceView(),
     const CommissionHistoryView(),
     const NotificationsView(showDrawerIcon: true),
+    const BroadcastTechnicianView(),
     const TechProfileView(),
   ];
 
@@ -70,7 +72,7 @@ class TechShellState extends State<TechShell> {
 
   Widget _buildDrawer() {
     return Drawer(
-      width: 280,
+      width: 300,
       backgroundColor: AppColors.secondaryLight,
       child: Column(
         children: [
@@ -89,7 +91,9 @@ class TechShellState extends State<TechShell> {
                 const SizedBox(height: 4),
                 _buildDrawerItem(4, 'Notifications', Icons.notifications_rounded),
                 const SizedBox(height: 4),
-                _buildDrawerItem(5, 'Profile', Icons.person_outline_rounded),
+                _buildDrawerItem(5, 'Broadcast Technician', Icons.podcasts_rounded),
+                const SizedBox(height: 4),
+                _buildDrawerItem(6, 'Profile', Icons.person_outline_rounded),
                 const SizedBox(height: 4),
                 _buildDrawerItem(100, 'Logout', Icons.logout_rounded, isLogout: true),
               ],
@@ -103,7 +107,7 @@ class TechShellState extends State<TechShell> {
 
   Widget _buildDrawerHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 30),
+      padding: const EdgeInsets.fromLTRB(24, 64, 24, 34),
       child: Row(
         children: [
           Container(
@@ -117,7 +121,7 @@ class TechShellState extends State<TechShell> {
               child: Image.network(
                 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(_technicianName)}&background=FCC247&color=23262D',
                 width: 48,
-                height: 48,
+                height: 52,
               ),
             ),
           ),
@@ -131,14 +135,14 @@ class TechShellState extends State<TechShell> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 16,
+                    fontSize: 17,
                   ),
                 ),
                 Text(
                   'Technician',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.5),
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -169,7 +173,7 @@ class TechShellState extends State<TechShell> {
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryLight : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
@@ -178,7 +182,7 @@ class TechShellState extends State<TechShell> {
             children: [
               Icon(
                 icon,
-                size: 20,
+                size: 22,
                 color: isSelected ? Colors.black : Colors.white70,
               ),
               const SizedBox(width: 16),
@@ -187,7 +191,7 @@ class TechShellState extends State<TechShell> {
                 style: TextStyle(
                   color: isSelected ? Colors.black : Colors.white70,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                  fontSize: 14,
+                  fontSize: 15,
                 ),
               ),
             ],
