@@ -4,13 +4,14 @@ import '../../../../utils/toast_service.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../services/owner_data_service.dart';
+import '../../../../services/locker_translation_mixin.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'dart:async';
 
-class InventoryManagementViewModel extends ChangeNotifier {
+class InventoryManagementViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
-  
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController unitController = TextEditingController();
@@ -48,9 +49,8 @@ class InventoryManagementViewModel extends ChangeNotifier {
   String? get editingSubCategoryName => _editingSubCategoryName;
   String? get editingCategoryDepartmentId => _editingCategoryDepartmentId;
 
-  // Category controllers
   final TextEditingController categoryNameController = TextEditingController();
-  final TextEditingController categoryTypeController = TextEditingController(); // typically 'product' or 'expense'
+  final TextEditingController categoryTypeController = TextEditingController();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading || ownerDataService.isLoadingDepartments;
@@ -64,33 +64,58 @@ class InventoryManagementViewModel extends ChangeNotifier {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
+  // Raw (English) backing lists — used for logic/search
   List<OwnerProduct> _products = [];
-  List<OwnerProduct> get products {
-    if (_searchQuery.isEmpty) return _products;
-    return _products.where((p) => 
-      p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      (p.category?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-      (p.departmentName?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
-    ).toList();
-  }
-
   List<OwnerProduct> _services = [];
-  List<OwnerProduct> get services {
-    if (_searchQuery.isEmpty) return _services;
-    return _services.where((p) => 
-      p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      (p.category?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-      (p.departmentName?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
+  List<OwnerCategory> _categories = [];
+  List<OwnerSubCategory> _displayedSubCategories = [];
+
+  // Translated display lists — rebuilt after every fetch or locale switch
+  List<OwnerProduct> _translatedProducts = [];
+  List<OwnerProduct> _translatedServices = [];
+  List<OwnerSubCategory> _translatedSubCategories = [];
+
+  List<OwnerProduct> get products {
+    final src = _translatedProducts.isEmpty ? _products : _translatedProducts;
+    if (_searchQuery.isEmpty) return src;
+    final q = _searchQuery.toLowerCase();
+    return src.where((p) =>
+    p.name.toLowerCase().contains(q) ||
+        (p.category?.toLowerCase().contains(q) ?? false) ||
+        (p.departmentName?.toLowerCase().contains(q) ?? false)
     ).toList();
   }
 
-  List<OwnerCategory> _categories = [];
+  List<OwnerProduct> get services {
+    final src = _translatedServices.isEmpty ? _services : _translatedServices;
+    if (_searchQuery.isEmpty) return src;
+    final q = _searchQuery.toLowerCase();
+    return src.where((p) =>
+    p.name.toLowerCase().contains(q) ||
+        (p.category?.toLowerCase().contains(q) ?? false) ||
+        (p.departmentName?.toLowerCase().contains(q) ?? false)
+    ).toList();
+  }
+
   List<OwnerCategory> get categories {
     if (_searchQuery.isEmpty) return _categories;
-    return _categories.where((c) => 
-      c.name.toLowerCase().contains(_searchQuery.toLowerCase())
+    return _categories.where((c) =>
+        c.name.toLowerCase().contains(_searchQuery.toLowerCase())
     ).toList();
   }
+
+  List<OwnerSubCategory> get displayedSubCategories {
+    final src = _translatedSubCategories.isEmpty
+        ? _displayedSubCategories
+        : _translatedSubCategories;
+    if (_searchQuery.isEmpty) return src;
+    return src.where((s) =>
+        s.name.toLowerCase().contains(_searchQuery.toLowerCase())
+    ).toList();
+  }
+
+  List<OwnerSubCategory> get productCategories => _productCategories;
+  List<OwnerSubCategory> get serviceCategories => _serviceCategories;
 
   int _selectedInnerTab = 0;
   int get selectedInnerTab => _selectedInnerTab;
@@ -99,14 +124,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
     _selectedInnerTab = index;
     fetchProductCategoriesForTab();
     notifyListeners();
-  }
-
-  List<OwnerSubCategory> _displayedSubCategories = [];
-  List<OwnerSubCategory> get productCategories => _productCategories;
-  List<OwnerSubCategory> get serviceCategories => _serviceCategories;
-  List<OwnerSubCategory> get displayedSubCategories {
-    if (_searchQuery.isEmpty) return _displayedSubCategories;
-    return _displayedSubCategories.where((s) => s.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
   }
 
   void updateSearchQuery(String query) {
@@ -129,20 +146,16 @@ class InventoryManagementViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Initial screen is Products tab; fetch only essentials first for faster first paint.
       await Future.wait([
         fetchProducts(silent: true),
         fetchProductUnits(silent: true),
       ]);
-
       if (ownerDataService.departments.isEmpty) {
         await ownerDataService.fetchDepartments(silent: true);
       }
       if (ownerDataService.branches.isEmpty) {
         await ownerDataService.fetchBranches(silent: true);
       }
-
-      // Prefetch secondary data in background (do not block UI).
       unawaited(fetchServices(silent: true));
       unawaited(fetchCategories(silent: true));
     } catch (e) {
@@ -153,17 +166,67 @@ class InventoryManagementViewModel extends ChangeNotifier {
     }
   }
 
+  /// Call this when the app locale changes so all dynamic strings are re-translated.
+  Future<void> retranslate() async {
+    // Invalidate translated caches so raw lists are used as source
+    _translatedProducts = [];
+    _translatedServices = [];
+    _translatedSubCategories = [];
+    await Future.wait([
+      _translateProducts(),
+      _translateServices(),
+      _translateSubCategories(),
+    ]);
+    notifyListeners();
+  }
+
+  // ── Translation helpers ───────────────────────────────────────────────────
+
+  Future<void> _translateProducts() async {
+    _translatedProducts = await Future.wait(_products.map(_translateProduct));
+  }
+
+  Future<OwnerProduct> _translateProduct(OwnerProduct p) async {
+    final name = await t(p.name);
+    final category = p.category != null ? await t(p.category!) : null;
+    final departmentName = p.departmentName != null ? await t(p.departmentName!) : null;
+    final subCategoryName = p.subCategoryName != null ? await t(p.subCategoryName!) : null;
+    return p.copyWith(
+      name: name,
+      category: category,
+      departmentName: departmentName,
+      subCategoryName: subCategoryName,
+    );
+  }
+
+  Future<void> _translateServices() async {
+    _translatedServices = await Future.wait(_services.map(_translateProduct));
+  }
+
+  Future<void> _translateSubCategories() async {
+    _translatedSubCategories = await Future.wait(
+      _displayedSubCategories.map((s) async {
+        final name = await t(s.name);
+        final deptName = s.departmentName != null ? await t(s.departmentName!) : null;
+        return OwnerSubCategory(
+          id: s.id,
+          name: name,
+          departmentId: s.departmentId,
+          departmentName: deptName,
+        );
+      }),
+    );
+  }
+
+  // ── Data fetching ─────────────────────────────────────────────────────────
+
   Future<void> onTabChanged(int index) async {
-    // 0 = Products, 1 = Services, 2 = Category
     if (index == 1 && _services.isEmpty) {
       await fetchServices();
       return;
     }
-
     if (index == 2) {
-      if (_categories.isEmpty) {
-        await fetchCategories();
-      }
+      if (_categories.isEmpty) await fetchCategories();
       await fetchProductCategoriesForTab(silent: false);
     }
   }
@@ -176,7 +239,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
-
       final response = await ownerRepository.getCategories(token);
       if (response != null && response['success'] == true && response['categories'] != null) {
         _categories = (response['categories'] as List)
@@ -194,17 +256,22 @@ class InventoryManagementViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchProductCategoriesForTab({String? typeOverride, bool forceRefresh = false, bool silent = false}) async {
+  Future<void> fetchProductCategoriesForTab({
+    String? typeOverride,
+    bool forceRefresh = false,
+    bool silent = false,
+  }) async {
     final typeStr = typeOverride ?? (_selectedInnerTab == 0 ? 'product' : 'service');
-    
-    // Check cache
+
     if (!forceRefresh) {
       if (typeStr == 'product' && _productCategories.isNotEmpty) {
         _displayedSubCategories = _productCategories;
+        await _translateSubCategories();
         if (!silent) notifyListeners();
         return;
       } else if (typeStr == 'service' && _serviceCategories.isNotEmpty) {
         _displayedSubCategories = _serviceCategories;
+        await _translateSubCategories();
         if (!silent) notifyListeners();
         return;
       }
@@ -217,7 +284,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
-
       final response = await ownerRepository.getProductsCategories(token, typeStr);
       if (response != null && response['success'] == true && response['categories'] != null) {
         List<OwnerSubCategory> flatSubs = [];
@@ -226,7 +292,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
             flatSubs.addAll((c['subCategories'] as List)
                 .map((s) => OwnerSubCategory.fromJson(s)));
           } else {
-            // If no subcategories, use the category itself as a subcategory for display
             flatSubs.add(OwnerSubCategory(
               id: c['id']?.toString() ?? '',
               name: c['name'] ?? '',
@@ -241,12 +306,15 @@ class InventoryManagementViewModel extends ChangeNotifier {
         } else {
           _serviceCategories = flatSubs;
         }
+        await _translateSubCategories();
       } else {
         _displayedSubCategories = [];
+        _translatedSubCategories = [];
       }
     } catch (e) {
       debugPrint('Error fetching product categories for tab: $e');
       _displayedSubCategories = [];
+      _translatedSubCategories = [];
     } finally {
       if (!silent) {
         _isSubCategoriesLoading = false;
@@ -260,7 +328,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
     }
-    
     try {
       final token = await sessionService.getToken(role: 'owner');
       final user = await sessionService.getUser(role: 'owner');
@@ -268,10 +335,8 @@ class InventoryManagementViewModel extends ChangeNotifier {
       final workshopId = user?.workshopId ?? '3';
 
       final response = await ownerRepository.getProducts(token, workshopId);
-      
       if (response != null && response['success'] == true) {
         List<OwnerProduct> allProducts = [];
-        
         if (response['categories'] != null) {
           for (var cat in response['categories']) {
             if (cat['subCategories'] != null) {
@@ -291,21 +356,18 @@ class InventoryManagementViewModel extends ChangeNotifier {
             }
             if (cat['services'] != null) {
               for (var serv in cat['services']) {
-                 final op = OwnerProduct.fromJson(serv);
-                 // OwnerProduct doesn't have an explicit isService, but it's used in _services list usually
-                 allProducts.add(op);
+                allProducts.add(OwnerProduct.fromJson(serv));
               }
             }
           }
         }
-        
         if (response['uncategorizedProducts'] != null) {
           for (var prod in response['uncategorizedProducts']) {
             allProducts.add(OwnerProduct.fromJson(prod));
           }
         }
-
         _products = allProducts;
+        await _translateProducts();
       }
     } catch (e) {
       debugPrint('Error fetching products: $e');
@@ -321,7 +383,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
-
       final response = await ownerRepository.getProductUnits(token);
       if (response != null && response['success'] == true && response['units'] is List) {
         _productUnits = (response['units'] as List)
@@ -332,15 +393,9 @@ class InventoryManagementViewModel extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error fetching product units: $e');
     } finally {
-      if (_productUnits.isEmpty) {
-        _productUnits = ['pcs'];
-      }
-      if (unitController.text.trim().isEmpty) {
-        unitController.text = _productUnits.first;
-      }
-      if (!silent) {
-        notifyListeners();
-      }
+      if (_productUnits.isEmpty) _productUnits = ['pcs'];
+      if (unitController.text.trim().isEmpty) unitController.text = _productUnits.first;
+      if (!silent) notifyListeners();
     }
   }
 
@@ -349,17 +404,15 @@ class InventoryManagementViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
     }
-    
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) throw Exception('No token found');
-
       final response = await ownerRepository.getWorkshopServices(token);
-      
       if (response != null && response['success'] == true && response['services'] != null) {
         _services = (response['services'] as List)
             .map((s) => OwnerProduct.fromJson(s))
             .toList();
+        await _translateServices();
       }
     } catch (e) {
       debugPrint('Error fetching services: $e');
@@ -371,15 +424,10 @@ class InventoryManagementViewModel extends ChangeNotifier {
     }
   }
 
-  void toggleAllowDecimal(bool value) {
-    allowDecimalQty = value;
-    notifyListeners();
-  }
-
-  void toggleIsActive(bool value) {
-    isActive = value;
-    notifyListeners();
-  }
+  void toggleAllowDecimal(bool value) { allowDecimalQty = value; notifyListeners(); }
+  void toggleIsActive(bool value) { isActive = value; notifyListeners(); }
+  void toggleIsPriceEditable(bool val) { isPriceEditable = val; notifyListeners(); }
+  void setVatMode(String val) { vatMode = val; notifyListeners(); }
 
   void clearForm() {
     nameController.clear();
@@ -398,7 +446,6 @@ class InventoryManagementViewModel extends ChangeNotifier {
     _editingCategoryName = null;
     _editingSubCategoryName = null;
     _editingCategoryDepartmentId = null;
-    
     categoryNameController.clear();
     categoryTypeController.text = 'product';
     isPriceEditable = false;
@@ -411,21 +458,22 @@ class InventoryManagementViewModel extends ChangeNotifier {
       clearForm();
     } else {
       _editingProductId = p.id;
-      _editingCategoryName = p.category;
-      _editingSubCategoryName = p.subCategoryName;
-      nameController.text = p.name;
-      unitController.text = p.unit ?? 'pcs';
-      purchasePriceController.text = p.purchasePrice.toString();
-      salePriceController.text = p.salePrice.toString();
-      openingQtyController.text = p.stock.toString();
-      criticalStockPointController.text = p.criticalStockPoint.toString();
-      kmTypeValueController.text = p.kmTypeValue.toString();
-      minCorporatePriceController.text = p.minPriceCorporate?.toString() ?? '0.0';
-      maxCorporatePriceController.text = p.maxPriceCorporate?.toString() ?? '0.0';
-      allowDecimalQty = p.allowDecimalQty;
-      isActive = p.isActive;
-      isPriceEditable = p.isPriceEditable;
-      // Note: category and department will need to be selected in the UI
+      // Always populate controllers from the raw English list to avoid editing
+      // a translated name back to the API.
+      final raw = _products.firstWhere((r) => r.id == p.id, orElse: () => p);
+      _editingCategoryName = raw.category;
+      _editingSubCategoryName = raw.subCategoryName;
+      nameController.text = raw.name;
+      unitController.text = raw.unit.isEmpty ? 'pcs' : raw.unit;      purchasePriceController.text = raw.purchasePrice.toString();
+      salePriceController.text = raw.salePrice.toString();
+      openingQtyController.text = raw.stock.toString();
+      criticalStockPointController.text = raw.criticalStockPoint.toString();
+      kmTypeValueController.text = raw.kmTypeValue.toString();
+      minCorporatePriceController.text = raw.minPriceCorporate?.toString() ?? '0.0';
+      maxCorporatePriceController.text = raw.maxPriceCorporate?.toString() ?? '0.0';
+      allowDecimalQty = raw.allowDecimalQty;
+      isActive = raw.isActive;
+      isPriceEditable = raw.isPriceEditable;
     }
     fetchProductCategoriesForTab(typeOverride: 'product');
     notifyListeners();
@@ -437,15 +485,16 @@ class InventoryManagementViewModel extends ChangeNotifier {
       clearForm();
     } else {
       _editingServiceId = s.id;
-      _editingCategoryName = s.category;
-      _editingSubCategoryName = s.subCategoryName;
-      nameController.text = s.name;
-      purchasePriceController.text = s.purchasePrice.toString();
-      salePriceController.text = s.salePrice.toString();
-      minCorporatePriceController.text = s.minPriceCorporate?.toString() ?? '0.0';
-      maxCorporatePriceController.text = s.maxPriceCorporate?.toString() ?? '0.0';
-      isPriceEditable = s.isPriceEditable;
-      isActive = s.isActive;
+      final raw = _services.firstWhere((r) => r.id == s.id, orElse: () => s);
+      _editingCategoryName = raw.category;
+      _editingSubCategoryName = raw.subCategoryName;
+      nameController.text = raw.name;
+      purchasePriceController.text = raw.purchasePrice.toString();
+      salePriceController.text = raw.salePrice.toString();
+      minCorporatePriceController.text = raw.minPriceCorporate?.toString() ?? '0.0';
+      maxCorporatePriceController.text = raw.maxPriceCorporate?.toString() ?? '0.0';
+      isPriceEditable = raw.isPriceEditable;
+      isActive = raw.isActive;
     }
     fetchProductCategoriesForTab(typeOverride: 'service');
     notifyListeners();
@@ -476,103 +525,86 @@ class InventoryManagementViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── CRUD with l10n-aware toasts ───────────────────────────────────────────
+
   Future<void> submitProductForm(
-    BuildContext context, {
-    required String? departmentId,
-    required String? categoryId,
-    required String? subCategoryId,
-    required String? branchId,
-  }) async {
-    if (nameController.text.trim().isEmpty || 
+      BuildContext context, {
+        required String? departmentId,
+        required String? categoryId,
+        required String? subCategoryId,
+        required String? branchId,
+      }) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (nameController.text.trim().isEmpty ||
         purchasePriceController.text.trim().isEmpty ||
         salePriceController.text.trim().isEmpty ||
         openingQtyController.text.trim().isEmpty) {
-      ToastService.showError(context, 'Please fill in all required fields.');
+      ToastService.showError(context, l10n.invValidationFillRequired);
       return;
     }
-
-    if (departmentId == null) {
-      ToastService.showError(context, 'Please select a department.');
-      return;
-    }
-
-    if (categoryId == null) {
-      ToastService.showError(context, 'Please create a category first.');
-      return;
-    }
-
-    if (branchId == null) {
-      ToastService.showError(context, 'Please select a branch.');
-      return;
-    }
+    if (departmentId == null) { ToastService.showError(context, l10n.invValidationSelectDepartment); return; }
+    if (categoryId == null)   { ToastService.showError(context, l10n.invValidationCreateCategory);   return; }
+    if (branchId == null)     { ToastService.showError(context, l10n.invValidationSelectBranch);      return; }
 
     _isActionLoading = true;
     notifyListeners();
 
     try {
       final token = await sessionService.getToken(role: 'owner');
-      final user = await sessionService.getUser(role: 'owner');
+      final user  = await sessionService.getUser(role: 'owner');
       if (token == null) throw Exception('No token found');
-
       final workshopId = user?.workshopId ?? '3';
+      final finalSubId = subCategoryIdController.text.trim().isEmpty
+          ? (subCategoryId ?? '')
+          : subCategoryIdController.text.trim();
+      final resolvedCategoryId = categoryIdController.text.trim().isEmpty
+          ? categoryId
+          : categoryIdController.text.trim();
 
-      String finalSubCategoryId = subCategoryIdController.text.trim().isEmpty ? (subCategoryId ?? '') : subCategoryIdController.text.trim();
-
-      final Map<String, dynamic> data;
-
-      if (_editingProductId == null) {
-        // Create: full body including workshopId, branchId, departmentId, type
-        data = {
-          "workshopId": workshopId,
-          "branchId": branchId,
-          "name": nameController.text.trim(),
-          "departmentId": departmentId,
-          "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
-          if (finalSubCategoryId.isNotEmpty)
-            "subCategoryId": finalSubCategoryId,
-          "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
-          "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0.0,
-          "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
-          "openingQty": double.tryParse(openingQtyController.text.trim()) ?? 0,
-          "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
-          "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
-          "criticalStockPoint": double.tryParse(criticalStockPointController.text.trim()) ?? 5,
-          "kmTypeValue": int.tryParse(kmTypeValueController.text.trim()) ?? 5000,
-          "allowDecimalQty": allowDecimalQty,
-          "type": "product",
-          "isActive": isActive,
-        };
-      } else {
-        // Update: only product-specific fields per PATCH /workshop-staff/product/{id}
-        data = {
-          "name": nameController.text.trim(),
-          "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
-          "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0.0,
-          "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
-          "openingQty": double.tryParse(openingQtyController.text.trim()) ?? 0,
-          "criticalStockPoint": double.tryParse(criticalStockPointController.text.trim()) ?? 5,
-          "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
-          "allowDecimalQty": allowDecimalQty,
-          "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
-          "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
-          "isActive": isActive,
-        };
+      final Map<String, dynamic> data = _editingProductId == null
+          ? {
+        "workshopId": workshopId, "branchId": branchId,
+        "name": nameController.text.trim(), "departmentId": departmentId,
+        "categoryId": resolvedCategoryId,
+        if (finalSubId.isNotEmpty) "subCategoryId": finalSubId,
+        "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
+        "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0.0,
+        "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
+        "openingQty": double.tryParse(openingQtyController.text.trim()) ?? 0,
+        "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
+        "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
+        "criticalStockPoint": double.tryParse(criticalStockPointController.text.trim()) ?? 5,
+        "kmTypeValue": int.tryParse(kmTypeValueController.text.trim()) ?? 5000,
+        "allowDecimalQty": allowDecimalQty, "type": "product", "isActive": isActive,
       }
+          : {
+        "name": nameController.text.trim(),
+        "unit": unitController.text.trim().isEmpty ? "pcs" : unitController.text.trim(),
+        "purchasePrice": double.tryParse(purchasePriceController.text.trim()) ?? 0.0,
+        "salePrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
+        "openingQty": double.tryParse(openingQtyController.text.trim()) ?? 0,
+        "criticalStockPoint": double.tryParse(criticalStockPointController.text.trim()) ?? 5,
+        "categoryId": resolvedCategoryId,
+        "allowDecimalQty": allowDecimalQty,
+        "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
+        "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
+        "isActive": isActive,
+      };
 
-      final response = _editingProductId == null
-          ? await ownerRepository.createProduct(data, token)
-          : await ownerRepository.updateProduct(token, _editingProductId!, data);
+      await (_editingProductId == null
+          ? ownerRepository.createProduct(data, token)
+          : ownerRepository.updateProduct(token, _editingProductId!, data));
 
       if (context.mounted) {
-        ToastService.showSuccess(context, _editingProductId == null ? 'Product Created Successfully' : 'Product Updated Successfully');
+        ToastService.showSuccess(context,
+            _editingProductId == null ? l10n.invProductCreateSuccess : l10n.invProductUpdateSuccess);
         setEditProduct(null);
-        Navigator.pop(context); // Close the sheet
-        await fetchProducts(silent: true); // Refresh the list
+        Navigator.pop(context);
+        await fetchProducts(silent: true);
       }
     } catch (e) {
-      if (context.mounted) {
-        ToastService.showError(context, 'Failed to create product');
-      }
+      if (context.mounted) ToastService.showError(context, l10n.invProductCreateError);
     } finally {
       _isActionLoading = false;
       notifyListeners();
@@ -580,143 +612,107 @@ class InventoryManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> submitServiceForm(
-    BuildContext context, {
-    required String? departmentId,
-    required String? categoryId,
-    required String? subCategoryId,
-    required String? branchId,
-  }) async {
-    if (nameController.text.trim().isEmpty || 
-        salePriceController.text.trim().isEmpty) {
-      ToastService.showError(context, 'Please fill in required fields.');
+      BuildContext context, {
+        required String? departmentId,
+        required String? categoryId,
+        required String? subCategoryId,
+        required String? branchId,
+      }) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (nameController.text.trim().isEmpty || salePriceController.text.trim().isEmpty) {
+      ToastService.showError(context, l10n.invValidationFillServiceRequired);
       return;
     }
+    if (departmentId == null) { ToastService.showError(context, l10n.invValidationSelectDepartment); return; }
+    if (categoryId == null)   { ToastService.showError(context, l10n.invValidationCreateCategory);   return; }
+    if (branchId == null)     { ToastService.showError(context, l10n.invValidationSelectBranch);      return; }
 
-    if (departmentId == null) {
-      ToastService.showError(context, 'Please select a department.');
-      return;
-    }
-
-    if (categoryId == null) {
-      ToastService.showError(context, 'Please create a category first.');
-      return;
-    }
-
-    if (branchId == null) {
-      ToastService.showError(context, 'Please select a branch.');
-      return;
-    }
-
-    _isActionLoading = true; // Changed from _isLoading
+    _isActionLoading = true;
     notifyListeners();
 
     try {
       final token = await sessionService.getToken(role: 'owner');
-      final user = await sessionService.getUser(role: 'owner');
+      final user  = await sessionService.getUser(role: 'owner');
       if (token == null) throw Exception('No token found');
-
       final workshopId = user?.workshopId ?? '3';
+      final finalSubId = subCategoryIdController.text.trim().isEmpty
+          ? (subCategoryId ?? '')
+          : subCategoryIdController.text.trim();
+      final resolvedCategoryId = categoryIdController.text.trim().isEmpty
+          ? categoryId
+          : categoryIdController.text.trim();
 
-      String finalSubCategoryId = subCategoryIdController.text.trim().isEmpty ? (subCategoryId ?? '') : subCategoryIdController.text.trim();
-      
-      final Map<String, dynamic> data;
-      if (_editingServiceId == null) {
-        data = {
-          "workshopId": workshopId,
-          "departmentId": departmentId,
-          "branchId": branchId,
-          "categoryId": categoryIdController.text.trim().isEmpty ? categoryId : categoryIdController.text.trim(),
-          if (finalSubCategoryId.isNotEmpty)
-            "subCategoryId": finalSubCategoryId,
-          "name": nameController.text.trim(),
-          "sellingPrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
-          "isPriceEditable": isPriceEditable,
-          "vatMode": vatMode,
-          "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
-          "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
-          "type": "service",
-          "isActive": isActive,
-        };
-      } else {
-        data = {
-          "name": nameController.text.trim(),
-          "sellingPrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
-          "categoryId": categoryIdController.text.trim().isEmpty
-              ? categoryId
-              : categoryIdController.text.trim(),
-          "isPriceEditable": isPriceEditable,
-          "vatMode": vatMode,
-          "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
-          "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
-          "isActive": isActive,
-        };
+      final Map<String, dynamic> data = _editingServiceId == null
+          ? {
+        "workshopId": workshopId, "departmentId": departmentId, "branchId": branchId,
+        "categoryId": resolvedCategoryId,
+        if (finalSubId.isNotEmpty) "subCategoryId": finalSubId,
+        "name": nameController.text.trim(),
+        "sellingPrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
+        "isPriceEditable": isPriceEditable, "vatMode": vatMode,
+        "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
+        "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
+        "type": "service", "isActive": isActive,
       }
+          : {
+        "name": nameController.text.trim(),
+        "sellingPrice": double.tryParse(salePriceController.text.trim()) ?? 0.0,
+        "categoryId": resolvedCategoryId,
+        "isPriceEditable": isPriceEditable, "vatMode": vatMode,
+        "minPriceCorporate": double.tryParse(minCorporatePriceController.text.trim()) ?? 0.0,
+        "maxPriceCorporate": double.tryParse(maxCorporatePriceController.text.trim()) ?? 0.0,
+        "isActive": isActive,
+      };
 
-      final response = _editingServiceId == null
-          ? await ownerRepository.createWorkshopService(data, token)
-          : await ownerRepository.updateService(token, _editingServiceId!, data);
+      await (_editingServiceId == null
+          ? ownerRepository.createWorkshopService(data, token)
+          : ownerRepository.updateService(token, _editingServiceId!, data));
 
       if (context.mounted) {
-        ToastService.showSuccess(context, _editingServiceId == null ? 'Service Created Successfully' : 'Service Updated Successfully');
+        ToastService.showSuccess(context,
+            _editingServiceId == null ? l10n.invServiceCreateSuccess : l10n.invServiceUpdateSuccess);
         setEditService(null);
-        Navigator.pop(context); // Close the sheet
-        await fetchServices(silent: true); // Refresh the services list
+        Navigator.pop(context);
+        await fetchServices(silent: true);
       }
     } catch (e) {
-      if (context.mounted) {
-        ToastService.showError(context, 'Failed to create service');
-      }
+      if (context.mounted) ToastService.showError(context, l10n.invServiceCreateError);
     } finally {
       _isActionLoading = false;
       notifyListeners();
     }
   }
 
-  void toggleIsPriceEditable(bool val) {
-    isPriceEditable = val;
-    notifyListeners();
-  }
-
-  void setVatMode(String val) {
-    vatMode = val;
-    notifyListeners();
-  }
-
-  Future<void> submitCategoryForm(
-    BuildContext context, {
-    required String? departmentId,
-  }) async {
+  Future<void> submitCategoryForm(BuildContext context, {required String? departmentId}) async {
+    final l10n = AppLocalizations.of(context)!;
     if (categoryNameController.text.trim().isEmpty) {
-      ToastService.showError(context, 'Please fill in all required fields.');
+      ToastService.showError(context, l10n.invValidationFillRequired);
       return;
     }
     if (departmentId == null || departmentId.isEmpty) {
-      ToastService.showError(context, 'Please select a department.');
+      ToastService.showError(context, l10n.invValidationSelectDepartment);
       return;
     }
-
-    _isActionLoading = true; // Changed from _isLoading
+    _isActionLoading = true;
     notifyListeners();
-
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) throw Exception('No token found');
-
       final data = {
         "name": categoryNameController.text.trim(),
         "type": _selectedInnerTab == 0 ? 'product' : 'service',
         "departmentId": departmentId,
         "isActive": true,
       };
-
-      final response = _editingCategoryId == null
-          ? await ownerRepository.createCategory(data, token)
-          : await ownerRepository.updateCategory(token, _editingCategoryId!, data);
-
+      await (_editingCategoryId == null
+          ? ownerRepository.createCategory(data, token)
+          : ownerRepository.updateCategory(token, _editingCategoryId!, data));
       if (context.mounted) {
-        ToastService.showSuccess(context, _editingCategoryId == null ? 'Category Created Successfully' : 'Category Updated Successfully');
+        ToastService.showSuccess(context,
+            _editingCategoryId == null ? l10n.invCategoryCreateSuccess : l10n.invCategoryUpdateSuccess);
         setEditCategory(null);
-        Navigator.pop(context); // Close the sheet
+        Navigator.pop(context);
         await fetchCategories(silent: true);
         await fetchProductCategoriesForTab(forceRefresh: true, silent: true);
         if (_selectedInnerTab == 0) {
@@ -726,9 +722,7 @@ class InventoryManagementViewModel extends ChangeNotifier {
         }
       }
     } catch (e) {
-      if (context.mounted) {
-        ToastService.showError(context, 'Failed to create category');
-      }
+      if (context.mounted) ToastService.showError(context, l10n.invCategoryCreateError);
     } finally {
       _isActionLoading = false;
       notifyListeners();
@@ -736,123 +730,94 @@ class InventoryManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> submitSubCategoryForm(BuildContext context, {required String categoryId}) async {
+    final l10n = AppLocalizations.of(context)!;
     if (categoryNameController.text.trim().isEmpty) {
-      ToastService.showError(context, 'Please fill in all required fields.');
+      ToastService.showError(context, l10n.invValidationFillRequired);
       return;
     }
-
-    _isActionLoading = true; // Changed from _isLoading
+    _isActionLoading = true;
     notifyListeners();
-
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) throw Exception('No token found');
-
-      final data = {
-        "name": categoryNameController.text.trim(),
-        "categoryId": categoryId,
-        "isActive": true,
-      };
-
-      final response = _editingSubCategoryId == null
-          ? await ownerRepository.createSubCategory(data, token)
-          : await ownerRepository.updateSubCategory(token, _editingSubCategoryId!, data);
-
+      final data = {"name": categoryNameController.text.trim(), "categoryId": categoryId, "isActive": true};
+      await (_editingSubCategoryId == null
+          ? ownerRepository.createSubCategory(data, token)
+          : ownerRepository.updateSubCategory(token, _editingSubCategoryId!, data));
       if (context.mounted) {
-        ToastService.showSuccess(context, _editingSubCategoryId == null ? 'Sub Category Created Successfully' : 'Sub Category Updated Successfully');
+        ToastService.showSuccess(context,
+            _editingSubCategoryId == null ? l10n.invSubCategoryCreateSuccess : l10n.invSubCategoryUpdateSuccess);
         setEditSubCategory(null);
-        Navigator.pop(context); // Close the sheet
-        await fetchCategories(silent: true); // Refresh
-        await fetchProductCategoriesForTab(forceRefresh: true, silent: true); // Refresh
+        Navigator.pop(context);
+        await fetchCategories(silent: true);
+        await fetchProductCategoriesForTab(forceRefresh: true, silent: true);
       }
     } catch (e) {
-      if (context.mounted) {
-        ToastService.showError(context, 'Failed to create sub category');
-      }
+      if (context.mounted) ToastService.showError(context, l10n.invSubCategoryCreateError);
     } finally {
       _isActionLoading = false;
       notifyListeners();
     }
   }
 
-
   Future<void> deleteProduct(BuildContext context, String id) async {
-    _isActionLoading = true;
-    notifyListeners();
+    final l10n = AppLocalizations.of(context)!;
+    _isActionLoading = true; notifyListeners();
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
       await ownerRepository.deleteProduct(token, id);
-      if (context.mounted) {
-        ToastService.showSuccess(context, 'Product Deleted Successfully');
-        await fetchProducts(silent: true);
-      }
+      if (context.mounted) { ToastService.showSuccess(context, l10n.invProductDeleteSuccess); await fetchProducts(silent: true); }
     } catch (e) {
-      if (context.mounted) ToastService.showError(context, 'Failed to delete product');
-    } finally {
-      _isActionLoading = false;
-      notifyListeners();
-    }
+      if (context.mounted) ToastService.showError(context, l10n.invProductDeleteError);
+    } finally { _isActionLoading = false; notifyListeners(); }
   }
 
   Future<void> deleteService(BuildContext context, String id) async {
-    _isActionLoading = true;
-    notifyListeners();
+    final l10n = AppLocalizations.of(context)!;
+    _isActionLoading = true; notifyListeners();
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
       await ownerRepository.deleteService(token, id);
-      if (context.mounted) {
-        ToastService.showSuccess(context, 'Service Deleted Successfully');
-        await fetchServices(silent: true);
-      }
+      if (context.mounted) { ToastService.showSuccess(context, l10n.invServiceDeleteSuccess); await fetchServices(silent: true); }
     } catch (e) {
-      if (context.mounted) ToastService.showError(context, 'Failed to delete service');
-    } finally {
-      _isActionLoading = false;
-      notifyListeners();
-    }
+      if (context.mounted) ToastService.showError(context, l10n.invServiceDeleteError);
+    } finally { _isActionLoading = false; notifyListeners(); }
   }
 
   Future<void> deleteCategory(BuildContext context, String id) async {
-    _isLoading = true;
-    notifyListeners();
+    final l10n = AppLocalizations.of(context)!;
+    _isLoading = true; notifyListeners();
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
       await ownerRepository.deleteCategory(token, id);
       if (context.mounted) {
-        ToastService.showSuccess(context, 'Category Deleted Successfully');
+        ToastService.showSuccess(context, l10n.invCategoryDeleteSuccess);
         await fetchCategories(silent: true);
         await fetchProductCategoriesForTab(forceRefresh: true, silent: true);
       }
     } catch (e) {
-      if (context.mounted) ToastService.showError(context, 'Failed to delete category');
-    } finally {
-      _isLoading = false;
-      _isActionLoading = false;
-      notifyListeners();
-    }
+      if (context.mounted) ToastService.showError(context, l10n.invCategoryDeleteError);
+    } finally { _isLoading = false; _isActionLoading = false; notifyListeners(); }
   }
 
   Future<void> deleteSubCategory(BuildContext context, String id) async {
-    _isActionLoading = true;
-    notifyListeners();
+    final l10n = AppLocalizations.of(context)!;
+    _isActionLoading = true; notifyListeners();
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) return;
       await ownerRepository.deleteSubCategory(token, id);
       if (context.mounted) {
-        ToastService.showSuccess(context, 'Sub Category Deleted Successfully');
+        ToastService.showSuccess(context, l10n.invSubCategoryDeleteSuccess);
         await fetchCategories(silent: true);
         await fetchProductCategoriesForTab(forceRefresh: true, silent: true);
       }
     } catch (e) {
-      if (context.mounted) ToastService.showError(context, 'Failed to delete sub category');
-    } finally {
-      _isActionLoading = false;
-      notifyListeners();
-    }
+      if (context.mounted) ToastService.showError(context, l10n.invSubCategoryDeleteError);
+    } finally { _isActionLoading = false; notifyListeners(); }
   }
 
   @override

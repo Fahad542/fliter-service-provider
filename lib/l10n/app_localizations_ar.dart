@@ -57,8 +57,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerShellLogoutTitle => 'تسجيل الخروج';
 
   @override
-  String get ownerShellLogoutBody =>
-      'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟';
+  String get ownerShellLogoutBody => 'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟';
 
   @override
   String get ownerShellLogoutCancel => 'إلغاء';
@@ -127,8 +126,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get billingGeneratorStep2 => 'الخطوة 2: معاينة الفواتير المؤهلة';
 
   @override
-  String get billingGeneratorPendingInvoices =>
-      'فواتير معلقة: 15 • الإجمالي المتوقع: 12,450 ر.س';
+  String get billingGeneratorPendingInvoices => 'فواتير معلقة: 15 • الإجمالي المتوقع: 12,450 ر.س';
 
   @override
   String get billingGeneratorPostAll => 'إنشاء وترحيل الكل';
@@ -229,8 +227,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get branchDeleteConfirmTitle => 'حذف الفرع';
 
   @override
-  String get branchDeleteConfirmBody =>
-      'هل أنت متأكد من رغبتك في حذف هذا الفرع؟';
+  String get branchDeleteConfirmBody => 'هل أنت متأكد من رغبتك في حذف هذا الفرع؟';
 
   @override
   String get branchDeleteConfirmCancel => 'إلغاء';
@@ -299,8 +296,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerLogOut => 'تسجيل الخروج';
 
   @override
-  String get lockerLogOutConfirm =>
-      'هل أنت متأكد من تسجيل الخروج من بوابة الخزينة؟';
+  String get lockerLogOutConfirm => 'هل أنت متأكد من تسجيل الخروج من بوابة الخزينة؟';
 
   @override
   String get lockerCancel => 'إلغاء';
@@ -486,8 +482,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerGenerateAuditPdf => 'إنشاء تقرير PDF';
 
   @override
-  String get lockerCollectionPendingApproval =>
-      'التحصيل في انتظار موافقة المشرف.';
+  String get lockerCollectionPendingApproval => 'التحصيل في انتظار موافقة المشرف.';
 
   @override
   String get lockerPendingSupervisorApproval => 'في انتظار موافقة المشرف';
@@ -502,8 +497,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerVarianceRejectedBanner => 'تم رفض الفارق';
 
   @override
-  String get lockerVarianceDifferenceReview =>
-      'يوجد فارق في هذا التحصيل. يرجى المراجعة والموافقة أو الرفض.';
+  String get lockerVarianceDifferenceReview => 'يوجد فارق في هذا التحصيل. يرجى المراجعة والموافقة أو الرفض.';
 
   @override
   String get lockerApproveVariance => 'تمت الموافقة على الفارق بنجاح';
@@ -518,8 +512,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerRejectVarianceTitle => 'رفض الفارق';
 
   @override
-  String get lockerRejectVarianceBody =>
-      'يمكنك تقديم سبب اختياري لرفض هذا الفارق.';
+  String get lockerRejectVarianceBody => 'يمكنك تقديم سبب اختياري لرفض هذا الفارق.';
 
   @override
   String get lockerRejectionReasonHint => 'أدخل سبب الرفض (اختياري)';
@@ -534,8 +527,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerSelectOfficer => 'اختر الموظف';
 
   @override
-  String get lockerSelectOfficerSubtitle =>
-      'اختر موظفاً ميدانياً لتعيينه لهذا طلب التحصيل.';
+  String get lockerSelectOfficerSubtitle => 'اختر موظفاً ميدانياً لتعيينه لهذا طلب التحصيل.';
 
   @override
   String get lockerOfficersLoadError => 'تعذّر تحميل قائمة الموظفين.';
@@ -577,8 +569,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerNotes => 'ملاحظات';
 
   @override
-  String get lockerAuditFootnote =>
-      'هذا التقرير مُولَّد آلياً ويُعدّ سجلاً رسمياً للتدقيق.';
+  String get lockerAuditFootnote => 'هذا التقرير مُولَّد آلياً ويُعدّ سجلاً رسمياً للتدقيق.';
 
   @override
   String lockerAuditFootnoteAmounts(String currency) {
@@ -606,8 +597,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerNoPendingVariance => 'لا توجد موافقات فوارق معلّقة حالياً.';
 
   @override
-  String get lockerVarianceReviewBanner =>
-      'هذه التحصيلات تحتوي على فوارق نقدية وتتطلب موافقتك.';
+  String get lockerVarianceReviewBanner => 'هذه التحصيلات تحتوي على فوارق نقدية وتتطلب موافقتك.';
 
   @override
   String get lockerShortLabel => 'ناقص';
@@ -619,11 +609,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerApproveVarianceTitle => 'الموافقة على الفارق';
 
   @override
-  String lockerApproveVarianceConfirm(
-    String type,
-    String amount,
-    String branch,
-  ) {
+  String lockerApproveVarianceConfirm(String type, String amount, String branch) {
     return 'الموافقة على فارق $type بمبلغ $amount ريال لـ$branch؟';
   }
 
@@ -791,8 +777,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerNoComplianceData => 'لا توجد بيانات امتثال لهذه الفترة.';
 
   @override
-  String get lockerNoResultsMatchFilters =>
-      'لا توجد نتائج تطابق عوامل التصفية.';
+  String get lockerNoResultsMatchFilters => 'لا توجد نتائج تطابق عوامل التصفية.';
 
   @override
   String get lockerNoAuditLogsFound => 'لم يتم العثور على سجلات تدقيق.';
@@ -881,8 +866,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerStoragePermissionRequired => 'إذن التخزين مطلوب';
 
   @override
-  String get lockerStoragePermissionBody =>
-      'إذن التخزين مطلوب لحفظ الملفات المُصدَّرة. يرجى تفعيله من إعدادات التطبيق.';
+  String get lockerStoragePermissionBody => 'إذن التخزين مطلوب لحفظ الملفات المُصدَّرة. يرجى تفعيله من إعدادات التطبيق.';
 
   @override
   String get lockerOpenSettings => 'فتح الإعدادات';
@@ -1188,8 +1172,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get corporateRegisterTitle => 'تسجيل شريك مؤسسي';
 
   @override
-  String get corporateRegisterSubtitle =>
-      'أدخل التفاصيل لإنشاء حساب مؤسسي جديد.';
+  String get corporateRegisterSubtitle => 'أدخل التفاصيل لإنشاء حساب مؤسسي جديد.';
 
   @override
   String get corporateFieldCompanyName => 'اسم الشركة';
@@ -1230,8 +1213,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get corporateAddUserTitle => 'إضافة مستخدم مؤسسي';
 
   @override
-  String get corporateAddUserSubtitle =>
-      'أنشئ بيانات اعتماد لمستخدم مرتبط بهذا الحساب المؤسسي.';
+  String get corporateAddUserSubtitle => 'أنشئ بيانات اعتماد لمستخدم مرتبط بهذا الحساب المؤسسي.';
 
   @override
   String get corporateUserFieldName => 'الاسم الكامل';
@@ -1249,8 +1231,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get corporateEditTitle => 'تعديل الحساب المؤسسي';
 
   @override
-  String get corporateEditSubtitle =>
-      'حدِّث التفاصيل أدناه. سيُرسَل فقط ما تم تغييره.';
+  String get corporateEditSubtitle => 'حدِّث التفاصيل أدناه. سيُرسَل فقط ما تم تغييره.';
 
   @override
   String get corporateFieldMobileMobile => 'الجوال';
@@ -1343,8 +1324,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardViewAll => 'عرض الكل';
 
   @override
-  String get dashboardNoPendingApprovals =>
-      'لا توجد طلبات صندوق صغير معلقة الآن.';
+  String get dashboardNoPendingApprovals => 'لا توجد طلبات صندوق صغير معلقة الآن.';
 
   @override
   String dashboardMoreApprovals(int count) {
@@ -1374,4 +1354,1061 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get branchPerformanceNoBranches => 'لا توجد فروع بعد.';
+
+  @override
+  String get deptMgmtTitle => 'إدارة الأقسام';
+
+  @override
+  String get deptMgmtSearchHint => 'بحث باسم القسم...';
+
+  @override
+  String get deptMgmtAddButton => 'إضافة قسم جديد';
+
+  @override
+  String get deptMgmtNoDepartments => 'لا توجد أقسام.';
+
+  @override
+  String get deptMgmtLabelDepartment => 'قسم';
+
+  @override
+  String get deptMgmtMenuEdit => 'تعديل';
+
+  @override
+  String get deptMgmtMenuDelete => 'حذف';
+
+  @override
+  String get deptMgmtConfirmDeleteTitle => 'تأكيد الحذف';
+
+  @override
+  String deptMgmtConfirmDeleteBody(String name) {
+    return 'هل أنت متأكد من حذف \"$name\"؟ لا يمكن التراجع عن هذا الإجراء.';
+  }
+
+  @override
+  String get deptMgmtCancel => 'إلغاء';
+
+  @override
+  String get deptMgmtDelete => 'حذف';
+
+  @override
+  String get deptMgmtStatusActive => 'نشط';
+
+  @override
+  String get deptMgmtStatusInactive => 'غير نشط';
+
+  @override
+  String get deptMgmtSheetAddTitle => 'إضافة قسم';
+
+  @override
+  String get deptMgmtSheetUpdateTitle => 'تحديث القسم';
+
+  @override
+  String get deptMgmtSheetAddSubtitle => 'أدخل اسم القسم الجديد.';
+
+  @override
+  String get deptMgmtSheetUpdateSubtitle => 'تعديل تفاصيل القسم الحالي.';
+
+  @override
+  String get deptMgmtFieldName => 'اسم القسم';
+
+  @override
+  String get deptMgmtFieldActiveStatus => 'الحالة النشطة';
+
+  @override
+  String get deptMgmtSheetAddButton => 'إضافة قسم';
+
+  @override
+  String get deptMgmtSheetUpdateButton => 'تحديث القسم';
+
+  @override
+  String get deptMgmtValidationNameRequired => 'اسم القسم مطلوب';
+
+  @override
+  String get deptMgmtCreateSuccess => 'تم إنشاء القسم بنجاح';
+
+  @override
+  String get deptMgmtUpdateSuccess => 'تم تحديث القسم بنجاح';
+
+  @override
+  String get deptMgmtDeleteSuccess => 'تم حذف القسم بنجاح';
+
+  @override
+  String get deptMgmtSaveError => 'فشل حفظ القسم';
+
+  @override
+  String get deptMgmtDeleteError => 'فشل حذف القسم';
+
+  @override
+  String get empMgmtTitle => 'إدارة الموظفين';
+
+  @override
+  String get empMgmtSearchHint => 'بحث بالاسم أو البريد أو الجوال...';
+
+  @override
+  String get empMgmtAddButton => 'إضافة موظف';
+
+  @override
+  String get empMgmtFilterAllBranches => 'جميع الفروع';
+
+  @override
+  String get empMgmtNoEmployees => 'لا يوجد موظفون.';
+
+  @override
+  String empMgmtLastSeen(String time) {
+    return 'آخر ظهور: $time';
+  }
+
+  @override
+  String get empMgmtInfoBranch => 'الفرع';
+
+  @override
+  String get empMgmtInfoDept => 'القسم';
+
+  @override
+  String get empMgmtInfoRoleType => 'نوع الدور';
+
+  @override
+  String get empMgmtInfoTechType => 'نوع الفني';
+
+  @override
+  String get empMgmtInfoSalary => 'الراتب';
+
+  @override
+  String get empMgmtInfoCommission => 'العمولة';
+
+  @override
+  String get empMgmtInfoUnknown => 'غير محدد';
+
+  @override
+  String get empMgmtInfoNone => 'لا يوجد';
+
+  @override
+  String get empMgmtMenuEdit => 'تعديل';
+
+  @override
+  String get empMgmtMenuDelete => 'حذف';
+
+  @override
+  String get empMgmtDeleteTitle => 'حذف الموظف';
+
+  @override
+  String empMgmtDeleteBody(String name) {
+    return 'هل أنت متأكد من حذف \"$name\"؟';
+  }
+
+  @override
+  String get empMgmtDeleteCancel => 'إلغاء';
+
+  @override
+  String get empMgmtDeleteConfirm => 'حذف';
+
+  @override
+  String get empMgmtSheetAddTitle => 'إضافة موظف جديد';
+
+  @override
+  String get empMgmtSheetUpdateTitle => 'تحديث الموظف';
+
+  @override
+  String get empMgmtSheetAddSubtitle => 'أدخل التفاصيل لتسجيل عضو جديد.';
+
+  @override
+  String get empMgmtSheetUpdateSubtitle => 'تعديل بيانات الموظف الحالي.';
+
+  @override
+  String get empMgmtFieldRole => 'الدور';
+
+  @override
+  String get empMgmtFieldFullName => 'الاسم الكامل';
+
+  @override
+  String get empMgmtFieldMobile => 'رقم الجوال';
+
+  @override
+  String get empMgmtFieldEmail => 'البريد الإلكتروني';
+
+  @override
+  String get empMgmtFieldPassword => 'كلمة المرور';
+
+  @override
+  String get empMgmtFieldPasswordOptional => 'كلمة المرور (اختياري)';
+
+  @override
+  String get empMgmtFieldBranch => 'تعيين للفرع';
+
+  @override
+  String get empMgmtFieldDepartment => 'تعيين القسم';
+
+  @override
+  String get empMgmtFieldAddress => 'العنوان';
+
+  @override
+  String get empMgmtFieldOpeningBalance => 'الرصيد الافتتاحي';
+
+  @override
+  String get empMgmtFieldBaseSalary => 'الراتب الأساسي';
+
+  @override
+  String get empMgmtFieldCommission => 'نسبة العمولة %';
+
+  @override
+  String get empMgmtFieldActiveStatus => 'الحالة النشطة';
+
+  @override
+  String get empMgmtSectionTechSpecifics => 'تفاصيل الفني';
+
+  @override
+  String get empMgmtSectionSalary => 'الراتب والعمولة';
+
+  @override
+  String get empMgmtSectionAvailability => 'التوفر';
+
+  @override
+  String get empMgmtToggleWorkshop => 'فني ورشة';
+
+  @override
+  String get empMgmtToggleOnCall => 'فني عند الطلب';
+
+  @override
+  String get empMgmtNoAddressFound => 'لا توجد عناوين';
+
+  @override
+  String get empMgmtSaveButton => 'حفظ الموظف';
+
+  @override
+  String get empMgmtUpdateButton => 'تحديث الموظف';
+
+  @override
+  String get empMgmtRoleTechnician => 'فني';
+
+  @override
+  String get empMgmtRoleCashier => 'كاشير';
+
+  @override
+  String get empMgmtRoleSupplier => 'مورّد';
+
+  @override
+  String get empMgmtValidationRequired => 'يرجى ملء جميع الحقول المطلوبة.';
+
+  @override
+  String get empMgmtValidationTechType => 'يرجى اختيار نوع فني واحد على الأقل.';
+
+  @override
+  String get empMgmtValidationNoBranch => 'يرجى إنشاء فرع أولاً لتعيين هذا الموظف.';
+
+  @override
+  String get empMgmtValidationNoBranchCashier => 'يرجى إنشاء فرع أولاً لتعيين هذا الكاشير.';
+
+  @override
+  String get empMgmtValidationNoDepartment => 'يرجى إنشاء قسم أولاً لتعيين هذا الموظف.';
+
+  @override
+  String get empMgmtValidationSupplierRequired => 'يرجى ملء جميع الحقول المطلوبة';
+
+  @override
+  String get empMgmtApiNotIntegrated => 'الأنواع المتاحة للإنشاء: الفني، الكاشير، والمورّد فقط.';
+
+  @override
+  String get empMgmtTechnicianCreateSuccess => 'تم إنشاء الفني بنجاح';
+
+  @override
+  String get empMgmtTechnicianUpdateSuccess => 'تم تحديث الفني بنجاح';
+
+  @override
+  String get empMgmtTechnicianCreateError => 'فشل إنشاء الفني';
+
+  @override
+  String get empMgmtCashierCreateSuccess => 'تم إنشاء الكاشير بنجاح';
+
+  @override
+  String get empMgmtCashierUpdateSuccess => 'تم تحديث الكاشير بنجاح';
+
+  @override
+  String get empMgmtCashierCreateError => 'فشل إنشاء الكاشير';
+
+  @override
+  String get empMgmtSupplierCreateSuccess => 'تم إنشاء المورّد بنجاح';
+
+  @override
+  String get empMgmtSupplierCreateError => 'فشل إنشاء المورّد';
+
+  @override
+  String get empMgmtDeleteSuccess => 'تم حذف الموظف بنجاح';
+
+  @override
+  String get empMgmtDeleteError => 'فشل حذف الموظف';
+
+  @override
+  String get empStatusAvailable => 'متاح';
+
+  @override
+  String get empStatusOnline => 'متصل';
+
+  @override
+  String get empStatusBusy => 'مشغول';
+
+  @override
+  String get empStatusOffline => 'غير متصل';
+
+  @override
+  String get empLastSeenNever => 'أبداً';
+
+  @override
+  String get empLastSeenJustNow => 'الآن';
+
+  @override
+  String empLastSeenMinutes(int m) {
+    return 'منذ $m د';
+  }
+
+  @override
+  String empLastSeenHours(int h) {
+    return 'منذ $h س';
+  }
+
+  @override
+  String empLastSeenDays(int d) {
+    return 'منذ $d ي';
+  }
+
+  @override
+  String get empTechTypeWorkshop => 'ورشة';
+
+  @override
+  String get empTechTypeBoth => 'كلاهما';
+
+  @override
+  String get empTechTypeOnCall => 'عند الطلب';
+
+  @override
+  String get empRoleTechnician => 'فني';
+
+  @override
+  String get empRoleCashier => 'كاشير';
+
+  @override
+  String get empRoleSupplier => 'مورّد';
+
+  @override
+  String get invTitle => 'المخزون والمنتجات';
+
+  @override
+  String get invTabProducts => 'المنتجات';
+
+  @override
+  String get invTabServices => 'الخدمات';
+
+  @override
+  String get invTabCategory => 'الفئات';
+
+  @override
+  String get invAddProduct => 'إضافة منتج';
+
+  @override
+  String get invAddService => 'إضافة خدمة';
+
+  @override
+  String get invAddCategory => 'إضافة فئة';
+
+  @override
+  String get invAdd => 'إضافة';
+
+  @override
+  String get invSearchProductsHint => 'بحث بالاسم أو الفئة...';
+
+  @override
+  String get invSearchServicesHint => 'بحث في الخدمات...';
+
+  @override
+  String get invSearchCategoriesHint => 'بحث في الفئات...';
+
+  @override
+  String get invNoProductsFound => 'لا توجد منتجات.';
+
+  @override
+  String get invNoServicesFound => 'لا توجد خدمات.';
+
+  @override
+  String get invNoCategoriesFound => 'لا توجد فئات.';
+
+  @override
+  String get invNoProductsMatchSearch => 'لا توجد منتجات تطابق بحثك.';
+
+  @override
+  String get invNoServicesMatchSearch => 'لا توجد خدمات تطابق بحثك.';
+
+  @override
+  String get invNoCategoriesMatchSearch => 'لا توجد فئات تطابق بحثك.';
+
+  @override
+  String get invMetricStock => 'المخزون';
+
+  @override
+  String get invMetricPurchase => 'الشراء';
+
+  @override
+  String get invMetricRetail => 'البيع';
+
+  @override
+  String get invMetricPrice => 'السعر';
+
+  @override
+  String get invMetricCorpRange => 'نطاق الشركات';
+
+  @override
+  String get invMetricCorporate => 'الشركات';
+
+  @override
+  String get invEditTooltip => 'تعديل';
+
+  @override
+  String get invDeleteTooltip => 'حذف';
+
+  @override
+  String get invMenuEdit => 'تعديل';
+
+  @override
+  String get invMenuDelete => 'حذف';
+
+  @override
+  String get invConfirmDeleteTitle => 'تأكيد الحذف';
+
+  @override
+  String invConfirmDeleteBody(String name) => 'هل تريد حذف "$name"؟ لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get invCancel => 'إلغاء';
+
+  @override
+  String get invConfirm => 'تأكيد';
+
+  @override
+  String get invCategoryTabProducts => 'المنتجات';
+
+  @override
+  String get invCategoryTabServices => 'الخدمات';
+
+  @override
+  String get invCreateProduct => 'إنشاء منتج';
+
+  @override
+  String get invUpdateProduct => 'تحديث المنتج';
+
+  @override
+  String get invCreateProductSubtitle => 'أدخل تفاصيل المنتج لإضافته إلى المخزون.';
+
+  @override
+  String get invUpdateProductSubtitle => 'تعديل تفاصيل المنتج الحالي.';
+
+  @override
+  String get invFieldBranch => 'الفرع';
+
+  @override
+  String get invFieldDepartment => 'القسم';
+
+  @override
+  String get invFieldCategory => 'الفئة';
+
+  @override
+  String get invFieldProductName => 'اسم المنتج';
+
+  @override
+  String get invFieldStockQty => 'كمية المخزون';
+
+  @override
+  String get invFieldUnit => 'الوحدة';
+
+  @override
+  String get invFieldCriticalStock => 'نقطة المخزون الحرجة';
+
+  @override
+  String get invSectionPricing => 'تفاصيل التسعير';
+
+  @override
+  String get invFieldPurchasePrice => 'سعر الشراء';
+
+  @override
+  String get invFieldSalePrice => 'سعر البيع';
+
+  @override
+  String get invFieldMinCorpPrice => 'أدنى سعر للشركات';
+
+  @override
+  String get invFieldMaxCorpPrice => 'أعلى سعر للشركات';
+
+  @override
+  String get invToggleDecimal => 'السماح بالكسور العشرية';
+
+  @override
+  String get invToggleActive => 'الحالة النشطة';
+
+  @override
+  String get invSaveProduct => 'حفظ المنتج';
+
+  @override
+  String get invProductCreateSuccess => 'تم إنشاء المنتج بنجاح';
+
+  @override
+  String get invProductUpdateSuccess => 'تم تحديث المنتج بنجاح';
+
+  @override
+  String get invProductCreateError => 'فشل إنشاء المنتج';
+
+  @override
+  String get invProductDeleteSuccess => 'تم حذف المنتج بنجاح';
+
+  @override
+  String get invProductDeleteError => 'فشل حذف المنتج';
+
+  @override
+  String get invValidationFillRequired => 'يرجى ملء جميع الحقول المطلوبة.';
+
+  @override
+  String get invValidationSelectDepartment => 'يرجى اختيار قسم.';
+
+  @override
+  String get invValidationCreateCategory => 'يرجى إنشاء فئة أولاً.';
+
+  @override
+  String get invValidationSelectBranch => 'يرجى اختيار فرع.';
+
+  @override
+  String get invCreateService => 'إنشاء خدمة';
+
+  @override
+  String get invUpdateService => 'تحديث الخدمة';
+
+  @override
+  String get invCreateServiceSubtitle => 'أدخل تفاصيل الخدمة.';
+
+  @override
+  String get invUpdateServiceSubtitle => 'تعديل تفاصيل الخدمة الحالية.';
+
+  @override
+  String get invFieldServiceName => 'اسم الخدمة';
+
+  @override
+  String get invFieldServicePrice => 'سعر الخدمة';
+
+  @override
+  String get invTogglePriceEditable => 'يمكن للكاشير تغيير السعر في نقطة البيع';
+
+  @override
+  String get invSaveService => 'حفظ الخدمة';
+
+  @override
+  String get invServiceCreateSuccess => 'تم إنشاء الخدمة بنجاح';
+
+  @override
+  String get invServiceUpdateSuccess => 'تم تحديث الخدمة بنجاح';
+
+  @override
+  String get invServiceCreateError => 'فشل إنشاء الخدمة';
+
+  @override
+  String get invServiceDeleteSuccess => 'تم حذف الخدمة بنجاح';
+
+  @override
+  String get invServiceDeleteError => 'فشل حذف الخدمة';
+
+  @override
+  String get invValidationFillServiceRequired => 'يرجى ملء الحقول المطلوبة.';
+
+  @override
+  String get invCreateCategory => 'إنشاء فئة';
+
+  @override
+  String get invUpdateCategory => 'تحديث الفئة';
+
+  @override
+  String get invCreateCategorySubtitle => 'أدخل تفاصيل الفئة الجديدة.';
+
+  @override
+  String get invUpdateCategorySubtitle => 'تعديل تفاصيل الفئة الحالية.';
+
+  @override
+  String get invFieldCategoryName => 'اسم الفئة';
+
+  @override
+  String get invSaveCategory => 'حفظ الفئة';
+
+  @override
+  String get invCategoryCreateSuccess => 'تم إنشاء الفئة بنجاح';
+
+  @override
+  String get invCategoryUpdateSuccess => 'تم تحديث الفئة بنجاح';
+
+  @override
+  String get invCategoryCreateError => 'فشل إنشاء الفئة';
+
+  @override
+  String get invCategoryDeleteSuccess => 'تم حذف الفئة بنجاح';
+
+  @override
+  String get invCategoryDeleteError => 'فشل حذف الفئة';
+
+  @override
+  String get invCreateSubCategory => 'إنشاء فئة فرعية';
+
+  @override
+  String get invCreateSubCategorySubtitle => 'أدخل تفاصيل الفئة الفرعية الجديدة.';
+
+  @override
+  String get invFieldSubCategoryName => 'اسم الفئة الفرعية';
+
+  @override
+  String get invSaveSubCategory => 'حفظ الفئة الفرعية';
+
+  @override
+  String get invSubCategoryCreateSuccess => 'تم إنشاء الفئة الفرعية بنجاح';
+
+  @override
+  String get invSubCategoryUpdateSuccess => 'تم تحديث الفئة الفرعية بنجاح';
+
+  @override
+  String get invSubCategoryCreateError => 'فشل إنشاء الفئة الفرعية';
+
+  @override
+  String get invSubCategoryDeleteSuccess => 'تم حذف الفئة الفرعية بنجاح';
+
+  @override
+  String get invSubCategoryDeleteError => 'فشل حذف الفئة الفرعية';
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+
+  @override
+  String get notifTitle => 'الإشعارات';
+
+  @override
+  String get notifMarkRead => 'تحديد الكل كمقروء';
+
+  @override
+  String get notifEmpty => 'لا توجد إشعارات بعد.';
+
+  @override
+  String notifTimeMinutes(int m) => 'منذ $m د';
+
+  @override
+  String notifTimeHours(int h) => 'منذ $h س';
+
+  @override
+  String notifTimeDays(int d) => 'منذ $d ي';
+
+  @override
+  String get posMonitoringTitle => 'مراقبة نقاط البيع';
+
+  @override
+  String get posMonitoringLiveCounters => 'الكاونترات المباشرة';
+
+  @override
+  String get posMonitoringClosingReports => 'تقارير الإغلاق';
+
+  @override
+  String get posMonitoringSummaryLiveCounters => 'الكاونترات المباشرة';
+
+  @override
+  String get posMonitoringSummaryOpenOrders => 'الطلبات المفتوحة';
+
+  @override
+  String get posMonitoringSummaryTodaySales => 'مبيعات اليوم';
+
+  @override
+  String get posMonitoringNoLiveCounters => 'لا توجد كاونترات مباشرة نشطة';
+
+  @override
+  String get posMonitoringNoClosingReports => 'لا توجد تقارير إغلاق متاحة';
+
+  @override
+  String get posMonitoringStatusOpen => 'مفتوح';
+
+  @override
+  String get posMonitoringStatusClosing => 'جارٍ الإغلاق';
+
+  @override
+  String get posMonitoringStatusClosed => 'مغلق';
+
+  @override
+  String get posMonitoringStatShiftSales => 'مبيعات الوردية';
+
+  @override
+  String get posMonitoringStatOpenOrders => 'الطلبات المفتوحة';
+
+  @override
+  String get posMonitoringStatElapsed => 'الوقت المنقضي';
+
+  @override
+  String posMonitoringElapsedFormat(int h, int m) => '${h}س ${m}د';
+
+  @override
+  String get posMonitoringClosed => 'مغلق';
+
+  @override
+  String get posMonitoringTableCategory => 'الفئة';
+
+  @override
+  String get posMonitoringTableSystem => 'النظام';
+
+  @override
+  String get posMonitoringTablePhysical => 'الفعلي';
+
+  @override
+  String get posMonitoringTableDiff => 'الفارق';
+
+  @override
+  String get posMonitoringTableTotalSales => 'إجمالي المبيعات';
+
+  @override
+  String get posMonitoringRowCash => 'نقد';
+
+  @override
+  String get posMonitoringRowBank => 'بنك/بطاقات';
+
+  @override
+  String get posMonitoringRowCorporate => 'شركات';
+
+  @override
+  String get posMonitoringRowTamara => 'تمارا';
+
+  @override
+  String get posMonitoringRowTabby => 'تابي';
+
+  @override
+  String get posMonitoringDiffShort => 'ناقص';
+
+  @override
+  String get posMonitoringDiffExcess => 'زائد';
+
+  @override
+  String get posMonitoringDiffBalanced => 'متوازن';
+
+  @override
+  String posMonitoringDiffShortSymbol(String amount) => '− ر.س $amount';
+
+  @override
+  String posMonitoringDiffExcessSymbol(String amount) => '+ ر.س $amount';
+
+  @override
+  String get posMonitoringDiffNone => '—';
+
+  @override
+  String get posMonitoringBackendWarning =>
+      '⚠ التفاصيل الكاملة غير متاحة — يرجى تحديث الخادم للاطلاع على بيانات كل فئة';
+
+  @override
+  String posMonitoringAmountSar(String amount) => 'ر.س $amount';
+
+  // ── Promo Codes ──────────────────────────────────────────────────────────────
+
+  @override
+  String get promoTitle => 'رموز العروض';
+
+  @override
+  String get promoNewButton => 'عرض جديد';
+
+  @override
+  String get promoNoCodesFound => 'لا توجد رموز عروض';
+
+  @override
+  String get promoMenuEdit => 'تعديل';
+
+  @override
+  String get promoMenuDelete => 'حذف';
+
+  @override
+  String promoDiscountOff(String value, String unit) => '$value $unit خصم';
+
+  @override
+  String get promoUnitPercent => '%';
+
+  @override
+  String get promoUnitSar => 'ر.س';
+
+  @override
+  String get promoStatUsage => 'الاستخدام';
+
+  @override
+  String get promoStatMinOrder => 'الحد الأدنى للطلب';
+
+  @override
+  String get promoStatValidTill => 'صالح حتى';
+
+  @override
+  String promoMinOrderAmount(String amount) => 'ر.س $amount';
+
+  @override
+  String get promoDeleteConfirmTitle => 'تأكيد الحذف';
+
+  @override
+  String promoDeleteConfirmBody(String code) =>
+      'هل أنت متأكد من حذف "$code"؟ لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get promoDeleteCancel => 'إلغاء';
+
+  @override
+  String get promoDeleteConfirm => 'حذف';
+
+  @override
+  String get promoSheetCreateTitle => 'إنشاء رمز عرض';
+
+  @override
+  String get promoSheetUpdateTitle => 'تحديث رمز العرض';
+
+  @override
+  String get promoSheetCreateSubtitle => 'قم بضبط رمز خصم جديد للعملاء.';
+
+  @override
+  String get promoSheetUpdateSubtitle => 'تعديل تفاصيل رمز العرض الحالي.';
+
+  @override
+  String get promoFieldCode => 'رمز العرض (مثال: SUMMER20)';
+
+  @override
+  String get promoFieldDiscountValue => 'قيمة الخصم';
+
+  @override
+  String get promoFieldUsageLimit => 'حد الاستخدام';
+
+  @override
+  String get promoFieldMinOrder => 'الحد الأدنى للطلب (ر.س)';
+
+  @override
+  String get promoFieldDescription => 'الوصف';
+
+  @override
+  String get promoFieldValidFrom => 'صالح من';
+
+  @override
+  String get promoFieldValidTo => 'صالح حتى';
+
+  @override
+  String get promoTypeFixed => 'مبلغ ثابت';
+
+  @override
+  String get promoTypePercent => 'نسبة مئوية (%)';
+
+  @override
+  String get promoSubmitCreate => 'إنشاء العرض';
+
+  @override
+  String get promoSubmitUpdate => 'تحديث العرض';
+
+  @override
+  String get promoValidationRequired =>
+      'يرجى ملء الحقول المطلوبة (الرمز، القيمة)';
+
+  @override
+  String get promoCreateSuccess => 'تم إنشاء رمز العرض بنجاح!';
+
+  @override
+  String get promoUpdateSuccess => 'تم تحديث رمز العرض بنجاح!';
+
+  @override
+  String get promoDeleteSuccess => 'تم حذف رمز العرض بنجاح!';
+
+  @override
+  String get promoCreateError => 'فشل معالجة رمز العرض';
+
+  @override
+  String get promoDeleteError => 'فشل حذف رمز العرض';
+
+  @override
+  String get posAddCustomerTitle => 'إضافة عميل جديد';
+
+  @override
+  String get posAddCustomerTabNormal => 'عميل عادي';
+
+  @override
+  String get posAddCustomerTabCorporate => 'عميل مؤسسي';
+
+  @override
+  String get posAddCustomerSectionVehicleInfo => 'معلومات المركبة';
+
+  @override
+  String get posAddCustomerSectionCompanyDetails => 'تفاصيل الشركة (مُعبَّأة تلقائياً)';
+
+  @override
+  String get posAddCustomerSectionCorporateAccount => 'الحساب المؤسسي';
+
+  @override
+  String get posAddCustomerFieldVehicleNumber => 'رقم المركبة';
+
+  @override
+  String get posAddCustomerFieldVin => 'رقم الهيكل (VIN)';
+
+  @override
+  String get posAddCustomerFieldMake => 'الشركة المصنِّعة';
+
+  @override
+  String get posAddCustomerFieldModel => 'الطراز';
+
+  @override
+  String get posAddCustomerFieldOdometer => 'عداد المسافة';
+
+  @override
+  String get posAddCustomerFieldCompanyName => 'اسم الشركة';
+
+  @override
+  String get posAddCustomerFieldVatNumber => 'الرقم الضريبي';
+
+  @override
+  String get posAddCustomerFieldBillingAddress => 'عنوان الفوترة';
+
+  @override
+  String get posAddCustomerSelectCorporate => 'اختر الحساب المؤسسي';
+
+  @override
+  String get posAddCustomerNoCorporateFound => 'لا توجد حسابات مؤسسية';
+
+  @override
+  String get posAddCustomerSaveButton => 'حفظ والمتابعة إلى القسم';
+
+  @override
+  String get posAddCustomerFieldNA => 'غير متوفر';
+
+  @override
+  String get posAddCustomerValidationVehicleRequired => 'يرجى إدخال رقم المركبة';
+
+  @override
+  String get posAddCustomerValidationRequired => 'مطلوب';
+
+  @override
+  String get posAddCustomerValidationVinMax => 'الحد الأقصى 17 حرفاً';
+
+  @override
+  String get posAddCustomerValidationInvalidNumber => 'يرجى إدخال رقم صحيح';
+
+  @override
+  String get posAddCustomerValidationInvalidNumberShort => 'رقم غير صحيح';
+
+  // ── Reports & Analytics ──────────────────────────────────────────────────
+  @override
+  String get reportsTitle => 'التقارير والتحليلات';
+
+  @override
+  String get reportsFinancialOverview => 'النظرة المالية العامة';
+
+  @override
+  String get reportsOperationalPerformance => 'الأداء التشغيلي';
+
+  @override
+  String get reportsInventoryValuation => 'تقييم المخزون';
+
+  @override
+  String get reportsTotalRevenue => 'إجمالي الإيرادات';
+
+  @override
+  String get reportsNoDataThisWeek => 'لا توجد بيانات لهذا الأسبوع';
+
+  @override
+  String reportsTotalJobs(int count) => 'إجمالي الأعمال: $count';
+
+  @override
+  String get reportsCommissionLabel => 'العمولة';
+
+  @override
+  String get reportsStockValueCost => 'قيمة المخزون (التكلفة)';
+
+  @override
+  String get reportsPotentialProfit => 'الربح المتوقع';
+
+  @override
+  String get reportsActiveSkus => 'المنتجات النشطة';
+
+  @override
+  String reportsItemsUnit(int count) => '$count منتج';
+
+  @override
+  String reportsAmountSar(String amount) => 'ر.س $amount';
+
+  @override
+  String get reportsNoOperationalData => 'لا توجد بيانات أداء تشغيلي';
+
+  @override
+  String reportsRevChangePositive(String pct) => '+$pct%';
+
+  @override
+  String reportsRevChangeNegative(String pct) => '$pct%';
+
+  // ── Owner shared widgets / petty cash ────────────────────────────────────
+  @override
+  String get ownerCommonSearchHint => 'بحث...';
+
+  @override
+  String get ownerBottomHome => 'الرئيسية';
+
+  @override
+  String get ownerBottomReports => 'التقارير';
+
+  @override
+  String get ownerBottomBilling => 'الفوترة';
+
+  @override
+  String get ownerBottomProfile => 'الملف الشخصي';
+
+  @override
+  String get ownerDashboardRoleLabel => 'مالك الورشة';
+
+  @override
+  String get ownerMonthlySales => 'المبيعات الشهرية';
+
+  @override
+  String get ownerCurrencySar => 'ر.س';
+
+  @override
+  String ownerCurrencyAmount(String currency, String amount) => '$amount $currency';
+
+  @override
+  String get pettyCashQueueCashierExpense => 'مصروف أمين الصندوق';
+
+  @override
+  String get pettyCashQueueFundRequest => 'طلب تمويل';
+
+  @override
+  String get pettyCashRequestLabel => 'طلب عهدة نقدية';
+
+  @override
+  String get pettyCashApprove => 'موافقة';
+
+  @override
+  String get pettyCashReject => 'رفض';
+
+  @override
+  String get pettyCashConfirmReject => 'تأكيد الرفض';
+
+  @override
+  String get pettyCashRejectRequestTitle => 'رفض الطلب';
+
+  @override
+  String get pettyCashRejectRequestBody => 'يرجى إدخال سبب الرفض.';
+
+  @override
+  String get pettyCashRejectReasonHint => 'مثال: الميزانية غير معتمدة';
+
+  @override
+  String get pettyCashRejectReasonRequired => 'يرجى إدخال سبب الرفض';
+
+  @override
+  String get pettyCashRequestApprovedSuccess => 'تمت الموافقة على الطلب بنجاح';
+
+  @override
+  String get pettyCashRequestApproveFailed => 'فشل اعتماد الطلب';
+
+  @override
+  String get pettyCashRequestRejectedSuccess => 'تم رفض الطلب بنجاح';
+
+  @override
+  String get pettyCashRequestRejectFailed => 'فشل رفض الطلب';
+
+  @override
+  String get pettyCashStatusPending => 'قيد الانتظار';
+
+  @override
+  String get pettyCashStatusApproved => 'معتمد';
+
+  @override
+  String get pettyCashStatusRejected => 'مرفوض';
+
+  @override
+  String pettyCashStatusFallback(String status) => status;
+
 }

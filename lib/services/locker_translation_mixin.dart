@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:translator/translator.dart';
 import 'session_service.dart';
+import '../models/workshop_owner_models.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // lib/services/locker_translation_mixin.dart
@@ -66,6 +68,11 @@ class AppTranslationService {
     'fund'              : 'شحن رصيد',
     'all'               : 'الكل',
     'FUND'              : 'شحن رصيد',
+    'fund_request'      : 'طلب تمويل',
+    'FUND REQUEST'      : 'طلب تمويل',
+    'cashier expense'   : 'مصروف أمين الصندوق',
+    'CASHIER EXPENSE'   : 'مصروف أمين الصندوق',
+    'Petty cash request': 'طلب عهدة نقدية',
     // ── Employee / POS statuses ───────────────────────────────────────────
     'active'            : 'نشط',
     'inactive'          : 'غير نشط',
@@ -208,6 +215,39 @@ typedef LockerRequestTranslated = RequestTranslated;
 ///     }
 ///   }
 mixin TranslatableMixin {
+  Listenable? _localeListenable;
+  VoidCallback? _localeListener;
+
+  /// Bind this ViewModel to SettingsViewModel (or any Listenable that changes
+  /// when locale changes). Call this once from the ViewModel constructor:
+  ///
+  ///   bindLocaleRetranslation(settingsViewModel, translateCachedData);
+  ///
+  /// Keep raw API objects in the ViewModel, and update only translated display
+  /// fields inside [retranslate]. This prevents stale Arabic/English text when
+  /// the user switches language without re-opening the screen.
+  void bindLocaleRetranslation(
+    Listenable settingsViewModel,
+    Future<void> Function() retranslate,
+  ) {
+    unbindLocaleRetranslation();
+    _localeListenable = settingsViewModel;
+    _localeListener = () async {
+      AppTranslationService.clearCache();
+      await retranslate();
+    };
+    settingsViewModel.addListener(_localeListener!);
+  }
+
+  /// Call this from the ViewModel dispose() method.
+  void unbindLocaleRetranslation() {
+    if (_localeListenable != null && _localeListener != null) {
+      _localeListenable!.removeListener(_localeListener!);
+    }
+    _localeListenable = null;
+    _localeListener = null;
+  }
+
   // ── Core wrappers ─────────────────────────────────────────────────────────
 
   Future<String> t(String text) =>
@@ -277,6 +317,42 @@ mixin TranslatableMixin {
     final isCode = RegExp(r'^[A-Z0-9#\-_/]+$').hasMatch(ref.trim());
     if (isCode) return ref;
     return t(ref);
+  }
+
+  /// Translates branch name/location returned by API/database.
+  Future<Branch> translateBranch(Branch branch) async {
+    return branch.copyWith(
+      translatedName: await tBranch(branch.name),
+      translatedLocation: await t(branch.location),
+    );
+  }
+
+  /// Translates a list of branches without mutating raw API data.
+  Future<List<Branch>> translateBranches(List<Branch> branches) async {
+    return Future.wait(branches.map(translateBranch));
+  }
+
+  /// Translates all dynamic display fields on a petty-cash request.
+  Future<PettyCashRequestItem> translatePettyCashRequest(
+    PettyCashRequestItem request,
+  ) async {
+    return request.copyWith(
+      translatedPartyName: await tNullable(request.partyName),
+      translatedBranchName: await tBranch(request.branchName),
+      translatedCashierName: await tPerson(request.cashierName),
+      translatedStatus: await tUiStatus(request.status),
+      translatedReason: await tNotes(request.reason),
+      translatedCategoryLabel: await tNullable(request.categoryLabel),
+      translatedEmployeeName: await tNullable(request.employeeName),
+      translatedRejectionReason: await tNullable(request.rejectionReason),
+    );
+  }
+
+  /// Translates a list of petty-cash requests without mutating raw API data.
+  Future<List<PettyCashRequestItem>> translatePettyCashRequests(
+    List<PettyCashRequestItem> requests,
+  ) async {
+    return Future.wait(requests.map(translatePettyCashRequest));
   }
 }
 

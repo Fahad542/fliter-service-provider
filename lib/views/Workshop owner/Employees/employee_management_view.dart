@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import 'employee_management_view_model.dart';
@@ -12,7 +13,8 @@ class EmployeeManagementView extends StatefulWidget {
   const EmployeeManagementView({super.key});
 
   @override
-  State<EmployeeManagementView> createState() => _EmployeeManagementViewState();
+  State<EmployeeManagementView> createState() =>
+      _EmployeeManagementViewState();
 }
 
 class _EmployeeManagementViewState extends State<EmployeeManagementView> {
@@ -20,36 +22,39 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<EmployeeManagementViewModel>(
       builder: (context, vm, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FD),
           appBar: OwnerAppBar(
-            title: 'Employee Management',
+            title: l10n.empMgmtTitle,
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
           ),
           body: vm.isLoading
               ? const Center(
-                  child: CircularProgressIndicator(color: AppColors.primaryLight),
-                )
+            child: CircularProgressIndicator(
+                color: AppColors.primaryLight),
+          )
               : Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (vm.employees.isNotEmpty || vm.searchQuery.isNotEmpty) ...[
-                        CustomSearchBar(
-                          onChanged: (val) => vm.updateSearchQuery(val),
-                          hintText: 'Search by Name, Email or Mobile...',
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      _buildFilters(vm),
-                      const SizedBox(height: 16),
-                      Expanded(child: _buildEmployeeList(vm)),
-                    ],
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (vm.employees.isNotEmpty ||
+                    vm.searchQuery.isNotEmpty) ...[
+                  CustomSearchBar(
+                    onChanged: (val) => vm.updateSearchQuery(val),
+                    hintText: l10n.empMgmtSearchHint,
                   ),
-                ),
+                  const SizedBox(height: 16),
+                ],
+                _buildFilters(vm, l10n),
+                const SizedBox(height: 16),
+                Expanded(child: _buildEmployeeList(vm, l10n)),
+              ],
+            ),
+          ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () {
               vm.setEditEmployee(null);
@@ -57,9 +62,9 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
             },
             backgroundColor: AppColors.secondaryLight,
             icon: const Icon(Icons.person_add_rounded, color: Colors.white),
-            label: const Text(
-              'Add Employee',
-              style: TextStyle(
+            label: Text(
+              l10n.empMgmtAddButton,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -73,9 +78,8 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
-  // AppBar is now replaced by the shared OwnerAppBar widget
-
-  Widget _buildFilters(EmployeeManagementViewModel vm) {
+  Widget _buildFilters(
+      EmployeeManagementViewModel vm, AppLocalizations l10n) {
     if (vm.employees.isEmpty && !vm.isLoading) {
       return const SizedBox.shrink();
     }
@@ -83,14 +87,15 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildFilterChip('All Branches', selectedBranchFilter == null, () {
-            setState(() => selectedBranchFilter = null);
-          }),
+          _buildFilterChip(l10n.empMgmtFilterAllBranches,
+              selectedBranchFilter == null, () {
+                setState(() => selectedBranchFilter = null);
+              }),
           ...vm.branches.map(
-            (branch) => _buildFilterChip(
+                (branch) => _buildFilterChip(
               branch.name,
               selectedBranchFilter == branch.id,
-              () {
+                  () {
                 setState(() => selectedBranchFilter = branch.id);
               },
             ),
@@ -100,13 +105,15 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
-  Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildFilterChip(
+      String label, bool isSelected, VoidCallback onTap) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryLight : Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -117,19 +124,22 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
             ),
             boxShadow: isSelected
                 ? [
-                    BoxShadow(
-                      color: AppColors.primaryLight.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
+              BoxShadow(
+                color: AppColors.primaryLight.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ]
                 : [],
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? AppColors.secondaryLight : Colors.grey.shade700,
-              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+              color: isSelected
+                  ? AppColors.secondaryLight
+                  : Colors.grey.shade700,
+              fontWeight:
+              isSelected ? FontWeight.w900 : FontWeight.w600,
               fontSize: 12,
             ),
           ),
@@ -138,7 +148,8 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
-  Widget _buildEmployeeList(EmployeeManagementViewModel vm) {
+  Widget _buildEmployeeList(
+      EmployeeManagementViewModel vm, AppLocalizations l10n) {
     if (vm.employees.isEmpty && vm.isLoading) {
       return const SizedBox.shrink();
     }
@@ -146,48 +157,48 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     final filteredEmployees = selectedBranchFilter == null
         ? vm.employees
         : vm.employees
-              .where((e) => e.branchId == selectedBranchFilter)
-              .toList();
+        .where((e) => e.branchId == selectedBranchFilter)
+        .toList();
 
     if (filteredEmployees.isEmpty) {
-      return const Center(child: Text('No employees found.'));
+      return Center(child: Text(l10n.empMgmtNoEmployees));
     }
 
     return ListView.builder(
       itemCount: filteredEmployees.length,
       itemBuilder: (context, index) {
         final employee = filteredEmployees[index];
-        return _buildEmployeeCard(employee, vm);
+        return _buildEmployeeCard(employee, vm, l10n);
       },
     );
   }
 
-
   Widget _buildEmployeeCard(
-    OwnerEmployee employee,
-    EmployeeManagementViewModel vm,
-  ) {
-    
-    final branchName = (employee.branchName != null && employee.branchName!.isNotEmpty)
+      OwnerEmployee employee,
+      EmployeeManagementViewModel vm,
+      AppLocalizations l10n,
+      ) {
+    final branchName =
+    (employee.branchName != null && employee.branchName!.isNotEmpty)
         ? employee.branchName!
         : vm.branches
-            .firstWhere(
-              (b) => b.id == employee.branchId,
-              orElse: () => Branch(
-                id: '',
-                name: 'Unknown',
-                location: '',
-                vat: '',
-                cr: '',
-                salesMTD: 0,
-                status: '',
-              ),
-            )
-            .name;
+        .firstWhere(
+          (b) => b.id == employee.branchId,
+      orElse: () => Branch(
+        id: '',
+        name: l10n.empMgmtInfoUnknown,
+        location: '',
+        vat: '',
+        cr: '',
+        salesMTD: 0,
+        status: '',
+      ),
+    )
+        .name;
 
     final departmentNames = employee.departmentIds.map((id) {
-       final matches = vm.departments.where((d) => d.id == id);
-       return matches.isNotEmpty ? matches.first.name : null;
+      final matches = vm.departments.where((d) => d.id == id);
+      return matches.isNotEmpty ? matches.first.name : null;
     }).where((name) => name != null).join(', ');
 
     return Container(
@@ -207,9 +218,7 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            // All details are now shown by default
-          },
+          onTap: () {},
           borderRadius: BorderRadius.circular(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,12 +234,16 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                           width: 52,
                           height: 52,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withOpacity(0.1),
+                            color:
+                            AppColors.primaryLight.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
+                            border: Border.all(
+                                color: AppColors.primaryLight
+                                    .withOpacity(0.2)),
                           ),
                           child: const Center(
-                            child: Icon(Icons.person_rounded, color: AppColors.primaryLight, size: 28),
+                            child: Icon(Icons.person_rounded,
+                                color: AppColors.primaryLight, size: 28),
                           ),
                         ),
                         Positioned(
@@ -240,9 +253,12 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                             width: 14,
                             height: 14,
                             decoration: BoxDecoration(
-                              color: employee.isActive ? Colors.green : Colors.grey.shade400,
+                              color: employee.isActive
+                                  ? Colors.green
+                                  : Colors.grey.shade400,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                              border:
+                              Border.all(color: Colors.white, width: 2),
                             ),
                           ),
                         ),
@@ -253,11 +269,18 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (employee.role.toLowerCase() == 'technician' && employee.formattedLastSeen.isNotEmpty)
+                          // Last seen
+                          if (employee.role.toLowerCase() ==
+                              'technician' &&
+                              employee
+                                  .localizedFormattedLastSeen(l10n)
+                                  .isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 2),
                               child: Text(
-                                'Last seen: ${employee.formattedLastSeen}',
+                                l10n.empMgmtLastSeen(
+                                    employee.localizedFormattedLastSeen(
+                                        l10n)),
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 9,
@@ -278,14 +301,21 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (employee.role.toLowerCase() == 'technician' && employee.slots != null) ...[
+                              if (employee.role.toLowerCase() ==
+                                  'technician' &&
+                                  employee.slots != null) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryLight.withOpacity(0.08),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: AppColors.primaryLight.withOpacity(0.1)),
+                                    color: AppColors.primaryLight
+                                        .withOpacity(0.08),
+                                    borderRadius:
+                                    BorderRadius.circular(6),
+                                    border: Border.all(
+                                        color: AppColors.primaryLight
+                                            .withOpacity(0.1)),
                                   ),
                                   child: Text(
                                     '${employee.slots!.active}/${employee.slots!.total}',
@@ -302,15 +332,20 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              _buildStatusBadge(employee),
-                              if (employee.role.toLowerCase() == 'technician') ...[
+                              _buildStatusBadge(employee, l10n),
+                              if (employee.role.toLowerCase() ==
+                                  'technician') ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: (employee.isTechnicianAvailable ? Colors.green : Colors.grey)
+                                    color: (employee.isTechnicianAvailable
+                                        ? Colors.green
+                                        : Colors.grey)
                                         .withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius:
+                                    BorderRadius.circular(6),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -319,7 +354,8 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                                         width: 6,
                                         height: 6,
                                         decoration: BoxDecoration(
-                                          color: employee.isTechnicianAvailable
+                                          color: employee
+                                              .isTechnicianAvailable
                                               ? Colors.green
                                               : Colors.grey,
                                           shape: BoxShape.circle,
@@ -327,9 +363,12 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        employee.technicianStatusLabel,
+                                        employee
+                                            .localizedTechnicianStatusLabel(
+                                            l10n),
                                         style: TextStyle(
-                                          color: employee.isTechnicianAvailable
+                                          color: employee
+                                              .isTechnicianAvailable
                                               ? Colors.green
                                               : Colors.grey.shade600,
                                           fontSize: 9,
@@ -340,11 +379,17 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                                   ),
                                 ),
                               ],
-                              if (employee.role.toLowerCase() != 'technician') ...[
+                              if (employee.role.toLowerCase() !=
+                                  'technician') ...[
                                 const SizedBox(width: 8),
                                 Text(
-                                  employee.mobile.isNotEmpty ? employee.mobile : 'N/A',
-                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w600),
+                                  employee.mobile.isNotEmpty
+                                      ? employee.mobile
+                                      : 'N/A',
+                                  style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ],
@@ -353,39 +398,58 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _buildActionMenu(employee, vm),
+                    _buildActionMenu(employee, vm, l10n),
                   ],
                 ),
               ),
-              Container(height: 1, color: Colors.grey.withOpacity(0.06)),
+              Container(
+                  height: 1, color: Colors.grey.withOpacity(0.06)),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 16),
                 child: Column(
                   children: [
                     Row(
                       children: [
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: _buildInfoItem('BRANCH', branchName.toUpperCase(), Icons.location_on_rounded),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4),
+                            child: _buildInfoItem(
+                              l10n.empMgmtInfoBranch,
+                              branchName.toUpperCase(),
+                              Icons.location_on_rounded,
+                            ),
                           ),
                         ),
-                        Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
+                        Container(
+                            width: 1,
+                            height: 30,
+                            color: Colors.grey.withOpacity(0.1)),
                         if (employee.role.toLowerCase() != 'cashier')
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              child: _buildInfoItem('DEPT', departmentNames.isNotEmpty ? departmentNames : 'None', Icons.category_rounded, isPrimary: true),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4),
+                              child: _buildInfoItem(
+                                l10n.empMgmtInfoDept,
+                                departmentNames.isNotEmpty
+                                    ? departmentNames
+                                    : l10n.empMgmtInfoNone,
+                                Icons.category_rounded,
+                                isPrimary: true,
+                              ),
                             ),
                           )
                         else
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4),
                               child: _buildInfoItem(
-                                'ROLE TYPE', 
-                                employee.role.toUpperCase(), 
-                                Icons.verified_user_rounded, 
+                                l10n.empMgmtInfoRoleType,
+                                employee.localizedRole(l10n).toUpperCase(),
+                                Icons.verified_user_rounded,
                                 isPrimary: true,
                               ),
                             ),
@@ -396,22 +460,40 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Expanded(child: _buildInfoItem('TECH TYPE', (employee.technicianType ?? 'Unknown').toUpperCase(), Icons.build_circle_outlined)),
-                          Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
                           Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              child: _buildInfoItem('SALARY', 'SAR ${(employee.basicSalary ?? 0.0).toStringAsFixed(0)}', Icons.payments_outlined),
+                            child: _buildInfoItem(
+                              l10n.empMgmtInfoTechType,
+                              employee.localizedTechType(l10n),
+                              Icons.build_circle_outlined,
                             ),
                           ),
-                          Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
+                          Container(
+                              width: 1,
+                              height: 30,
+                              color: Colors.grey.withOpacity(0.1)),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(left: 4),
+                              padding:
+                              const EdgeInsets.symmetric(horizontal: 4),
                               child: _buildInfoItem(
-                                'COMMISSION', 
-                                '${employee.commissionPercent.toStringAsFixed(1)}%', 
-                                Icons.percent_rounded, 
+                                l10n.empMgmtInfoSalary,
+                                'SAR ${(employee.basicSalary ?? 0.0).toStringAsFixed(0)}',
+                                Icons.payments_outlined,
+                              ),
+                            ),
+                          ),
+                          Container(
+                              width: 1,
+                              height: 30,
+                              color: Colors.grey.withOpacity(0.1)),
+                          Expanded(
+                            child: Padding(
+                              padding:
+                              const EdgeInsets.only(left: 4),
+                              child: _buildInfoItem(
+                                l10n.empMgmtInfoCommission,
+                                '${employee.commissionPercent.toStringAsFixed(1)}%',
+                                Icons.percent_rounded,
                                 isPrimary: true,
                               ),
                             ),
@@ -429,19 +511,24 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
-
-  Widget _buildActionMenu(OwnerEmployee e, EmployeeManagementViewModel vm) {
+  Widget _buildActionMenu(
+      OwnerEmployee e,
+      EmployeeManagementViewModel vm,
+      AppLocalizations l10n,
+      ) {
     return PopupMenuButton<String>(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape:
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 8,
       offset: const Offset(0, 40),
-      icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400, size: 20),
+      icon: Icon(Icons.more_vert_rounded,
+          color: Colors.grey.shade400, size: 20),
       onSelected: (value) {
         if (value == 'edit') {
           vm.setEditEmployee(e);
           _showAddEmployeeSheet(context, vm);
         } else if (value == 'delete') {
-          _showDeleteConfirmation(context, vm, e);
+          _showDeleteConfirmation(context, vm, e, l10n);
         }
       },
       itemBuilder: (context) => [
@@ -455,10 +542,15 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                   color: AppColors.primaryLight.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.edit_rounded, size: 16, color: AppColors.secondaryLight),
+                child: const Icon(Icons.edit_rounded,
+                    size: 16, color: AppColors.secondaryLight),
               ),
               const SizedBox(width: 12),
-              const Text('Edit', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight)),
+              Text(l10n.empMgmtMenuEdit,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppColors.secondaryLight)),
             ],
           ),
         ),
@@ -472,10 +564,15 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                   color: AppColors.primaryLight.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.delete_rounded, size: 16, color: AppColors.secondaryLight),
+                child: const Icon(Icons.delete_rounded,
+                    size: 16, color: AppColors.secondaryLight),
               ),
               const SizedBox(width: 12),
-              const Text('Delete', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight)),
+              Text(l10n.empMgmtMenuDelete,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppColors.secondaryLight)),
             ],
           ),
         ),
@@ -483,7 +580,8 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
-  Widget _buildInfoItem(String label, String value, IconData icon, {bool isPrimary = false}) {
+  Widget _buildInfoItem(String label, String value, IconData icon,
+      {bool isPrimary = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -494,7 +592,11 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+              style: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5),
             ),
           ],
         ),
@@ -504,7 +606,9 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 13,
-            color: isPrimary ? AppColors.primaryLight : AppColors.secondaryLight,
+            color: isPrimary
+                ? AppColors.primaryLight
+                : AppColors.secondaryLight,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -513,33 +617,43 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
-  Widget _buildSlotItem(String label, String value, IconData icon, {Color? color}) {
+  Widget _buildSlotItem(String label, String value, IconData icon,
+      {Color? color}) {
     return Column(
       children: [
         Icon(icon, size: 14, color: color ?? Colors.grey.shade400),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(color: Colors.grey.shade400, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.3),
+          style: TextStyle(
+              color: Colors.grey.shade400,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.3),
         ),
         const SizedBox(height: 2),
         Text(
           value,
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: color ?? AppColors.secondaryLight),
+          style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+              color: color ?? AppColors.secondaryLight),
         ),
       ],
     );
   }
 
-  Widget _buildStatusBadge(OwnerEmployee employee) {
+  Widget _buildStatusBadge(
+      OwnerEmployee employee, AppLocalizations l10n) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding:
+      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.primaryLight.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        employee.role.toUpperCase(),
+        employee.localizedRole(l10n).toUpperCase(),
         style: const TextStyle(
           color: AppColors.secondaryLight,
           fontSize: 9,
@@ -550,31 +664,39 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, EmployeeManagementViewModel vm, OwnerEmployee e) {
+  void _showDeleteConfirmation(
+      BuildContext context,
+      EmployeeManagementViewModel vm,
+      OwnerEmployee e,
+      AppLocalizations l10n,
+      ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Employee'),
-        content: Text('Are you sure you want to delete "${e.name}"?'),
+        title: Text(l10n.empMgmtDeleteTitle),
+        content: Text(l10n.empMgmtDeleteBody(e.name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.empMgmtDeleteCancel),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               vm.deleteEmployee(context, e.id, e.role);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.empMgmtDeleteConfirm,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
   }
 
-
   void _showAddEmployeeSheet(
-    BuildContext context,
-    EmployeeManagementViewModel vm,
-  ) {
+      BuildContext context,
+      EmployeeManagementViewModel vm,
+      ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -583,6 +705,8 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
     );
   }
 }
+
+// ─── Add / Edit Employee Sheet ────────────────────────────────────────────────
 
 class _AddEmployeeSheet extends StatefulWidget {
   final EmployeeManagementViewModel vm;
@@ -604,22 +728,33 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
   void initState() {
     super.initState();
     if (widget.vm.isEditing) {
-      final e = widget.vm.employees.firstWhere((emp) => emp.name == widget.vm.nameController.text); // Rough way to find current editing employee if needed, but better to use the fields already pre-filled in VM
-      selectedRole = widget.vm.employees.firstWhere((emp) => emp.name == widget.vm.nameController.text, orElse: () => OwnerEmployee(id: '', name: '', mobile: '', branchId: '', role: 'Technician', departmentIds: [], commissionPercent: 0, isAvailable: false)).role;
-      // Capitalize first letter of role
-      if (selectedRole.isNotEmpty) {
-        selectedRole = selectedRole[0].toUpperCase() + selectedRole.substring(1).toLowerCase();
-      }
-      
-      // Attempt to find the full employee object from VM to get branch/dept/techType
-      final editingEmp = widget.vm.employees.firstWhere((emp) => emp.name == widget.vm.nameController.text, orElse: () => OwnerEmployee(id: '', name: '', mobile: '', branchId: '', role: '', departmentIds: [], commissionPercent: 0, isAvailable: false));
+      final editingEmp = widget.vm.employees.firstWhere(
+            (emp) => emp.name == widget.vm.nameController.text,
+        orElse: () => OwnerEmployee(
+            id: '',
+            name: '',
+            mobile: '',
+            branchId: '',
+            role: '',
+            departmentIds: [],
+            commissionPercent: 0,
+            isAvailable: false),
+      );
+      selectedRole = editingEmp.role.isEmpty
+          ? 'Technician'
+          : editingEmp.role[0].toUpperCase() +
+          editingEmp.role.substring(1).toLowerCase();
       selectedBranchId = editingEmp.branchId;
       if (editingEmp.departmentIds.isNotEmpty) {
         selectedDepartmentId = editingEmp.departmentIds.first;
       }
       if (editingEmp.technicianType != null) {
-        isWorkshop = editingEmp.technicianType!.toLowerCase().contains('workshop') || editingEmp.technicianType!.toLowerCase() == 'both';
-        isOnCall = editingEmp.technicianType!.toLowerCase().contains('oncall') || editingEmp.technicianType!.toLowerCase() == 'both';
+        isWorkshop = editingEmp.technicianType!.toLowerCase().contains(
+            'workshop') ||
+            editingEmp.technicianType!.toLowerCase() == 'both';
+        isOnCall =
+            editingEmp.technicianType!.toLowerCase().contains('oncall') ||
+                editingEmp.technicianType!.toLowerCase() == 'both';
       }
     } else {
       if (widget.vm.branches.isNotEmpty) {
@@ -634,6 +769,8 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<EmployeeManagementViewModel>();
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -645,11 +782,11 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
           _buildHandle(),
           ConstrainedBox(
             constraints: BoxConstraints(
-              // Sheet ko compact rakhne ke liye scroll area ki height limit
               maxHeight: MediaQuery.of(context).size.height * 0.72,
             ),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 24, vertical: 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -657,65 +794,80 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        vm.isEditing ? 'Update Employee' : 'Add New Employee',
-                        style: AppTextStyles.h2.copyWith(fontSize: 18),
+                        vm.isEditing
+                            ? l10n.empMgmtSheetUpdateTitle
+                            : l10n.empMgmtSheetAddTitle,
+                        style:
+                        AppTextStyles.h2.copyWith(fontSize: 18),
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.grey),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    vm.isEditing ? 'Modify existing employee details.' : 'Provide detailed Information to register a new member.',
+                    vm.isEditing
+                        ? l10n.empMgmtSheetUpdateSubtitle
+                        : l10n.empMgmtSheetAddSubtitle,
                     style: const TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 30),
+
+                  // Role dropdown (display translated names but keep internal
+                  // English values for the submit logic)
                   _buildDropdown(
-                    'Role',
+                    l10n.empMgmtFieldRole,
                     [
-                      'Cashier',
-                      'Technician',
-                      'Supplier',
+                      l10n.empMgmtRoleCashier,
+                      l10n.empMgmtRoleTechnician,
+                      l10n.empMgmtRoleSupplier,
                     ],
-                    value: selectedRole,
+                    value: _localizedRole(selectedRole, l10n),
                     onChanged: (val) {
-                      setState(() => selectedRole = val!);
+                      setState(() =>
+                      selectedRole = _englishRole(val!, l10n));
                     },
                     enabled: !vm.isEditing,
                   ),
                   const SizedBox(height: 16),
+
                   _buildTextField(
-                    'Full Name',
+                    l10n.empMgmtFieldFullName,
                     Icons.person_rounded,
                     vm.nameController,
                   ),
                   _buildTextField(
-                    'Mobile Number',
+                    l10n.empMgmtFieldMobile,
                     Icons.phone_android_rounded,
                     vm.mobileController,
                   ),
                   _buildTextField(
-                    'Email Address',
+                    l10n.empMgmtFieldEmail,
                     Icons.email_rounded,
                     vm.emailController,
                   ),
-                  _buildPasswordField(vm.passwordController, isOptional: vm.isEditing),
+                  _buildPasswordField(
+                    vm.passwordController,
+                    l10n,
+                    isOptional: vm.isEditing,
+                  ),
 
                   const SizedBox(height: 16),
-                  if (selectedRole != 'Supplier')
+                  if (selectedRole != l10n.empMgmtRoleSupplier)
                     if (vm.branches.isNotEmpty)
                       _buildDropdown(
-                        'Assign to Branch',
+                        l10n.empMgmtFieldBranch,
                         vm.branches.map((b) => b.name).toList(),
                         value: selectedBranchId != null
                             ? vm.branches
-                                  .firstWhere(
-                                    (b) => b.id == selectedBranchId,
-                                    orElse: () => vm.branches.first,
-                                  )
-                                  .name
+                            .firstWhere(
+                              (b) => b.id == selectedBranchId,
+                          orElse: () => vm.branches.first,
+                        )
+                            .name
                             : vm.branches.first.name,
                         onChanged: (val) {
                           if (val != null) {
@@ -723,72 +875,77 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                               selectedBranchId = vm.branches
                                   .firstWhere(
                                     (b) => b.name == val,
-                                    orElse: () => vm.branches.first,
-                                  )
+                                orElse: () => vm.branches.first,
+                              )
                                   .id;
                             });
                           }
                         },
                       ),
-                  if (selectedRole != 'Cashier' && selectedRole != 'Supplier')
+
+                  if (selectedRole != l10n.empMgmtRoleCashier &&
+                      selectedRole != l10n.empMgmtRoleSupplier)
                     if (vm.departments.isNotEmpty)
                       _buildDropdown(
-                        'Assign Department',
+                        l10n.empMgmtFieldDepartment,
                         vm.departments.map((d) => d.name).toList(),
                         value: vm.departments
                             .firstWhere(
                               (d) => d.id == selectedDepartmentId,
-                              orElse: () => vm.departments.first,
-                            )
+                          orElse: () => vm.departments.first,
+                        )
                             .name,
                         onChanged: (val) {
                           setState(
-                            () => selectedDepartmentId = vm.departments
+                                () => selectedDepartmentId = vm.departments
                                 .firstWhere((d) => d.name == val)
                                 .id,
                           );
                         },
                       ),
 
-                  if (selectedRole == 'Supplier') ...[
+                  if (selectedRole == l10n.empMgmtRoleSupplier) ...[
                     const SizedBox(height: 16),
                     TypeAheadField<Map<String, dynamic>>(
                       controller: vm.addressController,
-                      builder: (context, controller, focusNode) => _buildTextField(
-                        'Address',
-                        Icons.map_rounded,
-                        controller,
-                        focusNode: focusNode,
-                      ),
+                      builder: (context, controller, focusNode) =>
+                          _buildTextField(
+                            l10n.empMgmtFieldAddress,
+                            Icons.map_rounded,
+                            controller,
+                            focusNode: focusNode,
+                          ),
                       suggestionsCallback: (pattern) async {
                         if (pattern.length < 3) return [];
                         return await vm.getAddressSuggestions(pattern);
                       },
                       itemBuilder: (context, suggestion) {
                         return ListTile(
-                          leading: const Icon(Icons.location_on_rounded, color: AppColors.primaryLight),
-                          title: Text(suggestion['description'] ?? ''),
+                          leading: const Icon(Icons.location_on_rounded,
+                              color: AppColors.primaryLight),
+                          title:
+                          Text(suggestion['description'] ?? ''),
                         );
                       },
                       onSelected: (suggestion) {
                         vm.onAddressSelected(suggestion);
                       },
-                      emptyBuilder: (context) => const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('No addresses found'),
+                      emptyBuilder: (context) => Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(l10n.empMgmtNoAddressFound),
                       ),
                     ),
                     _buildTextField(
-                      'Opening Balance',
+                      l10n.empMgmtFieldOpeningBalance,
                       Icons.account_balance_wallet_rounded,
                       vm.openingBalanceController,
                       isNumber: true,
                     ),
                   ],
 
-                  if (selectedRole == 'Technician') ...[
+                  if (selectedRole == l10n.empMgmtRoleTechnician) ...[
                     const SizedBox(height: 20),
-                    _buildSectionTitle('Technician Specifics'),
+                    _buildSectionTitle(l10n.empMgmtSectionTechSpecifics),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -799,35 +956,31 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                       child: Column(
                         children: [
                           _buildToggleRow(
-                            'Workshop Technician',
+                            l10n.empMgmtToggleWorkshop,
                             isWorkshop,
-                            (val) {
-                              setState(() => isWorkshop = val);
-                            },
+                                (val) => setState(() => isWorkshop = val),
                           ),
                           const SizedBox(height: 10),
                           _buildToggleRow(
-                            'On-Call Technician',
+                            l10n.empMgmtToggleOnCall,
                             isOnCall,
-                            (val) {
-                              setState(() => isOnCall = val);
-                            },
+                                (val) => setState(() => isOnCall = val),
                           ),
                         ],
                       ),
                     ),
                   ],
 
-                  if (selectedRole != 'Cashier' &&
-                      selectedRole != 'Supplier') ...[
+                  if (selectedRole != l10n.empMgmtRoleCashier &&
+                      selectedRole != l10n.empMgmtRoleSupplier) ...[
                     const SizedBox(height: 24),
-                    _buildSectionTitle('Salary & Commission'),
+                    _buildSectionTitle(l10n.empMgmtSectionSalary),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
                           child: _buildTextField(
-                            'Base Salary',
+                            l10n.empMgmtFieldBaseSalary,
                             Icons.money_rounded,
                             vm.baseSalaryController,
                             isNumber: true,
@@ -836,7 +989,7 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: _buildTextField(
-                            'Commission %',
+                            l10n.empMgmtFieldCommission,
                             Icons.percent_rounded,
                             vm.commissionPercentController,
                             isNumber: true,
@@ -845,8 +998,9 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                       ],
                     ),
                   ],
+
                   const SizedBox(height: 24),
-                  _buildSectionTitle('Availability'),
+                  _buildSectionTitle(l10n.empMgmtSectionAvailability),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -855,9 +1009,9 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: _buildToggleRow(
-                      'Active Status',
+                      l10n.empMgmtFieldActiveStatus,
                       vm.isActive,
-                      (val) => vm.toggleStatus(val),
+                          (val) => vm.toggleStatus(val),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -865,85 +1019,109 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
               ),
             ),
           ),
-            Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 16,
+          Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 16,
               bottom: MediaQuery.of(context).viewInsets.bottom + 18,
-              ),
-              child: ElevatedButton(
-                onPressed: vm.isLoading
-                    ? null
-                    : () async {
-                        final bId =
-                            selectedBranchId ??
-                            (vm.branches.isNotEmpty
-                                ? vm.branches.first.id
-                                : null);
-                        final dId =
-                            selectedDepartmentId ??
-                            (vm.departments.isNotEmpty
-                                ? vm.departments.first.id
-                                : null);
+            ),
+            child: ElevatedButton(
+              onPressed: vm.isLoading
+                  ? null
+                  : () async {
+                final bId = selectedBranchId ??
+                    (vm.branches.isNotEmpty
+                        ? vm.branches.first.id
+                        : null);
+                final dId = selectedDepartmentId ??
+                    (vm.departments.isNotEmpty
+                        ? vm.departments.first.id
+                        : null);
 
-                        if (selectedRole == 'Technician') {
-                            await vm.submitTechnicianForm(
-                              context,
-                              branchId: bId,
-                              departmentId: dId,
-                              isWorkshop: isWorkshop,
-                              isOnCall: isOnCall,
-                            );
-                        } else if (selectedRole == 'Cashier') {
-                          await vm.submitCashierForm(
-                            context,
-                            branchId: bId,
-                          );
-                        } else if (selectedRole == 'Supplier') {
-                          await vm.submitSupplierForm(context);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Only Technician, Cashier, and Supplier creation APIs are integrated.',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryLight,
-                  disabledBackgroundColor: AppColors.primaryLight,
-                  foregroundColor: AppColors.secondaryLight,
-                  disabledForegroundColor: AppColors.secondaryLight,
-                  minimumSize: const Size.fromHeight(56),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                if (selectedRole == l10n.empMgmtRoleTechnician) {
+                  await vm.submitTechnicianForm(
+                    context,
+                    branchId: bId,
+                    departmentId: dId,
+                    isWorkshop: isWorkshop,
+                    isOnCall: isOnCall,
+                  );
+                } else if (selectedRole ==
+                    l10n.empMgmtRoleCashier) {
+                  await vm.submitCashierForm(context,
+                      branchId: bId);
+                } else if (selectedRole ==
+                    l10n.empMgmtRoleSupplier) {
+                  await vm.submitSupplierForm(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                      Text(l10n.empMgmtApiNotIntegrated),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryLight,
+                disabledBackgroundColor: AppColors.primaryLight,
+                foregroundColor: AppColors.secondaryLight,
+                disabledForegroundColor: AppColors.secondaryLight,
+                minimumSize: const Size.fromHeight(56),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              child: vm.isActionLoading
+                  ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: AppColors.secondaryLight,
+                  strokeWidth: 2,
                 ),
-                child: vm.isActionLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: AppColors.secondaryLight,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        vm.isEditing ? 'Update Employee' : 'Save Employee',
-                        style: const TextStyle(
-                          color: AppColors.secondaryLight,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
-                      ),
+              )
+                  : Text(
+                vm.isEditing
+                    ? l10n.empMgmtUpdateButton
+                    : l10n.empMgmtSaveButton,
+                style: const TextStyle(
+                  color: AppColors.secondaryLight,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
+
+  // ── Role helpers: keep internal values as English keys ───────────────────
+
+  String _localizedRole(String englishRole, AppLocalizations l10n) {
+    switch (englishRole.toLowerCase()) {
+      case 'technician':
+        return l10n.empMgmtRoleTechnician;
+      case 'cashier':
+        return l10n.empMgmtRoleCashier;
+      case 'supplier':
+        return l10n.empMgmtRoleSupplier;
+      default:
+        return englishRole;
+    }
+  }
+
+  String _englishRole(String localizedRole, AppLocalizations l10n) {
+    if (localizedRole == l10n.empMgmtRoleTechnician) return 'Technician';
+    if (localizedRole == l10n.empMgmtRoleCashier) return 'Cashier';
+    if (localizedRole == l10n.empMgmtRoleSupplier) return 'Supplier';
+    return localizedRole;
+  }
+
+  // ── Shared widget builders ────────────────────────────────────────────────
 
   Widget _buildHandle() {
     return Center(
@@ -971,48 +1149,55 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
   }
 
   Widget _buildTextField(
-    String label,
-    IconData icon,
-    TextEditingController controller, {
-    bool isNumber = false,
-    bool obscureText = false,
-    FocusNode? focusNode,
-  }) {
+      String label,
+      IconData icon,
+      TextEditingController controller, {
+        bool isNumber = false,
+        bool obscureText = false,
+        FocusNode? focusNode,
+      }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
         focusNode: focusNode,
         obscureText: obscureText,
-        keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+        keyboardType: isNumber
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: AppColors.secondaryLight, size: 20),
+          prefixIcon:
+          Icon(icon, color: AppColors.secondaryLight, size: 20),
           filled: true,
           fillColor: Colors.grey.withOpacity(0.05),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
-          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+          labelStyle:
+          const TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ),
     );
   }
 
-  Widget _buildPasswordField(TextEditingController controller, {bool isOptional = false}) {
+  Widget _buildPasswordField(
+      TextEditingController controller,
+      AppLocalizations l10n, {
+        bool isOptional = false,
+      }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
         obscureText: !_passwordVisible,
         decoration: InputDecoration(
-          labelText: isOptional ? 'Password (Optional)' : 'Password',
-          prefixIcon: const Icon(
-            Icons.lock_rounded,
-            color: AppColors.secondaryLight,
-            size: 20,
-          ),
+          labelText: isOptional
+              ? l10n.empMgmtFieldPasswordOptional
+              : l10n.empMgmtFieldPassword,
+          prefixIcon: const Icon(Icons.lock_rounded,
+              color: AppColors.secondaryLight, size: 20),
           suffixIcon: IconButton(
             icon: Icon(
               _passwordVisible
@@ -1030,27 +1215,32 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
-          labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+          labelStyle:
+          const TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ),
     );
   }
 
   Widget _buildDropdown(
-    String label,
-    List<String> items, {
-    String? value,
-    Function(String?)? onChanged,
-    bool enabled = true,
-  }) {
+      String label,
+      List<String> items, {
+        String? value,
+        Function(String?)? onChanged,
+        bool enabled = true,
+      }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: enabled ? Colors.grey.withOpacity(0.05) : Colors.grey.withOpacity(0.1),
+        color: enabled
+            ? Colors.grey.withOpacity(0.05)
+            : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: enabled ? Colors.transparent : Colors.grey.withOpacity(0.1),
+          color: enabled
+              ? Colors.transparent
+              : Colors.grey.withOpacity(0.1),
         ),
       ),
       child: DropdownButtonHideUnderline(
@@ -1058,11 +1248,14 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
           decoration: InputDecoration(
             border: InputBorder.none,
             labelText: label,
-            labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+            labelStyle:
+            const TextStyle(color: Colors.grey, fontSize: 13),
           ),
-          value: value ?? (items.isNotEmpty ? items[0] : null),
+          value:
+          value ?? (items.isNotEmpty ? items[0] : null),
           items: items
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .map((e) =>
+              DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
           onChanged: enabled ? onChanged : null,
         ),
@@ -1070,13 +1263,15 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
     );
   }
 
-  Widget _buildToggleRow(String label, bool value, Function(bool) onChanged) {
+  Widget _buildToggleRow(
+      String label, bool value, Function(bool) onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          style: const TextStyle(
+              fontWeight: FontWeight.w600, fontSize: 14),
         ),
         Switch.adaptive(
           value: value,

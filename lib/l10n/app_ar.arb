@@ -180,6 +180,351 @@
   "lockerRejectVarianceBody": "يمكنك تقديم سبب اختياري لرفض هذا الفارق.",
   "lockerRejectionReasonHint": "أدخل سبب الرفض (اختياري)",
   "lockerConfirmReject": "تأكيد الرفض",
+  "corporateFieldMobileMobile": "الجوال",
+  "corporateFieldTaxId": "الرقم الضريبي (ض.ق.م)",
+  "corporateFieldStatus": "الحالة",
+  "corporateSaveChanges": "حفظ التغييرات",
+  "corporateStatusPending": "قيد الانتظار",
+  "corporateStatusActive": "نشط",
+  "corporateStatusRejected": "مرفوض",
+  "corporateCreateSuccess": "تم إنشاء الحساب المؤسسي بنجاح",
+  "corporateCreateError": "فشل إنشاء الحساب المؤسسي",
+  "corporateUpdateSuccess": "تم تحديث الحساب المؤسسي بنجاح",
+  "corporateUpdateError": "فشل تحديث الحساب المؤسسي",
+  "corporateUserCreateSuccess": "تم إنشاء المستخدم المؤسسي بنجاح",
+  "corporateUserCreateError": "فشل إنشاء المستخدم المؤسسي",
+  "corporateValidationRequired": "يرجى ملء جميع الحقول المطلوبة",
+  "corporateValidationBranch": "يرجى اختيار فرع واحد على الأقل",
+  "corporateValidationCompanyName": "اسم الشركة مطلوب",
+  "dashboardAllBranches": "جميع الفروع",
+  "dashboardViewingDataFor": "عرض بيانات",
+  "dashboardAllBranchesAggregated": "جميع الفروع مجمّعة",
+  "dashboardSelectBranch": "اختر الفرع",
+  "dashboardKpiTotalSalesToday": "إجمالي مبيعات اليوم",
+  "dashboardKpiThisMonth": "هذا الشهر",
+  "dashboardKpiPendingInvoices": "الفواتير المعلقة",
+  "dashboardKpiLowStockAlerts": "تنبيهات نقص المخزون",
+  "dashboardKpiTodaysSales": "مبيعات اليوم",
+  "dashboardKpiActiveOrders": "الطلبات النشطة",
+  "dashboardKpiTechWorkload": "حمل الفني",
+  "dashboardKpiPendingApproval": "بانتظار الموافقة",
+  "dashboardPendingApprovalsTitle": "الموافقات المعلقة",
+  "dashboardViewAll": "عرض الكل",
+  "dashboardNoPendingApprovals": "لا توجد طلبات صندوق صغير معلقة الآن.",
+  "dashboardMoreApprovals": "+{count} أخرى في الموافقات",
+  "@dashboardMoreApprovals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardBranchPerformance": "أداء الفروع",
+  "dashboardBranchHighlights": "أبرز الفرع",
+  "dashboardBranchStatus": "حالة الفرع",
+  "dashboardTotalStaff": "إجمالي الموظفين",
+  "dashboardSalesTarget": "هدف المبيعات",
+  "dashboardSalesTargetValue": "85% محقق",
+  "branchPerformanceListTitle": "أداء الفروع",
+  "branchPerformanceNoBranches": "لا توجد فروع بعد.",
+  "deptMgmtTitle": "إدارة الأقسام",
+  "deptMgmtSearchHint": "بحث باسم القسم...",
+  "deptMgmtAddButton": "إضافة قسم جديد",
+  "deptMgmtNoDepartments": "لا توجد أقسام.",
+  "deptMgmtLabelDepartment": "قسم",
+  "deptMgmtMenuEdit": "تعديل",
+  "deptMgmtMenuDelete": "حذف",
+  "deptMgmtConfirmDeleteTitle": "تأكيد الحذف",
+  "deptMgmtConfirmDeleteBody": "هل أنت متأكد من حذف \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+  "@deptMgmtConfirmDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deptMgmtCancel": "إلغاء",
+  "deptMgmtDelete": "حذف",
+  "deptMgmtStatusActive": "نشط",
+  "deptMgmtStatusInactive": "غير نشط",
+  "deptMgmtSheetAddTitle": "إضافة قسم",
+  "deptMgmtSheetUpdateTitle": "تحديث القسم",
+  "deptMgmtSheetAddSubtitle": "أدخل اسم القسم الجديد.",
+  "deptMgmtSheetUpdateSubtitle": "تعديل تفاصيل القسم الحالي.",
+  "deptMgmtFieldName": "اسم القسم",
+  "deptMgmtFieldActiveStatus": "الحالة النشطة",
+  "deptMgmtSheetAddButton": "إضافة قسم",
+  "deptMgmtSheetUpdateButton": "تحديث القسم",
+  "deptMgmtValidationNameRequired": "اسم القسم مطلوب",
+  "deptMgmtCreateSuccess": "تم إنشاء القسم بنجاح",
+  "deptMgmtUpdateSuccess": "تم تحديث القسم بنجاح",
+  "deptMgmtDeleteSuccess": "تم حذف القسم بنجاح",
+  "deptMgmtSaveError": "فشل حفظ القسم",
+  "deptMgmtDeleteError": "فشل حذف القسم",
+  "empMgmtTitle": "إدارة الموظفين",
+  "empMgmtSearchHint": "بحث بالاسم أو البريد أو الجوال...",
+  "empMgmtAddButton": "إضافة موظف",
+  "empMgmtFilterAllBranches": "جميع الفروع",
+  "empMgmtNoEmployees": "لا يوجد موظفون.",
+  "empMgmtLastSeen": "آخر ظهور: {time}",
+  "@empMgmtLastSeen": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "empMgmtInfoBranch": "الفرع",
+  "empMgmtInfoDept": "القسم",
+  "empMgmtInfoRoleType": "نوع الدور",
+  "empMgmtInfoTechType": "نوع الفني",
+  "empMgmtInfoSalary": "الراتب",
+  "empMgmtInfoCommission": "العمولة",
+  "empMgmtInfoUnknown": "غير محدد",
+  "empMgmtInfoNone": "لا يوجد",
+  "empMgmtMenuEdit": "تعديل",
+  "empMgmtMenuDelete": "حذف",
+  "empMgmtDeleteTitle": "حذف الموظف",
+  "empMgmtDeleteBody": "هل أنت متأكد من حذف \"{name}\"؟",
+  "@empMgmtDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "empMgmtDeleteCancel": "إلغاء",
+  "empMgmtDeleteConfirm": "حذف",
+  "empMgmtSheetAddTitle": "إضافة موظف جديد",
+  "empMgmtSheetUpdateTitle": "تحديث الموظف",
+  "empMgmtSheetAddSubtitle": "أدخل التفاصيل لتسجيل عضو جديد.",
+  "empMgmtSheetUpdateSubtitle": "تعديل بيانات الموظف الحالي.",
+  "empMgmtFieldRole": "الدور",
+  "empMgmtFieldFullName": "الاسم الكامل",
+  "empMgmtFieldMobile": "رقم الجوال",
+  "empMgmtFieldEmail": "البريد الإلكتروني",
+  "empMgmtFieldPassword": "كلمة المرور",
+  "empMgmtFieldPasswordOptional": "كلمة المرور (اختياري)",
+  "empMgmtFieldBranch": "تعيين للفرع",
+  "empMgmtFieldDepartment": "تعيين القسم",
+  "empMgmtFieldAddress": "العنوان",
+  "empMgmtFieldOpeningBalance": "الرصيد الافتتاحي",
+  "empMgmtFieldBaseSalary": "الراتب الأساسي",
+  "empMgmtFieldCommission": "نسبة العمولة %",
+  "empMgmtFieldActiveStatus": "الحالة النشطة",
+  "empMgmtSectionTechSpecifics": "تفاصيل الفني",
+  "empMgmtSectionSalary": "الراتب والعمولة",
+  "empMgmtSectionAvailability": "التوفر",
+  "empMgmtToggleWorkshop": "فني ورشة",
+  "empMgmtToggleOnCall": "فني عند الطلب",
+  "empMgmtNoAddressFound": "لا توجد عناوين",
+  "empMgmtSaveButton": "حفظ الموظف",
+  "empMgmtUpdateButton": "تحديث الموظف",
+  "empMgmtRoleTechnician": "فني",
+  "empMgmtRoleCashier": "كاشير",
+  "empMgmtRoleSupplier": "مورّد",
+  "empMgmtValidationRequired": "يرجى ملء جميع الحقول المطلوبة.",
+  "empMgmtValidationTechType": "يرجى اختيار نوع فني واحد على الأقل.",
+  "empMgmtValidationNoBranch": "يرجى إنشاء فرع أولاً لتعيين هذا الموظف.",
+  "empMgmtValidationNoBranchCashier": "يرجى إنشاء فرع أولاً لتعيين هذا الكاشير.",
+  "empMgmtValidationNoDepartment": "يرجى إنشاء قسم أولاً لتعيين هذا الموظف.",
+  "empMgmtValidationSupplierRequired": "يرجى ملء جميع الحقول المطلوبة",
+  "empMgmtApiNotIntegrated": "الأنواع المتاحة للإنشاء: الفني، الكاشير، والمورّد فقط.",
+  "empMgmtTechnicianCreateSuccess": "تم إنشاء الفني بنجاح",
+  "empMgmtTechnicianUpdateSuccess": "تم تحديث الفني بنجاح",
+  "empMgmtTechnicianCreateError": "فشل إنشاء الفني",
+  "empMgmtCashierCreateSuccess": "تم إنشاء الكاشير بنجاح",
+  "empMgmtCashierUpdateSuccess": "تم تحديث الكاشير بنجاح",
+  "empMgmtCashierCreateError": "فشل إنشاء الكاشير",
+  "empMgmtSupplierCreateSuccess": "تم إنشاء المورّد بنجاح",
+  "empMgmtSupplierCreateError": "فشل إنشاء المورّد",
+  "empMgmtDeleteSuccess": "تم حذف الموظف بنجاح",
+  "empMgmtDeleteError": "فشل حذف الموظف",
+  "empStatusAvailable": "متاح",
+  "empStatusOnline": "متصل",
+  "empStatusBusy": "مشغول",
+  "empStatusOffline": "غير متصل",
+  "empLastSeenNever": "أبداً",
+  "empLastSeenJustNow": "الآن",
+  "empLastSeenMinutes": "منذ {m} د",
+  "@empLastSeenMinutes": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "empLastSeenHours": "منذ {h} س",
+  "@empLastSeenHours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "empLastSeenDays": "منذ {d} ي",
+  "@empLastSeenDays": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "empTechTypeWorkshop": "ورشة",
+  "empTechTypeBoth": "كلاهما",
+  "empTechTypeOnCall": "عند الطلب",
+  "empRoleTechnician": "فني",
+  "empRoleCashier": "كاشير",
+  "empRoleSupplier": "مورّد",
+  "posAddCustomerTitle": "إضافة عميل جديد",
+  "posAddCustomerTabNormal": "عميل عادي",
+  "posAddCustomerTabCorporate": "عميل مؤسسي",
+  "posAddCustomerSectionVehicleInfo": "معلومات المركبة",
+  "posAddCustomerSectionCompanyDetails": "تفاصيل الشركة (مُعبَّأة تلقائياً)",
+  "posAddCustomerSectionCorporateAccount": "الحساب المؤسسي",
+  "posAddCustomerFieldVehicleNumber": "رقم المركبة",
+  "posAddCustomerFieldVin": "رقم الهيكل (VIN)",
+  "posAddCustomerFieldMake": "الشركة المصنِّعة",
+  "posAddCustomerFieldModel": "الطراز",
+  "posAddCustomerFieldOdometer": "عداد المسافة",
+  "posAddCustomerFieldCompanyName": "اسم الشركة",
+  "posAddCustomerFieldVatNumber": "الرقم الضريبي",
+  "posAddCustomerFieldBillingAddress": "عنوان الفوترة",
+  "posAddCustomerSelectCorporate": "اختر الحساب المؤسسي",
+  "posAddCustomerNoCorporateFound": "لا توجد حسابات مؤسسية",
+  "posAddCustomerSaveButton": "حفظ والمتابعة إلى القسم",
+  "posAddCustomerFieldNA": "غير متوفر",
+  "posAddCustomerValidationVehicleRequired": "يرجى إدخال رقم المركبة",
+  "posAddCustomerValidationRequired": "مطلوب",
+  "posAddCustomerValidationVinMax": "الحد الأقصى 17 حرفاً",
+  "posAddCustomerValidationInvalidNumber": "يرجى إدخال رقم صحيح",
+  "posAddCustomerValidationInvalidNumberShort": "رقم غير صحيح",
+  "posMonitoringTitle": "مراقبة نقاط البيع",
+  "posMonitoringLiveCounters": "الكاونترات المباشرة",
+  "posMonitoringClosingReports": "تقارير الإغلاق",
+  "posMonitoringSummaryLiveCounters": "الكاونترات المباشرة",
+  "posMonitoringSummaryOpenOrders": "الطلبات المفتوحة",
+  "posMonitoringSummaryTodaySales": "مبيعات اليوم",
+  "posMonitoringNoLiveCounters": "لا توجد كاونترات مباشرة نشطة",
+  "posMonitoringNoClosingReports": "لا توجد تقارير إغلاق متاحة",
+  "posMonitoringStatusOpen": "مفتوح",
+  "posMonitoringStatusClosing": "جارٍ الإغلاق",
+  "posMonitoringStatusClosed": "مغلق",
+  "posMonitoringStatShiftSales": "مبيعات الوردية",
+  "posMonitoringStatOpenOrders": "الطلبات المفتوحة",
+  "posMonitoringStatElapsed": "الوقت المنقضي",
+  "posMonitoringElapsedFormat": "{h}س {m}د",
+  "@posMonitoringElapsedFormat": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "posMonitoringClosed": "مغلق",
+  "posMonitoringTableCategory": "الفئة",
+  "posMonitoringTableSystem": "النظام",
+  "posMonitoringTablePhysical": "الفعلي",
+  "posMonitoringTableDiff": "الفارق",
+  "posMonitoringTableTotalSales": "إجمالي المبيعات",
+  "posMonitoringRowCash": "نقد",
+  "posMonitoringRowBank": "بنك/بطاقات",
+  "posMonitoringRowCorporate": "شركات",
+  "posMonitoringRowTamara": "تمارا",
+  "posMonitoringRowTabby": "تابي",
+  "posMonitoringDiffShort": "ناقص",
+  "posMonitoringDiffExcess": "زائد",
+  "posMonitoringDiffBalanced": "متوازن",
+  "posMonitoringDiffShortSymbol": "− ر.س {amount}",
+  "@posMonitoringDiffShortSymbol": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posMonitoringDiffExcessSymbol": "+ ر.س {amount}",
+  "@posMonitoringDiffExcessSymbol": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posMonitoringDiffNone": "—",
+  "posMonitoringBackendWarning": "⚠ التفاصيل الكاملة غير متاحة — يرجى تحديث الخادم للاطلاع على بيانات كل فئة",
+  "posMonitoringAmountSar": "ر.س {amount}",
+  "@posMonitoringAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "promoTitle": "رموز العروض",
+  "promoNewButton": "عرض جديد",
+  "promoNoCodesFound": "لا توجد رموز عروض",
+  "promoMenuEdit": "تعديل",
+  "promoMenuDelete": "حذف",
+  "promoDiscountOff": "{value} {unit} خصم",
+  "@promoDiscountOff": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "promoUnitPercent": "%",
+  "promoUnitSar": "ر.س",
+  "promoStatUsage": "الاستخدام",
+  "promoStatMinOrder": "الحد الأدنى للطلب",
+  "promoStatValidTill": "صالح حتى",
+  "promoMinOrderAmount": "ر.س {amount}",
+  "@promoMinOrderAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "promoDeleteConfirmTitle": "تأكيد الحذف",
+  "promoDeleteConfirmBody": "هل أنت متأكد من حذف \"{code}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+  "@promoDeleteConfirmBody": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "promoDeleteCancel": "إلغاء",
+  "promoDeleteConfirm": "حذف",
+  "promoSheetCreateTitle": "إنشاء رمز عرض",
+  "promoSheetUpdateTitle": "تحديث رمز العرض",
+  "promoSheetCreateSubtitle": "قم بضبط رمز خصم جديد للعملاء.",
+  "promoSheetUpdateSubtitle": "تعديل تفاصيل رمز العرض الحالي.",
+  "promoFieldCode": "رمز العرض (مثال: SUMMER20)",
+  "promoFieldDiscountValue": "قيمة الخصم",
+  "promoFieldUsageLimit": "حد الاستخدام",
+  "promoFieldMinOrder": "الحد الأدنى للطلب (ر.س)",
+  "promoFieldDescription": "الوصف",
+  "promoFieldValidFrom": "صالح من",
+  "promoFieldValidTo": "صالح حتى",
+  "promoTypeFixed": "مبلغ ثابت",
+  "promoTypePercent": "نسبة مئوية (%)",
+  "promoSubmitCreate": "إنشاء العرض",
+  "promoSubmitUpdate": "تحديث العرض",
+  "promoValidationRequired": "يرجى ملء الحقول المطلوبة (الرمز، القيمة)",
+  "promoCreateSuccess": "تم إنشاء رمز العرض بنجاح!",
+  "promoUpdateSuccess": "تم تحديث رمز العرض بنجاح!",
+  "promoDeleteSuccess": "تم حذف رمز العرض بنجاح!",
+  "promoCreateError": "فشل معالجة رمز العرض",
+  "promoDeleteError": "فشل حذف رمز العرض",
   "lockerVarianceRejected": "تم رفض الفارق",
   "lockerSelectOfficer": "اختر الموظف",
   "lockerSelectOfficerSubtitle": "اختر موظفاً ميدانياً لتعيينه لهذا طلب التحصيل.",
@@ -493,51 +838,233 @@
   "corporateCreateUserButton": "إنشاء المستخدم",
   "corporateEditTitle": "تعديل الحساب المؤسسي",
   "corporateEditSubtitle": "حدِّث التفاصيل أدناه. سيُرسَل فقط ما تم تغييره.",
-  "corporateFieldMobileMobile": "الجوال",
-  "corporateFieldTaxId": "الرقم الضريبي (ض.ق.م)",
-  "corporateFieldStatus": "الحالة",
-  "corporateSaveChanges": "حفظ التغييرات",
-  "corporateStatusPending": "قيد الانتظار",
-  "corporateStatusActive": "نشط",
-  "corporateStatusRejected": "مرفوض",
-  "corporateCreateSuccess": "تم إنشاء الحساب المؤسسي بنجاح",
-  "corporateCreateError": "فشل إنشاء الحساب المؤسسي",
-  "corporateUpdateSuccess": "تم تحديث الحساب المؤسسي بنجاح",
-  "corporateUpdateError": "فشل تحديث الحساب المؤسسي",
-  "corporateUserCreateSuccess": "تم إنشاء المستخدم المؤسسي بنجاح",
-  "corporateUserCreateError": "فشل إنشاء المستخدم المؤسسي",
-  "corporateValidationRequired": "يرجى ملء جميع الحقول المطلوبة",
-  "corporateValidationBranch": "يرجى اختيار فرع واحد على الأقل",
-  "corporateValidationCompanyName": "اسم الشركة مطلوب",
-  "dashboardAllBranches": "جميع الفروع",
-  "dashboardViewingDataFor": "عرض بيانات",
-  "dashboardAllBranchesAggregated": "جميع الفروع مجمّعة",
-  "dashboardSelectBranch": "اختر الفرع",
-  "dashboardKpiTotalSalesToday": "إجمالي مبيعات اليوم",
-  "dashboardKpiThisMonth": "هذا الشهر",
-  "dashboardKpiPendingInvoices": "الفواتير المعلقة",
-  "dashboardKpiLowStockAlerts": "تنبيهات نقص المخزون",
-  "dashboardKpiTodaysSales": "مبيعات اليوم",
-  "dashboardKpiActiveOrders": "الطلبات النشطة",
-  "dashboardKpiTechWorkload": "حمل الفني",
-  "dashboardKpiPendingApproval": "بانتظار الموافقة",
-  "dashboardPendingApprovalsTitle": "الموافقات المعلقة",
-  "dashboardViewAll": "عرض الكل",
-  "dashboardNoPendingApprovals": "لا توجد طلبات صندوق صغير معلقة الآن.",
-  "dashboardMoreApprovals": "+{count} أخرى في الموافقات",
-  "@dashboardMoreApprovals": {
+  "invTitle": "المخزون والمنتجات",
+  "invTabProducts": "المنتجات",
+  "invTabServices": "الخدمات",
+  "invTabCategory": "الفئات",
+  "invAddProduct": "إضافة منتج",
+  "invAddService": "إضافة خدمة",
+  "invAddCategory": "إضافة فئة",
+  "invAdd": "إضافة",
+  "invSearchProductsHint": "بحث بالاسم أو الفئة...",
+  "invSearchServicesHint": "بحث في الخدمات...",
+  "invSearchCategoriesHint": "بحث في الفئات...",
+  "invNoProductsFound": "لا توجد منتجات.",
+  "invNoServicesFound": "لا توجد خدمات.",
+  "invNoCategoriesFound": "لا توجد فئات.",
+  "invNoProductsMatchSearch": "لا توجد منتجات تطابق بحثك.",
+  "invNoServicesMatchSearch": "لا توجد خدمات تطابق بحثك.",
+  "invNoCategoriesMatchSearch": "لا توجد فئات تطابق بحثك.",
+  "invMetricStock": "المخزون",
+  "invMetricPurchase": "الشراء",
+  "invMetricRetail": "البيع",
+  "invMetricPrice": "السعر",
+  "invMetricCorpRange": "نطاق الشركات",
+  "invMetricCorporate": "الشركات",
+  "invEditTooltip": "تعديل",
+  "invDeleteTooltip": "حذف",
+  "invMenuEdit": "تعديل",
+  "invMenuDelete": "حذف",
+  "invConfirmDeleteTitle": "تأكيد الحذف",
+  "invConfirmDeleteBody": "هل تريد حذف \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+  "@invConfirmDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "invCancel": "إلغاء",
+  "invConfirm": "تأكيد",
+  "invCategoryTabProducts": "المنتجات",
+  "invCategoryTabServices": "الخدمات",
+  "invCreateProduct": "إنشاء منتج",
+  "invUpdateProduct": "تحديث المنتج",
+  "invCreateProductSubtitle": "أدخل تفاصيل المنتج لإضافته إلى المخزون.",
+  "invUpdateProductSubtitle": "تعديل تفاصيل المنتج الحالي.",
+  "invFieldBranch": "الفرع",
+  "invFieldDepartment": "القسم",
+  "invFieldCategory": "الفئة",
+  "invFieldProductName": "اسم المنتج",
+  "invFieldStockQty": "كمية المخزون",
+  "invFieldUnit": "الوحدة",
+  "invFieldCriticalStock": "نقطة المخزون الحرجة",
+  "invSectionPricing": "تفاصيل التسعير",
+  "invFieldPurchasePrice": "سعر الشراء",
+  "invFieldSalePrice": "سعر البيع",
+  "invFieldMinCorpPrice": "أدنى سعر للشركات",
+  "invFieldMaxCorpPrice": "أعلى سعر للشركات",
+  "invToggleDecimal": "السماح بالكسور العشرية",
+  "invToggleActive": "الحالة النشطة",
+  "invSaveProduct": "حفظ المنتج",
+  "invProductCreateSuccess": "تم إنشاء المنتج بنجاح",
+  "invProductUpdateSuccess": "تم تحديث المنتج بنجاح",
+  "invProductCreateError": "فشل إنشاء المنتج",
+  "invProductDeleteSuccess": "تم حذف المنتج بنجاح",
+  "invProductDeleteError": "فشل حذف المنتج",
+  "invValidationFillRequired": "يرجى ملء جميع الحقول المطلوبة.",
+  "invValidationSelectDepartment": "يرجى اختيار قسم.",
+  "invValidationCreateCategory": "يرجى إنشاء فئة أولاً.",
+  "invValidationSelectBranch": "يرجى اختيار فرع.",
+  "invCreateService": "إنشاء خدمة",
+  "invUpdateService": "تحديث الخدمة",
+  "invCreateServiceSubtitle": "أدخل تفاصيل الخدمة.",
+  "invUpdateServiceSubtitle": "تعديل تفاصيل الخدمة الحالية.",
+  "invFieldServiceName": "اسم الخدمة",
+  "invFieldServicePrice": "سعر الخدمة",
+  "invTogglePriceEditable": "يمكن للكاشير تغيير السعر في نقطة البيع",
+  "invSaveService": "حفظ الخدمة",
+  "invServiceCreateSuccess": "تم إنشاء الخدمة بنجاح",
+  "invServiceUpdateSuccess": "تم تحديث الخدمة بنجاح",
+  "invServiceCreateError": "فشل إنشاء الخدمة",
+  "invServiceDeleteSuccess": "تم حذف الخدمة بنجاح",
+  "invServiceDeleteError": "فشل حذف الخدمة",
+  "invValidationFillServiceRequired": "يرجى ملء الحقول المطلوبة.",
+  "invCreateCategory": "إنشاء فئة",
+  "invUpdateCategory": "تحديث الفئة",
+  "invCreateCategorySubtitle": "أدخل تفاصيل الفئة الجديدة.",
+  "invUpdateCategorySubtitle": "تعديل تفاصيل الفئة الحالية.",
+  "invFieldCategoryName": "اسم الفئة",
+  "invSaveCategory": "حفظ الفئة",
+  "invCategoryCreateSuccess": "تم إنشاء الفئة بنجاح",
+  "invCategoryUpdateSuccess": "تم تحديث الفئة بنجاح",
+  "invCategoryCreateError": "فشل إنشاء الفئة",
+  "invCategoryDeleteSuccess": "تم حذف الفئة بنجاح",
+  "invCategoryDeleteError": "فشل حذف الفئة",
+  "invCreateSubCategory": "إنشاء فئة فرعية",
+  "invCreateSubCategorySubtitle": "أدخل تفاصيل الفئة الفرعية الجديدة.",
+  "invFieldSubCategoryName": "اسم الفئة الفرعية",
+  "invSaveSubCategory": "حفظ الفئة الفرعية",
+  "invSubCategoryCreateSuccess": "تم إنشاء الفئة الفرعية بنجاح",
+  "invSubCategoryUpdateSuccess": "تم تحديث الفئة الفرعية بنجاح",
+  "invSubCategoryCreateError": "فشل إنشاء الفئة الفرعية",
+  "invSubCategoryDeleteSuccess": "تم حذف الفئة الفرعية بنجاح",
+  "invSubCategoryDeleteError": "فشل حذف الفئة الفرعية",
+  "notifTitle": "الإشعارات",
+  "notifMarkRead": "تحديد الكل كمقروء",
+  "notifEmpty": "لا توجد إشعارات بعد.",
+  "notifTimeMinutes": "منذ {m} د",
+  "@notifTimeMinutes": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "notifTimeHours": "منذ {h} س",
+  "@notifTimeHours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "notifTimeDays": "منذ {d} ي",
+  "@notifTimeDays": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "notifTypeExpense": "expense",
+  "notifTypeStock": "stock",
+  "notifTypePayment": "payment",
+  "notifTypeLocker": "locker",
+  "notifTypeInvoice": "invoice",
+  "reportsTitle": "التقارير والتحليلات",
+  "reportsFinancialOverview": "النظرة المالية العامة",
+  "reportsOperationalPerformance": "الأداء التشغيلي",
+  "reportsInventoryValuation": "تقييم المخزون",
+  "reportsTotalRevenue": "إجمالي الإيرادات",
+  "reportsNoDataThisWeek": "لا توجد بيانات لهذا الأسبوع",
+  "reportsTotalJobs": "إجمالي الأعمال: {count}",
+  "@reportsTotalJobs": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "dashboardBranchPerformance": "أداء الفروع",
-  "dashboardBranchHighlights": "أبرز الفرع",
-  "dashboardBranchStatus": "حالة الفرع",
-  "dashboardTotalStaff": "إجمالي الموظفين",
-  "dashboardSalesTarget": "هدف المبيعات",
-  "dashboardSalesTargetValue": "85% محقق",
-  "branchPerformanceListTitle": "أداء الفروع",
-  "branchPerformanceNoBranches": "لا توجد فروع بعد."
+  "reportsCommissionLabel": "العمولة",
+  "reportsStockValueCost": "قيمة المخزون (التكلفة)",
+  "reportsPotentialProfit": "الربح المتوقع",
+  "reportsActiveSkus": "المنتجات النشطة",
+  "reportsItemsUnit": "{count} منتج",
+  "@reportsItemsUnit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsAmountSar": "ر.س {amount}",
+  "@reportsAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNoOperationalData": "لا توجد بيانات أداء تشغيلي",
+  "reportsRevChangePositive": "+{pct}%",
+  "@reportsRevChangePositive": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsRevChangeNegative": "{pct}%",
+  "@reportsRevChangeNegative": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "ownerCommonSearchHint": "بحث...",
+  "ownerBottomHome": "الرئيسية",
+  "ownerBottomReports": "التقارير",
+  "ownerBottomBilling": "الفوترة",
+  "ownerBottomProfile": "الملف الشخصي",
+  "ownerDashboardRoleLabel": "مالك الورشة",
+  "ownerMonthlySales": "المبيعات الشهرية",
+  "ownerCurrencySar": "ر.س",
+  "ownerCurrencyAmount": "{amount} {currency}",
+  "@ownerCurrencyAmount": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "pettyCashQueueCashierExpense": "مصروف أمين الصندوق",
+  "pettyCashQueueFundRequest": "طلب تمويل",
+  "pettyCashRequestLabel": "طلب عهدة نقدية",
+  "pettyCashApprove": "موافقة",
+  "pettyCashReject": "رفض",
+  "pettyCashConfirmReject": "تأكيد الرفض",
+  "pettyCashRejectRequestTitle": "رفض الطلب",
+  "pettyCashRejectRequestBody": "يرجى إدخال سبب الرفض.",
+  "pettyCashRejectReasonHint": "مثال: الميزانية غير معتمدة",
+  "pettyCashRejectReasonRequired": "يرجى إدخال سبب الرفض",
+  "pettyCashRequestApprovedSuccess": "تمت الموافقة على الطلب بنجاح",
+  "pettyCashRequestApproveFailed": "فشل اعتماد الطلب",
+  "pettyCashRequestRejectedSuccess": "تم رفض الطلب بنجاح",
+  "pettyCashRequestRejectFailed": "فشل رفض الطلب",
+  "pettyCashStatusPending": "قيد الانتظار",
+  "pettyCashStatusApproved": "معتمد",
+  "pettyCashStatusRejected": "مرفوض",
+  "pettyCashStatusFallback": "{status}",
+  "@pettyCashStatusFallback": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  }
 }

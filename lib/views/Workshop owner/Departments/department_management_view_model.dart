@@ -4,14 +4,16 @@ import '../../../../models/department_model.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../services/owner_data_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class DepartmentManagementViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
-  
-  final TextEditingController departmentNameController = TextEditingController();
-  
+
+  final TextEditingController departmentNameController =
+  TextEditingController();
+
   bool _isActive = true;
   bool get isActive => _isActive;
 
@@ -19,12 +21,13 @@ class DepartmentManagementViewModel extends ChangeNotifier {
     _isActive = value;
     notifyListeners();
   }
-  
+
   String? _editingDepartmentId;
   bool get isEditing => _editingDepartmentId != null;
 
   bool _isLoading = false;
-  bool get isLoading => _isLoading || ownerDataService.isLoadingDepartments;
+  bool get isLoading =>
+      _isLoading || ownerDataService.isLoadingDepartments;
 
   bool _isActionLoading = false;
   bool get isActionLoading => _isActionLoading;
@@ -36,9 +39,10 @@ class DepartmentManagementViewModel extends ChangeNotifier {
     if (_searchQuery.isEmpty) {
       return ownerDataService.departments;
     }
-    return ownerDataService.departments.where((d) => 
-      d.name.toLowerCase().contains(_searchQuery.toLowerCase())
-    ).toList();
+    return ownerDataService.departments
+        .where((d) =>
+        d.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
   }
 
   void updateSearchQuery(String query) {
@@ -85,8 +89,10 @@ class DepartmentManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> submitDepartmentForm(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (departmentNameController.text.trim().isEmpty) {
-      ToastService.showError(context, 'Department Name is required');
+      ToastService.showError(context, l10n.deptMgmtValidationNameRequired);
       return;
     }
 
@@ -104,20 +110,25 @@ class DepartmentManagementViewModel extends ChangeNotifier {
 
       if (_editingDepartmentId == null) {
         await ownerRepository.createDepartment(data, token);
-        if (context.mounted) ToastService.showSuccess(context, 'Department Created Successfully');
+        if (context.mounted) {
+          ToastService.showSuccess(context, l10n.deptMgmtCreateSuccess);
+        }
       } else {
-        await ownerRepository.updateDepartment(token, _editingDepartmentId!, data);
-        if (context.mounted) ToastService.showSuccess(context, 'Department Updated Successfully');
+        await ownerRepository.updateDepartment(
+            token, _editingDepartmentId!, data);
+        if (context.mounted) {
+          ToastService.showSuccess(context, l10n.deptMgmtUpdateSuccess);
+        }
       }
 
       if (context.mounted) {
         clearForm();
-        Navigator.pop(context); // Close the sheet
-        await fetchDepartments(silent: true); // Refresh global departments
+        Navigator.pop(context);
+        await fetchDepartments(silent: true);
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, 'Failed to save department');
+        ToastService.showError(context, l10n.deptMgmtSaveError);
       }
     } finally {
       _isActionLoading = false;
@@ -126,6 +137,8 @@ class DepartmentManagementViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteDepartment(BuildContext context, String id) async {
+    final l10n = AppLocalizations.of(context)!;
+
     _isActionLoading = true;
     notifyListeners();
 
@@ -134,19 +147,24 @@ class DepartmentManagementViewModel extends ChangeNotifier {
       if (token == null) return;
 
       final response = await ownerRepository.deleteDepartment(token, id);
-      final successMessage = (response is Map<String, dynamic> &&
-              response['message'] != null &&
-              response['message'].toString().trim().isNotEmpty)
-          ? response['message'].toString()
-          : 'Department Deleted Successfully';
 
-      // Force a fresh departments API call so list updates immediately.
+      // Prefer the server message if meaningful, otherwise fall back to l10n.
+      final serverMsg = (response is Map<String, dynamic> &&
+          response['message'] != null &&
+          response['message'].toString().trim().isNotEmpty)
+          ? response['message'].toString()
+          : null;
+
       await fetchDepartments(silent: false);
+
       if (context.mounted) {
-        ToastService.showSuccess(context, successMessage);
+        ToastService.showSuccess(
+            context, serverMsg ?? l10n.deptMgmtDeleteSuccess);
       }
     } catch (e) {
-      if (context.mounted) ToastService.showError(context, 'Failed to delete department');
+      if (context.mounted) {
+        ToastService.showError(context, l10n.deptMgmtDeleteError);
+      }
     } finally {
       _isActionLoading = false;
       notifyListeners();
