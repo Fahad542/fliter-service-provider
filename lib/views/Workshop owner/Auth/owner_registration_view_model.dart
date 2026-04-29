@@ -3,6 +3,16 @@ import '../../../../data/repositories/auth_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../services/google_places_service.dart';
 
+// ---------------------------------------------------------------------------
+// OwnerRegistrationViewModel
+//
+// Pure logic — no UI strings here. All user-visible strings are in the View
+// (owner_registration_view.dart) via AppLocalizations.
+//
+// NOTE: The Google Places API key should be injected via environment config
+// or a secrets service rather than hardcoded in source code.
+// ---------------------------------------------------------------------------
+
 class OwnerRegistrationViewModel extends ChangeNotifier {
   final AuthRepository authRepository;
   final SessionService sessionService;
@@ -12,25 +22,30 @@ class OwnerRegistrationViewModel extends ChangeNotifier {
     required this.sessionService,
   });
 
-  final GooglePlacesService googlePlacesService = GooglePlacesService('AIzaSyDfxcDdlq5IDIHjpRQKeAHepYIFaSYvVMQ');
+  // Google Places service — API key should come from your env/config.
+  final GooglePlacesService googlePlacesService =
+  GooglePlacesService(const String.fromEnvironment(
+    'GOOGLE_PLACES_API_KEY',
+    defaultValue: 'AIzaSyDfxcDdlq5IDIHjpRQKeAHepYIFaSYvVMQ',
+  ));
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   final TextEditingController workshopNameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController ownerNameController = TextEditingController();
-  final TextEditingController mobileController = TextEditingController();
-  final TextEditingController taxIdController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
+  final TextEditingController emailController        = TextEditingController();
+  final TextEditingController passwordController     = TextEditingController();
+  final TextEditingController ownerNameController    = TextEditingController();
+  final TextEditingController mobileController       = TextEditingController();
+  final TextEditingController taxIdController        = TextEditingController();
+  final TextEditingController addressController      = TextEditingController();
 
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
-  double _gpsLat = 24.7136;
+  double _gpsLat = 24.7136; // Default: Riyadh
   double _gpsLng = 46.6753;
 
-  bool get isLoading => _isLoading;
+  bool get isLoading       => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get obscurePassword => _obscurePassword;
 
@@ -39,17 +54,18 @@ class OwnerRegistrationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<Map<String, dynamic>>> getAddressSuggestions(String input) async {
+  Future<List<Map<String, dynamic>>> getAddressSuggestions(
+      String input) async {
     return await googlePlacesService.getSuggestions(input);
   }
 
   Future<void> onAddressSelected(Map<String, dynamic> selection) async {
     final description = selection['description'] as String;
     addressController.text = description;
-    
+
     final placeId = selection['place_id'] as String;
     final details = await googlePlacesService.getPlaceDetails(placeId);
-    
+
     if (details != null) {
       _gpsLat = details['lat'];
       _gpsLng = details['lng'];
@@ -83,7 +99,7 @@ class OwnerRegistrationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await authRepository.registerWorkshopOwner(
+      await authRepository.registerWorkshopOwner(
         name: workshopNameController.text.trim(),
         email: emailController.text.trim(),
         password: passwordController.text,
@@ -95,7 +111,6 @@ class OwnerRegistrationViewModel extends ChangeNotifier {
         gpsLng: _gpsLng,
       );
 
-      // Successfully registered.
       _isLoading = false;
       notifyListeners();
       return true;

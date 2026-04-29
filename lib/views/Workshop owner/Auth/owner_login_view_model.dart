@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 import '../../../../data/repositories/auth_repository.dart';
 import '../../../../services/session_service.dart';
 
+// ---------------------------------------------------------------------------
+// OwnerLoginViewModel
+//
+// Pure logic — no UI strings here. All user-visible strings are in the View
+// (owner_login_view.dart) via AppLocalizations.
+//
+// errorMessage is returned from the API in whatever language the server sends.
+// The View falls back to l10n.ownerLoginFailed if errorMessage is null.
+// ---------------------------------------------------------------------------
+
 class OwnerLoginViewModel extends ChangeNotifier {
   final AuthRepository _authRepository;
   final SessionService _sessionService;
@@ -51,7 +61,7 @@ class OwnerLoginViewModel extends ChangeNotifier {
         emailController.text.trim(),
         passwordController.text,
       );
-      
+
       if (authResponse.success == false) {
         _setErrorMessage(authResponse.message ?? 'Invalid email or password');
         _setLoading(false);
@@ -74,5 +84,12 @@ class OwnerLoginViewModel extends ChangeNotifier {
     _errorMessage = null;
     _isLoading = false;
     _obscurePassword = true;
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 }

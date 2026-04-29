@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../services/session_service.dart';
+
 class SettingsViewModel extends ChangeNotifier {
   static const String _themeKey = 'theme_mode';
   static const String _localeKey = 'locale';
@@ -44,14 +46,14 @@ class SettingsViewModel extends ChangeNotifier {
     await prefs.setInt(_themeKey, newThemeMode.index);
   }
 
-  Future<void> updateLocale(Locale? newLocale) async {
-    if (newLocale == null) return;
-    if (newLocale == _locale) return;
-
+  Future<void> updateLocale(Locale newLocale) async {
     _locale = newLocale;
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_localeKey, newLocale.languageCode);
+    await prefs.setString('app_locale', newLocale.languageCode);
+
+    // ← ADD THIS LINE so the translation service can read it without context:
+    await SessionService.saveLocale(newLocale.languageCode);
   }
 }

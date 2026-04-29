@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
+import '../../../l10n/app_localizations.dart';
 import 'corporate_management_view_model.dart';
 import '../../../models/workshop_owner_models.dart';
 import '../widgets/owner_app_bar.dart';
@@ -19,17 +20,18 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<CorporateManagementViewModel>(
       builder: (context, vm, child) {
-        final filteredCustomers = vm.corporateCustomers.where((c) => 
-          c.companyName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          c.vatNumber.contains(_searchQuery)
+        final filteredCustomers = vm.corporateCustomers.where((c) =>
+        c.companyName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            c.vatNumber.contains(_searchQuery),
         ).toList();
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FD),
           appBar: OwnerAppBar(
-            title: 'Corporate Management',
+            title: l10n.corporateManagementTitle,
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
           ),
           body: Padding(
@@ -40,7 +42,7 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
                 if (vm.corporateCustomers.isNotEmpty) ...[
                   CustomSearchBar(
                     onChanged: (val) => setState(() => _searchQuery = val),
-                    hintText: 'Search by Company or VAT...',
+                    hintText: l10n.corporateSearchHint,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -56,7 +58,10 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
             onPressed: () => _showAddCorporateSheet(context, vm),
             backgroundColor: AppColors.secondaryLight,
             icon: const Icon(Icons.add_business_rounded, color: Colors.white),
-            label: const Text('Add Corporate', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: Text(
+              l10n.corporateAddButton,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         );
@@ -64,12 +69,10 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
     );
   }
 
-
-
-
   Widget _buildCustomerList(List<CorporateCustomer> customers) {
+    final l10n = AppLocalizations.of(context)!;
     if (customers.isEmpty) {
-      return const Center(child: Text('No corporate customers found.'));
+      return Center(child: Text(l10n.corporateNoneFound));
     }
 
     return ListView.builder(
@@ -82,6 +85,7 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
   }
 
   Widget _buildCustomerCard(CorporateCustomer customer) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -123,17 +127,26 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(customer.companyName, style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight)),
+                      Text(
+                        customer.companyName,
+                        style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight),
+                      ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           const Icon(Icons.person_pin_rounded, size: 14, color: Colors.grey),
                           const SizedBox(width: 4),
-                          Text(customer.contactName, style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
+                          Text(
+                            customer.contactName,
+                            style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text('VAT: ${customer.vatNumber}', style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                      Text(
+                        l10n.corporateVatLabel(customer.vatNumber),
+                        style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),
@@ -142,24 +155,37 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
               ],
             ),
           ),
-          
+
           Container(height: 1, color: Colors.grey.withOpacity(0.06)),
-          
+
           // Middle Section: Stats
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
-                Expanded(child: _buildInfoItem('VEHICLES', customer.vehicleCount.toString(), Icons.directions_car_rounded)),
+                Expanded(
+                  child: _buildInfoItem(
+                    l10n.corporateVehiclesLabel,
+                    customer.vehicleCount.toString(),
+                    Icons.directions_car_rounded,
+                  ),
+                ),
                 Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
-                Expanded(child: Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: _buildInfoItem('REVENUE', 'SAR ${customer.totalSales.toStringAsFixed(0)}', Icons.payments_rounded, isPrimary: true),
-                )),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: _buildInfoItem(
+                      l10n.corporateRevenueLabel,
+                      'SAR ${customer.totalSales.toStringAsFixed(0)}',
+                      Icons.payments_rounded,
+                      isPrimary: true,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          
+
           Container(height: 1, color: Colors.grey.withOpacity(0.06)),
 
           // Bottom Section: Actions
@@ -169,9 +195,16 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
               children: [
                 Expanded(
                   child: TextButton.icon(
-                    onPressed: () => _showAddUserSheet(context, context.read<CorporateManagementViewModel>(), customer.id),
+                    onPressed: () => _showAddUserSheet(
+                      context,
+                      context.read<CorporateManagementViewModel>(),
+                      customer.id,
+                    ),
                     icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
-                    label: const Text('Add User', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    label: Text(
+                      l10n.corporateAddUser,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.secondaryLight,
                       backgroundColor: AppColors.primaryLight,
@@ -182,9 +215,16 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
                 ),
                 const SizedBox(width: 10),
                 TextButton.icon(
-                  onPressed: () => _showEditCorporateSheet(context, context.read<CorporateManagementViewModel>(), customer),
+                  onPressed: () => _showEditCorporateSheet(
+                    context,
+                    context.read<CorporateManagementViewModel>(),
+                    customer,
+                  ),
                   icon: const Icon(Icons.edit_rounded, size: 16),
-                  label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  label: Text(
+                    l10n.corporateEdit,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.secondaryLight,
                     backgroundColor: AppColors.secondaryLight.withOpacity(0.08),
@@ -203,9 +243,9 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
   Widget _buildCategoryBadge(String category) {
     Color color;
     switch (category.toLowerCase()) {
-      case 'gold': color = const Color(0xFFD4AF37); break;
+      case 'gold':   color = const Color(0xFFD4AF37); break;
       case 'silver': color = const Color(0xFFC0C0C0); break;
-      default: color = const Color(0xFFCD7F32);
+      default:       color = const Color(0xFFCD7F32);
     }
 
     return Container(
@@ -274,6 +314,10 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Add Corporate Sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _AddCorporateSheet extends StatefulWidget {
   final CorporateManagementViewModel vm;
   const _AddCorporateSheet({required this.vm});
@@ -287,7 +331,9 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final vm = context.watch<CorporateManagementViewModel>();
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -299,7 +345,6 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
           _buildHandle(),
           ConstrainedBox(
             constraints: BoxConstraints(
-              // Bottom sheet ko thoda compact rakhna (scroll still allowed)
               maxHeight: MediaQuery.of(context).size.height * 0.72,
             ),
             child: SingleChildScrollView(
@@ -307,35 +352,29 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Register Corporate Partner',
-                    style: AppTextStyles.h2.copyWith(fontSize: 18),
-                  ),
+                  Text(l10n.corporateRegisterTitle, style: AppTextStyles.h2.copyWith(fontSize: 18)),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Fill in the details to create a new corporate account.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                  Text(l10n.corporateRegisterSubtitle, style: const TextStyle(color: Colors.grey)),
                   const SizedBox(height: 20),
-                  _buildTextField('Company Name', Icons.business_rounded, vm.companyNameController),
-                  _buildTextField('Customer Name', Icons.person_rounded, vm.contactNameController),
+                  _buildTextField(l10n.corporateFieldCompanyName, Icons.business_rounded, vm.companyNameController),
+                  _buildTextField(l10n.corporateFieldCustomerName, Icons.person_rounded, vm.contactNameController),
                   _buildTextField(
-                    'Mobile Number',
+                    l10n.corporateFieldMobile,
                     Icons.phone_android_rounded,
                     vm.mobileController,
                     inputType: TextInputType.phone,
                   ),
-                  _buildTextField('VAT Number', Icons.receipt_long_rounded, vm.vatNumberController),
+                  _buildTextField(l10n.corporateFieldVat, Icons.receipt_long_rounded, vm.vatNumberController),
                   const SizedBox(height: 10),
                   _buildTextField(
-                    'Email Address',
+                    l10n.corporateFieldEmail,
                     Icons.email_rounded,
                     vm.emailController,
                     inputType: TextInputType.emailAddress,
                     contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 10),
                   ),
                   _buildTextField(
-                    'Password',
+                    l10n.corporateFieldPassword,
                     Icons.lock_rounded,
                     vm.passwordController,
                     obscureText: !_isPasswordVisible,
@@ -348,11 +387,11 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
                       onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
                     ),
                   ),
-                  _buildReferralDropdown(vm),
+                  _buildReferralDropdown(vm, l10n),
                   const SizedBox(height: 6),
-                  _buildBranchesHeader(vm),
+                  _buildBranchesHeader(vm, l10n),
                   const SizedBox(height: 8),
-                  _buildBranchesSelector(vm),
+                  _buildBranchesSelector(vm, l10n),
                 ],
               ),
             ),
@@ -367,31 +406,28 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
             child: ElevatedButton(
               onPressed: vm.isActionLoading ? null : () => vm.submitCorporateForm(context),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryLight,
-                  disabledBackgroundColor: AppColors.primaryLight,
-                  foregroundColor: AppColors.secondaryLight,
-                  disabledForegroundColor: AppColors.secondaryLight,
-                  minimumSize: const Size.fromHeight(56),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                backgroundColor: AppColors.primaryLight,
+                disabledBackgroundColor: AppColors.primaryLight,
+                foregroundColor: AppColors.secondaryLight,
+                disabledForegroundColor: AppColors.secondaryLight,
+                minimumSize: const Size.fromHeight(56),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: vm.isActionLoading
+                  ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(color: AppColors.secondaryLight, strokeWidth: 2),
+              )
+                  : Text(
+                l10n.corporateCreateButton,
+                style: const TextStyle(
+                  color: AppColors.secondaryLight,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
                 ),
-                child: vm.isActionLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: AppColors.secondaryLight,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text(
-                        'Create Partner',
-                        style: TextStyle(
-                          color: AppColors.secondaryLight,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
-                      ),
+              ),
             ),
           ),
         ],
@@ -403,13 +439,14 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
     return Center(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 12),
-        width: 40, height: 5,
+        width: 40,
+        height: 5,
         decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
-  Widget _buildBranchesSelector(CorporateManagementViewModel vm) {
+  Widget _buildBranchesSelector(CorporateManagementViewModel vm, AppLocalizations l10n) {
     if (vm.branches.isEmpty) {
       return Container(
         width: double.infinity,
@@ -418,10 +455,7 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
           color: Colors.grey.withOpacity(0.06),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Text(
-          'No branches found',
-          style: TextStyle(color: Colors.grey, fontSize: 13),
-        ),
+        child: Text(l10n.corporateNoBranches, style: const TextStyle(color: Colors.grey, fontSize: 13)),
       );
     }
 
@@ -443,16 +477,10 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
             activeColor: AppColors.primaryLight,
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-            title: Text(
-              branch.name,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-            ),
+            title: Text(branch.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
             subtitle: branch.location.isEmpty
                 ? null
-                : Text(
-                    branch.location,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
+                : Text(branch.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
             onChanged: (_) => vm.toggleBranchSelection(branch.id),
           );
         },
@@ -460,15 +488,15 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
     );
   }
 
-  Widget _buildBranchesHeader(CorporateManagementViewModel vm) {
+  Widget _buildBranchesHeader(CorporateManagementViewModel vm, AppLocalizations l10n) {
     final selectedCount = vm.selectedBranchIds.length;
     return Row(
       children: [
         const Icon(Icons.store_mall_directory_rounded, size: 18, color: AppColors.secondaryLight),
         const SizedBox(width: 8),
-        const Text(
-          'Select Branches',
-          style: TextStyle(
+        Text(
+          l10n.corporateSelectBranches,
+          style: const TextStyle(
             color: AppColors.secondaryLight,
             fontWeight: FontWeight.w800,
             fontSize: 14,
@@ -482,7 +510,7 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            '$selectedCount selected',
+            l10n.corporateSelectedCount(selectedCount),
             style: const TextStyle(
               color: AppColors.secondaryLight,
               fontSize: 11,
@@ -494,7 +522,7 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
     );
   }
 
-  Widget _buildReferralDropdown(CorporateManagementViewModel vm) {
+  Widget _buildReferralDropdown(CorporateManagementViewModel vm, AppLocalizations l10n) {
     final items = vm.referrals;
     final selected = vm.selectedReferralId;
     final selectedValue = (selected != null && items.any((r) => r.id == selected))
@@ -506,30 +534,21 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
       child: DropdownButtonFormField<String>(
         value: selectedValue,
         decoration: InputDecoration(
-          labelText: 'Referral',
+          labelText: l10n.corporateFieldReferral,
           labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-          prefixIcon: const Icon(
-            Icons.card_giftcard_rounded,
-            color: AppColors.secondaryLight,
-            size: 20,
-          ),
+          prefixIcon: const Icon(Icons.card_giftcard_rounded, color: AppColors.secondaryLight, size: 20),
           filled: true,
           fillColor: Colors.grey.withOpacity(0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
         ),
         items: items
-            .map(
-              (r) => DropdownMenuItem<String>(
-                value: r.id,
-                child: Text(
-                  r.category.isEmpty ? r.name : '${r.name} (${r.category})',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            )
+            .map((r) => DropdownMenuItem<String>(
+          value: r.id,
+          child: Text(
+            r.category.isEmpty ? r.name : '${r.name} (${r.category})',
+            overflow: TextOverflow.ellipsis,
+          ),
+        ))
             .toList(),
         onChanged: items.isEmpty ? null : (value) => vm.setSelectedReferralId(value),
         icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
@@ -538,14 +557,14 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
   }
 
   Widget _buildTextField(
-    String label,
-    IconData icon,
-    TextEditingController controller, {
-    TextInputType inputType = TextInputType.text,
-    bool obscureText = false,
-    Widget? suffixIcon,
-    EdgeInsetsGeometry? contentPadding,
-  }) {
+      String label,
+      IconData icon,
+      TextEditingController controller, {
+        TextInputType inputType = TextInputType.text,
+        bool obscureText = false,
+        Widget? suffixIcon,
+        EdgeInsetsGeometry? contentPadding,
+      }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextField(
@@ -559,16 +578,17 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
           contentPadding: contentPadding,
           filled: true,
           fillColor: Colors.grey.withOpacity(0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Add Corporate User Sheet
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _AddCorporateUserSheet extends StatefulWidget {
   final CorporateManagementViewModel vm;
@@ -584,6 +604,7 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final vm = context.watch<CorporateManagementViewModel>();
 
     return Container(
@@ -601,14 +622,14 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Add Corporate User', style: AppTextStyles.h2.copyWith(fontSize: 18)),
+                  Text(l10n.corporateAddUserTitle, style: AppTextStyles.h2.copyWith(fontSize: 18)),
                   const SizedBox(height: 8),
-                  const Text('Create credentials for a user associated with this corporate account.', style: TextStyle(color: Colors.grey)),
+                  Text(l10n.corporateAddUserSubtitle, style: const TextStyle(color: Colors.grey)),
                   const SizedBox(height: 30),
-                  _buildTextField('Full Name', Icons.person_rounded, vm.userNameController),
-                  _buildTextField('Email Address', Icons.email_rounded, vm.userEmailController),
+                  _buildTextField(l10n.corporateUserFieldName, Icons.person_rounded, vm.userNameController),
+                  _buildTextField(l10n.corporateUserFieldEmail, Icons.email_rounded, vm.userEmailController),
                   _buildTextField(
-                    'Password',
+                    l10n.corporateUserFieldPassword,
                     Icons.lock_rounded,
                     vm.userPasswordController,
                     obscureText: !_isPasswordVisible,
@@ -633,33 +654,32 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
               bottom: MediaQuery.of(context).viewInsets.bottom + 24,
             ),
             child: ElevatedButton(
-              onPressed: vm.isActionLoading ? null : () => vm.submitCorporateUserForm(context, widget.corporateAccountId),
+              onPressed: vm.isActionLoading
+                  ? null
+                  : () => vm.submitCorporateUserForm(context, widget.corporateAccountId),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryLight,
-                  disabledBackgroundColor: AppColors.primaryLight,
-                  foregroundColor: AppColors.secondaryLight,
-                  disabledForegroundColor: AppColors.secondaryLight,
-                  minimumSize: const Size.fromHeight(56),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                backgroundColor: AppColors.primaryLight,
+                disabledBackgroundColor: AppColors.primaryLight,
+                foregroundColor: AppColors.secondaryLight,
+                disabledForegroundColor: AppColors.secondaryLight,
+                minimumSize: const Size.fromHeight(56),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: vm.isActionLoading
+                  ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(color: AppColors.secondaryLight, strokeWidth: 2),
+              )
+                  : Text(
+                l10n.corporateCreateUserButton,
+                style: const TextStyle(
+                  color: AppColors.secondaryLight,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
                 ),
-                child: vm.isActionLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: AppColors.secondaryLight,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text(
-                        'Create User',
-                        style: TextStyle(
-                          color: AppColors.secondaryLight,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
-                      ),
+              ),
             ),
           ),
         ],
@@ -671,20 +691,21 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
     return Center(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 12),
-        width: 40, height: 5,
+        width: 40,
+        height: 5,
         decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
   Widget _buildTextField(
-    String label,
-    IconData icon,
-    TextEditingController controller, {
-    bool isNumber = false,
-    bool obscureText = false,
-    Widget? suffixIcon,
-  }) {
+      String label,
+      IconData icon,
+      TextEditingController controller, {
+        bool isNumber = false,
+        bool obscureText = false,
+        Widget? suffixIcon,
+      }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextField(
@@ -697,10 +718,7 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
           suffixIcon: suffixIcon,
           filled: true,
           fillColor: Colors.grey.withOpacity(0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ),
@@ -708,15 +726,17 @@ class _AddCorporateUserSheetState extends State<_AddCorporateUserSheet> {
   }
 }
 
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Edit Corporate Account Sheet
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _EditCorporateSheet extends StatelessWidget {
   final CorporateManagementViewModel vm;
   const _EditCorporateSheet({required this.vm});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return ChangeNotifierProvider.value(
       value: vm,
       child: Consumer<CorporateManagementViewModel>(
@@ -740,57 +760,80 @@ class _EditCorporateSheet extends StatelessWidget {
                 ),
               ),
               ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.78,
-                ),
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.78),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Edit Corporate Account', style: AppTextStyles.h2.copyWith(fontSize: 18)),
+                      Text(l10n.corporateEditTitle, style: AppTextStyles.h2.copyWith(fontSize: 18)),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Update the details below. Only changed fields will be sent.',
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                      Text(l10n.corporateEditSubtitle, style: const TextStyle(color: Colors.grey)),
                       const SizedBox(height: 20),
-                      _editField('Company Name', Icons.business_rounded, vm.editCompanyNameController),
-                      _editField('Customer Name', Icons.person_rounded, vm.editCustomerNameController),
-                      _editField('Mobile', Icons.phone_android_rounded, vm.editMobileController, inputType: TextInputType.phone),
-                      _editField('Tax ID (VAT)', Icons.receipt_long_rounded, vm.editTaxIdController),
+                      _editField(l10n.corporateFieldCompanyName, Icons.business_rounded, vm.editCompanyNameController),
+                      _editField(l10n.corporateFieldCustomerName, Icons.person_rounded, vm.editCustomerNameController),
+                      _editField(
+                        l10n.corporateFieldMobileMobile,
+                        Icons.phone_android_rounded,
+                        vm.editMobileController,
+                        inputType: TextInputType.phone,
+                      ),
+                      _editField(l10n.corporateFieldTaxId, Icons.receipt_long_rounded, vm.editTaxIdController),
                       const SizedBox(height: 4),
+                      // Status dropdown with translated labels
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: DropdownButtonFormField<String>(
-                          value: ['pending', 'active', 'rejected'].contains(vm.editStatus) ? vm.editStatus : 'active',
+                          value: ['pending', 'active', 'rejected'].contains(vm.editStatus)
+                              ? vm.editStatus
+                              : 'active',
                           decoration: InputDecoration(
-                            labelText: 'Status',
+                            labelText: l10n.corporateFieldStatus,
                             prefixIcon: const Icon(Icons.toggle_on_rounded, color: AppColors.secondaryLight, size: 20),
                             filled: true,
                             fillColor: Colors.grey.withOpacity(0.05),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
                             labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                           ),
-                          items: ['pending', 'active', 'rejected']
-                              .map((s) => DropdownMenuItem(value: s, child: Text(s[0].toUpperCase() + s.substring(1))))
-                              .toList(),
+                          items: [
+                            DropdownMenuItem(value: 'pending', child: Text(l10n.corporateStatusPending)),
+                            DropdownMenuItem(value: 'active',  child: Text(l10n.corporateStatusActive)),
+                            DropdownMenuItem(value: 'rejected', child: Text(l10n.corporateStatusRejected)),
+                          ],
                           onChanged: (v) { if (v != null) vm.setEditStatus(v); },
                           icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
                         ),
                       ),
+                      // Branch selector header
                       Row(
                         children: [
                           const Icon(Icons.store_mall_directory_rounded, size: 18, color: AppColors.secondaryLight),
                           const SizedBox(width: 8),
-                          const Text('Select Branches', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w800, fontSize: 14)),
+                          Text(
+                            l10n.corporateSelectBranches,
+                            style: const TextStyle(
+                              color: AppColors.secondaryLight,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
                           const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: AppColors.primaryLight.withOpacity(0.18), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             child: Text(
-                              '${vm.editSelectedBranchIds.length} selected',
-                              style: const TextStyle(color: AppColors.secondaryLight, fontSize: 11, fontWeight: FontWeight.w700),
+                              l10n.corporateSelectedCount(vm.editSelectedBranchIds.length),
+                              style: const TextStyle(
+                                color: AppColors.secondaryLight,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ],
@@ -800,8 +843,14 @@ class _EditCorporateSheet extends StatelessWidget {
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(color: Colors.grey.withOpacity(0.06), borderRadius: BorderRadius.circular(14)),
-                          child: const Text('No branches found', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            l10n.corporateNoBranches,
+                            style: const TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
                         )
                       else
                         Container(
@@ -822,8 +871,13 @@ class _EditCorporateSheet extends StatelessWidget {
                                 activeColor: AppColors.primaryLight,
                                 controlAffinity: ListTileControlAffinity.leading,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                                title: Text(branch.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                subtitle: branch.location.isEmpty ? null : Text(branch.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                title: Text(
+                                  branch.name,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                ),
+                                subtitle: branch.location.isEmpty
+                                    ? null
+                                    : Text(branch.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                                 onChanged: (_) => vm.toggleEditBranchSelection(branch.id),
                               );
                             },
@@ -835,7 +889,9 @@ class _EditCorporateSheet extends StatelessWidget {
               ),
               Padding(
                 padding: EdgeInsets.only(
-                  left: 24, right: 24, top: 16,
+                  left: 24,
+                  right: 24,
+                  top: 16,
                   bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                 ),
                 child: ElevatedButton(
@@ -850,8 +906,19 @@ class _EditCorporateSheet extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: vm.isActionLoading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: AppColors.secondaryLight, strokeWidth: 2))
-                      : const Text('Save Changes', style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16)),
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(color: AppColors.secondaryLight, strokeWidth: 2),
+                  )
+                      : Text(
+                    l10n.corporateSaveChanges,
+                    style: const TextStyle(
+                      color: AppColors.secondaryLight,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -861,7 +928,12 @@ class _EditCorporateSheet extends StatelessWidget {
     );
   }
 
-  Widget _editField(String label, IconData icon, TextEditingController controller, {TextInputType inputType = TextInputType.text}) {
+  Widget _editField(
+      String label,
+      IconData icon,
+      TextEditingController controller, {
+        TextInputType inputType = TextInputType.text,
+      }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: TextField(
@@ -872,7 +944,10 @@ class _EditCorporateSheet extends StatelessWidget {
           prefixIcon: Icon(icon, color: AppColors.secondaryLight, size: 20),
           filled: true,
           fillColor: Colors.grey.withOpacity(0.05),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
           labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ),

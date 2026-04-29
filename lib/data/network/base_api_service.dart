@@ -88,6 +88,11 @@ class BaseApiService {
       final url = '${ApiConstants.baseUrl}$endpoint';
       _debugLogRequest(method: 'GET', url: url, body: data);
       
+      if (kDebugMode) {
+        debugPrint('GET(body) Request URL: $url');
+        debugPrint('GET(body) Request Body: ${jsonEncode(data)}');
+      }
+
       final request = http.Request('GET', Uri.parse(url));
       if (headers != null) {
         request.headers.addAll(headers);
@@ -95,7 +100,7 @@ class BaseApiService {
         request.headers['Content-Type'] = 'application/json';
       }
       request.body = jsonEncode(data);
-      
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       return _returnResponse(response);
@@ -109,11 +114,11 @@ class BaseApiService {
 
   /// Multipart POST (e.g. expense proof upload). Do not json-encode [fields].
   Future<dynamic> postMultipart(
-    String endpoint,
-    Map<String, String> fields,
-    List<http.MultipartFile> files,
-    String token,
-  ) async {
+      String endpoint,
+      Map<String, String> fields,
+      List<http.MultipartFile> files,
+      String token,
+      ) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       _debugLogRequest(method: 'POST Multipart', url: uri.toString(), body: fields);

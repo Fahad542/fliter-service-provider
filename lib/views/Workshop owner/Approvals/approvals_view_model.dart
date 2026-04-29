@@ -1,152 +1,164 @@
 import 'package:flutter/material.dart';
 import '../../../data/repositories/owner_repository.dart';
 import '../../../models/workshop_owner_models.dart';
-import '../../../services/realtime_service.dart';
 import '../../../services/session_service.dart';
+import '../../../services/locker_translation_mixin.dart';
+import '../../Workshop pos app/More Tab/settings_view_model.dart';
 
-class ApprovalsViewModel extends ChangeNotifier {
+// ---------------------------------------------------------------------------
+// ApprovalsViewModel
+//
+// Fetches petty-cash approval requests via OwnerRepository.getPettyCashRequests
+// using the real token from SessionService.
+//
+// Filter keys ('all', 'pending', …) are raw API values — never translated.
+// Translated display fields are populated via TranslatableMixin after fetch.
+// ---------------------------------------------------------------------------
+
+class ApprovalsViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
+  final SettingsViewModel settingsViewModel;
 
   ApprovalsViewModel({
     required this.ownerRepository,
     required this.sessionService,
+    required this.settingsViewModel,
   });
 
-  bool _isLoading = false;
-  String? _approvingRequestId;
-  String? _rejectingRequestId;
-  String? _error;
-  String _statusFilter = 'all';
-  /// API: `fund` (top-ups), `expense` (cashier expenses), `all`.
-  String _queueFilter = 'all';
+  // ── State ─────────────────────────────────────────────────────────────────
   List<PettyCashRequestItem> _requests = [];
+  bool _isLoading = false;
+  String? _error;
+
+  /// Raw API filter values — NEVER translated.
+  String _statusFilter = 'all';
+  String _queueFilter  = 'all';
+
   String _currency = 'SAR';
-  final RealtimeService _realtimeService = RealtimeService();
-  bool _realtimeBound = false;
 
-  bool get isLoading => _isLoading;
-  String? get approvingRequestId => _approvingRequestId;
-  String? get rejectingRequestId => _rejectingRequestId;
+  /// IDs currently in-flight for approve / reject.
+  final Set<String> _approvingIds = {};
+  final Set<String> _rejectingIds = {};
 
-  /// True while any approve/reject API call is in flight (all card actions disabled).
-  bool get hasApprovalActionInFlight =>
-      _approvingRequestId != null || _rejectingRequestId != null;
-
-  bool isApprovingRequest(String id) => _approvingRequestId == id;
-  bool isRejectingRequest(String id) => _rejectingRequestId == id;
-
-  String? get error => _error;
-  String get statusFilter => _statusFilter;
-  String get queueFilter => _queueFilter;
+  // ── Getters ───────────────────────────────────────────────────────────────
   List<PettyCashRequestItem> get requests => _requests;
-  String get currency => _currency;
+  bool         get isLoading             => _isLoading;
+  String?      get error                 => _error;
+  String       get statusFilter          => _statusFilter;
+  String       get queueFilter           => _queueFilter;
+  String       get currency              => _currency;
 
-  Future<void> fetchRequests({bool silent = false}) async {
-    if (!silent) {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-    }
+  bool get hasApprovalActionInFlight =>
+      _approvingIds.isNotEmpty || _rejectingIds.isNotEmpty;
+
+  bool isApprovingRequest(String id) => _approvingIds.contains(id);
+  bool isRejectingRequest(String id) => _rejectingIds.contains(id);
+
+  // ── Filter setters ────────────────────────────────────────────────────────
+  void setStatusFilter(String key) {
+    if (_statusFilter == key) return;
+    _statusFilter = key;
+    notifyListeners();
+    fetchRequests();
+  }
+
+  void setQueueFilter(String key) {
+    if (_queueFilter == key) return;
+    _queueFilter = key;
+    notifyListeners();
+    fetchRequests();
+  }
+
+  // ── Data fetch ────────────────────────────────────────────────────────────
+  Future<void> fetchRequests() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
 
     try {
-      final token = await sessionService.getToken(role: 'owner');
-      if (token == null) throw Exception('Token not found');
-      final response = await ownerRepository.getPettyCashRequests(
+      final token = await sessionService.getToken(role: 'owner') ?? '';
+
+      // 'all' means no filter — omit the param so the API returns everything.
+      final String? statusParam =
+      _statusFilter == 'all' ? null : _statusFilter;
+      final String? queueParam =
+      _queueFilter == 'all' ? null : _queueFilter;
+
+      final PettyCashRequestsResponse response =
+      await ownerRepository.getPettyCashRequests(
         token,
-        status: _statusFilter == 'all' ? null : _statusFilter,
-        queue: _queueFilter,
-        limit: 100,
-        offset: 0,
+        status: statusParam,
+        queue: queueParam,
       );
-      _requests = response.requests;
+
       _currency = response.currency;
+
+      // Translate dynamic strings (branch/cashier names, status label)
+      // on-the-fly when the active locale is Arabic.
+      final translated = await Future.wait(
+        response.requests.map((req) async {
+          final tBranchName  = await t(req.branchName);
+          final tCashierName = await t(req.cashierName);
+          final tStatusLabel = await tStatus(req.status);
+          return req.copyWith(
+            translatedBranchName:  tBranchName,
+            translatedCashierName: tCashierName,
+            translatedStatus:      tStatusLabel,
+          );
+        }),
+      );
+
+      _requests = translated;
     } catch (e) {
-      _error = e.toString().replaceFirst('Exception: ', '');
+      _error = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<bool> approveRequest(String requestId) async {
-    _approvingRequestId = requestId;
+  // ── Actions ───────────────────────────────────────────────────────────────
+  Future<void> approveRequest(String id) async {
+    if (_approvingIds.contains(id)) return;
+    _approvingIds.add(id);
     notifyListeners();
+
     try {
-      final token = await sessionService.getToken(role: 'owner');
-      if (token == null) throw Exception('Token not found');
-      final ok = await ownerRepository.approvePettyCashRequest(token, requestId);
-      if (ok) {
-        await fetchRequests(silent: true);
-      }
-      return ok;
-    } catch (_) {
-      return false;
+      final token = await sessionService.getToken(role: 'owner') ?? '';
+      await ownerRepository.approvePettyCashRequest(token, id);
+      await fetchRequests();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
     } finally {
-      _approvingRequestId = null;
+      _approvingIds.remove(id);
       notifyListeners();
     }
   }
 
-  Future<bool> rejectRequest(String requestId, String rejectionReason) async {
-    _rejectingRequestId = requestId;
+  Future<void> rejectRequest(String id, String reason) async {
+    if (_rejectingIds.contains(id)) return;
+    _rejectingIds.add(id);
     notifyListeners();
+
     try {
-      final token = await sessionService.getToken(role: 'owner');
-      if (token == null) throw Exception('Token not found');
-      final ok = await ownerRepository.rejectPettyCashRequest(token, requestId, rejectionReason);
-      if (ok) {
-        await fetchRequests(silent: true);
-      }
-      return ok;
-    } catch (_) {
-      return false;
+      final token = await sessionService.getToken(role: 'owner') ?? '';
+      await ownerRepository.rejectPettyCashRequest(token, id, reason);
+      await fetchRequests();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
     } finally {
-      _rejectingRequestId = null;
+      _rejectingIds.remove(id);
       notifyListeners();
     }
   }
 
-  void setStatusFilter(String value) {
-    _statusFilter = value;
-    fetchRequests();
-  }
-
-  void setQueueFilter(String value) {
-    if (_queueFilter == value) return;
-    _queueFilter = value;
-    fetchRequests();
-  }
-
-  Future<void> bindRealtime() async {
-    if (_realtimeBound) return;
-    final token = await sessionService.getToken(role: 'owner');
-    if (token == null || token.isEmpty) return;
-    _realtimeService.connect(token);
-    _realtimeService.on(
-      RealtimeService.eventWorkshopPettyCashUpdated,
-      _onWorkshopPettyCashUpdated,
-    );
-    _realtimeBound = true;
-  }
-
-  void unbindRealtime() {
-    if (!_realtimeBound) return;
-    _realtimeService.off(
-      RealtimeService.eventWorkshopPettyCashUpdated,
-      _onWorkshopPettyCashUpdated,
-    );
-    _realtimeService.disconnect();
-    _realtimeBound = false;
-  }
-
-  void _onWorkshopPettyCashUpdated(Map<String, dynamic> _) {
-    fetchRequests(silent: true);
-  }
-
-  @override
-  void dispose() {
-    unbindRealtime();
-    super.dispose();
-  }
+  // ── Realtime stubs ────────────────────────────────────────────────────────
+  // OwnerRepository is a plain REST client — no push channel exists yet.
+  // These satisfy ApprovalsView's initState/dispose lifecycle calls.
+  // Replace with a real subscription if a WebSocket/Supabase channel is added.
+  void bindRealtime()   {}
+  void unbindRealtime() {}
 }

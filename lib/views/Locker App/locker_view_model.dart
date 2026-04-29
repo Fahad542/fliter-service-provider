@@ -15,22 +15,20 @@ class LockerViewModel extends ChangeNotifier {
   // Role based filtering
   List<LockerRequest> get filteredRequests {
     if (_currentUser == null) return [];
-    if (_currentUser!.role == 'Manager') return _allRequests;
     return _allRequests.where((r) => r.assignedOfficerId == _currentUser!.id).toList();
   }
 
   void init() {
     _mockData();
     // Default to Manager for initial view
-    _currentUser = _officers.firstWhere((o) => o.role == 'Manager');
     notifyListeners();
   }
 
   void _mockData() {
     _officers = [
-      LockerOfficer(id: 'OFF001', name: 'Khalid Salman', mobile: '0501234567', role: 'Manager'),
-      LockerOfficer(id: 'OFF002', name: 'Ahmad Abdullah', mobile: '0507654321', role: 'Officer'),
-      LockerOfficer(id: 'OFF003', name: 'Sami Nasser', mobile: '0501112223', role: 'Officer'),
+      LockerOfficer(id: 'OFF001', name: 'Khalid Salman', mobile: '0501234567', displayCode: '', email: '', userType: ''),
+      LockerOfficer(id: 'OFF002', name: 'Ahmad Abdullah', mobile: '0507654321', displayCode: '', email: '', userType: '', ),
+      LockerOfficer(id: 'OFF003', name: 'Sami Nasser', mobile: '0501112223', displayCode: '', email: '', userType: '', ),
     ];
 
     _allRequests = [
@@ -41,6 +39,7 @@ class LockerViewModel extends ChangeNotifier {
         closingDate: DateTime.now().subtract(const Duration(hours: 2)),
         lockedCashAmount: 5200.0,
         status: LockerStatus.pending,
+        referenceCode: '',
       ),
       LockerRequest(
         id: 'REQ-102',
@@ -50,6 +49,7 @@ class LockerViewModel extends ChangeNotifier {
         lockedCashAmount: 3450.0,
         status: LockerStatus.assigned,
         assignedOfficerId: 'OFF002',
+        referenceCode: '',
       ),
       LockerRequest(
         id: 'REQ-103',
@@ -59,6 +59,7 @@ class LockerViewModel extends ChangeNotifier {
         lockedCashAmount: 8900.0,
         status: LockerStatus.approved,
         assignedOfficerId: 'OFF003',
+        referenceCode: '',
       ),
       LockerRequest(
         id: 'REQ-104',
@@ -67,6 +68,7 @@ class LockerViewModel extends ChangeNotifier {
         closingDate: DateTime.now().subtract(const Duration(hours: 1)),
         lockedCashAmount: 12500.0,
         status: LockerStatus.pending,
+        referenceCode: '',
       ),
     ];
 
@@ -83,7 +85,6 @@ class LockerViewModel extends ChangeNotifier {
   }
 
   void switchRole(String role) {
-    _currentUser = _officers.firstWhere((o) => o.role == role);
     notifyListeners();
   }
 

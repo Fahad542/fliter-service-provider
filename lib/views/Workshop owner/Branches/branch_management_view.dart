@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
+import 'branch_management_view_model.dart';
 import '../../../models/workshop_owner_models.dart';
 import '../widgets/owner_app_bar.dart';
-import '../../../utils/toast_service.dart';
-import 'branch_management_view_model.dart';
-import '../widgets/custom_search_bar.dart';
+import '../owner_shell.dart';
+
 class BranchManagementView extends StatefulWidget {
   const BranchManagementView({super.key});
 
@@ -18,491 +18,640 @@ class BranchManagementView extends StatefulWidget {
 class _BranchManagementViewState extends State<BranchManagementView> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Consumer<BranchManagementViewModel>(
       builder: (context, vm, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FD),
           appBar: OwnerAppBar(
-            title: 'Branch Management',
+            title: l10n.branchManagementTitle,
+            showGlobalLeft:   true,
+            showNotification: true,
+            showDrawer:       false,
+            onNotificationPressed: () => OwnerShell.goToNotifications(context),
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-          body: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (vm.branches.isNotEmpty || vm.searchQuery.isNotEmpty) ...[
-                  CustomSearchBar(
-                    onChanged: (val) => vm.updateSearchQuery(val),
-                    hintText: 'Search by Name or Location...',
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                Expanded(child: _buildBranchList(context, vm)),
-              ],
-            ),
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () {
-              vm.setEditBranch(null);
-              _showAddBranchSheet(context);
+              vm.clearForm();
+              _showBranchSheet(context, l10n, vm);
             },
-            backgroundColor: AppColors.secondaryLight,
-            icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text('Add New Branch', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: AppColors.primaryLight,
+            foregroundColor: AppColors.secondaryLight,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(
+              l10n.branchAddButton,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          body: _buildBody(context, l10n, vm),
+        );
+      },
+    );
+  }
+
+  // ── Body ──────────────────────────────────────────────────────────────────
+
+  Widget _buildBody(
+      BuildContext context,
+      AppLocalizations l10n,
+      BranchManagementViewModel vm,
+      ) {
+    return Column(
+      children: [
+        _buildSearchBar(l10n, vm),
+        Expanded(
+          child: vm.isLoading
+              ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryLight))
+              : vm.branches.isEmpty
+              ? _buildEmpty(l10n)
+              : _buildList(context, l10n, vm),
+        ),
+      ],
+    );
+  }
+
+  // ── Search ────────────────────────────────────────────────────────────────
+
+  Widget _buildSearchBar(AppLocalizations l10n, BranchManagementViewModel vm) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      child: TextField(
+        onChanged: vm.updateSearchQuery,
+        decoration: InputDecoration(
+          hintText: l10n.branchSearchHint,
+          prefixIcon: const Icon(Icons.search_rounded, color: Colors.grey),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+      ),
+    );
+  }
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+
+  Widget _buildEmpty(AppLocalizations l10n) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.account_tree_outlined, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            l10n.branchNoBranches,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Branch list ───────────────────────────────────────────────────────────
+
+  Widget _buildList(
+      BuildContext context,
+      AppLocalizations l10n,
+      BranchManagementViewModel vm,
+      ) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+      itemCount: vm.branches.length,
+      itemBuilder: (context, index) {
+        final branch = vm.branches[index];
+        return _buildBranchCard(context, l10n, vm, branch);
+      },
+    );
+  }
+
+  Widget _buildBranchCard(
+      BuildContext context,
+      AppLocalizations l10n,
+      BranchManagementViewModel vm,
+      Branch branch,
+      ) {
+    // Display name / location come from translated cache when Arabic is active.
+    final displayName     = branch.translatedName     ?? branch.name;
+    final displayLocation = branch.translatedLocation ?? branch.location;
+
+    // Status chip uses the raw API status for colour logic; display text from l10n.
+    final rawStatus    = branch.status;
+    final isActive     = rawStatus.toLowerCase() == 'active';
+    final statusLabel  = isActive ? l10n.branchStatusActive : l10n.branchStatusInactive;
+    final statusColor  = isActive ? Colors.green : Colors.grey;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.account_tree_rounded,
+              color: AppColors.primaryLight,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Text info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: AppColors.secondaryLight,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_rounded,
+                        size: 13, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        displayLocation,
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    statusLabel.toUpperCase(),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Actions
+          Column(
+            children: [
+              IconButton(
+                onPressed: () {
+                  vm.setEditBranch(branch);
+                  _showBranchSheet(context, l10n, vm);
+                },
+                icon: const Icon(Icons.edit_rounded,
+                    color: AppColors.primaryLight, size: 20),
+                tooltip: l10n.branchEditButton,
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(8),
+              ),
+              IconButton(
+                onPressed: () =>
+                    _confirmDelete(context, l10n, vm, branch.id),
+                icon: const Icon(Icons.delete_rounded,
+                    color: Colors.redAccent, size: 20),
+                tooltip: l10n.branchDeleteButton,
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(8),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Delete confirmation ───────────────────────────────────────────────────
+
+  void _confirmDelete(
+      BuildContext context,
+      AppLocalizations l10n,
+      BranchManagementViewModel vm,
+      String branchId,
+      ) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.branchDeleteConfirmTitle,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                l10n.branchDeleteConfirmBody,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.grey, fontSize: 14, height: 1.5),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      child: Text(
+                        l10n.branchDeleteConfirmCancel,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.secondaryLight),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await vm.deleteBranch(context, branchId);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text(
+                        l10n.branchDeleteConfirmDelete,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Add / Edit bottom sheet ───────────────────────────────────────────────
+
+  void _showBranchSheet(
+      BuildContext context,
+      AppLocalizations l10n,
+      BranchManagementViewModel vm,
+      ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BranchFormSheet(vm: vm, l10n: l10n),
+    );
+  }
+}
+
+// ── Branch form sheet ─────────────────────────────────────────────────────────
+
+class _BranchFormSheet extends StatelessWidget {
+  final BranchManagementViewModel vm;
+  final AppLocalizations l10n;
+
+  const _BranchFormSheet({required this.vm, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (ctx, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Title
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                child: Text(
+                  vm.isEditing ? l10n.branchFormTitleEdit : l10n.branchFormTitleAdd,
+                  style: AppTextStyles.h2.copyWith(fontSize: 20),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                  children: [
+                    // Branch name
+                    _label(l10n.branchFormNameLabel),
+                    const SizedBox(height: 8),
+                    _textField(
+                      controller: vm.branchNameController,
+                      hint: l10n.branchFormNameHint,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Address with autocomplete
+                    _label(l10n.branchFormAddressLabel),
+                    const SizedBox(height: 8),
+                    _AddressField(vm: vm, l10n: l10n),
+                    const SizedBox(height: 20),
+
+                    // GPS
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _label(l10n.branchFormLatLabel),
+                              const SizedBox(height: 8),
+                              _textField(
+                                controller: vm.gpsLatController,
+                                hint: '24.7136',
+                                keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _label(l10n.branchFormLngLabel),
+                              const SizedBox(height: 8),
+                              _textField(
+                                controller: vm.gpsLngController,
+                                hint: '46.6753',
+                                keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Active toggle
+                    Consumer<BranchManagementViewModel>(
+                      builder: (_, vm2, __) => Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            l10n.branchFormStatusLabel,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: AppColors.secondaryLight,
+                            ),
+                          ),
+                          Switch(
+                            value: vm2.isActive,
+                            onChanged: vm2.toggleStatus,
+                            activeColor: AppColors.primaryLight,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Submit button
+                    Consumer<BranchManagementViewModel>(
+                      builder: (_, vm2, __) => ElevatedButton(
+                        onPressed: vm2.isActionLoading
+                            ? null
+                            : () => vm2.submitBranchForm(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryLight,
+                          foregroundColor: AppColors.secondaryLight,
+                          disabledBackgroundColor:
+                          AppColors.primaryLight.withOpacity(0.5),
+                          minimumSize: const Size.fromHeight(56),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: vm2.isActionLoading
+                            ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.secondaryLight,
+                          ),
+                        )
+                            : Text(
+                          vm2.isEditing
+                              ? l10n.branchFormUpdateButton
+                              : l10n.branchFormSaveButton,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  // AppBar is now replaced by the shared OwnerAppBar widget
+  Widget _label(String text) => Text(
+    text,
+    style: const TextStyle(
+      fontWeight: FontWeight.w700,
+      fontSize: 13,
+      color: AppColors.secondaryLight,
+    ),
+  );
 
-
-
-  Widget _buildBranchList(BuildContext context, BranchManagementViewModel vm) {
-    if (vm.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
-    }
-
-    if (vm.branches.isEmpty) {
-      return const Center(child: Text('No branches found.'));
-    }
-
-    return ListView.builder(
-      itemCount: vm.branches.length,
-      itemBuilder: (context, index) {
-        final branch = vm.branches[index];
-        return _buildBranchCard(context, branch, vm);
-      },
-    );
-  }
-
-  Widget _buildBranchCard(BuildContext context, Branch branch, BranchManagementViewModel vm) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.withOpacity(0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+  Widget _textField({
+    required TextEditingController controller,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+  }) =>
+      TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          hintText: hint,
+          filled: true,
+          fillColor: const Color(0xFFF8F9FD),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.store_mall_directory_rounded, color: AppColors.primaryLight, size: 26),
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: branch.status.toLowerCase() == 'active' ? Colors.green : Colors.grey.shade400,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        branch.name,
-                        style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.location_on_rounded, color: Colors.grey, size: 14),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              branch.location,
-                              style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const SizedBox(width: 8),
-                _buildActionMenu(context, branch, vm),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionMenu(BuildContext context, Branch b, BranchManagementViewModel vm) {
-    return PopupMenuButton<String>(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 8,
-      offset: const Offset(0, 40),
-      icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400, size: 20),
-      onSelected: (value) {
-        if (value == 'edit') {
-          vm.setEditBranch(b);
-          _showAddBranchSheet(context);
-        } else if (value == 'delete') {
-          _showDeleteConfirmation(context, vm, b);
-        }
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.edit_rounded, size: 16, color: AppColors.secondaryLight),
-              ),
-              const SizedBox(width: 12),
-              const Text('Edit', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight)),
-            ],
-          ),
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
-        PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.delete_rounded, size: 16, color: AppColors.secondaryLight),
-              ),
-              const SizedBox(width: 12),
-              const Text('Delete', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondaryLight)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, BranchManagementViewModel vm, Branch b) {
-    final parentContext = context;
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Column(
-          children: [
-            const SizedBox(height: 16),
-            const Text('Confirm Deletion', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-          ],
-        ),
-        content: Text(
-          'Are you sure you want to delete "${b.name}"? This action cannot be undone.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(dialogContext);
-                    vm.deleteBranch(parentContext, b.id);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryLight,
-                    foregroundColor: AppColors.secondaryLight,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(String status) {
-    final isActive = status.toLowerCase() == 'active';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isActive ? Colors.green.withOpacity(0.12) : Colors.orange.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          color: isActive ? Colors.green.shade700 : Colors.orange.shade700,
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-
-  void _showAddBranchSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ChangeNotifierProvider.value(
-        value: context.read<BranchManagementViewModel>(),
-        child: const _AddBranchSheet(),
-      ),
-    );
-  }
+      );
 }
 
-class _AddBranchSheet extends StatelessWidget {
-  const _AddBranchSheet();
+// ── Address autocomplete field ────────────────────────────────────────────────
+
+class _AddressField extends StatefulWidget {
+  final BranchManagementViewModel vm;
+  final AppLocalizations l10n;
+  const _AddressField({required this.vm, required this.l10n});
+
+  @override
+  State<_AddressField> createState() => _AddressFieldState();
+}
+
+class _AddressFieldState extends State<_AddressField> {
+  List<Map<String, dynamic>> _suggestions = [];
+  bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<BranchManagementViewModel>();
-
-    return FocusScope(
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHandle(),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(vm.isEditing ? 'Update Branch' : 'Register New Branch', style: AppTextStyles.h2.copyWith(fontSize: 18)),
-                      const SizedBox(height: 8),
-                      Text(
-                        vm.isEditing ? 'Modify existing branch details.' : 'Enter branch details.',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                     const SizedBox(height: 30),
-                      _buildTextField('Branch Name / Area', Icons.location_on_rounded, controller: vm.branchNameController),
-                      
-                      // Address with Google Places Autocomplete
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: TypeAheadField<Map<String, dynamic>>(
-                          controller: vm.addressController,
-                          builder: (context, controller, focusNode) {
-                            return TextField(
-                              controller: controller,
-                              focusNode: focusNode,
-                              decoration: InputDecoration(
-                                labelText: 'Address',
-                                prefixIcon: const Icon(Icons.map_rounded, color: AppColors.secondaryLight, size: 20),
-                                filled: true,
-                                fillColor: Colors.grey.withOpacity(0.05),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide.none,
-                                ),
-                                labelStyle: const TextStyle(color: Colors.grey),
-                              ),
-                            );
-                          },
-                          suggestionsCallback: (search) async {
-                            if (search.length < 3) return [];
-                            return await vm.getAddressSuggestions(search);
-                          },
-                          itemBuilder: (context, suggestion) {
-                            return ListTile(
-                              leading: const Icon(Icons.location_on_rounded, color: AppColors.primaryLight, size: 20),
-                              title: Text(
-                                suggestion['description'] ?? '',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                            );
-                          },
-                          onSelected: (suggestion) {
-                            vm.setSelectedAddress(
-                              suggestion['description'] ?? '',
-                              suggestion['place_id'] ?? '',
-                            );
-                          },
-                          emptyBuilder: (context) => const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text('No addresses found', style: TextStyle(color: Colors.grey)),
-                          ),
-                          decorationBuilder: (context, child) => Material(
-                            type: MaterialType.card,
-                            elevation: 8,
-                            borderRadius: BorderRadius.circular(16),
-                            child: child,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildSwitchTile('Active Status', vm.isActive, (val) => vm.toggleStatus(val)),
-                    ],
-                 ),
-               ),
-             ),
-             Padding(
-               padding: EdgeInsets.only(
-                 left: 24,
-                 right: 24,
-                 top: 16,
-                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-               ),
-                child: ElevatedButton(
-                  onPressed: vm.isActionLoading ? null : () => vm.submitBranchForm(context),
-                  style: ElevatedButton.styleFrom(
-                   backgroundColor: AppColors.primaryLight,
-                   disabledBackgroundColor: AppColors.primaryLight,
-                   foregroundColor: AppColors.secondaryLight,
-                   disabledForegroundColor: AppColors.secondaryLight,
-                   minimumSize: const Size.fromHeight(56),
-                   elevation: 0,
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                 ),
-                 child: vm.isActionLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: AppColors.secondaryLight,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          vm.isEditing ? 'Update Branch' : 'Submit for Approval',
-                          style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 16),
-                        ),
-                ),
-             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHandle() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        width: 40,
-        height: 5,
-        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primaryLight,
+    return Column(
+      children: [
+        TextField(
+          controller: widget.vm.addressController,
+          decoration: InputDecoration(
+            hintText: widget.l10n.branchFormAddressHint,
+            filled: true,
+            fillColor: const Color(0xFFF8F9FD),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            suffixIcon: _loading
+                ? const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+            )
+                : null,
+            contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondaryLight),
-    );
-  }
-
-  Widget _buildTextField(String label, IconData icon, {bool isNumber = false, TextEditingController? controller}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: TextField(
-        controller: controller,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: AppColors.secondaryLight, size: 20),
-          filled: true,
-          fillColor: Colors.grey.withOpacity(0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-          labelStyle: const TextStyle(color: Colors.grey),
+          onChanged: (val) async {
+            if (val.length < 3) {
+              setState(() => _suggestions = []);
+              return;
+            }
+            setState(() => _loading = true);
+            final s = await widget.vm.getAddressSuggestions(val);
+            setState(() {
+              _suggestions = s;
+              _loading     = false;
+            });
+          },
         ),
-      ),
+        if (_suggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _suggestions.length,
+              separatorBuilder: (_, __) =>
+                  Divider(color: Colors.grey.shade100, height: 1),
+              itemBuilder: (_, i) {
+                final s = _suggestions[i];
+                return ListTile(
+                  leading: const Icon(Icons.location_on_outlined,
+                      color: Colors.grey, size: 18),
+                  title: Text(s['description'] as String,
+                      style: const TextStyle(fontSize: 13)),
+                  onTap: () {
+                    widget.vm.setSelectedAddress(
+                      s['description'] as String,
+                      s['placeId']     as String,
+                    );
+                    setState(() => _suggestions = []);
+                  },
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }
-
