@@ -12,13 +12,21 @@ import '../../../../services/realtime_service.dart';
 
 class PettyCashViewModel extends ChangeNotifier {
   Locale? _translatedLocale;
+  String _translationSignature = '';
   final Map<String, String> _translationCache = {};
 
   String localizedText(String value) => _translationCache[value] ?? value;
 
   Future<void> translateApiDataForLocale(Locale locale) async {
-    if (_translatedLocale == locale) return;
+    final signature = [
+      ..._expenseCategories.map((c) => '${c.id}|${c.name}'),
+      ..._branchEmployees.map((e) => '${e.id}|${e.name}|${e.employeeType}'),
+      ..._expenseHistory.map((e) => '${e.id}|${e.kind}|${e.category}|${e.employeeName}|${e.description}|${e.rejectionReason}|${e.status}'),
+      ..._fundRequests.map((r) => '${r.id}|${r.reason}|${r.status}'),
+    ].join(';;');
+    if (_translatedLocale == locale && _translationSignature == signature) return;
     _translatedLocale = locale;
+    _translationSignature = signature;
     _translationCache.clear();
     if (locale.languageCode != 'ar') {
       notifyListeners();

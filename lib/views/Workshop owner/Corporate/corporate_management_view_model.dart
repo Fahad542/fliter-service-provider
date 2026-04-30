@@ -4,6 +4,7 @@ import '../../../../utils/toast_service.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
 class ReferralOption {
   final String id;
@@ -25,7 +26,7 @@ class ReferralOption {
   }
 }
 
-class CorporateManagementViewModel extends ChangeNotifier {
+class CorporateManagementViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
 
@@ -65,13 +66,35 @@ class CorporateManagementViewModel extends ChangeNotifier {
   List<CorporateCustomer> _corporateCustomers = [];
   List<CorporateCustomer> get corporateCustomers => _corporateCustomers;
 
+  final Map<String, String> _translatedCompanyNames = {};
+  final Map<String, String> _translatedContactNames = {};
+  final Map<String, String> _translatedCustomerAddresses = {};
+
+  String companyDisplayName(CorporateCustomer customer) =>
+      _translatedCompanyNames[customer.id] ?? customer.companyName;
+  String contactDisplayName(CorporateCustomer customer) =>
+      _translatedContactNames[customer.id] ?? customer.contactName;
+  String customerDisplayAddress(CorporateCustomer customer) =>
+      _translatedCustomerAddresses[customer.id] ?? customer.address;
+
   List<Branch> _branches = [];
   List<Branch> get branches => _branches;
+  List<Branch> _translatedBranches = [];
+  List<Branch> get displayBranches =>
+      _translatedBranches.isNotEmpty ? _translatedBranches : _branches;
   final Set<String> _selectedBranchIds = <String>{};
   List<String> get selectedBranchIds => _selectedBranchIds.toList();
 
   List<ReferralOption> _referrals = [];
   List<ReferralOption> get referrals => _referrals;
+  final Map<String, String> _translatedReferralNames = {};
+  final Map<String, String> _translatedReferralCategories = {};
+
+  String referralDisplayName(ReferralOption referral) =>
+      _translatedReferralNames[referral.id] ?? referral.name;
+
+  String referralDisplayCategory(ReferralOption referral) =>
+      _translatedReferralCategories[referral.id] ?? referral.category;
   String? _selectedReferralId;
   String? get selectedReferralId => _selectedReferralId;
 
@@ -94,6 +117,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
           _corporateCustomers = (response['corporateCustomers'] as List)
               .map((e) => CorporateCustomer.fromJson(e))
               .toList();
+          await _translateCorporateCustomers();
         }
         await _loadBranches(token);
         await _loadReferrals(token);
@@ -103,6 +127,44 @@ class CorporateManagementViewModel extends ChangeNotifier {
     }
 
     _isListLoading = false;
+    notifyListeners();
+  }
+
+
+  Future<void> _translateCorporateCustomers() async {
+    _translatedCompanyNames.clear();
+    _translatedContactNames.clear();
+    _translatedCustomerAddresses.clear();
+    for (final customer in _corporateCustomers) {
+      if (customer.companyName.trim().isNotEmpty) {
+        _translatedCompanyNames[customer.id] = await t(customer.companyName);
+      }
+      if (customer.contactName.trim().isNotEmpty) {
+        _translatedContactNames[customer.id] = await t(customer.contactName);
+      }
+      if (customer.address.trim().isNotEmpty) {
+        _translatedCustomerAddresses[customer.id] = await t(customer.address);
+      }
+    }
+  }
+
+  Future<void> _translateReferrals() async {
+    _translatedReferralNames.clear();
+    _translatedReferralCategories.clear();
+    for (final referral in _referrals) {
+      if (referral.name.trim().isNotEmpty) {
+        _translatedReferralNames[referral.id] = await t(referral.name);
+      }
+      if (referral.category.trim().isNotEmpty) {
+        _translatedReferralCategories[referral.id] = await t(referral.category);
+      }
+    }
+  }
+
+  Future<void> onLocaleChanged() async {
+    await _translateCorporateCustomers();
+    await _translateReferrals();
+    _translatedBranches = await translateBranches(_branches);
     notifyListeners();
   }
 
@@ -131,6 +193,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
           .whereType<Map<String, dynamic>>()
           .map(Branch.fromJson)
           .toList();
+      _translatedBranches = await translateBranches(_branches);
     }
   }
 
@@ -145,6 +208,7 @@ class CorporateManagementViewModel extends ChangeNotifier {
           .map(ReferralOption.fromJson)
           .where((r) => r.id.isNotEmpty)
           .toList();
+      await _translateReferrals();
       if (_selectedReferralId == null && _referrals.isNotEmpty) {
         _selectedReferralId = _referrals.first.id;
       }

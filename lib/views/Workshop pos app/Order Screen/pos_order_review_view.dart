@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../models/cashier_expense_models.dart';
 import '../../../services/session_service.dart';
+import '../../../services/localized_api_text.dart';
 
 // ── Mock data models used exclusively for this review screen ─────────────────
 
@@ -2676,7 +2677,7 @@ class _ItemRow extends StatelessWidget {
                 decoration: BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
               ),
               Expanded(
-                child: Text(
+                child: LocalizedApiText(
                   item.name,
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 15 : 14, color: const Color(0xFF1E2124)),
                 ),
@@ -2726,7 +2727,7 @@ class _ItemRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(children: [
                     Expanded(child: Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.posDetailsTechnician, style: labelStyle))),
-                    Text(item.technicianName, style: valStyle),
+                    LocalizedApiText(item.technicianName, style: valStyle),
                   ]),
                 ],
               ],
@@ -3962,7 +3963,7 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(job.department.toUpperCase(), style: deptStyle),
+              LocalizedApiText(job.department, style: deptStyle, uppercase: true),
               Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.posReviewJobHash(job.id), style: jobIdStyle)),
               const SizedBox(height: 8),
               if (techs.isEmpty)
@@ -3991,7 +3992,7 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(t.name, style: nameStyle),
+                              LocalizedApiText(t.name, style: nameStyle),
                               Text(
                                 AppLocalizations.of(context)!.posReviewCommissionLabel(_commissionLabel(t, job)),
                                 style: commStyle,

@@ -814,29 +814,32 @@ class _AddProductSheetState extends State<_AddProductSheet> {
 
                     if (!vm.isEditingProduct && vm.branches.isNotEmpty)
                       _buildDropdown(l10n.invFieldBranch,
-                        vm.branches.map((b) => b.name).toSet().toList(),
-                        value: vm.branches.firstWhere((b) => b.id == selectedBranchId, orElse: () => vm.branches.first).name,
-                        onChanged: (val) => setState(() =>
-                        selectedBranchId = vm.branches.firstWhere((b) => b.name == val).id),
+                        vm.branchDisplayNames,
+                        value: vm.branchDisplayName(vm.branches.firstWhere((b) => b.id == selectedBranchId, orElse: () => vm.branches.first)),
+                        onChanged: (val) => setState(() {
+                          final index = vm.branchDisplayNames.indexOf(val ?? '');
+                          selectedBranchId = vm.branches[index >= 0 ? index : 0].id;
+                        }),
                       ),
 
                     if (!vm.isEditingProduct && deptVm.departments.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: DropdownButtonFormField<String>(
-                          value: deptVm.departments.firstWhere((d) => d.id == selectedDepartmentId,
-                              orElse: () => deptVm.departments.first).name,
+                          value: deptVm.departmentDisplayName(deptVm.departments.firstWhere((d) => d.id == selectedDepartmentId,
+                              orElse: () => deptVm.departments.first)),
                           decoration: InputDecoration(
                             labelText: l10n.invFieldDepartment,
                             labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                             filled: true, fillColor: Colors.grey.withOpacity(0.05),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                           ),
-                          items: deptVm.departments.map((d) => d.name).toSet().toList()
+                          items: deptVm.departments.map(deptVm.departmentDisplayName).toList()
                               .map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
                           onChanged: (val) {
                             if (val != null) setState(() {
-                              selectedDepartmentId = deptVm.departments.firstWhere((d) => d.name == val).id;
+                              final index = deptVm.departments.map(deptVm.departmentDisplayName).toList().indexOf(val);
+                              selectedDepartmentId = deptVm.departments[index >= 0 ? index : 0].id;
                               selectedCategoryId = null; selectedSubCategoryId = null;
                             });
                           },
@@ -1047,29 +1050,32 @@ class _AddServiceSheetState extends State<_AddServiceSheet> {
 
                     if (!vm.isEditingService && vm.branches.isNotEmpty)
                       _buildDropdown(l10n.invFieldBranch,
-                        vm.branches.map((b) => b.name).toSet().toList(),
-                        value: vm.branches.firstWhere((b) => b.id == selectedBranchId, orElse: () => vm.branches.first).name,
-                        onChanged: (val) => setState(() =>
-                        selectedBranchId = vm.branches.firstWhere((b) => b.name == val).id),
+                        vm.branchDisplayNames,
+                        value: vm.branchDisplayName(vm.branches.firstWhere((b) => b.id == selectedBranchId, orElse: () => vm.branches.first)),
+                        onChanged: (val) => setState(() {
+                          final index = vm.branchDisplayNames.indexOf(val ?? '');
+                          selectedBranchId = vm.branches[index >= 0 ? index : 0].id;
+                        }),
                       ),
 
                     if (!vm.isEditingService && deptVm.departments.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: DropdownButtonFormField<String>(
-                          value: deptVm.departments.firstWhere((d) => d.id == selectedDepartmentId,
-                              orElse: () => deptVm.departments.first).name,
+                          value: deptVm.departmentDisplayName(deptVm.departments.firstWhere((d) => d.id == selectedDepartmentId,
+                              orElse: () => deptVm.departments.first)),
                           decoration: InputDecoration(
                             labelText: l10n.invFieldDepartment,
                             labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                             filled: true, fillColor: Colors.grey.withOpacity(0.05),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                           ),
-                          items: deptVm.departments.map((d) => d.name).toSet().toList()
+                          items: deptVm.departments.map(deptVm.departmentDisplayName).toList()
                               .map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
                           onChanged: (val) {
                             if (val != null) setState(() {
-                              selectedDepartmentId = deptVm.departments.firstWhere((d) => d.name == val).id;
+                              final index = deptVm.departments.map(deptVm.departmentDisplayName).toList().indexOf(val);
+                              selectedDepartmentId = deptVm.departments[index >= 0 ? index : 0].id;
                               selectedCategoryId = null; selectedSubCategoryId = null;
                             });
                           },
@@ -1282,19 +1288,27 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: DropdownButtonFormField<String>(
-                          value: deptVm.departments.any((d) => d.id == selectedDepartmentId)
-                              ? deptVm.departments.firstWhere((d) => d.id == selectedDepartmentId).name
-                              : deptVm.departments.first.name,
+                          value: deptVm.departmentDisplayName(
+                            deptVm.departments.any((d) => d.id == selectedDepartmentId)
+                                ? deptVm.departments.firstWhere((d) => d.id == selectedDepartmentId)
+                                : deptVm.departments.first,
+                          ),
                           decoration: InputDecoration(
                             labelText: l10n.invFieldDepartment,
                             labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                             filled: true, fillColor: Colors.grey.withOpacity(0.05),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                           ),
-                          items: deptVm.departments.map((d) => d.name).toSet().toList()
+                          items: deptVm.departments.map(deptVm.departmentDisplayName).toList()
                               .map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-                          onChanged: (val) => setState(() =>
-                          selectedDepartmentId = deptVm.departments.firstWhere((d) => d.name == val).id),
+                          onChanged: (val) => setState(() {
+                            final index = deptVm.departments
+                                .map(deptVm.departmentDisplayName)
+                                .toList()
+                                .indexOf(val ?? '');
+                            selectedDepartmentId =
+                                deptVm.departments[index >= 0 ? index : 0].id;
+                          }),
                           icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight),
                         ),
                       ),

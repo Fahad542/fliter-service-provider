@@ -30,6 +30,27 @@ class SuppliersView extends StatefulWidget {
 class _SuppliersViewState extends State<SuppliersView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Locale? _lastLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_lastLocale != null && _lastLocale != locale) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<SuppliersViewModel>().onLocaleChanged();
+      });
+    }
+    _lastLocale = locale;
+  }
+
+  String _supplierDisplayName(SuppliersViewModel vm, String? rawName) {
+    if (rawName == null || rawName.isEmpty) return rawName ?? '';
+    for (final supplier in vm.suppliersList) {
+      if (supplier.name == rawName) return vm.supplierDisplayName(supplier);
+    }
+    return rawName;
+  }
 
   // ── Local mock invoices (pending real API integration) ──────────────────
   final List<PurchaseInvoice> _invoices = [
@@ -378,7 +399,7 @@ class _SuppliersViewState extends State<SuppliersView>
                             Flexible(
                               child: Text(
                                 s.name.isNotEmpty
-                                    ? s.name
+                                    ? vm.supplierDisplayName(s)
                                     : l10n.suppliersUnknown,
                                 style: AppTextStyles.h2.copyWith(
                                   fontSize: 16,
@@ -413,9 +434,7 @@ class _SuppliersViewState extends State<SuppliersView>
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          (s.address != null && s.address!.isNotEmpty)
-                              ? s.address!
-                              : s.category,
+                          vm.supplierDisplayAddress(s),
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 11,
@@ -606,6 +625,14 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
   String? _selectedSupplier;
   final List<Map<String, dynamic>> _items = [];
 
+  String _supplierDisplayName(SuppliersViewModel vm, String? rawName) {
+    if (rawName == null || rawName.isEmpty) return rawName ?? '';
+    for (final supplier in vm.suppliersList) {
+      if (supplier.name == rawName) return vm.supplierDisplayName(supplier);
+    }
+    return rawName;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -749,6 +776,7 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
           ),
         ...vm.suppliersList.map((supplier) {
           final sName = supplier.name;
+          final displayName = vm.supplierDisplayName(supplier);
           final isInternal = sName.toLowerCase().contains('internal');
           final isSelected = _selectedSupplier == sName;
           return GestureDetector(
@@ -783,7 +811,7 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
-                      sName,
+                      displayName,
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: isSelected
@@ -831,6 +859,7 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
 
   Widget _buildStep2(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final vm = Provider.of<SuppliersViewModel>(context, listen: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -842,7 +871,9 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
         const SizedBox(height: 6),
         Text(
           // Parameterised key so "Supplier: {name}" works in both locales
-          l10n.suppliersPoStep2Subtitle(_selectedSupplier ?? ''),
+          l10n.suppliersPoStep2Subtitle(
+            _supplierDisplayName(vm, _selectedSupplier),
+          ),
           style: const TextStyle(color: Colors.grey, fontSize: 13),
         ),
         const SizedBox(height: 24),
@@ -975,6 +1006,7 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
 
   Widget _buildStep3(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final vm = Provider.of<SuppliersViewModel>(context, listen: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -999,7 +1031,9 @@ class _NewPurchaseSheetState extends State<_NewPurchaseSheet> {
             children: [
               _buildConfirmRow(
                 l10n.suppliersPoConfirmSupplier,
-                _selectedSupplier ?? '-',
+                _supplierDisplayName(vm, _selectedSupplier).isNotEmpty
+                    ? _supplierDisplayName(vm, _selectedSupplier)
+                    : '-',
               ),
               _buildConfirmRow(
                 l10n.suppliersPoConfirmStatus,

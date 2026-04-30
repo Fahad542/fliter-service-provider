@@ -1293,7 +1293,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   )
-              ),
+               ),
             ],
           ),
         ),

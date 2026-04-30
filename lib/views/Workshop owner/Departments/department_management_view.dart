@@ -17,6 +17,20 @@ class DepartmentManagementView extends StatefulWidget {
 }
 
 class _DepartmentManagementViewState extends State<DepartmentManagementView> {
+  Locale? _lastLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_lastLocale != null && _lastLocale != locale) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<DepartmentManagementViewModel>().onLocaleChanged();
+      });
+    }
+    _lastLocale = locale;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -158,7 +172,7 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  department.name,
+                  vm.departmentDisplayName(department),
                   style: AppTextStyles.h2.copyWith(
                     fontSize: 16,
                     color: AppColors.secondaryLight,
@@ -303,7 +317,7 @@ class _DepartmentManagementViewState extends State<DepartmentManagementView> {
           ],
         ),
         content: Text(
-          l10n.deptMgmtConfirmDeleteBody(d.name),
+          l10n.deptMgmtConfirmDeleteBody(vm.departmentDisplayName(d)),
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
         ),

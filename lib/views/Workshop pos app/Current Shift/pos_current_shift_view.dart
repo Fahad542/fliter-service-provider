@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../services/localized_api_text.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
@@ -201,7 +202,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedApiText(
             value,
             style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900),
             overflow: TextOverflow.ellipsis,
@@ -229,7 +230,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
             children: [
               Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
-              Text(value, style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w800)),
+              LocalizedApiText(value, style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w800)),
             ],
           ),
         ),

@@ -4,6 +4,7 @@ import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../models/workshop_owner_models.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SuppliersViewModel
@@ -13,7 +14,7 @@ import '../../../../l10n/app_localizations.dart';
 // BuildContext, which is always available for every action that shows a toast.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class SuppliersViewModel extends ChangeNotifier {
+class SuppliersViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
 
@@ -35,6 +36,19 @@ class SuppliersViewModel extends ChangeNotifier {
 
   List<Supplier> _suppliersList = [];
   List<Supplier> get suppliersList => _suppliersList;
+
+  final Map<String, String> _translatedSupplierNames = {};
+  final Map<String, String> _translatedSupplierAddresses = {};
+
+  String supplierDisplayName(Supplier supplier) =>
+      _translatedSupplierNames[supplier.id] ?? supplier.name;
+
+  String supplierDisplayAddress(Supplier supplier) {
+    final raw = (supplier.address != null && supplier.address!.isNotEmpty)
+        ? supplier.address!
+        : supplier.category;
+    return _translatedSupplierAddresses[supplier.id] ?? raw;
+  }
 
   SuppliersViewModel({
     required this.ownerRepository,
@@ -59,6 +73,7 @@ class SuppliersViewModel extends ChangeNotifier {
         }
         if (responses[1] != null) {
           _suppliersList = responses[1] as List<Supplier>;
+          await _translateSuppliers();
         }
       }
     } catch (e) {
@@ -67,6 +82,29 @@ class SuppliersViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+
+  Future<void> _translateSuppliers() async {
+    _translatedSupplierNames.clear();
+    _translatedSupplierAddresses.clear();
+    for (final supplier in _suppliersList) {
+      if (supplier.name.trim().isNotEmpty) {
+        _translatedSupplierNames[supplier.id] = await t(supplier.name);
+      }
+      final addressOrCategory =
+          (supplier.address != null && supplier.address!.isNotEmpty)
+              ? supplier.address!
+              : supplier.category;
+      if (addressOrCategory.trim().isNotEmpty) {
+        _translatedSupplierAddresses[supplier.id] = await t(addressOrCategory);
+      }
+    }
+  }
+
+  Future<void> onLocaleChanged() async {
+    await _translateSuppliers();
+    notifyListeners();
   }
 
   void clearForm() {

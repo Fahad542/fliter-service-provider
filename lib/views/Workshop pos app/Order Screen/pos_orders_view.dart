@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/locker_translation_mixin.dart';
+import '../../../services/localized_api_text.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -1029,8 +1030,9 @@ class _CorporatePendingJobCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          departmentName.toUpperCase(),
+                        LocalizedApiText(
+                          departmentName,
+                          uppercase: true,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1671,8 +1673,9 @@ class _JobCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          job.department.toUpperCase(),
+                        LocalizedApiText(
+                          job.department,
+                          uppercase: true,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -2946,8 +2949,9 @@ class _DraftDepartmentSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  job.department.toUpperCase(),
+                child: LocalizedApiText(
+                  job.department,
+                  uppercase: true,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,

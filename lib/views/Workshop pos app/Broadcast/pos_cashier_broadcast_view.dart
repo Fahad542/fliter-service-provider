@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/cashier_active_broadcasts_model.dart';
 import '../../../utils/app_colors.dart';
+import '../../../services/localized_api_text.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../Technician App/Notifications/notifications_view.dart';
 import 'cashier_broadcast_view_model.dart';
@@ -354,7 +355,7 @@ class _BroadcastCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: Text(
+                                child: LocalizedApiText(
                                   item.title,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -430,7 +431,7 @@ class _BroadcastCard extends StatelessWidget {
                             ),
                           ],
                           const SizedBox(height: 2),
-                          Text(
+                          LocalizedApiText(
                             item.subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

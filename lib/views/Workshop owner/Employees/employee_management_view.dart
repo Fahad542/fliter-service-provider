@@ -19,6 +19,19 @@ class EmployeeManagementView extends StatefulWidget {
 
 class _EmployeeManagementViewState extends State<EmployeeManagementView> {
   String? selectedBranchFilter;
+  Locale? _lastLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_lastLocale != null && _lastLocale != locale) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<EmployeeManagementViewModel>().onLocaleChanged();
+      });
+    }
+    _lastLocale = locale;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +106,7 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
               }),
           ...vm.branches.map(
                 (branch) => _buildFilterChip(
-              branch.name,
+              vm.branchDisplayName(branch),
               selectedBranchFilter == branch.id,
                   () {
                 setState(() => selectedBranchFilter = branch.id);
@@ -860,23 +873,21 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                     if (vm.branches.isNotEmpty)
                       _buildDropdown(
                         l10n.empMgmtFieldBranch,
-                        vm.branches.map((b) => b.name).toList(),
+                        vm.branchDisplayNames,
                         value: selectedBranchId != null
-                            ? vm.branches
-                            .firstWhere(
-                              (b) => b.id == selectedBranchId,
-                          orElse: () => vm.branches.first,
-                        )
-                            .name
-                            : vm.branches.first.name,
+                            ? vm.branchDisplayName(
+                                vm.branches.firstWhere(
+                                  (b) => b.id == selectedBranchId,
+                                  orElse: () => vm.branches.first,
+                                ),
+                              )
+                            : vm.branchDisplayName(vm.branches.first),
                         onChanged: (val) {
                           if (val != null) {
+                            final index = vm.branchDisplayNames.indexOf(val);
                             setState(() {
-                              selectedBranchId = vm.branches
-                                  .firstWhere(
-                                    (b) => b.name == val,
-                                orElse: () => vm.branches.first,
-                              )
+                              selectedBranchId = vm.branches[
+                                      index >= 0 ? index : 0]
                                   .id;
                             });
                           }
@@ -888,17 +899,18 @@ class _AddEmployeeSheetState extends State<_AddEmployeeSheet> {
                     if (vm.departments.isNotEmpty)
                       _buildDropdown(
                         l10n.empMgmtFieldDepartment,
-                        vm.departments.map((d) => d.name).toList(),
-                        value: vm.departments
-                            .firstWhere(
-                              (d) => d.id == selectedDepartmentId,
-                          orElse: () => vm.departments.first,
-                        )
-                            .name,
+                        vm.departmentDisplayNames,
+                        value: vm.departmentDisplayName(
+                          vm.departments.firstWhere(
+                            (d) => d.id == selectedDepartmentId,
+                            orElse: () => vm.departments.first,
+                          ),
+                        ),
                         onChanged: (val) {
+                          final index = vm.departmentDisplayNames.indexOf(val ?? '');
                           setState(
-                                () => selectedDepartmentId = vm.departments
-                                .firstWhere((d) => d.name == val)
+                            () => selectedDepartmentId = vm.departments[
+                                    index >= 0 ? index : 0]
                                 .id,
                           );
                         },

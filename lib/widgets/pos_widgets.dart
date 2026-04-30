@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
+import '../services/localized_api_text.dart';
 import '../models/pos_order_model.dart';
 import '../utils/app_text_styles.dart';
 import '../views/Workshop pos app/More Tab/settings_view_model.dart';
@@ -4609,7 +4610,7 @@ class TechnicianCard extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: isTablet ? 4 : 2),
-                Text(
+                LocalizedApiText(
                   tech.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -4630,7 +4631,7 @@ class TechnicianCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 3),
                       Expanded(
-                        child: Text(
+                        child: LocalizedApiText(
                           departmentText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -4856,7 +4857,7 @@ class ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedApiText(
             product.name,
             style: const TextStyle(
               fontSize: 16,
@@ -4887,7 +4888,7 @@ class ProductCard extends StatelessWidget {
               const SizedBox(width: 8),
               if (product.subtitle.isNotEmpty)
                 Expanded(
-                  child: Text(
+                  child: LocalizedApiText(
                     product.subtitle,
                     style: TextStyle(
                       fontSize: 12,

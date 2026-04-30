@@ -5,8 +5,9 @@ import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../services/owner_data_service.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
-class DepartmentManagementViewModel extends ChangeNotifier {
+class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
@@ -35,13 +36,19 @@ class DepartmentManagementViewModel extends ChangeNotifier {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
+  final Map<String, String> _translatedDepartmentNames = {};
+
+  String departmentDisplayName(Department department) =>
+      _translatedDepartmentNames[department.id] ?? department.name;
+
   List<Department> get departments {
     if (_searchQuery.isEmpty) {
       return ownerDataService.departments;
     }
     return ownerDataService.departments
         .where((d) =>
-        d.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        d.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        departmentDisplayName(d).toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
   }
 
@@ -67,6 +74,21 @@ class DepartmentManagementViewModel extends ChangeNotifier {
 
   Future<void> fetchDepartments({bool silent = false}) async {
     await ownerDataService.fetchDepartments(silent: silent);
+    await _translateDepartments();
+    notifyListeners();
+  }
+
+  Future<void> _translateDepartments() async {
+    _translatedDepartmentNames.clear();
+    for (final department in ownerDataService.departments) {
+      if (department.name.trim().isNotEmpty) {
+        _translatedDepartmentNames[department.id] = await t(department.name);
+      }
+    }
+  }
+
+  Future<void> onLocaleChanged() async {
+    await _translateDepartments();
     notifyListeners();
   }
 

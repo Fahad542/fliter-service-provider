@@ -26,6 +26,20 @@ class ReportsManagementView extends StatefulWidget {
 }
 
 class _ReportsManagementViewState extends State<ReportsManagementView> {
+  Locale? _lastLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_lastLocale != null && _lastLocale != locale) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<ReportsManagementViewModel>().onLocaleChanged();
+      });
+    }
+    _lastLocale = locale;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

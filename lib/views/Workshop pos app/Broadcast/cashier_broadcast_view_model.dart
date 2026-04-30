@@ -8,7 +8,7 @@ import '../../../models/cashier_active_broadcasts_model.dart';
 import '../../../services/realtime_service.dart';
 import '../../../services/session_service.dart';
 
-/// Typed error so the view can resolve a translated message without coupling
+/// Typed  error so the view can resolve a translated message without coupling
 /// the VM to a BuildContext.
 enum _BroadcastError { sessionExpired, fetchFailed }
 

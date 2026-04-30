@@ -4,13 +4,18 @@ import '../../../../models/pos_product_model.dart';
 
 class ProductGridViewModel extends ChangeNotifier {
   Locale? _translatedLocale;
+  String _translationSignature = '';
   final Map<String, String> _translationCache = {};
 
   String localizedText(String value) => _translationCache[value] ?? value;
 
   Future<void> translateApiDataForLocale(Locale locale, List<PosProduct> products) async {
-    if (_translatedLocale == locale) return;
+    final signature = products
+        .map((p) => '${p.id}|${p.name}|${p.category}|${p.departmentName}|${p.unit}')
+        .join(';;');
+    if (_translatedLocale == locale && _translationSignature == signature) return;
     _translatedLocale = locale;
+    _translationSignature = signature;
     _translationCache.clear();
     if (locale.languageCode != 'ar') {
       notifyListeners();

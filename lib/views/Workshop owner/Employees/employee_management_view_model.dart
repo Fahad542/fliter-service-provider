@@ -7,8 +7,9 @@ import '../../../../utils/toast_service.dart';
 import '../../../../services/owner_data_service.dart';
 import '../../../../services/google_places_service.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
-class EmployeeManagementViewModel extends ChangeNotifier {
+class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
@@ -70,8 +71,21 @@ class EmployeeManagementViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  final Map<String, String> _translatedBranchNames = {};
+  final Map<String, String> _translatedDepartmentNames = {};
+
   List<Branch> get branches => ownerDataService.branches;
   List<Department> get departments => ownerDataService.departments;
+
+  String branchDisplayName(Branch branch) =>
+      _translatedBranchNames[branch.id] ?? branch.name;
+  String departmentDisplayName(Department department) =>
+      _translatedDepartmentNames[department.id] ?? department.name;
+
+  List<String> get branchDisplayNames =>
+      branches.map(branchDisplayName).toList();
+  List<String> get departmentDisplayNames =>
+      departments.map(departmentDisplayName).toList();
 
   EmployeeManagementViewModel({
     required this.ownerRepository,
@@ -87,6 +101,28 @@ class EmployeeManagementViewModel extends ChangeNotifier {
     if (branches.isEmpty || departments.isEmpty) {
       await ownerDataService.refreshAll();
     }
+    await _translateLookups();
+  }
+
+
+  Future<void> _translateLookups() async {
+    _translatedBranchNames.clear();
+    _translatedDepartmentNames.clear();
+    for (final branch in branches) {
+      if (branch.name.trim().isNotEmpty) {
+        _translatedBranchNames[branch.id] = await t(branch.name);
+      }
+    }
+    for (final department in departments) {
+      if (department.name.trim().isNotEmpty) {
+        _translatedDepartmentNames[department.id] = await t(department.name);
+      }
+    }
+  }
+
+  Future<void> onLocaleChanged() async {
+    await _translateLookups();
+    notifyListeners();
   }
 
   Future<void> fetchEmployees({bool silent = false}) async {

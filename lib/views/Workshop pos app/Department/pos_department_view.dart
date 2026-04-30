@@ -9,6 +9,7 @@ import '../Home Screen/pos_view_model.dart';
 import '../Navbar/pos_shell.dart';
 import 'department_view_model.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/localized_api_text.dart';
 
 String _normalizeDeptKeyForExclude(String value) =>
     value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -235,11 +236,8 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                                     ),
                                   ),
                                   SizedBox(height: isTablet ? 12 : 10),
-                                  // dept.name comes from API — displayed as-is.
-                                  // If the backend returns localized names, they
-                                  // display correctly; if English-only, they
-                                  // remain English (correct behaviour).
-                                  Text(
+                                  // dept.name comes from API/database; translate for Arabic display only.
+                                  LocalizedApiText(
                                     dept.name,
                                     style: AppTextStyles.bodyMedium.copyWith(
                                       fontWeight: isSelected
@@ -307,18 +305,23 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                             ),
                             SizedBox(width: isTablet ? 12 : 8),
                             Expanded(
-                              child: Text(
-                                viewModel.selectedIndices.length == 1
-                                    ? viewModel
-                                    .selectedDepartments.first.name
-                                    : l.posDeptSelectedCount(
-                                    viewModel.selectedIndices.length),
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: isTablet ? 15 : 13,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              child: viewModel.selectedIndices.length == 1
+                                  ? LocalizedApiText(
+                                      viewModel.selectedDepartments.first.name,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: isTablet ? 15 : 13,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                  : Text(
+                                      l.posDeptSelectedCount(viewModel.selectedIndices.length),
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: isTablet ? 15 : 13,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                             ),
                           ],
                         ),

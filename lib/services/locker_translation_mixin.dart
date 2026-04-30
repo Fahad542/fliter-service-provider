@@ -93,6 +93,31 @@ class AppTranslationService {
     'Overdue'           : 'متأخر',
     'paid'              : 'مدفوع',
     'partially paid'    : 'مدفوع جزئياً',
+    'submitted'         : 'مرسل',
+    'SUBMITTED'         : 'مرسل',
+    'waiting approval'  : 'في انتظار الموافقة',
+    'Waiting Approval'  : 'في انتظار الموافقة',
+    'complete'          : 'مكتمل',
+    'completed'         : 'مكتمل',
+    'invoiced'          : 'تم إصدار الفاتورة',
+    'cancelled'         : 'ملغي',
+    'canceled'          : 'ملغي',
+    'cash'              : 'نقداً',
+    'Cash'              : 'نقداً',
+    'card'              : 'بطاقة',
+    'Card'              : 'بطاقة',
+    'bank transfer'     : 'تحويل بنكي',
+    'Bank Transfer'     : 'تحويل بنكي',
+    'wallet'            : 'محفظة',
+    'Wallet'            : 'محفظة',
+    'All'               : 'الكل',
+    'Today'             : 'اليوم',
+    'general'           : 'عام',
+    'General'           : 'عام',
+    'service'           : 'خدمة',
+    'Service'           : 'خدمة',
+    'product'           : 'منتج',
+    'Product'           : 'منتج',
   };
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -107,7 +132,7 @@ class AppTranslationService {
       }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return text;
-    if (double.tryParse(trimmed) != null) return text; // numbers unchanged
+    if (_shouldKeepRaw(trimmed)) return text;           // IDs, phone, dates, money, URLs unchanged
     if (_containsArabic(trimmed)) return text;          // already Arabic
 
     // Status fast-path — no network call needed.
@@ -145,6 +170,16 @@ class AppTranslationService {
     return translate(text);
   }
 
+  /// Context/locale-safe variant for widgets. This avoids stale API/database
+  /// strings when the user switches language while a screen is already open.
+  static Future<String> localizedTextForLanguage(
+    String text,
+    String languageCode,
+  ) async {
+    if (languageCode != 'ar') return text;
+    return translate(text);
+  }
+
   /// Nullable variant — returns null when input is null.
   static Future<String?> localizedTextNullable(String? text) async {
     if (text == null) return null;
@@ -168,6 +203,21 @@ class AppTranslationService {
   static Future<bool> _isArabic() async {
     final locale = await SessionService.getLocale();
     return locale == 'ar';
+  }
+
+  static bool _shouldKeepRaw(String text) {
+    final v = text.trim();
+    if (v.isEmpty) return true;
+    if (double.tryParse(v) != null) return true;
+    if (RegExp(r'^https?://', caseSensitive: false).hasMatch(v)) return true;
+    if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) return true;
+    if (RegExp(r'^[+]?\d[\d\s().-]{5,}$').hasMatch(v)) return true;
+    if (RegExp(r'^#?[A-Z]{1,6}[-_/]?[A-Z0-9]{2,}$').hasMatch(v)) return true;
+    if (RegExp(r'^[A-Z0-9]{2,}[-_/][A-Z0-9-_/]{2,}$').hasMatch(v)) return true;
+    if (RegExp(r'^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}').hasMatch(v)) return true;
+    if (RegExp(r'^(SAR|AED|USD|PKR|EUR|GBP)\s*\d', caseSensitive: false).hasMatch(v)) return true;
+    if (RegExp(r'^\d+\s*(SAR|AED|USD|PKR|EUR|GBP)$', caseSensitive: false).hasMatch(v)) return true;
+    return false;
   }
 
   static bool _containsArabic(String text) =>

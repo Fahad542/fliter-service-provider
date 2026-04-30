@@ -11,7 +11,7 @@ import '../Home Screen/pos_view_model.dart';
 // Raw fields come from the API (always English).
 // Translated display fields are populated by PromoViewModel after calling
 // _translatePromo(). Views must use the translated* variants.
-// ---------------------------------------------------------------------------
+//  ---------------------------------------------------------------------------
 
 class AvailablePromotion {
   // ── Raw API fields (never mutate after construction) ─────────────────────

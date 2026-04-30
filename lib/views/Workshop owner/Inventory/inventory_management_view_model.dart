@@ -79,22 +79,32 @@ class InventoryManagementViewModel extends ChangeNotifier with TranslatableMixin
     final src = _translatedProducts.isEmpty ? _products : _translatedProducts;
     if (_searchQuery.isEmpty) return src;
     final q = _searchQuery.toLowerCase();
-    return src.where((p) =>
-    p.name.toLowerCase().contains(q) ||
-        (p.category?.toLowerCase().contains(q) ?? false) ||
-        (p.departmentName?.toLowerCase().contains(q) ?? false)
-    ).toList();
+    return src.asMap().entries.where((entry) {
+      final translated = entry.value;
+      final raw = entry.key < _products.length ? _products[entry.key] : translated;
+      return translated.name.toLowerCase().contains(q) ||
+          raw.name.toLowerCase().contains(q) ||
+          (translated.category?.toLowerCase().contains(q) ?? false) ||
+          (raw.category?.toLowerCase().contains(q) ?? false) ||
+          (translated.departmentName?.toLowerCase().contains(q) ?? false) ||
+          (raw.departmentName?.toLowerCase().contains(q) ?? false);
+    }).map((entry) => entry.value).toList();
   }
 
   List<OwnerProduct> get services {
     final src = _translatedServices.isEmpty ? _services : _translatedServices;
     if (_searchQuery.isEmpty) return src;
     final q = _searchQuery.toLowerCase();
-    return src.where((p) =>
-    p.name.toLowerCase().contains(q) ||
-        (p.category?.toLowerCase().contains(q) ?? false) ||
-        (p.departmentName?.toLowerCase().contains(q) ?? false)
-    ).toList();
+    return src.asMap().entries.where((entry) {
+      final translated = entry.value;
+      final raw = entry.key < _services.length ? _services[entry.key] : translated;
+      return translated.name.toLowerCase().contains(q) ||
+          raw.name.toLowerCase().contains(q) ||
+          (translated.category?.toLowerCase().contains(q) ?? false) ||
+          (raw.category?.toLowerCase().contains(q) ?? false) ||
+          (translated.departmentName?.toLowerCase().contains(q) ?? false) ||
+          (raw.departmentName?.toLowerCase().contains(q) ?? false);
+    }).map((entry) => entry.value).toList();
   }
 
   List<OwnerCategory> get categories {
@@ -131,7 +141,15 @@ class InventoryManagementViewModel extends ChangeNotifier with TranslatableMixin
     notifyListeners();
   }
 
+  final Map<String, String> _translatedBranchNames = {};
+
   List<Branch> get branches => ownerDataService.branches;
+
+  String branchDisplayName(Branch branch) =>
+      _translatedBranchNames[branch.id] ?? branch.name;
+
+  List<String> get branchDisplayNames =>
+      branches.map(branchDisplayName).toList();
 
   InventoryManagementViewModel({
     required this.ownerRepository,
@@ -156,6 +174,7 @@ class InventoryManagementViewModel extends ChangeNotifier with TranslatableMixin
       if (ownerDataService.branches.isEmpty) {
         await ownerDataService.fetchBranches(silent: true);
       }
+      await _translateBranches();
       unawaited(fetchServices(silent: true));
       unawaited(fetchCategories(silent: true));
     } catch (e) {
@@ -176,11 +195,22 @@ class InventoryManagementViewModel extends ChangeNotifier with TranslatableMixin
       _translateProducts(),
       _translateServices(),
       _translateSubCategories(),
+      _translateBranches(),
     ]);
     notifyListeners();
   }
 
   // ── Translation helpers ───────────────────────────────────────────────────
+
+
+  Future<void> _translateBranches() async {
+    _translatedBranchNames.clear();
+    for (final branch in branches) {
+      if (branch.name.trim().isNotEmpty) {
+        _translatedBranchNames[branch.id] = await t(branch.name);
+      }
+    }
+  }
 
   Future<void> _translateProducts() async {
     _translatedProducts = await Future.wait(_products.map(_translateProduct));

@@ -17,6 +17,7 @@ class PosMonitoringView extends StatefulWidget {
 class _PosMonitoringViewState extends State<PosMonitoringView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Locale? _lastLocale;
 
   // ── Fallback demo data (used when API returns nothing) ───────────────────────
   // NOTE: cashierName and branchName come from the API/database.
@@ -78,6 +79,19 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
       physicalCash: 3100,
     ),
   ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    context.read<PosMonitoringViewModel>().setContext(context);
+    if (_lastLocale != null && _lastLocale != locale) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<PosMonitoringViewModel>().onLocaleChanged();
+      });
+    }
+    _lastLocale = locale;
+  }
 
   @override
   void initState() {
@@ -323,13 +337,14 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
       padding: const EdgeInsets.all(20),
       itemCount: counters.length,
       itemBuilder: (context, index) =>
-          _buildLiveCounterCard(context, l10n, counters[index]),
+          _buildLiveCounterCard(context, l10n, vm, counters[index]),
     );
   }
 
   Widget _buildLiveCounterCard(
       BuildContext context,
       AppLocalizations l10n,
+      PosMonitoringViewModel vm,
       PosCounter counter,
       ) {
     final isOpen = counter.status == 'open';
@@ -380,7 +395,7 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
                     // cashierName and branchName come from the API; they are
                     // proper names and are NOT translated.
                     Text(
-                      counter.cashierName,
+                      vm.cashierDisplayName(counter),
                       style: AppTextStyles.h2.copyWith(
                         fontSize: 15,
                         color: AppColors.secondaryLight,
@@ -388,7 +403,7 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      counter.branchName,
+                      vm.branchDisplayName(counter),
                       style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 12,
@@ -492,13 +507,14 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
       padding: const EdgeInsets.all(20),
       itemCount: reports.length,
       itemBuilder: (context, index) =>
-          _buildClosingCard(context, l10n, reports[index]),
+          _buildClosingCard(context, l10n, vm, reports[index]),
     );
   }
 
   Widget _buildClosingCard(
       BuildContext context,
       AppLocalizations l10n,
+      PosMonitoringViewModel vm,
       PosCounter counter,
       ) {
     final netDiff = counter.effectiveDiff;
@@ -563,7 +579,7 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
                   children: [
                     // cashierName — proper name from API, not translated.
                     Text(
-                      counter.cashierName,
+                      vm.cashierDisplayName(counter),
                       style: AppTextStyles.h2.copyWith(
                         fontSize: 15,
                         color: AppColors.secondaryLight,
@@ -571,7 +587,7 @@ class _PosMonitoringViewState extends State<PosMonitoringView>
                     ),
                     // branchName — proper name from API + translated "Closed"
                     Text(
-                      '${counter.branchName} • ${l10n.posMonitoringClosed}',
+                      '${vm.branchDisplayName(counter)} • ${l10n.posMonitoringClosed}',
                       style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 12,

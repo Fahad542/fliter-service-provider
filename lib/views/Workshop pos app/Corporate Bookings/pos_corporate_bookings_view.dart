@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../../utils/app_colors.dart';
+import '../../../../services/localized_api_text.dart';
 import '../../../../utils/pos_tablet_layout.dart';
 import '../../../../widgets/pos_widgets.dart';
 import '../../../models/pos_order_model.dart';
@@ -300,7 +301,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LocalizedApiText(
                           booking.companyName,
                           style: TextStyle(fontSize: isTablet ? 18 : 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124), letterSpacing: -0.2),
                           overflow: TextOverflow.ellipsis,
@@ -495,7 +496,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
               children: [
                 Text(label, style: TextStyle(fontSize: isTablet ? 10 : 9, color: Colors.grey.shade500, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
                 const SizedBox(height: 1),
-                Text(value, style: TextStyle(fontSize: isTablet ? 12 : 11, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                LocalizedApiText(value, style: TextStyle(fontSize: isTablet ? 12 : 11, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -669,7 +670,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(itemName.toString(), style: TextStyle(fontSize: isTablet ? 15 : 14, fontWeight: FontWeight.w700, color: AppColors.secondaryLight, letterSpacing: 0.2)),
+                                          LocalizedApiText(itemName.toString(), style: TextStyle(fontSize: isTablet ? 15 : 14, fontWeight: FontWeight.w700, color: AppColors.secondaryLight, letterSpacing: 0.2)),
                                           const SizedBox(height: 4),
                                           Text(l10n.posCorporateDetailsQty(qty.toString()), style: TextStyle(fontSize: isTablet ? 13 : 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
                                         ],
@@ -834,7 +835,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
           ),
           Expanded(
             flex: 3,
-            child: Text(value, style: TextStyle(color: AppColors.secondaryLight, fontSize: isTablet ? 14 : 13, fontWeight: FontWeight.w600), textAlign: TextAlign.end),
+            child: LocalizedApiText(value, style: TextStyle(color: AppColors.secondaryLight, fontSize: isTablet ? 14 : 13, fontWeight: FontWeight.w600), textAlign: TextAlign.end),
           ),
         ],
       ),
