@@ -66,8 +66,7 @@ class PosMonitoringViewModel extends ChangeNotifier with TranslatableMixin {
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token != null) {
-        final response = await ownerRepository.getPosMonitoring(token);
-        if (response != null && response['success'] == true) {
+        final response = await ownerRepository.getPosMonitoring(token);        if (response != null && response['success'] == true) {
           _monitoringResponse = PosMonitoringResponse.fromJson(response);
           await _translateCounters();
         }

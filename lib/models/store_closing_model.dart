@@ -31,6 +31,7 @@ class StoreClosingReport {
   final double systemCorporate;
   final double systemTamara;
   final double systemTabby;
+  final double systemOthers;
 
   // Physical Counts
   final double physicalCash;
@@ -38,6 +39,7 @@ class StoreClosingReport {
   final double physicalCorporate;
   final double physicalTamara;
   final double physicalTabby;
+  final double physicalOthers;
 
   // API-provided differences (system - physical)
   final double? apiCashDiff;
@@ -45,6 +47,7 @@ class StoreClosingReport {
   final double? apiCorporateDiff;
   final double? apiTamaraDiff;
   final double? apiTabbyDiff;
+  final double? apiOthersDiff;
   final double? apiTotalDifference;
 
   StoreClosingReport({
@@ -58,16 +61,19 @@ class StoreClosingReport {
     required this.systemCorporate,
     required this.systemTamara,
     required this.systemTabby,
+    required this.systemOthers,
     required this.physicalCash,
     required this.physicalBank,
     required this.physicalCorporate,
     required this.physicalTamara,
     required this.physicalTabby,
+    required this.physicalOthers,
     this.apiCashDiff,
     this.apiBankDiff,
     this.apiCorporateDiff,
     this.apiTamaraDiff,
     this.apiTabbyDiff,
+    this.apiOthersDiff,
     this.apiTotalDifference,
   });
 
@@ -77,10 +83,18 @@ class StoreClosingReport {
   double get corporateDiff => apiCorporateDiff ?? (systemCorporate - physicalCorporate);
   double get tamaraDiff => apiTamaraDiff ?? (systemTamara - physicalTamara);
   double get tabbyDiff => apiTabbyDiff ?? (systemTabby - physicalTabby);
-  double get netDifference => apiTotalDifference ?? (cashDiff + bankDiff + corporateDiff + tamaraDiff + tabbyDiff);
+  double get othersDiff => apiOthersDiff ?? (systemOthers - physicalOthers);
+  double get netDifference =>
+      apiTotalDifference ??
+      (cashDiff + bankDiff + corporateDiff + tamaraDiff + tabbyDiff + othersDiff);
 
   double get physicalTotal =>
-      physicalCash + physicalBank + physicalCorporate + physicalTamara + physicalTabby;
+      physicalCash +
+      physicalBank +
+      physicalCorporate +
+      physicalTamara +
+      physicalTabby +
+      physicalOthers;
 
   factory StoreClosingReport.fromApiResponse({
     required String closingId,
@@ -101,6 +115,7 @@ class StoreClosingReport {
     final corp = bucket('corporateInvoice');
     final tamara = bucket('tamaraCredits');
     final tabby = bucket('tabbyCredits');
+    final others = bucket('others');
 
     return StoreClosingReport(
       id: closingId,
@@ -113,16 +128,19 @@ class StoreClosingReport {
       systemCorporate: corp.system,
       systemTamara: tamara.system,
       systemTabby: tabby.system,
+      systemOthers: others.system,
       physicalCash: cash.physical,
       physicalBank: bank.physical,
       physicalCorporate: corp.physical,
       physicalTamara: tamara.physical,
       physicalTabby: tabby.physical,
+      physicalOthers: others.physical,
       apiCashDiff: cash.difference,
       apiBankDiff: bank.difference,
       apiCorporateDiff: corp.difference,
       apiTamaraDiff: tamara.difference,
       apiTabbyDiff: tabby.difference,
+      apiOthersDiff: others.difference,
       apiTotalDifference: (json['totalDifference'] ?? 0).toDouble(),
     );
   }
@@ -135,6 +153,7 @@ class StoreClosingSummary {
   final double systemCorporate;
   final double systemTamara;
   final double systemTabby;
+  final double systemOthers;
   final double totalAmount;
   final int totalInvoices;
 
@@ -144,6 +163,7 @@ class StoreClosingSummary {
     required this.systemCorporate,
     required this.systemTamara,
     required this.systemTabby,
+    required this.systemOthers,
     required this.totalAmount,
     required this.totalInvoices,
   });
@@ -156,6 +176,7 @@ class StoreClosingSummary {
       systemCorporate: (totals['corporateInvoice'] ?? json['corporateAmount'] ?? 0).toDouble(),
       systemTamara: (totals['tamaraCredits'] ?? 0).toDouble(),
       systemTabby: (totals['tabbyCredits'] ?? 0).toDouble(),
+      systemOthers: (totals['others'] ?? 0).toDouble(),
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
       totalInvoices: (json['totalInvoices'] ?? 0),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 
 import '../../../data/repositories/pos_repository.dart';
 import '../../../models/inventory_sales_api_model.dart';
@@ -18,7 +19,7 @@ import '../../../services/locker_translation_mixin.dart';
 //   TranslatableMixin.t() (which calls AppTranslationService.localizedText).
 //
 // • The ViewModel stores two parallel lists:
-//     _lines          — raw, immutable API data (never mutated after fetch)
+//     _rawLines       — raw, immutable API data (never mutated after fetch)
 //     _displayLines   — translated copies used by the View
 //
 // • bindLocaleRetranslation() hooks into SettingsViewModel so that switching
@@ -53,12 +54,25 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   InventorySalesPreset _preset = InventorySalesPreset.last7;
   DateTime? _customFrom;
   DateTime? _customTo;
+  /// Minutes from midnight (device-local intent); used when [_preset] is [custom] with time window.
+  int _rangeFromMinutes = 0;
+  int _rangeToMinutes = 23 * 60 + 59;
 
   /// Raw lines exactly as returned by the API (immutable after assignment).
   List<InventorySaleLine> _rawLines = [];
 
   /// Display lines — translated copies of _rawLines used by the View.
   List<InventorySaleLine> _displayLines = [];
+
+  InventorySalesSummary? _summary;
+  List<InventoryProductPeriodSummary> _productsSummary = [];
+  List<InventorySalesDayRollup> _dayRollups = [];
+
+  String? _apiWorkshopId;
+  String? _apiBranchId;
+  String? _apiPeriodFrom;
+  String? _apiPeriodTo;
+  String? _apiBusinessTimeZone;
 
   bool isLoading = false;
 
@@ -76,8 +90,85 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   InventorySalesPreset get preset => _preset;
   bool get isCustomRange => _preset == InventorySalesPreset.custom;
 
-  /// The View always reads from _displayLines (translated).
+  /// The View always reads translated lines via [lines].
   List<InventorySaleLine> get lines => List.unmodifiable(_displayLines);
+
+  int get rangeFromMinutes => _rangeFromMinutes;
+  int get rangeToMinutes => _rangeToMinutes;
+
+  static String formatMinutesAsHm(int m) {
+    final h = (m.clamp(0, 24 * 60 - 1)) ~/ 60;
+    final min = m % 60;
+    return '${h.toString().padLeft(2, '0')}:${min.toString().padLeft(2, '0')}';
+  }
+
+  /// 12-hour clock with AM/PM (e.g. noon → 12:00 PM, 13:05 → 1:05 PM).
+  static String formatMinutesAs12h(int m) {
+    final dayMinute = m.clamp(0, 24 * 60 - 1);
+    final dt = DateTime(2000, 1, 1, dayMinute ~/ 60, dayMinute % 60);
+    return DateFormat.jm().format(dt);
+  }
+
+
+  InventorySalesSummary? get summary => _summary;
+
+  List<InventoryProductPeriodSummary> get productsSummary =>
+      List.unmodifiable(_productsSummary);
+
+  List<InventorySalesDayRollup> get dayRollups =>
+      List.unmodifiable(_dayRollups);
+
+  String? get apiWorkshopId => _apiWorkshopId;
+  String? get apiBranchId => _apiBranchId;
+  String? get apiPeriodFrom => _apiPeriodFrom;
+  String? get apiPeriodTo => _apiPeriodTo;
+  String? get apiBusinessTimeZone => _apiBusinessTimeZone;
+
+  /// From API `summary.uniqueProducts` when present.
+  int get displayUniqueProductsCount =>
+      _summary?.uniqueProducts ?? distinctProductsInPeriod;
+
+  /// From API `summary.uniqueServices` when present.
+  int get displayUniqueServicesCount => _summary?.uniqueServices ?? 0;
+
+  /// Prefer API `summary`; otherwise derive from lines / productsSummary.
+  double get periodTotalSalesAmount {
+    if (_summary != null) return _summary!.totalSalesAmount;
+    if (_productsSummary.isNotEmpty) {
+      var t = 0.0;
+      for (final p in _productsSummary) {
+        t += p.totalSales;
+      }
+      return t;
+    }
+    var s = 0.0;
+    for (final l in _rawLines) {
+      if (l.salesAmount != null) s += l.salesAmount!;
+    }
+    return s;
+  }
+
+  num get displayTotalUnits {
+    if (_summary != null) return _summary!.totalUnitsSold;
+    return totalQuantitySold;
+  }
+
+  /// Prefers API `summary.distinctItems` (products + services); falls back to legacy fields.
+  int get displayDistinctItems {
+    if (_summary != null) {
+      final s = _summary!;
+      if (s.distinctItems > 0) return s.distinctItems;
+      final recon = s.uniqueProducts + s.uniqueServices;
+      if (recon > 0) return recon;
+      return s.uniqueProducts;
+    }
+    return distinctProductsInPeriod;
+  }
+
+  int get displayDaysWithActivity {
+    if (_summary != null) return _summary!.daysWithActivity;
+    return groupedByDay.length;
+  }
 
   ({DateTime from, DateTime toInclusive}) resolveDateRange({DateTime? now}) {
     final n = now ?? DateTime.now();
@@ -146,9 +237,13 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   int get distinctProductsInPeriod {
     final keys = <String>{};
     for (final l in _rawLines) {
-      final k = (l.productId != null && l.productId!.trim().isNotEmpty)
-          ? l.productId!.trim()
-          : l.productName.trim().toLowerCase();
+      final pid = l.productId?.trim();
+      final sid = l.serviceId?.trim();
+      final k = (pid != null && pid.isNotEmpty)
+          ? 'p:$pid'
+          : (sid != null && sid.isNotEmpty)
+              ? 's:$sid'
+              : 'n:${l.productName.trim().toLowerCase()}';
       keys.add(k);
     }
     return keys.length;
@@ -185,6 +280,66 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     await fetch();
   }
 
+  /// Set start/end time of day (minutes from midnight) for custom range; then [fetch].
+  Future<void> setCustomRangeTimesAndFetch(int fromMinutes, int toMinutes) async {
+    _rangeFromMinutes = fromMinutes.clamp(0, 24 * 60 - 1);
+    _rangeToMinutes = toMinutes.clamp(0, 24 * 60 - 1);
+    notifyListeners();
+    await fetch();
+  }
+
+  /// One fetch after setting custom dates + local time window (used by Apply filter).
+  Future<void> applyCustomRangeWithTimes(
+    DateTime from,
+    DateTime toInclusive,
+    int fromMinutes,
+    int toMinutes,
+  ) async {
+    final a = DateTime(from.year, from.month, from.day);
+    final b = DateTime(toInclusive.year, toInclusive.month, toInclusive.day);
+    if (a.isAfter(b)) {
+      errorMessage = 'Start date must be on or before end date.';
+      notifyListeners();
+      return;
+    }
+    final spanDays = b.difference(a).inDays + 1;
+    if (spanDays > maxRangeDaysInclusive) {
+      errorMessage = 'Date range cannot exceed $maxRangeDaysInclusive days.';
+      notifyListeners();
+      return;
+    }
+    final fMin = fromMinutes.clamp(0, 24 * 60 - 1);
+    final tMin = toMinutes.clamp(0, 24 * 60 - 1);
+    final start = DateTime(a.year, a.month, a.day, fMin ~/ 60, fMin % 60);
+    final end = DateTime(b.year, b.month, b.day, tMin ~/ 60, tMin % 60);
+    if (start.isAfter(end)) {
+      errorMessage =
+          'Start time must be on or before end time for this date range.';
+      notifyListeners();
+      return;
+    }
+    errorMessage = null;
+    _preset = InventorySalesPreset.custom;
+    _customFrom = a;
+    _customTo = b;
+    _rangeFromMinutes = fMin;
+    _rangeToMinutes = tMin;
+    notifyListeners();
+    await fetch();
+  }
+
+  /// Reset to default preset (last 7 days, full day) and reload.
+  Future<void> resetFiltersToDefaultAndFetch() async {
+    errorMessage = null;
+    _preset = InventorySalesPreset.last7;
+    _customFrom = null;
+    _customTo = null;
+    _rangeFromMinutes = 0;
+    _rangeToMinutes = 23 * 60 + 59;
+    notifyListeners();
+    await fetch();
+  }
+
   /// Explicit `from` / `to` (inclusive) + fetch; validates order and max span.
   Future<void> setExplicitRangeAndFetch(DateTime from, DateTime to) async {
     final a = DateTime(from.year, from.month, from.day);
@@ -209,6 +364,8 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     _preset = InventorySalesPreset.custom;
     _customFrom = a;
     _customTo = b;
+    _rangeFromMinutes = 0;
+    _rangeToMinutes = 23 * 60 + 59;
     notifyListeners();
     await fetch();
   }
@@ -235,24 +392,40 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     try {
       final token = await sessionService.getToken(role: 'cashier');
       if (token == null) {
-        // Structured error: View maps to l10n.posInvSalesSessionExpiredError
         vmError = InventorySalesVmError.sessionExpired;
         errorMessage = null;
         _rawLines = [];
         _displayLines = [];
+        _summary = null;
+        _productsSummary = [];
+        _dayRollups = [];
+        _clearApiMeta();
         return;
       }
       final range = resolveDateRange();
+      final offset = DateTime.now().timeZoneOffset.inMinutes;
       final res = await posRepository.getCashierInventorySales(
         token,
         from: range.from,
         toInclusive: range.toInclusive,
+        utcOffsetMinutes: offset,
+        fromTime:
+            isCustomRange ? formatMinutesAsHm(_rangeFromMinutes) : null,
+        toTime: isCustomRange ? formatMinutesAsHm(_rangeToMinutes) : null,
       );
       _rawLines = List<InventorySaleLine>.from(res.lines);
       _applyClientSort(_rawLines);
-
+      _summary = res.summary;
+      _productsSummary = List<InventoryProductPeriodSummary>.from(
+        res.productsSummary,
+      );
+      _dayRollups = List<InventorySalesDayRollup>.from(res.dayRollups);
+      _apiWorkshopId = res.workshopId;
+      _apiBranchId = res.branchId;
+      _apiPeriodFrom = res.periodFrom;
+      _apiPeriodTo = res.periodTo;
+      _apiBusinessTimeZone = res.businessTimeZone;
       await _buildDisplayLines();
-
       if (res.success == false && (res.message?.isNotEmpty ?? false)) {
         // Server message may be English — translate it for Arabic locale.
         errorMessage = await t(res.message!);
@@ -264,7 +437,10 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     } catch (e) {
       _rawLines = [];
       _displayLines = [];
-      // Translate the exception message before storing.
+      _summary = null;
+      _productsSummary = [];
+      _dayRollups = [];
+      _clearApiMeta();
       errorMessage = await t(_shortError(e));
       vmError = null;
     } finally {
@@ -284,13 +460,20 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
         final translatedName = await t(line.productName);
         // SKUs / codes are alphanumeric — skip translation (tReference guards this).
         final translatedSku =
-        line.sku != null ? await tReference(line.sku!) : null;
+            line.sku != null ? await tReference(line.sku!) : null;
         return InventorySaleLine(
           productName: translatedName,
           productId: line.productId,
+          serviceId: line.serviceId,
           sku: translatedSku,
           soldOn: line.soldOn,
           quantitySold: line.quantitySold,
+          salesAmount: line.salesAmount,
+          itemType: line.itemType,
+          departmentId: line.departmentId,
+          departmentName: line.departmentName,
+          salePrice: line.salePrice,
+          avgUnitPrice: line.avgUnitPrice,
         );
       }),
     );
@@ -305,15 +488,19 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     notifyListeners();
   }
 
-  // ── Dispose ───────────────────────────────────────────────────────────────
-
   @override
   void dispose() {
     unbindLocaleRetranslation();
     super.dispose();
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  void _clearApiMeta() {
+    _apiWorkshopId = null;
+    _apiBranchId = null;
+    _apiPeriodFrom = null;
+    _apiPeriodTo = null;
+    _apiBusinessTimeZone = null;
+  }
 
   String _shortError(Object e) {
     var s = e.toString();

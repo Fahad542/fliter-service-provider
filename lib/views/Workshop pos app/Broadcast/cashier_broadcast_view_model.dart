@@ -37,6 +37,9 @@ class CashierBroadcastViewModel extends ChangeNotifier {
   Timer? _socketDebounce;
   Timer? _backgroundPoll;
 
+  /// Coalesce overlapping [fetchActive] calls (tab visit + socket debounce).
+  Future<void>? _fetchActiveInFlight;
+
   List<CashierActiveBroadcastItem> get broadcasts => List.unmodifiable(_broadcasts);
 
   /// Returns null when there is no error; otherwise a translated message.
@@ -61,7 +64,14 @@ class CashierBroadcastViewModel extends ChangeNotifier {
     });
   }
 
-  Future<void> fetchActive({bool silent = false}) async {
+  Future<void> fetchActive({bool silent = false}) {
+    if (_fetchActiveInFlight != null) return _fetchActiveInFlight!;
+    _fetchActiveInFlight = _fetchActiveImpl(silent: silent)
+        .whenComplete(() => _fetchActiveInFlight = null);
+    return _fetchActiveInFlight!;
+  }
+
+  Future<void> _fetchActiveImpl({bool silent = false}) async {
     if (!silent) {
       isLoading = true;
       _errorKey = null;

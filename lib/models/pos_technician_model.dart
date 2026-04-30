@@ -50,13 +50,62 @@ class PosTechnician {
   final PosTechnicianStatus status;
   final int slotsUsed;
   final int totalSlots;
+  /// Cashier API: duty flags (workshop / on-call / both).
+  final bool workshopDuty;
+  final bool onCallDuty;
+  final String? dutyMode;
   /// Cashier API: only [true] when technician may be assigned (typically online).
   final bool assignable;
+
+  /// Cashier API: `'offline' | 'on_call' | 'inactive' | 'active'` (duty + presence).
+  final String? assignmentStatus;
 
   // Compatibility getters
   String get serviceCategory => technicianType;
   String get statusInfo => status.status;
-  bool get isOnline => status.status.toLowerCase() == 'online';
+  bool get isOnline {
+    final s = status.status.toLowerCase();
+    return s == 'online' || s == 'available';
+  }
+
+  /// Normalized API status, with fallback when older backends omit [assignmentStatus].
+  String get effectiveAssignmentStatus {
+    final raw = assignmentStatus?.trim().toLowerCase();
+    if (raw != null &&
+        raw.isNotEmpty &&
+        raw != 'null' &&
+        raw != 'undefined') {
+      return raw;
+    }
+    if (!isOnline) return 'offline';
+    final dm = dutyMode?.toLowerCase().trim() ?? '';
+    if (dm == 'on_call') return 'on_call';
+    if (dm == 'inactive') return 'inactive';
+    if (onCallDuty && !workshopDuty) return 'on_call';
+    if (workshopDuty || dm == 'workshop' || dm == 'both') return 'active';
+    return 'inactive';
+  }
+
+  String get assignmentStatusDisplayLabel {
+    switch (effectiveAssignmentStatus) {
+      case 'active':
+        return 'Active';
+      case 'inactive':
+        return 'Not available';
+      case 'on_call':
+        return 'On call';
+      case 'offline':
+        return 'Offline';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  /// Workshop POS: assignable row — presence online, [workshopDuty] (workshop / both), floor [active].
+  bool get isEligibleWorkshopAssignmentRow =>
+      isOnline &&
+      workshopDuty &&
+      effectiveAssignmentStatus == 'active';
 
   /// Raw date string fallback (YYYY-MM-DD). Use [localizedLastSeen] in the view layer.
   String get formattedLastSeenDate {
@@ -107,7 +156,11 @@ class PosTechnician {
     this.status = const PosTechnicianStatus(status: 'offline', lastSeenAt: ''),
     this.slotsUsed = 0,
     this.totalSlots = 3,
+    this.workshopDuty = false,
+    this.onCallDuty = false,
+    this.dutyMode,
     this.assignable = true,
+    this.assignmentStatus,
   });
 
   PosTechnician copyWith({
@@ -115,6 +168,10 @@ class PosTechnician {
     int? totalSlots,
     PosTechnicianStatus? status,
     bool? assignable,
+    bool? workshopDuty,
+    bool? onCallDuty,
+    String? dutyMode,
+    String? assignmentStatus,
   }) {
     return PosTechnician(
       id: id,
@@ -133,7 +190,11 @@ class PosTechnician {
       status: status ?? this.status,
       slotsUsed: slotsUsed ?? this.slotsUsed,
       totalSlots: totalSlots ?? this.totalSlots,
+      workshopDuty: workshopDuty ?? this.workshopDuty,
+      onCallDuty: onCallDuty ?? this.onCallDuty,
+      dutyMode: dutyMode ?? this.dutyMode,
       assignable: assignable ?? this.assignable,
+      assignmentStatus: assignmentStatus ?? this.assignmentStatus,
     );
   }
 
@@ -206,7 +267,8 @@ class PosTechnician {
       },
     );
     final online =
-        parsedStatus.status.toLowerCase() == 'online';
+        parsedStatus.status.toLowerCase() == 'online' ||
+            parsedStatus.status.toLowerCase() == 'available';
     final assignableRaw = json['assignable'];
     final assignable = assignableRaw is bool
         ? assignableRaw
@@ -215,6 +277,25 @@ class PosTechnician {
         : (assignableRaw?.toString().toLowerCase() == 'false')
         ? false
         : online;
+
+    final dm = json['dutyMode']?.toString().toLowerCase().trim();
+    var wd = json['workshopDuty'] == true;
+    var oc = json['onCallDuty'] == true;
+    if (dm != null && dm.isNotEmpty) {
+      if (dm == 'both') {
+        wd = true;
+        oc = false;
+      } else if (dm == 'workshop') {
+        wd = true;
+        oc = false;
+      } else if (dm == 'on_call') {
+        wd = false;
+        oc = true;
+      } else if (dm == 'inactive') {
+        wd = false;
+        oc = false;
+      }
+    }
 
     return PosTechnician(
       id: json['id']?.toString() ?? '',
@@ -238,6 +319,10 @@ class PosTechnician {
       assignable: assignable,
       slotsUsed: _parseSlotsUsed(json),
       totalSlots: _parseTotalSlots(json),
+      workshopDuty: wd,
+      onCallDuty: oc,
+      dutyMode: json['dutyMode']?.toString(),
+      assignmentStatus: json['assignmentStatus']?.toString(),
     );
   }
 }

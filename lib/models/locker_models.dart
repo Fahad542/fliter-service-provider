@@ -678,6 +678,88 @@ LockerNotificationType _parseType(String raw) {
   return LockerNotificationType.unknown;
 }
 
+// ─── Branch list & variance approvals (reports / supervisor workflows) ─────
+
+class LockerBranch {
+  final String id;
+  final String name;
+
+  const LockerBranch({required this.id, required this.name});
+
+  factory LockerBranch.fromJson(Map<String, dynamic> json) {
+    return LockerBranch(
+      id  : json['id']?.toString() ?? '',
+      name: json['name'] as String? ??
+          json['branchName'] as String? ??
+          '',
+    );
+  }
+}
+
+/// One pending variance row from GET /locker/approvals (shape may vary slightly).
+class LockerVarianceApproval {
+  final String id;
+  final bool isShort;
+  final double difference;
+  final String branchName;
+  final DateTime date;
+  final String cashierName;
+  final String officerName;
+  final double expectedAmount;
+  final double receivedAmount;
+  final String notes;
+
+  const LockerVarianceApproval({
+    required this.id,
+    required this.isShort,
+    required this.difference,
+    required this.branchName,
+    required this.date,
+    required this.cashierName,
+    required this.officerName,
+    required this.expectedAmount,
+    required this.receivedAmount,
+    required this.notes,
+  });
+
+  factory LockerVarianceApproval.fromJson(Map<String, dynamic> json) {
+    final expected = _parseDouble(json['expectedAmount'] ?? json['expected']);
+    final received = _parseDouble(json['receivedAmount'] ?? json['received']);
+    final rawDiff = json['difference'];
+    final difference = rawDiff != null
+        ? _parseDouble(rawDiff)
+        : (received - expected);
+
+    final match = (json['matchStatus'] as String? ?? '').toUpperCase();
+    final bool isShort;
+    switch (match) {
+      case 'SHORT':
+        isShort = true;
+        break;
+      case 'OVER':
+        isShort = false;
+        break;
+      default:
+        isShort = expected > received;
+    }
+
+    return LockerVarianceApproval(
+      id            : json['collectionId']?.toString() ?? json['id']?.toString() ?? '',
+      isShort       : isShort,
+      difference    : difference,
+      branchName    : json['branchName'] as String? ?? '',
+      date          : DateTime.tryParse(json['collectedAt'] as String? ?? '') ??
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      cashierName   : json['cashierName'] as String? ?? '',
+      officerName   : json['officerName'] as String? ?? '',
+      expectedAmount: expected,
+      receivedAmount: received,
+      notes         : json['notes'] as String? ?? '',
+    );
+  }
+}
+
 // ─── Shared parse helpers ────────────────────────────────────────────────────
 
 int _parseInt(dynamic value) {

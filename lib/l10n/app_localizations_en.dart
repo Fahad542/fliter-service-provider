@@ -57,7 +57,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerShellLogoutTitle => 'Logout';
 
   @override
-  String get ownerShellLogoutBody => 'Are you sure you want to logout from your account?';
+  String get ownerShellLogoutBody =>
+      'Are you sure you want to logout from your account?';
 
   @override
   String get ownerShellLogoutCancel => 'Cancel';
@@ -126,7 +127,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingGeneratorStep2 => 'Step 2: Preview Eligible Invoices';
 
   @override
-  String get billingGeneratorPendingInvoices => 'Pending Invoices: 15 • Est. Total: SAR 12,450';
+  String get billingGeneratorPendingInvoices =>
+      'Pending Invoices: 15 • Est. Total: SAR 12,450';
 
   @override
   String get billingGeneratorPostAll => 'Generate & Post All';
@@ -206,7 +208,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchFormUpdateButton => 'Update Branch';
 
   @override
-  String get branchFormValidationError => 'Branch Name and Address are required';
+  String get branchFormValidationError =>
+      'Branch Name and Address are required';
 
   @override
   String get branchCreateSuccess => 'Branch Created Successfully';
@@ -227,7 +230,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchDeleteConfirmTitle => 'Delete Branch';
 
   @override
-  String get branchDeleteConfirmBody => 'Are you sure you want to delete this branch?';
+  String get branchDeleteConfirmBody =>
+      'Are you sure you want to delete this branch?';
 
   @override
   String get branchDeleteConfirmCancel => 'Cancel';
@@ -296,7 +300,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerLogOut => 'Log Out';
 
   @override
-  String get lockerLogOutConfirm => 'Are you sure you want to log out of the Locker Portal?';
+  String get lockerLogOutConfirm =>
+      'Are you sure you want to log out of the Locker Portal?';
 
   @override
   String get lockerCancel => 'Cancel';
@@ -482,7 +487,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerGenerateAuditPdf => 'Generate Audit PDF';
 
   @override
-  String get lockerCollectionPendingApproval => 'Collection is pending supervisor approval.';
+  String get lockerCollectionPendingApproval =>
+      'Collection is pending supervisor approval.';
 
   @override
   String get lockerPendingSupervisorApproval => 'Pending supervisor approval';
@@ -497,7 +503,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerVarianceRejectedBanner => 'Variance rejected';
 
   @override
-  String get lockerVarianceDifferenceReview => 'There is a variance in this collection. Please review and approve or reject.';
+  String get lockerVarianceDifferenceReview =>
+      'There is a variance in this collection. Please review and approve or reject.';
 
   @override
   String get lockerApproveVariance => 'Variance approved successfully';
@@ -512,7 +519,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerRejectVarianceTitle => 'Reject Variance';
 
   @override
-  String get lockerRejectVarianceBody => 'Provide an optional reason for rejecting this variance.';
+  String get lockerRejectVarianceBody =>
+      'Provide an optional reason for rejecting this variance.';
 
   @override
   String get lockerRejectionReasonHint => 'Enter rejection reason (optional)';
@@ -554,13 +562,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get corporateUpdateError => 'Failed to update corporate account';
 
   @override
-  String get corporateUserCreateSuccess => 'Corporate User Created Successfully';
+  String get corporateUserCreateSuccess =>
+      'Corporate User Created Successfully';
 
   @override
   String get corporateUserCreateError => 'Failed to create corporate user';
 
   @override
-  String get corporateValidationRequired => 'Please fill in all required fields';
+  String get corporateValidationRequired =>
+      'Please fill in all required fields';
 
   @override
   String get corporateValidationBranch => 'Please select at least one branch';
@@ -611,7 +621,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardViewAll => 'View All';
 
   @override
-  String get dashboardNoPendingApprovals => 'No pending petty-cash approvals right now.';
+  String get dashboardNoPendingApprovals =>
+      'No pending petty-cash approvals right now.';
 
   @override
   String dashboardMoreApprovals(int count) {
@@ -690,10 +701,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deptMgmtSheetUpdateTitle => 'Update Department';
 
   @override
-  String get deptMgmtSheetAddSubtitle => 'Enter the name of the new department.';
+  String get deptMgmtSheetAddSubtitle =>
+      'Enter the name of the new department.';
 
   @override
-  String get deptMgmtSheetUpdateSubtitle => 'Modify existing department details.';
+  String get deptMgmtSheetUpdateSubtitle =>
+      'Modify existing department details.';
 
   @override
   String get deptMgmtFieldName => 'Department Name';
@@ -796,7 +809,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get empMgmtSheetUpdateTitle => 'Update Employee';
 
   @override
-  String get empMgmtSheetAddSubtitle => 'Provide detailed Information to register a new member.';
+  String get empMgmtSheetAddSubtitle =>
+      'Provide detailed Information to register a new member.';
 
   @override
   String get empMgmtSheetUpdateSubtitle => 'Modify existing employee details.';
@@ -874,31 +888,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get empMgmtRoleSupplier => 'Supplier';
 
   @override
-  String get empMgmtValidationRequired => 'Please fill in all required text fields.';
+  String get empMgmtValidationRequired =>
+      'Please fill in all required text fields.';
 
   @override
-  String get empMgmtValidationTechType => 'Please select at least one technician type.';
+  String get empMgmtValidationTechType =>
+      'Please select at least one technician type.';
 
   @override
-  String get empMgmtValidationNoBranch => 'Please create a branch first to assign this employee.';
+  String get empMgmtValidationNoBranch =>
+      'Please create a branch first to assign this employee.';
 
   @override
-  String get empMgmtValidationNoBranchCashier => 'Please create a branch first to assign this cashier.';
+  String get empMgmtValidationNoBranchCashier =>
+      'Please create a branch first to assign this cashier.';
 
   @override
-  String get empMgmtValidationNoDepartment => 'Please create a department first to assign this employee.';
+  String get empMgmtValidationNoDepartment =>
+      'Please create a department first to assign this employee.';
 
   @override
-  String get empMgmtValidationSupplierRequired => 'Please fill in all required fields';
+  String get empMgmtValidationSupplierRequired =>
+      'Please fill in all required fields';
 
   @override
-  String get empMgmtApiNotIntegrated => 'Only Technician, Cashier, and Supplier creation APIs are integrated.';
+  String get empMgmtApiNotIntegrated =>
+      'Only Technician, Cashier, and Supplier creation APIs are integrated.';
 
   @override
-  String get empMgmtTechnicianCreateSuccess => 'Technician Created Successfully';
+  String get empMgmtTechnicianCreateSuccess =>
+      'Technician Created Successfully';
 
   @override
-  String get empMgmtTechnicianUpdateSuccess => 'Technician Updated Successfully';
+  String get empMgmtTechnicianUpdateSuccess =>
+      'Technician Updated Successfully';
 
   @override
   String get empMgmtTechnicianCreateError => 'Failed to create technician';
@@ -988,7 +1011,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posAddCustomerSectionVehicleInfo => 'Vehicle Information';
 
   @override
-  String get posAddCustomerSectionCompanyDetails => 'Company Details (Auto-filled)';
+  String get posAddCustomerSectionCompanyDetails =>
+      'Company Details (Auto-filled)';
 
   @override
   String get posAddCustomerSectionCorporateAccount => 'Corporate Account';
@@ -1030,7 +1054,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posAddCustomerFieldNA => 'N/A';
 
   @override
-  String get posAddCustomerValidationVehicleRequired => 'Please enter vehicle number';
+  String get posAddCustomerValidationVehicleRequired =>
+      'Please enter vehicle number';
 
   @override
   String get posAddCustomerValidationRequired => 'Required';
@@ -1039,7 +1064,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posAddCustomerValidationVinMax => 'Max 17 characters';
 
   @override
-  String get posAddCustomerValidationInvalidNumber => 'Please enter a valid number';
+  String get posAddCustomerValidationInvalidNumber =>
+      'Please enter a valid number';
 
   @override
   String get posAddCustomerValidationInvalidNumberShort => 'Invalid number';
@@ -1147,7 +1173,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posMonitoringDiffNone => '—';
 
   @override
-  String get posMonitoringBackendWarning => '⚠ Full breakdown unavailable — deploy latest backend to see per-category data';
+  String get posMonitoringBackendWarning =>
+      '⚠ Full breakdown unavailable — deploy latest backend to see per-category data';
 
   @override
   String posMonitoringAmountSar(String amount) {
@@ -1215,7 +1242,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promoSheetUpdateTitle => 'Update Promo Code';
 
   @override
-  String get promoSheetCreateSubtitle => 'Configure a new discount code for customers.';
+  String get promoSheetCreateSubtitle =>
+      'Configure a new discount code for customers.';
 
   @override
   String get promoSheetUpdateSubtitle => 'Modify existing promo code details.';
@@ -1254,7 +1282,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promoSubmitUpdate => 'Update Promo';
 
   @override
-  String get promoValidationRequired => 'Please fill required fields (Code, Value)';
+  String get promoValidationRequired =>
+      'Please fill required fields (Code, Value)';
 
   @override
   String get promoCreateSuccess => 'Promo Code created successfully!';
@@ -1278,7 +1307,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerSelectOfficer => 'SELECT OFFICER';
 
   @override
-  String get lockerSelectOfficerSubtitle => 'Choose a field officer to assign to this collection request.';
+  String get lockerSelectOfficerSubtitle =>
+      'Choose a field officer to assign to this collection request.';
 
   @override
   String get lockerOfficersLoadError => 'Could not load officers.';
@@ -1320,7 +1350,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerNotes => 'Notes';
 
   @override
-  String get lockerAuditFootnote => 'This report is system-generated and serves as an official audit record.';
+  String get lockerAuditFootnote =>
+      'This report is system-generated and serves as an official audit record.';
 
   @override
   String lockerAuditFootnoteAmounts(String currency) {
@@ -1345,10 +1376,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerAllClear => 'All Clear!';
 
   @override
-  String get lockerNoPendingVariance => 'No pending variance approvals at this time.';
+  String get lockerNoPendingVariance =>
+      'No pending variance approvals at this time.';
 
   @override
-  String get lockerVarianceReviewBanner => 'These collections have a cash variance and require your approval.';
+  String get lockerVarianceReviewBanner =>
+      'These collections have a cash variance and require your approval.';
 
   @override
   String get lockerShortLabel => 'SHORT';
@@ -1360,7 +1393,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerApproveVarianceTitle => 'Approve Variance';
 
   @override
-  String lockerApproveVarianceConfirm(String type, String amount, String branch) {
+  String lockerApproveVarianceConfirm(
+    String type,
+    String amount,
+    String branch,
+  ) {
     return 'Approve $type variance of SAR $amount for $branch?';
   }
 
@@ -1421,7 +1458,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerCollectionNotes => 'COLLECTION NOTES';
 
   @override
-  String get lockerCollectionNotesHint => 'Enter any remarks or reason for difference…';
+  String get lockerCollectionNotesHint =>
+      'Enter any remarks or reason for difference…';
 
   @override
   String get lockerCollectionEvidence => 'COLLECTION EVIDENCE';
@@ -1617,7 +1655,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockerStoragePermissionRequired => 'Storage Permission Required';
 
   @override
-  String get lockerStoragePermissionBody => 'Storage permission is required to save exported files. Please enable it in app settings.';
+  String get lockerStoragePermissionBody =>
+      'Storage permission is required to save exported files. Please enable it in app settings.';
 
   @override
   String get lockerOpenSettings => 'Open Settings';
@@ -1923,7 +1962,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get corporateRegisterTitle => 'Register Corporate Partner';
 
   @override
-  String get corporateRegisterSubtitle => 'Fill in the details to create a new corporate account.';
+  String get corporateRegisterSubtitle =>
+      'Fill in the details to create a new corporate account.';
 
   @override
   String get corporateFieldCompanyName => 'Company Name';
@@ -1964,7 +2004,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get corporateAddUserTitle => 'Add Corporate User';
 
   @override
-  String get corporateAddUserSubtitle => 'Create credentials for a user associated with this corporate account.';
+  String get corporateAddUserSubtitle =>
+      'Create credentials for a user associated with this corporate account.';
 
   @override
   String get corporateUserFieldName => 'Full Name';
@@ -1982,7 +2023,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get corporateEditTitle => 'Edit Corporate Account';
 
   @override
-  String get corporateEditSubtitle => 'Update the details below. Only changed fields will be sent.';
+  String get corporateEditSubtitle =>
+      'Update the details below. Only changed fields will be sent.';
 
   @override
   String get invTitle => 'Inventory & Products';
@@ -2027,13 +2069,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invNoCategoriesFound => 'No categories found.';
 
   @override
-  String get invNoProductsMatchSearch => 'No products found matching your search.';
+  String get invNoProductsMatchSearch =>
+      'No products found matching your search.';
 
   @override
-  String get invNoServicesMatchSearch => 'No services found matching your search.';
+  String get invNoServicesMatchSearch =>
+      'No services found matching your search.';
 
   @override
-  String get invNoCategoriesMatchSearch => 'No categories found matching your search.';
+  String get invNoCategoriesMatchSearch =>
+      'No categories found matching your search.';
 
   @override
   String get invMetricStock => 'STOCK';
@@ -2092,7 +2137,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invUpdateProduct => 'Update Product';
 
   @override
-  String get invCreateProductSubtitle => 'Enter product details to add to inventory.';
+  String get invCreateProductSubtitle =>
+      'Enter product details to add to inventory.';
 
   @override
   String get invUpdateProductSubtitle => 'Modify existing product details.';
@@ -2209,7 +2255,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invServiceDeleteError => 'Failed to delete service';
 
   @override
-  String get invValidationFillServiceRequired => 'Please fill in required fields.';
+  String get invValidationFillServiceRequired =>
+      'Please fill in required fields.';
 
   @override
   String get invCreateCategory => 'Create Category';
@@ -2248,7 +2295,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invCreateSubCategory => 'Create Sub Category';
 
   @override
-  String get invCreateSubCategorySubtitle => 'Enter details for the new sub category.';
+  String get invCreateSubCategorySubtitle =>
+      'Enter details for the new sub category.';
 
   @override
   String get invFieldSubCategoryName => 'Sub Category Name';
@@ -2384,7 +2432,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posCurrentShiftRetry => 'Retry';
 
   @override
-  String get posCurrentShiftSessionExpiredError => 'Session expired. Please sign in again.';
+  String get posCurrentShiftSessionExpiredError =>
+      'Session expired. Please sign in again.';
 
   @override
   String posCurrentShiftFetchError(String error) {
@@ -2450,7 +2499,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posBroadcastTypeWorkshop => 'Workshop';
 
   @override
-  String get posBroadcastSessionExpired => 'Session expired. Please sign in again.';
+  String get posBroadcastSessionExpired =>
+      'Session expired. Please sign in again.';
 
   @override
   String get posCorporateBookingsTitle => 'Corporate Bookings';
@@ -2468,7 +2518,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posCorporateNoBookingsTitle => 'No Bookings Found';
 
   @override
-  String get posCorporateNoBookingsSubtitle => 'There are no corporate bookings for the selected filter.';
+  String get posCorporateNoBookingsSubtitle =>
+      'There are no corporate bookings for the selected filter.';
 
   @override
   String get posCorporateCardLabelVehicle => 'Vehicle';
@@ -2556,7 +2607,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posCorporateDetailsLicensePlate => 'License Plate';
 
   @override
-  String get posCorporateDetailsNoProducts => 'No specific products requested. Open matching department.';
+  String get posCorporateDetailsNoProducts =>
+      'No specific products requested. Open matching department.';
 
   @override
   String posCorporateDetailsQty(String qty) {
@@ -2578,7 +2630,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posCorporateRejectError => 'Failed to reject booking';
 
   @override
-  String get posCorporateNoMatchingOrder => 'No matching order found for this booking yet. Please refresh and try again.';
+  String get posCorporateNoMatchingOrder =>
+      'No matching order found for this booking yet. Please refresh and try again.';
 
   @override
   String get posCorporateStatusCancelled => 'Cancelled';
@@ -2655,7 +2708,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pettyCashRejectRequestTitle => 'Reject Request';
 
   @override
-  String get pettyCashRejectRequestBody => 'Please provide a reason for rejection.';
+  String get pettyCashRejectRequestBody =>
+      'Please provide a reason for rejection.';
 
   @override
   String get pettyCashRejectReasonHint => 'e.g. Budget not approved';
@@ -2729,7 +2783,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posLoginResetPasswordTitle => 'Reset Password';
 
   @override
-  String get posLoginResetPasswordSubtitle => 'Enter your email or mobile number and we\'ll send you a reset link.';
+  String get posLoginResetPasswordSubtitle =>
+      'Enter your email or mobile number and we\'ll send you a reset link.';
 
   @override
   String get posLoginResetPasswordEmailLabel => 'Email';
@@ -2741,13 +2796,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posLoginResetPasswordSendButton => 'Send Reset Link';
 
   @override
-  String get posLoginResetPasswordSentSuccess => 'Reset link sent! Check your inbox.';
+  String get posLoginResetPasswordSentSuccess =>
+      'Reset link sent! Check your inbox.';
 
   @override
-  String get posLoginPreviousShiftAutoClosed => 'Previous shift was automatically closed. New shift started.';
+  String get posLoginPreviousShiftAutoClosed =>
+      'Previous shift was automatically closed. New shift started.';
 
   @override
-  String get posLoginSessionExpiredError => 'Session expired. Please sign in again.';
+  String get posLoginSessionExpiredError =>
+      'Session expired. Please sign in again.';
 
   @override
   String get posYourJobsTitle => 'Your Jobs';
@@ -2838,7 +2896,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posInvSalesNoSalesTitle => 'No sales in this period';
 
   @override
-  String get posInvSalesNoSalesSubtitle => 'API returned successfully with no matching lines (200 + empty list).';
+  String get posInvSalesNoSalesSubtitle =>
+      'API returned successfully with no matching lines (200 + empty list).';
 
   @override
   String get posInvSalesRetry => 'Retry';
@@ -2868,10 +2927,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get posInvSalesSessionExpiredError => 'Session expired. Please sign in again.';
+  String get posInvSalesSessionExpiredError =>
+      'Session expired. Please sign in again.';
 
   @override
-  String get posInvSalesErrStartBeforeEnd => 'Start date must be on or before end date.';
+  String get posInvSalesErrStartBeforeEnd =>
+      'Start date must be on or before end date.';
 
   @override
   String posInvSalesErrRangeExceeded(int days) {
@@ -2924,7 +2985,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posOrdersNoOrderSelected => 'No Order Selected';
 
   @override
-  String get posOrdersSelectFromList => 'Select an order from the list on the left to view details';
+  String get posOrdersSelectFromList =>
+      'Select an order from the list on the left to view details';
 
   @override
   String get posOrdersAddDepartment => 'ADD DEPARTMENT';
@@ -3047,7 +3109,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posOrdersCancelDialog => 'Cancel';
 
   @override
-  String get posOrdersNoDepartmentsAvailable => 'No departments available to add.';
+  String get posOrdersNoDepartmentsAvailable =>
+      'No departments available to add.';
 
   @override
   String get posOrdersJobIdMissing => 'Job ID missing.';
@@ -3056,13 +3119,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posOrdersJobNoLineItems => 'This job has no line items.';
 
   @override
-  String get posOrdersTechnicianRequired => 'Technician assignment is required.';
+  String get posOrdersTechnicianRequired =>
+      'Technician assignment is required.';
 
   @override
-  String get posOrdersJobNotReadyForInvoice => 'Order is not ready for invoicing.';
+  String get posOrdersJobNotReadyForInvoice =>
+      'Order is not ready for invoicing.';
 
   @override
-  String get posOrdersSelectCustomerAndPayment => 'Select customer type and payment method first.';
+  String get posOrdersSelectCustomerAndPayment =>
+      'Select customer type and payment method first.';
 
   @override
   String get posOrdersDeleteJobTitle => 'Delete Job';
@@ -3092,10 +3158,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posReviewCustomerDetails => 'Customer details';
 
   @override
-  String get posReviewConfirmBillingAndVehicle => 'Confirm billing contact and vehicle before creating the invoice.';
+  String get posReviewConfirmBillingAndVehicle =>
+      'Confirm billing contact and vehicle before creating the invoice.';
 
   @override
-  String get posReviewConfirmBillingOnly => 'Confirm billing contact before creating the invoice.';
+  String get posReviewConfirmBillingOnly =>
+      'Confirm billing contact before creating the invoice.';
 
   @override
   String get posReviewCustomerNameLabel => 'Customer name';
@@ -3152,13 +3220,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posReviewNoIndividual => 'No — Individual';
 
   @override
-  String get posReviewPaymentMethod => 'Payment Method (Select multiple if splitting)';
+  String get posReviewPaymentMethod =>
+      'Payment Method (Select multiple if splitting)';
 
   @override
   String get posReviewPaymentMethodCorporate => 'Payment Method';
 
   @override
-  String get posReviewCompleteAndGenerateInvoice => 'Complete Order & Generate Invoice';
+  String get posReviewCompleteAndGenerateInvoice =>
+      'Complete Order & Generate Invoice';
 
   @override
   String get posReviewInvoiceGeneratedLocked => 'Invoice Generated & Locked';
@@ -3173,7 +3243,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posReviewPrintInvoice => 'Print Invoice & Receipt';
 
   @override
-  String get posReviewCommissionsNote => 'Commissions have been credited to technician accounts.';
+  String get posReviewCommissionsNote =>
+      'Commissions have been credited to technician accounts.';
 
   @override
   String posReviewOrderNo(Object id) {
@@ -3202,10 +3273,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posReviewSelectEmployee => 'Select employee';
 
   @override
-  String get posReviewEmployeeInstructions => 'One employee for the Employees payment line. Tap the selected card again to clear.';
+  String get posReviewEmployeeInstructions =>
+      'One employee for the Employees payment line. Tap the selected card again to clear.';
 
   @override
-  String get posReviewCouldNotLoadEmployees => 'Could not load branch employees.';
+  String get posReviewCouldNotLoadEmployees =>
+      'Could not load branch employees.';
 
   @override
   String get posReviewRetry => 'Retry';
@@ -3295,13 +3368,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posReviewVat15 => 'VAT (15%)';
 
   @override
-  String get posReviewLineNetNote => 'Line totals are net of item-level discounts.';
+  String get posReviewLineNetNote =>
+      'Line totals are net of item-level discounts.';
 
   @override
-  String get posReviewInvoicePromoNote => 'Invoice and promo discounts apply to the taxable subtotal.';
+  String get posReviewInvoicePromoNote =>
+      'Invoice and promo discounts apply to the taxable subtotal.';
 
   @override
-  String get posReviewConfirmAmountsNote => 'Confirm all amounts match the job before generating the invoice.';
+  String get posReviewConfirmAmountsNote =>
+      'Confirm all amounts match the job before generating the invoice.';
 
   @override
   String get posReviewAssignedTechnicians => 'ASSIGNED TECHNICIANS';
@@ -3326,22 +3402,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posReviewDone => 'Done';
 
   @override
-  String get posReviewCorporateMustBeApproved => 'Corporate order must be approved before invoicing.';
+  String get posReviewCorporateMustBeApproved =>
+      'Corporate order must be approved before invoicing.';
 
   @override
-  String get posReviewOrderNotReadyForInvoicing => 'Order is not ready for invoicing.';
+  String get posReviewOrderNotReadyForInvoicing =>
+      'Order is not ready for invoicing.';
 
   @override
-  String get posReviewIndicateCorporate => 'Please indicate if this is a corporate customer.';
+  String get posReviewIndicateCorporate =>
+      'Please indicate if this is a corporate customer.';
 
   @override
   String get posReviewSelectPaymentMethod => 'Please select a payment method.';
 
   @override
-  String get posReviewSelectAtLeastOnePayment => 'Please select at least one payment method.';
+  String get posReviewSelectAtLeastOnePayment =>
+      'Please select at least one payment method.';
 
   @override
-  String get posReviewSelectOneEmployee => 'Select one employee for the Employees payment.';
+  String get posReviewSelectOneEmployee =>
+      'Select one employee for the Employees payment.';
 
   @override
   String posReviewSplitAmountsMustEqual(Object current, Object total) {
@@ -3349,7 +3430,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get posReviewFillRequiredInvoiceDetails => 'Please fill in the required invoice details.';
+  String get posReviewFillRequiredInvoiceDetails =>
+      'Please fill in the required invoice details.';
 
   @override
   String get posReviewInvoiceNotLoaded => 'Invoice could not be loaded.';
@@ -3503,7 +3585,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suppliersPoStep1Title => 'Select Supplier';
 
   @override
-  String get suppliersPoStep1Subtitle => 'Choose from your registered suppliers.';
+  String get suppliersPoStep1Subtitle =>
+      'Choose from your registered suppliers.';
 
   @override
   String get suppliersPoStep2Title => 'Add Items';
@@ -3517,7 +3600,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suppliersPoStep3Title => 'Confirm Order';
 
   @override
-  String get suppliersPoStep3Subtitle => 'Review before submitting for approval.';
+  String get suppliersPoStep3Subtitle =>
+      'Review before submitting for approval.';
 
   @override
   String get suppliersPoStepSelect => 'Select Supplier';
@@ -3558,7 +3642,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suppliersPoConfirmStatusValue => 'Pending Approval';
 
   @override
-  String get suppliersPoConfirmNote => 'This PO will be submitted for manager approval before stock is updated.';
+  String get suppliersPoConfirmNote =>
+      'This PO will be submitted for manager approval before stock is updated.';
 
   @override
   String get suppliersPoNavNext => 'Next';
@@ -3573,7 +3658,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suppliersAddSheetTitle => 'Register New Supplier';
 
   @override
-  String get suppliersAddSheetSubtitle => 'Provide details to add a new supplier.';
+  String get suppliersAddSheetSubtitle =>
+      'Provide details to add a new supplier.';
 
   @override
   String get suppliersAddFieldName => 'Supplier Name';
@@ -3597,7 +3683,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suppliersAddSaveButton => 'Save Supplier';
 
   @override
-  String get suppliersValidationRequired => 'Please fill in all required fields';
+  String get suppliersValidationRequired =>
+      'Please fill in all required fields';
 
   @override
   String get suppliersCreateSuccess => 'Supplier Created Successfully';
@@ -3609,10 +3696,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suppliersPoValidationEmpty => 'Please add at least one item';
 
   @override
-  String get suppliersPoValidationItemDetails => 'Please fill all item details properly';
+  String get suppliersPoValidationItemDetails =>
+      'Please fill all item details properly';
 
   @override
-  String get suppliersPoValidationInvalidSupplier => 'Invalid supplier selected';
+  String get suppliersPoValidationInvalidSupplier =>
+      'Invalid supplier selected';
 
   @override
   String get suppliersPoCreateSuccess => 'Purchase Order Created Successfully';
@@ -3705,7 +3794,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLogoutDialogTitle => 'Log out';
 
   @override
-  String get settingsLogoutDialogBody => 'Are you sure you want to log out from your account?';
+  String get settingsLogoutDialogBody =>
+      'Are you sure you want to log out from your account?';
 
   @override
   String get settingsLogoutDialogCancel => 'Cancel';
@@ -3774,7 +3864,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posPettyCashAvailable => 'Available Petty Cash';
 
   @override
-  String get posPettyCashLowBalanceMessage => 'Petty cash balance is low. Please request fund.';
+  String get posPettyCashLowBalanceMessage =>
+      'Petty cash balance is low. Please request fund.';
 
   @override
   String get posPettyCashRequestFund => 'Request Fund';
@@ -3801,7 +3892,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posPettyCashProofOfExpense => 'Proof of Expense';
 
   @override
-  String get posPettyCashExpenseSubmitted => 'Expense submitted – pending approval';
+  String get posPettyCashExpenseSubmitted =>
+      'Expense submitted – pending approval';
 
   @override
   String get posPettyCashSubmitExpense => 'Submit Expense';
@@ -3819,7 +3911,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posPettyCashReasonHint => 'Explain why you need more funds...';
 
   @override
-  String get posPettyCashFundRequestSubmitted => 'Fund request submitted – pending approval';
+  String get posPettyCashFundRequestSubmitted =>
+      'Fund request submitted – pending approval';
 
   @override
   String get posPettyCashSubmitRequest => 'Submit Request';
@@ -3886,7 +3979,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posPettyCashRequestDate => 'Request Date';
 
   @override
-  String get posPettyCashPendingReviewMessage => 'Your request is currently being reviewed by administration. You will be notified once it is approved.';
+  String get posPettyCashPendingReviewMessage =>
+      'Your request is currently being reviewed by administration. You will be notified once it is approved.';
 
   @override
   String get posPettyCashSubmitNewRequest => 'Submit New Request';
@@ -3898,10 +3992,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posPettyCashSelectCategoryError => 'Please select a category';
 
   @override
-  String get posPettyCashSelectEmployeeError => 'Please select an employee for Salary Advances';
+  String get posPettyCashSelectEmployeeError =>
+      'Please select an employee for Salary Advances';
 
   @override
-  String get posPettyCashSubmitExpenseError => 'Failed to submit expense. Check balance or try again.';
+  String get posPettyCashSubmitExpenseError =>
+      'Failed to submit expense. Check balance or try again.';
 
   @override
   String get posPettyCashReasonError => 'Please enter a reason';
@@ -3980,10 +4076,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posProductEmployeesUpper => 'EMPLOYEES';
 
   @override
-  String get posProductSelectEmployeePayment => 'Select one employee for Employees payment (shown with type). Saves with your order.';
+  String get posProductSelectEmployeePayment =>
+      'Select one employee for Employees payment (shown with type). Saves with your order.';
 
   @override
-  String get posProductSelectEmployeePaymentShort => 'Select one employee for Employees payment (with type).';
+  String get posProductSelectEmployeePaymentShort =>
+      'Select one employee for Employees payment (with type).';
 
   @override
   String get posProductNewOrderId => '#NEW-ORDER';
@@ -4007,7 +4105,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posProductPendingAssignment => 'pending assignment';
 
   @override
-  String get posProductCompleteSuccess => 'Order marked as completed successfully';
+  String get posProductCompleteSuccess =>
+      'Order marked as completed successfully';
 
   @override
   String get posProductCompleteError => 'Failed to complete job';
@@ -4071,10 +4170,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posHomeTitlePos => 'POS';
 
   @override
-  String get posHomeSubtitle => 'Search by customer number, vehicle number,\nphone number or customer name';
+  String get posHomeSubtitle =>
+      'Search by customer number, vehicle number,\nphone number or customer name';
 
   @override
-  String get posHomeSearchHint => 'Search customer no / vehicle / mobile / plate...';
+  String get posHomeSearchHint =>
+      'Search customer no / vehicle / mobile / plate...';
 
   @override
   String get posHomeNewWalkIn => 'New walk-in';
@@ -4097,7 +4198,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posHomeNoResults => 'No results found';
 
   @override
-  String get posHomeNoResultsHint => 'Try searching with a different name or number';
+  String get posHomeNoResultsHint =>
+      'Try searching with a different name or number';
 
   @override
   String get posDeptSelectTitle => 'Select Depart';
@@ -4109,7 +4211,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posDeptNoneFound => 'No departs found';
 
   @override
-  String get posDeptAlreadyOnOrder => 'This department is already on this order.';
+  String get posDeptAlreadyOnOrder =>
+      'This department is already on this order.';
 
   @override
   String posDeptSelectedCount(int count) {
@@ -4123,16 +4226,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posDeptOrderPlaced => 'Order Placed';
 
   @override
-  String get posDeptSelectAtLeastOne => 'Select at least one department to add.';
+  String get posDeptSelectAtLeastOne =>
+      'Select at least one department to add.';
 
   @override
-  String get posDeptVehicleRequired => 'Please add vehicle number first (Add Customer)';
+  String get posDeptVehicleRequired =>
+      'Please add vehicle number first (Add Customer)';
 
   @override
   String get posDeptChangeDeptTitle => 'Change Department?';
 
   @override
-  String get posDeptChangeDeptBody => 'Do you really want to change your department?';
+  String get posDeptChangeDeptBody =>
+      'Do you really want to change your department?';
 
   @override
   String get posDeptChangeDeptRefresh => 'Your invoice data will be refreshed.';
@@ -4153,7 +4259,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posCustomerPastOrders => 'Past Orders';
 
   @override
-  String get posCustomerNoHistory => 'No order history found for this customer.';
+  String get posCustomerNoHistory =>
+      'No order history found for this customer.';
 
   @override
   String posCustomerVat(String vat) {
@@ -4262,7 +4369,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posPromoViewEntryTitle => 'Apply Promo Code';
 
   @override
-  String get posPromoViewEntrySubtitle => 'Check the validity of a customer provided code.';
+  String get posPromoViewEntrySubtitle =>
+      'Check the validity of a customer provided code.';
 
   @override
   String get posPromoViewCheckValidity => 'Check Validity';
@@ -4298,7 +4406,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posPromoDialogTitle => 'Apply Promo Code';
 
   @override
-  String get posPromoDialogSubtitle => 'Select any promo code below to apply discount instantly.';
+  String get posPromoDialogSubtitle =>
+      'Select any promo code below to apply discount instantly.';
 
   @override
   String get posPromoDialogNoCodesAvailable => 'No promo codes available.';
@@ -4361,90 +4470,151 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get posPromoInvalidExpired => 'Invalid or Expired Promo Code';
 
-  // ── Technician Assignment Screen ────────────────────────────────────────────
   @override
   String get posTechAssignTitle => 'Technician Assignment';
+
   @override
   String get posTechAssignSearchHint => 'Search technicians...';
+
   @override
   String get posTechAssignShowAll => 'Show all';
+
   @override
   String get posTechAssignOnlineOnly => 'Online only';
+
   @override
   String get posTechAssignLoading => 'Loading technicians…';
+
   @override
   String get posTechAssignNoResults => 'No technicians found';
+
   @override
-  String posTechAssignErrorPrefix(String message) => 'Error: $message';
+  String posTechAssignErrorPrefix(String message) {
+    return 'Error: $message';
+  }
+
   @override
   String get posTechAssignRetry => 'Retry';
+
   @override
   String get posTechAssignStatusOnline => 'Online';
+
   @override
-  String posTechAssignStatusLastSeen(String time) => 'Last seen: $time';
+  String posTechAssignStatusLastSeen(String time) {
+    return 'Last seen: $time';
+  }
+
   @override
-  String posTechAssignSlots(int used, int total) => 'Slots: $used/$total';
+  String posTechAssignSlots(int used, int total) {
+    return 'Slots: $used/$total';
+  }
+
   @override
   String get posTechAssignBroadcast => 'Broadcast';
+
   @override
-  String posTechAssignWait(String label) => 'Wait $label';
+  String posTechAssignWait(String label) {
+    return 'Wait $label';
+  }
+
   @override
   String get posTechAssignSave => 'Save Technicians';
+
   @override
-  String get posTechAssignSuccessEmpty => 'All technicians removed from this job';
+  String get posTechAssignSuccessEmpty =>
+      'All technicians removed from this job';
+
   @override
   String get posTechAssignSuccess => 'Technicians assigned successfully';
+
   @override
   String get posTechAssignFailNoJob => 'Job not found for this assignment.';
+
   @override
   String get posTechAssignFailGetId => 'Failed to get order ID';
+
   @override
   String get posTechAssignFailEditId => 'Failed to get job ID for edit';
+
   @override
   String get posTechAssignFailGeneric => 'Failed to assign technicians';
+
   @override
-  String get posTechAssignUnlockFail => 'Could not unlock job to change technicians. Try again.';
+  String get posTechAssignUnlockFail =>
+      'Could not unlock job to change technicians. Try again.';
+
   @override
   String get posTechLastSeenNever => 'Never';
+
   @override
   String get posTechLastSeenJustNow => 'Just now';
+
   @override
-  String posTechLastSeenMinutes(int count) => '${count}m ago';
+  String posTechLastSeenMinutes(int count) {
+    return '${count}m ago';
+  }
+
   @override
-  String posTechLastSeenHours(int count) => '${count}h ago';
+  String posTechLastSeenHours(int count) {
+    return '${count}h ago';
+  }
+
   @override
-  String posTechLastSeenDays(int count) => '${count}d ago';
+  String posTechLastSeenDays(int count) {
+    return '${count}d ago';
+  }
 
   @override
   String get posTechViewTitle => 'Technicians';
+
   @override
   String get posTechViewSearchHint => 'Search technicians...';
+
   @override
   String get posTechViewTabAll => 'All';
+
   @override
   String get posTechViewTabOffline => 'Offline';
+
   @override
   String get posTechViewTabOnline => 'Online';
+
   @override
   String get posTechViewNoTechnicians => 'No technicians found';
+
   @override
   String get posTechViewNoOnline => 'No online technicians';
+
   @override
   String get posTechViewNoOffline => 'No offline technicians';
+
   @override
   String get posTechViewErrorRetry => 'Retry';
+
   @override
-  String posTechViewErrorPrefix(String message) => 'Error: $message';
+  String posTechViewErrorPrefix(String message) {
+    return 'Error: $message';
+  }
+
   @override
   String get posTechCardOnlineNow => 'Online now';
+
   @override
-  String posTechCardLastSeen(String time) => 'Last seen: $time';
+  String posTechCardLastSeen(String time) {
+    return 'Last seen: $time';
+  }
+
   @override
   String get posTechCardNoDepartment => 'No department';
+
   @override
-  String posTechCardSlots(int used, int total) => 'Slots $used/$total';
+  String posTechCardSlots(int used, int total) {
+    return 'Slots $used/$total';
+  }
+
   @override
   String get posTechPresenceOnline => 'Technician marked online';
+
   @override
   String get posTechPresenceOffline => 'Technician marked offline';
 }

@@ -53,16 +53,19 @@ class AssignTechnicianResponse {
     return out;
   }
 
-  /// Prefer `assigned` (active list); `assignments` may include cancelled history.
+  /// Prefer non-empty `assigned` (delta of new rows). When `assigned` is `[]` (roster unchanged /
+  /// sync already applied), the current roster with commission fields is in `assignments`.
   static List<JobTechnician> _parseTechnicianList(Map<String, dynamic> json) {
     final assigned = json['assigned'];
-    if (assigned is List) {
+    if (assigned is List && assigned.isNotEmpty) {
       return _listToJobTechnicians(assigned);
     }
     if (json['data'] is Map) {
       final d = Map<String, dynamic>.from(json['data'] as Map);
       final inner = d['assigned'];
-      if (inner is List) return _listToJobTechnicians(inner);
+      if (inner is List && inner.isNotEmpty) {
+        return _listToJobTechnicians(inner);
+      }
     }
 
     dynamic raw = json['assignments'] ?? json['technicians'];

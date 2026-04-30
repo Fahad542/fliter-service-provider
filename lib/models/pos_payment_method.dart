@@ -85,7 +85,9 @@ extension PaymentMethodLabel on PaymentMethod {
     }
   }
 
-  /// Individual / split flow — excludes corporate-only methods.
+  /// Individual / split flow — excludes corporate-only methods and Employees payment.
   bool get isRetailSelectable =>
-      this != PaymentMethod.monthlyBilling && this != PaymentMethod.wallet;
+      this != PaymentMethod.monthlyBilling &&
+      this != PaymentMethod.wallet &&
+      this != PaymentMethod.employees;
 }

@@ -282,7 +282,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildInputField(
                   label: 'Bank / Card Slips',
@@ -290,6 +290,18 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   icon: Icons.credit_card_outlined,
                   hint: summary != null
                       ? 'Expected: SAR ${summary.systemBank.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInputField(
+                  label: 'Corporate Invoices',
+                  controller: closingVm.corporateController,
+                  icon: Icons.business_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemCorporate.toStringAsFixed(2)}'
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -302,18 +314,6 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             children: [
               Expanded(
                 child: _buildInputField(
-                  label: 'Corporate Invoices',
-                  controller: closingVm.corporateController,
-                  icon: Icons.business_outlined,
-                  hint: summary != null
-                      ? 'Expected: SAR ${summary.systemCorporate.toStringAsFixed(2)}'
-                      : null,
-                  onChanged: (_) => closingVm.updatePhysicalCount(),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildInputField(
                   label: 'Tamara Credits',
                   controller: closingVm.tamaraController,
                   icon: Icons.receipt_long_outlined,
@@ -323,17 +323,30 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInputField(
+                  label: 'Tabby Credits',
+                  controller: closingVm.tabbyController,
+                  icon: Icons.receipt_long_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemTabby.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+              Expanded(
+                child: _buildInputField(
+                  label: 'Others (Employee sales)',
+                  controller: closingVm.othersController,
+                  icon: Icons.groups_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemOthers.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
             ],
-          ),
-          const SizedBox(height: 16),
-          _buildInputField(
-            label: 'Tabby Credits',
-            controller: closingVm.tabbyController,
-            icon: Icons.receipt_long_outlined,
-            hint: summary != null
-                ? 'Expected: SAR ${summary.systemTabby.toStringAsFixed(2)}'
-                : null,
-            onChanged: (_) => closingVm.updatePhysicalCount(),
           ),
           const SizedBox(height: 16),
           _buildInputField(
@@ -581,6 +594,8 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           _buildResultRow('Tamara', report.systemTamara, report.physicalTamara, report.tamaraDiff),
           const SizedBox(height: 12),
           _buildResultRow('Tabby', report.systemTabby, report.physicalTabby, report.tabbyDiff),
+          const SizedBox(height: 12),
+          _buildResultRow('Others', report.systemOthers, report.physicalOthers, report.othersDiff),
           const Divider(height: 32),
           _buildTotalDifferenceRow(closingVm),
           const SizedBox(height: 12),

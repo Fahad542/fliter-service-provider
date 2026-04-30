@@ -58,6 +58,29 @@ int? _invoicePickOdometer(
   return null;
 }
 
+List<bool>? _invoiceParseMaintenanceChecksMap(dynamic raw) {
+  if (raw == null || raw is! Map) return null;
+  final c = raw['checks'];
+  if (c is! List || c.length != 6) return null;
+  return List<bool>.generate(6, (i) {
+    final v = c[i];
+    return v == true || v == 1 || '${v}' == '1' || '${v}'.toLowerCase() == 'true';
+  });
+}
+
+/// Root invoice envelope or nested `data.invoice` (success wrapper).
+List<bool>? _invoiceMaintenanceChecksFromEnvelope(Map<String, dynamic> json) {
+  List<bool>? a = _invoiceParseMaintenanceChecksMap(json['maintenanceChecklist']);
+  if (a != null) return a;
+  final data = json['data'];
+  if (data is Map && data['invoice'] is Map) {
+    a = _invoiceParseMaintenanceChecksMap(
+      (data['invoice'] as Map)['maintenanceChecklist'],
+    );
+  }
+  return a;
+}
+
 class CreateInvoiceRequest {
   final String orderId;
   final double discountAmount;
@@ -160,14 +183,22 @@ class Invoice {
   final String vehicleYear;
   final String? branchName;
   final String? branchAddress;
+  /// Branch VAT registration when set (preferred over [workshopTaxId] on print).
+  final String? branchVatId;
   final String? cashierName;
   final String? cashierEmail;
   final String? cashierMobile;
+  /// Legal / display name from workshop (may be Arabic).
+  final String? workshopName;
+  final String? workshopTaxId;
+  final String? workshopAddress;
   final String salesOrderId;
   final String salesOrderStatus;
   final String salesOrderSource;
   final String salesOrderCreatedAt;
   final String customerId;
+  /// Six booleans for bilingual maintenance checklist (invoice print).
+  final List<bool>? maintenanceChecklistChecks;
 
   Invoice({
     required this.id,
@@ -197,14 +228,19 @@ class Invoice {
     this.vehicleYear = '',
     this.branchName,
     this.branchAddress,
+    this.branchVatId,
     this.cashierName,
     this.cashierEmail,
     this.cashierMobile,
+    this.workshopName,
+    this.workshopTaxId,
+    this.workshopAddress,
     this.salesOrderId = '',
     this.salesOrderStatus = '',
     this.salesOrderSource = '',
     this.salesOrderCreatedAt = '',
     this.customerId = '',
+    this.maintenanceChecklistChecks,
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
@@ -213,6 +249,10 @@ class Invoice {
         : <String, dynamic>{};
     var branch = json['branch'] ?? {};
     var createdByUser = json['createdByUser'] ?? {};
+    var workshopRaw = json['workshop'];
+    final workshopMap = workshopRaw is Map
+        ? Map<String, dynamic>.from(workshopRaw)
+        : <String, dynamic>{};
     var customer = salesOrder['customer'] ?? {};
     var vehicle = salesOrder['vehicle'] is Map
         ? Map<String, dynamic>.from(salesOrder['vehicle'] as Map)
@@ -306,6 +346,7 @@ class Invoice {
       vehicleYear: _invoicePickYear(vehicle, salesOrder, json),
       branchName: branch['name'],
       branchAddress: branch['address']?.toString(),
+      branchVatId: branch['vatId']?.toString(),
       cashierName: createdByUser['name'],
       cashierEmail: createdByUser['email']?.toString(),
       cashierMobile: createdByUser['mobile']?.toString(),
@@ -314,6 +355,10 @@ class Invoice {
       salesOrderSource: salesOrder['source']?.toString() ?? '',
       salesOrderCreatedAt: salesOrder['createdAt']?.toString() ?? '',
       customerId: customer['id']?.toString() ?? '',
+      workshopName: workshopMap['name']?.toString(),
+      workshopTaxId: workshopMap['taxId']?.toString(),
+      workshopAddress: workshopMap['address']?.toString(),
+      maintenanceChecklistChecks: _invoiceMaintenanceChecksFromEnvelope(json),
     );
   }
 }

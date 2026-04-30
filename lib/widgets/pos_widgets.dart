@@ -12,6 +12,7 @@ import '../views/Workshop pos app/Home Screen/pos_view_model.dart' as pvm;
 import '../models/create_invoice_model.dart';
 import '../models/pos_technician_model.dart'; // Added import for TechnicianCard + localizedLastSeen
 import '../models/pos_product_model.dart'; // Added import for ProductCard
+import '../utils/invoice_maintenance_checklist.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:share_plus/share_plus.dart';
 import '../utils/toast_service.dart';
@@ -23,6 +24,8 @@ import '../views/Workshop pos app/Order Screen/pos_order_review_view.dart';
 import '../views/Workshop pos app/Department/pos_department_view.dart';
 import '../views/Workshop pos app/Technician Assignment/pos_technician_assignment_view.dart' hide localizedLastSeen;
 import '../views/Workshop pos app/Add Customer Screen/pos_add_customer_view.dart';
+import '../services/invoice_network_print.dart';
+import '../services/thermal_printer_settings.dart';
 
 /// Drawer menu (hamburger) is always available on tablet; the left rail was removed.
 bool kPosHideDrawerMenuTabletLandscape(BuildContext context) => false;
@@ -30,6 +33,7 @@ bool kPosHideDrawerMenuTabletLandscape(BuildContext context) => false;
 // ── Reusable POS Screen AppBar (Back + Title + Global Icon) ──
 class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final FontWeight? titleFontWeight;
   final VoidCallback? onBack;
   final bool showBackButton;
   final bool showHamburger;
@@ -40,6 +44,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   const PosScreenAppBar({
     super.key,
     required this.title,
+    this.titleFontWeight,
     this.onBack,
     this.showBackButton = true,
     this.showHamburger = true,
@@ -178,7 +183,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                 title,
                 style: TextStyle(
                   color: Colors.black,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: titleFontWeight ?? FontWeight.bold,
                   fontSize:
                   isTablet ? PosTabletLayout.appBarTitleSize : 19,
                 ),
@@ -818,12 +823,17 @@ class SearchHistoryItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            vehicle,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                          Expanded(
+                            child: Text(
+                              customer,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
                             ),
                           ),
                           if (isCorporate) ...[
@@ -848,11 +858,43 @@ class SearchHistoryItem extends StatelessWidget {
                               ),
                             ),
                           ],
+                          const SizedBox(width: 6),
+                          Material(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: onViewHistory ?? () {},
+                              borderRadius: BorderRadius.circular(10),
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: Icon(
+                                  Icons.keyboard_arrow_right,
+                                  color: AppColors.secondaryLight,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
+                      if (vehicle.trim().isNotEmpty &&
+                          vehicle.toLowerCase() != 'no vehicle') ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          vehicle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 9),
                       Text(
-                        'Plate: $plate  •  $customer${(phone != null && phone!.trim().isNotEmpty) ? '  •  ${phone!.trim()}' : ''}',
+                        'Plate: $plate${(phone != null && phone!.trim().isNotEmpty) ? '  •  ${phone!.trim()}' : ''}',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: Colors.grey.shade600,
                           fontSize: 12,
@@ -943,37 +985,45 @@ class SearchHistoryItem extends StatelessWidget {
                         horizontal: 8,
                         vertical: 8,
                       ),
+                      minimumSize: const Size(0, 40),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.posSearchHistoryHistory,
+                      'Continue Order',
+                      maxLines: 1,
+                      softWrap: false,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
+                        color: AppColors.secondaryLight,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton(
+                  child: ElevatedButton(
                     onPressed: onSalesReturn ?? () {},
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade400,
-                      side: BorderSide(color: Colors.red.shade200),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondaryLight,
+                      foregroundColor: AppColors.onSecondaryLight,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 8),
+                      minimumSize: const Size(0, 40),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
-                      AppLocalizations.of(context)!.posSearchHistorySalesReturn,
+                    child: const Text(
+                      'Sales Return',
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
+                        color: AppColors.onSecondaryLight,
                       ),
                     ),
                   ),
@@ -3644,6 +3694,178 @@ void _showCommissionPopup(BuildContext context, dynamic commissionData) {
   );
 }
 
+class _InvoiceThermalActionBar extends StatefulWidget {
+  final Invoice invoice;
+  final String paymentMethodText;
+  final VoidCallback? onDone;
+
+  const _InvoiceThermalActionBar({
+    required this.invoice,
+    required this.paymentMethodText,
+    this.onDone,
+  });
+
+  @override
+  State<_InvoiceThermalActionBar> createState() =>
+      _InvoiceThermalActionBarState();
+}
+
+class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
+  bool _printing = false;
+
+  Future<void> _openThermalSettings() async {
+    final cfg = await ThermalPrinterSettings.load();
+    final ipCtrl = TextEditingController(text: cfg.host);
+    final portCtrl = TextEditingController(text: '${cfg.port}');
+    if (!mounted) {
+      ipCtrl.dispose();
+      portCtrl.dispose();
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Thermal printer (Wi‑Fi)'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: ipCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Printer IP',
+                  hintText: 'e.g. 192.168.8.55',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: portCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Port',
+                  helperText: '9100 for most Epson network receipt printers',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final p = int.tryParse(portCtrl.text.trim()) ??
+                  ThermalPrinterSettings.defaultPort;
+              await ThermalPrinterSettings.save(ipCtrl.text.trim(), p);
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+              if (!mounted) return;
+              ToastService.showSuccess(context, 'Printer address saved.');
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    ipCtrl.dispose();
+    portCtrl.dispose();
+  }
+
+  Future<void> _sendToThermalPrinter() async {
+    setState(() => _printing = true);
+    try {
+      await executeInvoiceThermalPrint(
+        invoice: widget.invoice,
+        paymentMethodText: widget.paymentMethodText,
+      );
+      if (!mounted) return;
+      ToastService.showSuccess(context, 'Receipt sent to Wi‑Fi printer.');
+    } catch (e) {
+      if (!mounted) return;
+      ToastService.showError(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _printing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Tooltip(
+              message: 'Long-press Print to set Wi‑Fi printer IP',
+              child: GestureDetector(
+                onLongPress: _printing ? null : _openThermalSettings,
+                child: ElevatedButton(
+                onPressed: _printing ? null : _sendToThermalPrinter,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondaryLight,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 0,
+                ),
+                child: _printing
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Print',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                      ),
+              ),
+            ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: widget.onDone == null
+                  ? () => Navigator.pop(context)
+                  : () {
+                      Navigator.pop(context);
+                      widget.onDone!();
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryLight,
+                foregroundColor: AppColors.secondaryLight,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Done',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class InvoiceDialog extends StatelessWidget {
   final Invoice invoice;
   final VoidCallback? onDone;
@@ -3664,6 +3886,7 @@ class InvoiceDialog extends StatelessWidget {
     );
     final invoiceDateText = formatInvoiceLegalDate(invoice.invoiceDate);
     final issuedAtClock = formatInvoiceIssuedAtClock(invoice.issuedAt);
+    final checklistForPrint = invoice.maintenanceChecklistChecks;
     final paymentMethodText = invoice.payments.isNotEmpty
         ? invoice.payments.map((p) => p.method).join(', ')
         : (invoice.paymentMethod ?? requestedPaymentMethod ?? 'Unpaid');
@@ -3803,75 +4026,17 @@ class InvoiceDialog extends StatelessWidget {
                       const SizedBox(height: 12),
                       _buildTotalsTaxTable(currencyFormat),
                       const SizedBox(height: 12),
-                      _buildChecklistSection(),
+                      _buildChecklistSection(checklistForPrint),
                     ],
                   ),
                 ),
               ),
 
-              // Actions
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Implement actual Bluetooth/PDF Print logic
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Printing functionality coming soon!',
-                              ),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryLight,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Print',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          if (onDone != null) onDone!();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight,
-                          foregroundColor: AppColors.secondaryLight,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              // Actions — Wi‑Fi thermal (tap Print) · long‑press Print for IP/port settings
+              _InvoiceThermalActionBar(
+                invoice: invoice,
+                paymentMethodText: paymentMethodText,
+                onDone: onDone,
               ),
             ],
           ),
@@ -4194,18 +4359,8 @@ class InvoiceDialog extends StatelessWidget {
 
   /// Bilingual maintenance checklist: header in two halves; each row is
   /// English | Arabic | checkbox | English | Arabic | checkbox.
-  Widget _buildChecklistSection() {
+  Widget _buildChecklistSection(List<bool>? checks) {
     const kInv = Color(0xFF1E2124);
-    const leftCol = <(String en, String ar)>[
-      ('Tire Pressure Check', 'فحص هواء الاطارات'),
-      ('Brake Fluid Check', 'فحص سائل الفرامل'),
-      ('Wipers Fluid Check', 'فحص سائل المساحات'),
-    ];
-    const rightCol = <(String en, String ar)>[
-      ('Power Steering Fluid Check', 'فحص سائل المقود'),
-      ('Transmission Fluid Check', 'فحص سائل نقل الحركة'),
-      ('Radiator Fluid Check', 'فحص سائل مبرد المحرك'),
-    ];
 
     const headerStyle = TextStyle(
       color: Colors.white,
@@ -4252,7 +4407,15 @@ class InvoiceDialog extends StatelessWidget {
       );
     }
 
-    Widget cellCheckbox() {
+    bool tickedAt(int index) {
+      return checks != null &&
+          index >= 0 &&
+          index < checks.length &&
+          checks[index];
+    }
+
+    Widget cellCheckbox(int index) {
+      final ticked = tickedAt(index);
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Center(
@@ -4264,6 +4427,10 @@ class InvoiceDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
               color: Colors.white,
             ),
+            alignment: Alignment.center,
+            child: ticked
+                ? const Icon(Icons.check, size: 12, color: kInv)
+                : const SizedBox.shrink(),
           ),
         ),
       );
@@ -4320,15 +4487,23 @@ class InvoiceDialog extends StatelessWidget {
               verticalInside: BorderSide(color: kInv, width: 1),
             ),
             children: [
-              for (var i = 0; i < 3; i++)
+              for (var i = 0; i < InvoiceMaintenanceChecklist.laneRowCount; i++)
                 TableRow(
                   children: [
-                    cellEn(leftCol[i].$1),
-                    cellAr(leftCol[i].$2),
-                    cellCheckbox(),
-                    cellEn(rightCol[i].$1),
-                    cellAr(rightCol[i].$2),
-                    cellCheckbox(),
+                    cellEn(
+                      InvoiceMaintenanceChecklist.cell(i, leftColumn: true).en,
+                    ),
+                    cellAr(
+                      InvoiceMaintenanceChecklist.cell(i, leftColumn: true).ar,
+                    ),
+                    cellCheckbox(i),
+                    cellEn(
+                      InvoiceMaintenanceChecklist.cell(i, leftColumn: false).en,
+                    ),
+                    cellAr(
+                      InvoiceMaintenanceChecklist.cell(i, leftColumn: false).ar,
+                    ),
+                    cellCheckbox(i + InvoiceMaintenanceChecklist.laneRowCount),
                   ],
                 ),
             ],
@@ -4435,6 +4610,152 @@ class InvoiceDialog extends StatelessWidget {
   }
 }
 
+bool _techCanToggleWorkshop(PosTechnician tech) {
+  final t = tech.technicianType.toLowerCase();
+  if (t.isEmpty) return true;
+  return t == 'workshop' || t == 'both';
+}
+
+bool _techCanToggleOnCall(PosTechnician tech) {
+  final t = tech.technicianType.toLowerCase();
+  if (t.isEmpty) return true;
+  return t == 'on_call' || t == 'both';
+}
+
+class _CashierDutyToggle extends StatelessWidget {
+  final String label;
+  final bool isTablet;
+  final bool compact;
+  final bool enabled;
+  final bool value;
+  final bool busy;
+  final bool technicianOnline;
+  /// False when this duty row does not apply (e.g. on-call row for workshop-only tech).
+  final bool roleAllowsDuty;
+  final ValueChanged<bool>? onChanged;
+
+  const _CashierDutyToggle({
+    required this.label,
+    required this.isTablet,
+    required this.compact,
+    required this.enabled,
+    required this.value,
+    required this.busy,
+    required this.technicianOnline,
+    required this.roleAllowsDuty,
+    required this.onChanged,
+  });
+
+  String get _statusCaption {
+    if (!roleAllowsDuty) return 'Not applicable';
+    if (!technicianOnline) {
+      return 'Unavailable while offline';
+    }
+    if (value) return 'Active';
+    return 'Not available';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final toggleWidth = isTablet ? 46.0 : (compact ? 40.0 : 42.0);
+    final toggleHeight = compact ? 24.0 : 27.0;
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: compact ? 26 : 30,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isTablet ? 9.5 : 8.5,
+                    fontWeight: FontWeight.w600,
+                    color: enabled
+                        ? const Color(0xFF475569)
+                        : Colors.grey.shade400,
+                  ),
+                ),
+                Text(
+                  _statusCaption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isTablet ? 8.0 : 7.5,
+                    fontWeight: FontWeight.w600,
+                    color: !roleAllowsDuty
+                        ? Colors.grey.shade400
+                        : (!technicianOnline
+                            ? Colors.grey.shade500
+                            : (value
+                                ? Colors.green.shade700
+                                : Colors.grey.shade600)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (busy)
+            SizedBox(
+              width: compact ? 32 : 36,
+              child: Center(
+                child: SizedBox(
+                  width: compact ? 18 : 20,
+                  height: compact ? 18 : 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.primaryLight,
+                  ),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              width: toggleWidth,
+              height: toggleHeight,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.centerRight,
+                child: Switch(
+                  value: value,
+                  onChanged: enabled ? onChanged : null,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  thumbColor: MaterialStateProperty.resolveWith((states) {
+                    if (states.contains(MaterialState.disabled)) {
+                      return Colors.grey.shade400;
+                    }
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.white;
+                    }
+                    return Colors.grey.shade200;
+                  }),
+                  trackColor: MaterialStateProperty.resolveWith((states) {
+                    if (states.contains(MaterialState.disabled)) {
+                      return Colors.grey.shade300;
+                    }
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.green.shade600;
+                    }
+                    return Colors.grey.shade500;
+                  }),
+                  trackOutlineColor:
+                      MaterialStateProperty.all(Colors.transparent),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class TechnicianCard extends StatelessWidget {
   final PosTechnician tech;
   final bool compact;
@@ -4442,6 +4763,11 @@ class TechnicianCard extends StatelessWidget {
   final bool showPresenceToggle;
   final bool presenceBusy;
   final ValueChanged<bool>? onPresenceChanged;
+  /// Cashier: workshop / on-call duty toggles (can show together with [showPresenceToggle]).
+  final bool showDutyToggles;
+  final bool dutyBusy;
+  final ValueChanged<bool>? onWorkshopDutyChanged;
+  final ValueChanged<bool>? onOnCallDutyChanged;
 
   const TechnicianCard({
     super.key,
@@ -4450,36 +4776,65 @@ class TechnicianCard extends StatelessWidget {
     this.showPresenceToggle = false,
     this.presenceBusy = false,
     this.onPresenceChanged,
+    this.showDutyToggles = false,
+    this.dutyBusy = false,
+    this.onWorkshopDutyChanged,
+    this.onOnCallDutyChanged,
   });
 
-  Color _getStatusColor(String status) {
-    final lowerStatus = status.toLowerCase();
-    if (lowerStatus.contains('online') ||
-        lowerStatus.contains('available') ||
-        lowerStatus.contains('active')) {
-      return Colors.green.shade600;
-    } else if (lowerStatus.contains('busy') ||
-        lowerStatus.contains('working') ||
-        lowerStatus.contains('ongoing')) {
-      return Colors.orange.shade600;
+  Color _cashierPresenceDotColor(PosTechnician tech) {
+    if (!tech.isOnline) return Colors.grey.shade500;
+    final dm = _effectiveDutyModeForCard(tech);
+    if (dm == 'workshop') return Colors.green.shade600;
+    if (dm == 'on_call') return Colors.deepOrange.shade600;
+    return Colors.grey.shade600;
+  }
+
+  String _effectiveDutyModeForCard(PosTechnician tech) {
+    var dm = tech.dutyMode?.toLowerCase().trim() ?? '';
+    if (dm.isNotEmpty) return dm;
+    if (tech.workshopDuty) return 'workshop';
+    if (tech.onCallDuty) return 'on_call';
+    return 'inactive';
+  }
+
+  /// Workshop → active floor; on-call only → **On call**; otherwise **Not available** (still not cashier-offline).
+  String _cashierPresenceHeadline(PosTechnician tech) {
+    if (!tech.isOnline) {
+      return 'Last seen: ${tech.formattedLastSeen}';
     }
-    return Colors.grey.shade500;
+    final dm = _effectiveDutyModeForCard(tech);
+    if (dm == 'workshop') {
+      return 'Online now';
+    }
+    if (dm == 'on_call') {
+      return 'On call';
+    }
+    return 'Not available';
+  }
+
+  Color _cashierPresenceHeadlineColor(PosTechnician tech) {
+    if (!tech.isOnline) return Colors.grey.shade600;
+    final dm = _effectiveDutyModeForCard(tech);
+    if (dm == 'workshop') {
+      return Colors.green.shade700;
+    }
+    if (dm == 'on_call') {
+      return Colors.deepOrange.shade800;
+    }
+    return Colors.grey.shade700;
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final statusColor = _getStatusColor(tech.statusInfo);
+    final presenceDotColor = _cashierPresenceDotColor(tech);
     final departmentText = tech.departments.isNotEmpty
         ? tech.departments.map((d) => d.name).where((e) => e.isNotEmpty).join(', ')
-        : l10n.posTechCardNoDepartment;
-    // Resolve last-seen using locale-aware helper (rebuilds on locale switch automatically)
-    final rawLastSeen = localizedLastSeen(tech, l10n);
-    final lastSeenText = tech.isOnline
-        ? l10n.posTechCardOnlineNow
-        : l10n.posTechCardLastSeen(rawLastSeen);
-    final slotsFull = tech.totalSlots > 0 && tech.slotsUsed >= tech.totalSlots;
+        : 'No department';
+    final presenceHeadline = _cashierPresenceHeadline(tech);
+    final presenceHeadlineColor = _cashierPresenceHeadlineColor(tech);    final slotsFull = tech.totalSlots > 0 && tech.slotsUsed >= tech.totalSlots;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -4503,13 +4858,18 @@ class TechnicianCard extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              CircleAvatar(
-                radius: isTablet ? 24 : 20,
-                backgroundColor: AppColors.primaryLight.withOpacity(0.15),
+              Container(
+                width: isTablet ? 48 : 40,
+                height: isTablet ? 48 : 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
                 child: Icon(
                   Icons.person,
                   size: isTablet ? 24 : 20,
-                  color: AppColors.secondaryLight,
+                  color: AppColors.onPrimaryLight,
                 ),
               ),
               Positioned(
@@ -4519,7 +4879,7 @@ class TechnicianCard extends StatelessWidget {
                   width: isTablet ? 11 : 9,
                   height: isTablet ? 11 : 9,
                   decoration: BoxDecoration(
-                    color: statusColor,
+                    color: presenceDotColor,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
@@ -4538,15 +4898,13 @@ class TechnicianCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        lastSeenText,
+                        presenceHeadline,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: isTablet ? 10.0 : 9.0,
                           fontWeight: FontWeight.w600,
-                          color: tech.isOnline
-                              ? Colors.green.shade700
-                              : Colors.grey.shade600,
+                          color: presenceHeadlineColor,
                         ),
                       ),
                     ),
@@ -4669,6 +5027,35 @@ class TechnicianCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (showDutyToggles &&
+                    (onWorkshopDutyChanged != null ||
+                        onOnCallDutyChanged != null)) ...[
+                  SizedBox(height: isTablet ? 6 : 5),
+                  _CashierDutyToggle(
+                    label: 'Workshop Duty',
+                    isTablet: isTablet,
+                    compact: compact,
+                    enabled:
+                        _techCanToggleWorkshop(tech) && tech.isOnline,
+                    value: tech.workshopDuty,
+                    busy: dutyBusy,
+                    technicianOnline: tech.isOnline,
+                    roleAllowsDuty: _techCanToggleWorkshop(tech),
+                    onChanged: onWorkshopDutyChanged,
+                  ),
+                  SizedBox(height: isTablet ? 3 : 2),
+                  _CashierDutyToggle(
+                    label: 'On Call Duty',
+                    isTablet: isTablet,
+                    compact: compact,
+                    enabled: _techCanToggleOnCall(tech) && tech.isOnline,
+                    value: tech.onCallDuty,
+                    busy: dutyBusy,
+                    technicianOnline: tech.isOnline,
+                    roleAllowsDuty: _techCanToggleOnCall(tech),
+                    onChanged: onOnCallDutyChanged,
+                  ),
+                ],
               ],
             ),
           ),
