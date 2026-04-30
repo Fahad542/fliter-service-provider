@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
@@ -107,9 +108,12 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
 
     final picked = await showDatePicker(
       context: context,
-      firstDate: floor.isAfter(today) ? today.subtract(const Duration(days: 1)) : floor,
+      firstDate: floor.isAfter(today)
+          ? today.subtract(const Duration(days: 1))
+          : floor,
       lastDate: today,
-      initialDate: cur.isAfter(today) ? today : (cur.isBefore(floor) ? floor : cur),
+      initialDate:
+      cur.isAfter(today) ? today : (cur.isBefore(floor) ? floor : cur),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: ColorScheme.fromSeed(
@@ -136,9 +140,9 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
   }
 
   Future<void> _onPresetChip(
-    InventorySalesViewModel vm,
-    InventorySalesPreset preset,
-  ) async {
+      InventorySalesViewModel vm,
+      InventorySalesPreset preset,
+      ) async {
     await vm.setPreset(preset);
     if (mounted) _syncDraftFromVm();
   }
@@ -148,6 +152,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final vm = context.watch<InventorySalesViewModel>();
     final cs = Theme.of(context).colorScheme;
 
@@ -158,13 +163,13 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
         appBar: PosScreenAppBar(
-          title: 'Inventory Sales',
+          title: l10n.posInvSalesTitle,
           showBackButton: false,
           showHamburger: true,
           onMenuPressed: () => PosShellScaffoldRegistry.openDrawer(),
           actions: [
             IconButton(
-              tooltip: 'Refresh',
+              tooltip: l10n.posInvSalesRefreshTooltip,
               onPressed: vm.isLoading ? null : () => vm.fetch(),
               icon: Icon(
                 Icons.refresh_rounded,
@@ -197,13 +202,37 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
             ),
           ],
         ),
-        body: wrapPosShellRailBody(context, _buildBody(context, vm, cs)),
+        body: wrapPosShellRailBody(context, _buildBody(context, vm, cs, l10n)),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, InventorySalesViewModel vm, ColorScheme cs) {
-    if (vm.isLoading && vm.lines.isEmpty && vm.errorMessage == null) {
+  /// Resolves a structured [InventorySalesVmError] into a localized string,
+  /// falling back to [vm.errorMessage] for free-text server errors.
+  String? _resolveError(InventorySalesViewModel vm, AppLocalizations l10n) {
+    if (vm.vmError != null) {
+      switch (vm.vmError!) {
+        case InventorySalesVmError.startAfterEnd:
+          return l10n.posInvSalesErrStartBeforeEnd;
+        case InventorySalesVmError.rangeExceeded:
+          return l10n.posInvSalesErrRangeExceeded(
+              InventorySalesViewModel.maxRangeDaysInclusive);
+        case InventorySalesVmError.sessionExpired:
+          return l10n.posInvSalesSessionExpiredError;
+      }
+    }
+    return vm.errorMessage;
+  }
+
+  Widget _buildBody(
+      BuildContext context,
+      InventorySalesViewModel vm,
+      ColorScheme cs,
+      AppLocalizations l10n,
+      ) {
+    final resolvedError = _resolveError(vm, l10n);
+
+    if (vm.isLoading && vm.lines.isEmpty && resolvedError == null) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryLight),
       );
@@ -219,7 +248,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Period',
+            l10n.posInvSalesPeriodLabel,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -241,6 +270,9 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
       ),
     );
 
+    // Build preset label list from l10n — keeps switch statement safe for AR
+    final presetLabels = _presetLabels(l10n);
+
     final chips = Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
       child: Align(
@@ -253,19 +285,15 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: _RangeChip(
-                    label: p.$1,
+                    label: presetLabels[p.$2] ?? p.$1,
                     selected: vm.preset == p.$2,
-                    onTap: () {
-                      _onPresetChip(vm, p.$2);
-                    },
+                    onTap: () => _onPresetChip(vm, p.$2),
                   ),
                 ),
               _RangeChip(
-                label: 'Custom',
+                label: l10n.posInvSalesPresetCustom,
                 selected: vm.isCustomRange,
-                onTap: () {
-                  _onCustomChip(vm);
-                },
+                onTap: () => _onCustomChip(vm),
               ),
             ],
           ),
@@ -278,15 +306,13 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
       child: _ManualRangeStrip(
         draftFromLabel: DateFormat('y-MM-dd').format(_draftFrom ?? range.from),
         draftToLabel: DateFormat('y-MM-dd').format(_draftTo ?? range.toInclusive),
-        onTapFrom: () {
-          _pickDraftFrom();
-        },
-        onTapTo: () {
-          _pickDraftTo();
-        },
-        onLoad: () {
-          _applyLoadRange(vm);
-        },
+        fromTitle: l10n.posInvSalesFromLabel,
+        toTitle: l10n.posInvSalesToLabel,
+        loadLabel: l10n.posInvSalesLoadButton,
+        loadingLabel: l10n.posInvSalesLoadingButton,
+        onTapFrom: _pickDraftFrom,
+        onTapTo: _pickDraftTo,
+        onLoad: () => _applyLoadRange(vm),
         isLoading: vm.isLoading,
       ),
     );
@@ -299,19 +325,19 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
           final children = [
             _StatCard(
               icon: Icons.shopping_bag_outlined,
-              label: 'Total units sold',
+              label: l10n.posInvSalesStatTotalUnits,
               value: _fmtQty(vm.totalQuantitySold),
               accent: const Color(0xFF059669),
             ),
             _StatCard(
               icon: Icons.category_outlined,
-              label: 'Unique products',
+              label: l10n.posInvSalesStatUniqueProducts,
               value: '${vm.distinctProductsInPeriod}',
               accent: AppColors.secondaryLight,
             ),
             _StatCard(
               icon: Icons.calendar_today_outlined,
-              label: 'Days with activity',
+              label: l10n.posInvSalesStatDaysActive,
               value: '${vm.groupedByDay.length}',
               accent: const Color(0xFF7C3AED),
             ),
@@ -343,18 +369,19 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
     );
 
     Widget? banner;
-    if (vm.errorMessage != null && vm.lines.isNotEmpty) {
+    if (resolvedError != null && vm.lines.isNotEmpty) {
       banner = Material(
         color: Colors.red.shade50,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
           child: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.red.shade800, size: 22),
+              Icon(Icons.warning_amber_rounded,
+                  color: Colors.red.shade800, size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  vm.errorMessage!,
+                  resolvedError!,
                   style: TextStyle(
                     color: Colors.red.shade900,
                     fontWeight: FontWeight.w600,
@@ -363,7 +390,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
                 ),
               ),
               IconButton(
-                tooltip: 'Dismiss',
+                tooltip: l10n.posInvSalesDismissTooltip,
                 onPressed: vm.dismissErrorBanner,
                 icon: Icon(Icons.close_rounded, color: Colors.red.shade800),
               ),
@@ -373,12 +400,13 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
       );
     }
 
-    if (vm.errorMessage != null && vm.lines.isEmpty) {
+    if (resolvedError != null && vm.lines.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (vm.isLoading)
-            const LinearProgressIndicator(minHeight: 3, color: AppColors.primaryLight),
+            const LinearProgressIndicator(
+                minHeight: 3, color: AppColors.primaryLight),
           header,
           chips,
           manualStrip,
@@ -386,7 +414,8 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
           if (banner != null) banner,
           Expanded(
             child: _ErrorBlock(
-              message: vm.errorMessage!,
+              message: resolvedError!,
+              retryLabel: l10n.posInvSalesRetry,
               onRetry: vm.fetch,
             ),
           ),
@@ -401,51 +430,62 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
         onRefresh: () => vm.fetch(),
         child: groups.isEmpty
             ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
-                children: [
-                  Icon(
-                    Icons.inventory_2_outlined,
-                    size: 72,
-                    color: Colors.grey.shade300,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No sales in this period',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'API returned successfully with no matching lines (200 + empty list).',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      height: 1.45,
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                itemCount: groups.length,
-                itemBuilder: (context, i) => _DaySection(
-                  day: groups[i].day,
-                  rows: groups[i].rows,
-                ),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 72,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.posInvSalesNoSalesTitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Colors.grey.shade700,
               ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              l10n.posInvSalesNoSalesSubtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                height: 1.45,
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        )
+            : ListView.builder(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          itemCount: groups.length,
+          itemBuilder: (context, i) => _DaySection(
+            day: groups[i].day,
+            rows: groups[i].rows,
+            colProduct: l10n.posInvSalesColProduct,
+            colSku: l10n.posInvSalesColSku,
+            colQty: l10n.posInvSalesColQty,
+            daySummaryBuilder: (lineCount, qty) {
+              final linesLabel = lineCount == 1
+                  ? l10n.posInvSalesDayLines(lineCount)
+                  : l10n.posInvSalesDayLinesPlural(lineCount);
+              return l10n.posInvSalesDaySummary(linesLabel, qty);
+            },
+          ),
+        ),
       ),
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (vm.isLoading) const LinearProgressIndicator(minHeight: 3, color: AppColors.primaryLight),
+        if (vm.isLoading)
+          const LinearProgressIndicator(
+              minHeight: 3, color: AppColors.primaryLight),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -463,16 +503,36 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
     );
   }
 
+  /// Maps each preset enum value to its localized label.
+  /// Using a Map (not a switch on enum.index) prevents off-by-one mistakes
+  /// in Arabic when enum order is reused in other widgets.
+  static Map<InventorySalesPreset, String> _presetLabels(AppLocalizations l10n) {
+    return {
+      InventorySalesPreset.today: l10n.posInvSalesPresetToday,
+      InventorySalesPreset.yesterday: l10n.posInvSalesPresetYesterday,
+      InventorySalesPreset.last7: l10n.posInvSalesPresetLast7,
+      InventorySalesPreset.last30: l10n.posInvSalesPresetLast30,
+      InventorySalesPreset.thisMonth: l10n.posInvSalesPresetThisMonth,
+      InventorySalesPreset.custom: l10n.posInvSalesPresetCustom,
+    };
+  }
+
   static String _fmtQty(num v) {
     if (v == v.round()) return '${v.round()}';
     return v.toDouble().toStringAsFixed(2);
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _ManualRangeStrip extends StatelessWidget {
   const _ManualRangeStrip({
     required this.draftFromLabel,
     required this.draftToLabel,
+    required this.fromTitle,
+    required this.toTitle,
+    required this.loadLabel,
+    required this.loadingLabel,
     required this.onTapFrom,
     required this.onTapTo,
     required this.onLoad,
@@ -481,6 +541,10 @@ class _ManualRangeStrip extends StatelessWidget {
 
   final String draftFromLabel;
   final String draftToLabel;
+  final String fromTitle;
+  final String toTitle;
+  final String loadLabel;
+  final String loadingLabel;
   final VoidCallback onTapFrom;
   final VoidCallback onTapTo;
   final VoidCallback onLoad;
@@ -488,7 +552,7 @@ class _ManualRangeStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget action = FilledButton.icon(
+    final action = FilledButton.icon(
       onPressed: isLoading ? null : onLoad,
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.secondaryLight,
@@ -498,7 +562,7 @@ class _ManualRangeStrip extends StatelessWidget {
       ),
       icon: const Icon(Icons.download_done_rounded, size: 18),
       label: Text(
-        isLoading ? 'Loading…' : 'Load',
+        isLoading ? loadingLabel : loadLabel,
         style: const TextStyle(fontWeight: FontWeight.w800),
       ),
     );
@@ -521,12 +585,12 @@ class _ManualRangeStrip extends StatelessWidget {
         builder: (context, c) {
           final wide = c.maxWidth > 620;
           final fromBtn = _DatePill(
-            title: 'From (y-MM-dd)',
+            title: fromTitle,
             value: draftFromLabel,
             onTap: isLoading ? null : onTapFrom,
           );
           final toBtn = _DatePill(
-            title: 'To (y-MM-dd)',
+            title: toTitle,
             value: draftToLabel,
             onTap: isLoading ? null : onTapTo,
           );
@@ -561,6 +625,8 @@ class _ManualRangeStrip extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _DatePill extends StatelessWidget {
   const _DatePill({
@@ -613,6 +679,8 @@ class _DatePill extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _RangeChip extends StatelessWidget {
   const _RangeChip({
     required this.label,
@@ -643,12 +711,12 @@ class _RangeChip extends StatelessWidget {
             ),
             boxShadow: selected
                 ? [
-                    BoxShadow(
-                      color: AppColors.primaryLight.withOpacity(0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
+              BoxShadow(
+                color: AppColors.primaryLight.withOpacity(0.35),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ]
                 : null,
           ),
           child: Text(
@@ -656,7 +724,9 @@ class _RangeChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: selected ? const Color(0xFF14181F) : const Color(0xFF475569),
+              color: selected
+                  ? const Color(0xFF14181F)
+                  : const Color(0xFF475569),
               letterSpacing: 0.1,
             ),
           ),
@@ -665,6 +735,8 @@ class _RangeChip extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _StatCard extends StatelessWidget {
   const _StatCard({
@@ -742,14 +814,24 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _DaySection extends StatelessWidget {
   const _DaySection({
     required this.day,
     required this.rows,
+    required this.colProduct,
+    required this.colSku,
+    required this.colQty,
+    required this.daySummaryBuilder,
   });
 
   final DateTime day;
   final List<InventorySaleLine> rows;
+  final String colProduct;
+  final String colSku;
+  final String colQty;
+  final String Function(int lineCount, String qty) daySummaryBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -758,7 +840,9 @@ class _DaySection extends StatelessWidget {
       qtySum += e.quantitySold.toDouble();
     }
 
+    // Date header uses the active locale automatically via DateFormat
     final dayHeader = DateFormat('EEEE • d MMM yyyy').format(day);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
@@ -807,7 +891,7 @@ class _DaySection extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${rows.length} line${rows.length == 1 ? '' : 's'} · ${_qtyLabel(qtySum)} units',
+                      daySummaryBuilder(rows.length, _qtyLabel(qtySum)),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -836,8 +920,15 @@ class _DaySection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _TableHead(),
-                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+                _TableHead(
+                  colProduct: colProduct,
+                  colSku: colSku,
+                  colQty: colQty,
+                ),
+                Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Colors.grey.shade200),
                 for (var i = 0; i < rows.length; i++)
                   _ProductRow(
                     entry: rows[i],
@@ -857,7 +948,19 @@ class _DaySection extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _TableHead extends StatelessWidget {
+  const _TableHead({
+    required this.colProduct,
+    required this.colSku,
+    required this.colQty,
+  });
+
+  final String colProduct;
+  final String colSku;
+  final String colQty;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -867,7 +970,7 @@ class _TableHead extends StatelessWidget {
           Expanded(
             flex: 5,
             child: Text(
-              'PRODUCT',
+              colProduct,
               style: TextStyle(
                 fontSize: 10,
                 letterSpacing: 0.75,
@@ -879,7 +982,7 @@ class _TableHead extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(
-              'SKU / CODE',
+              colSku,
               style: TextStyle(
                 fontSize: 10,
                 letterSpacing: 0.75,
@@ -891,7 +994,7 @@ class _TableHead extends StatelessWidget {
           SizedBox(
             width: 92,
             child: Text(
-              'SOLD QTY',
+              colQty,
               textAlign: TextAlign.end,
               style: TextStyle(
                 fontSize: 10,
@@ -907,6 +1010,8 @@ class _TableHead extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _ProductRow extends StatelessWidget {
   const _ProductRow({
     required this.entry,
@@ -918,6 +1023,12 @@ class _ProductRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // productName comes from the API in English.
+    // AppTranslationService.localizedText() handles on-the-fly Arabic
+    // translation via TranslatableMixin in the ViewModel — the ViewModel stores
+    // raw lines plus translated display strings, so the view simply reads what
+    // the ViewModel exposes. See inventory_sales_view_model.dart for the
+    // retranslation logic triggered on locale switch.
     final skuText = entry.sku != null && entry.sku!.trim().isNotEmpty
         ? entry.sku!.trim()
         : '—';
@@ -979,10 +1090,17 @@ class _ProductRow extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _ErrorBlock extends StatelessWidget {
-  const _ErrorBlock({required this.message, required this.onRetry});
+  const _ErrorBlock({
+    required this.message,
+    required this.retryLabel,
+    required this.onRetry,
+  });
 
   final String message;
+  final String retryLabel;
   final Future<void> Function() onRetry;
 
   @override
@@ -1003,11 +1121,12 @@ class _ErrorBlock extends StatelessWidget {
           FilledButton.icon(
             onPressed: () => onRetry(),
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Retry'),
+            label: Text(retryLabel),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.secondaryLight,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
             ),
           ),
         ],

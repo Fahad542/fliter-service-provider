@@ -9,6 +9,7 @@ import '../../../models/pos_technician_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
+import '../../../l10n/app_localizations.dart';
 
 class PosTechnicianView extends StatefulWidget {
   /// When embedded in [PosShell], keep drawer + no back. When pushed from another
@@ -28,14 +29,15 @@ class PosTechnicianView extends StatefulWidget {
 
 class _PosTechnicianViewState extends State<PosTechnicianView> {
   /// All | Offline | Online — filters by [PosTechnician.isOnline].
-  String _presenceTab = 'All';
+  /// Stored as a stable enum-like key; label is resolved from l10n at build time.
+  String _presenceTab = 'All'; // always 'All' | 'Offline' | 'Online' (locale-independent keys)
 
-  Widget _buildPresenceTab(String title) {
-    final isSelected = _presenceTab == title;
+  Widget _buildPresenceTab(String tabKey, String label) {
+    final isSelected = _presenceTab == tabKey;
     return GestureDetector(
       onTap: () {
         if (!isSelected) {
-          setState(() => _presenceTab = title);
+          setState(() => _presenceTab = tabKey);
         }
       },
       child: AnimatedContainer(
@@ -49,7 +51,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
               : Border.all(color: const Color(0xFFE8ECF3), width: 1.5),
         ),
         child: Text(
-          title,
+          label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
@@ -60,13 +62,9 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
     );
   }
 
-  List<PosTechnician> _filterByPresence(
-    List<PosTechnician> searched,
-  ) {
+  List<PosTechnician> _filterByPresence(List<PosTechnician> searched) {
     if (_presenceTab == 'All') return searched;
-    if (_presenceTab == 'Online') {
-      return searched.where((t) => t.isOnline).toList();
-    }
+    if (_presenceTab == 'Online') return searched.where((t) => t.isOnline).toList();
     return searched.where((t) => !t.isOnline).toList();
   }
 
@@ -77,6 +75,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final posVm = context.watch<PosViewModel>();
@@ -85,7 +84,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFFBF9F6),
       appBar: PosScreenAppBar(
-        title: 'Technicians',
+        title: l10n.posTechViewTitle,
         showBackButton: widget.showBackButton,
         showHamburger: widget.showHamburger,
         onMenuPressed: widget.showHamburger
@@ -95,134 +94,134 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
       body: wrapPosShellRailBody(
         context,
         RefreshIndicator(
-        onRefresh: () => context.read<TechnicianViewModel>().fetchTechnicians(),
-        color: AppColors.secondaryLight,
-        backgroundColor: Colors.white,
-        child: Consumer<TechnicianViewModel>(
-          builder: (context, vm, child) {
-            if (vm.isLoading && vm.technicians.isEmpty) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
-            }
+          onRefresh: () => context.read<TechnicianViewModel>().fetchTechnicians(),
+          color: AppColors.secondaryLight,
+          backgroundColor: Colors.white,
+          child: Consumer<TechnicianViewModel>(
+            builder: (context, vm, child) {
+              if (vm.isLoading && vm.technicians.isEmpty) {
+                return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
+              }
 
-            if (vm.errorMessage != null && vm.technicians.isEmpty) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.6,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+              if (vm.errorMessage != null && vm.technicians.isEmpty) {
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.6,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(l10n.posTechViewErrorPrefix(vm.errorMessage!)),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => vm.fetchTechnicians(),
+                            child: Text(l10n.posTechViewErrorRetry),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final searched = vm.technicians;
+              final technicians = _filterByPresence(searched);
+              final horizontalPadding = isTablet ? 32.0 : 16.0;
+
+              return Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      24,
+                      horizontalPadding,
+                      0,
+                    ),
+                    child: _buildSearchSection(context, l10n, isTablet),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: Row(
                       children: [
-                        Text('Error: ${vm.errorMessage}'),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => vm.fetchTechnicians(),
-                          child: const Text('Retry'),
-                        ),
+                        _buildPresenceTab('All', l10n.posTechViewTabAll),
+                        const SizedBox(width: 12),
+                        _buildPresenceTab('Offline', l10n.posTechViewTabOffline),
+                        const SizedBox(width: 12),
+                        _buildPresenceTab('Online', l10n.posTechViewTabOnline),
                       ],
                     ),
                   ),
-                ),
-              );
-            }
-
-            final searched = vm.technicians;
-            final technicians = _filterByPresence(searched);
-            final horizontalPadding = isTablet ? 32.0 : 16.0;
-
-            return Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    24,
-                    horizontalPadding,
-                    0,
-                  ),
-                  child: _buildSearchSection(context, isTablet),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: Row(
-                    children: [
-                      _buildPresenceTab('All'),
-                      const SizedBox(width: 12),
-                      _buildPresenceTab('Offline'),
-                      const SizedBox(width: 12),
-                      _buildPresenceTab('Online'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: searched.isEmpty
-                      ? SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: horizontalPadding,
-                            vertical: 16,
-                          ),
-                          child: const SizedBox(
-                            height: 280,
-                            child: Center(child: Text('No technicians found')),
-                          ),
-                        )
-                      : technicians.isEmpty
-                          ? SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: horizontalPadding,
-                                vertical: 16,
-                              ),
-                              child: SizedBox(
-                                height: 280,
-                                child: Center(
-                                  child: Text(
-                                    _presenceTab == 'Online'
-                                        ? 'No online technicians'
-                                        : _presenceTab == 'Offline'
-                                            ? 'No offline technicians'
-                                            : 'No technicians found',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: EdgeInsets.fromLTRB(
-                                horizontalPadding,
-                                0,
-                                horizontalPadding,
-                                24,
-                              ),
-                              child: _buildTechnicianGrid(
-                                context,
-                                vm,
-                                technicians,
-                                isTablet,
-                              ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: searched.isEmpty
+                        ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: 16,
+                      ),
+                      child: SizedBox(
+                        height: 280,
+                        child: Center(child: Text(l10n.posTechViewNoTechnicians)),
+                      ),
+                    )
+                        : technicians.isEmpty
+                        ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: 16,
+                      ),
+                      child: SizedBox(
+                        height: 280,
+                        child: Center(
+                          child: Text(
+                            _presenceTab == 'Online'
+                                ? l10n.posTechViewNoOnline
+                                : _presenceTab == 'Offline'
+                                ? l10n.posTechViewNoOffline
+                                : l10n.posTechViewNoTechnicians,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
                             ),
+                          ),
+                        ),
+                      ),
+                    )
+                        : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        0,
+                        horizontalPadding,
+                        24,
+                      ),
+                      child: _buildTechnicianGrid(
+                        context,
+                        vm,
+                        technicians,
+                        isTablet,
+                      ),
+                    ),
                   ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
-      ),
       ),
     );
   }
 
-  Widget _buildSearchSection(BuildContext context, bool isTablet) {
+  Widget _buildSearchSection(BuildContext context, AppLocalizations l10n, bool isTablet) {
     return Row(
       children: [
         Expanded(
           child: PosSearchBar(
-            hintText: 'Search technicians...',
+            hintText: l10n.posTechViewSearchHint,
             onChanged: (val) =>
                 context.read<TechnicianViewModel>().setSearchQuery(val),
           ),
@@ -232,11 +231,11 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
   }
 
   Widget _buildTechnicianGrid(
-    BuildContext context,
-    TechnicianViewModel vm,
-    List<PosTechnician> technicians,
-    bool isTablet,
-  ) {
+      BuildContext context,
+      TechnicianViewModel vm,
+      List<PosTechnician> technicians,
+      bool isTablet,
+      ) {
     final orientation = MediaQuery.of(context).orientation;
     final crossAxisCount = orientation == Orientation.landscape ? 4 : 2;
 

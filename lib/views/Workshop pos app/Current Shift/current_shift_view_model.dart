@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../../data/repositories/auth_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../models/current_session_model.dart';
+import '../../../../l10n/app_localizations.dart';
+
+/// Error keys used by the view model — the *view* resolves them to translated
+/// strings via [CurrentShiftViewModel.resolveError].  This keeps the VM free
+/// of BuildContext while still supporting locale switches without a refetch.
+enum _ShiftError { sessionMissing, noActiveShift, fetchFailed }
 
 class CurrentShiftViewModel extends ChangeNotifier {
   final AuthRepository _authRepository;
@@ -19,12 +25,32 @@ class CurrentShiftViewModel extends ChangeNotifier {
   CurrentSession? _currentSession;
   CurrentSession? get currentSession => _currentSession;
 
-  String? _errorMessage;
-  String? get errorMessage => _errorMessage;
+  /// Raw technical error (shown by view via [resolveError]).
+  _ShiftError? _errorKey;
+  String? _rawErrorDetail;
+
+  /// Returns a translated, human-readable error string for the current locale.
+  /// Call this from the view instead of storing a pre-baked string.
+  String? resolveError(AppLocalizations l10n) {
+    switch (_errorKey) {
+      case _ShiftError.sessionMissing:
+        return l10n.posCurrentShiftSessionExpiredError;
+      case _ShiftError.noActiveShift:
+        return l10n.posCurrentShiftNoActiveShiftFound;
+      case _ShiftError.fetchFailed:
+        return l10n.posCurrentShiftFetchError(_rawErrorDetail ?? '');
+      case null:
+        return null;
+    }
+  }
+
+  /// Legacy getter kept for any callers not yet migrated; prefer [resolveError].
+  String? get errorMessage => _rawErrorDetail;
 
   void fetchCurrentSession() async {
     _isLoading = true;
-    _errorMessage = null;
+    _errorKey = null;
+    _rawErrorDetail = null;
     notifyListeners();
 
     try {
@@ -32,7 +58,11 @@ class CurrentShiftViewModel extends ChangeNotifier {
       final token = await _sessionService.getToken();
 
       if (creds == null || token == null) {
-        throw Exception('User credentials or token missing.');
+        _errorKey = _ShiftError.sessionMissing;
+        _rawErrorDetail = 'User credentials or token missing.';
+        _isLoading = false;
+        notifyListeners();
+        return;
       }
 
       final response = await _authRepository.getCurrentSession(
@@ -42,13 +72,12 @@ class CurrentShiftViewModel extends ChangeNotifier {
       );
 
       final sessionResponse = CurrentSessionResponse.fromJson(response);
-      
+
       if (sessionResponse.success && sessionResponse.hasOpenSession) {
         var session = sessionResponse.session;
         if (session != null && (session.cashierName.isEmpty || session.cashierName == 'N/A')) {
           final user = await _sessionService.getUser();
           if (user != null) {
-            // Create a new session object with the cashier name if it's missing
             session = CurrentSession(
               posSessionId: session.posSessionId,
               branchId: session.branchId,
@@ -64,10 +93,12 @@ class CurrentShiftViewModel extends ChangeNotifier {
         _currentSession = session;
       } else {
         _currentSession = null;
-        _errorMessage = 'No active shift found.';
+        _errorKey = _ShiftError.noActiveShift;
+        _rawErrorDetail = 'No active shift found.';
       }
     } catch (e) {
-      _errorMessage = 'Failed to fetch shift details: $e';
+      _errorKey = _ShiftError.fetchFailed;
+      _rawErrorDetail = e.toString();
       _currentSession = null;
     }
 

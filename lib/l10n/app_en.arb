@@ -1023,6 +1023,138 @@
       }
     }
   },
+  "posCurrentShiftTitle": "Current Shift",
+  "posCurrentShiftDetails": "SHIFT DETAILS",
+  "posCurrentShiftNoActiveSession": "No active session.",
+  "posCurrentShiftNoActiveShiftFound": "No active shift found.",
+  "posCurrentShiftRetry": "Retry",
+  "posCurrentShiftSessionExpiredError": "Session expired. Please sign in again.",
+  "posCurrentShiftFetchError": "Failed to fetch shift details: {error}",
+  "@posCurrentShiftFetchError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "posCurrentShiftLabelCashier": "Cashier",
+  "posCurrentShiftLabelSessionId": "Session ID",
+  "posCurrentShiftLabelBranch": "Branch",
+  "posCurrentShiftLabelElapsedTime": "Elapsed Time",
+  "posCurrentShiftLabelOpenedAt": "Opened At",
+  "posCurrentShiftLabelBranchAddress": "Branch Address",
+  "posBroadcastTitle": "BROADCAST",
+  "posBroadcastHeading": "Technician broadcasts",
+  "posBroadcastNoActive": "No active broadcasts",
+  "posBroadcastCountActive": "{count} active · {window} per item",
+  "@posBroadcastCountActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "posBroadcastRetry": "Retry",
+  "posBroadcastLabelSoon": "Soon",
+  "posBroadcastLabelClosed": "Closed",
+  "posBroadcastLabelRemaining": "remaining",
+  "posBroadcastLabelExpired": "Expired",
+  "posBroadcastWindow": "{m}:{s} window",
+  "@posBroadcastWindow": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      },
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "posBroadcastTypeOnCall": "On call",
+  "posBroadcastTypeWorkshop": "Workshop",
+  "posBroadcastSessionExpired": "Session expired. Please sign in again.",
+  "posCorporateBookingsTitle": "Corporate Bookings",
+  "posCorporateFilterAll": "All",
+  "posCorporateFilterToday": "Today",
+  "posCorporateFilterPending": "Pending",
+  "posCorporateNoBookingsTitle": "No Bookings Found",
+  "posCorporateNoBookingsSubtitle": "There are no corporate bookings for the selected filter.",
+  "posCorporateCardLabelVehicle": "Vehicle",
+  "posCorporateCardLabelPlate": "Plate",
+  "posCorporateCardLabelDepartment": "Department",
+  "posCorporateCardLabelDate": "Date",
+  "posCorporateActionDetails": "Details",
+  "posCorporateActionReject": "Reject",
+  "posCorporateActionApprove": "Approve",
+  "posCorporateActionContinue": "Continue",
+  "posCorporateActionApproveBooking": "Approve Booking",
+  "posCorporateActionClose": "Close",
+  "posCorporateActionSubmitReason": "Submit Reason",
+  "posCorporateActionCancel": "Cancel",
+  "posCorporateDialogDetailsTitle": "Corporate Booking Details",
+  "posCorporateDialogRejectTitle": "Booking Details",
+  "posCorporateDialogRejectBody": "Please provide a reason to {action} this booking for {company}. This information will be sent back to the corporate portal.",
+  "@posCorporateDialogRejectBody": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "company": {
+        "type": "String"
+      }
+    }
+  },
+  "posCorporateDialogReasonLabel": "Reason",
+  "posCorporateDialogReasonHint": "Enter your reason here...",
+  "posCorporateDialogReasonRequired": "Please provide a reason to {action}.",
+  "@posCorporateDialogReasonRequired": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "posCorporateDetailsSectionBooking": "Booking Details",
+  "posCorporateDetailsSectionVehicle": "Vehicle Information",
+  "posCorporateDetailsSectionProducts": "Requested Products",
+  "posCorporateDetailsBookingId": "Booking ID",
+  "posCorporateDetailsScheduledTime": "Scheduled Time",
+  "posCorporateDetailsDepartment": "Department",
+  "posCorporateDetailsRejectionReason": "Rejection reason",
+  "posCorporateDetailsVehicleName": "Vehicle Name",
+  "posCorporateDetailsLicensePlate": "License Plate",
+  "posCorporateDetailsNoProducts": "No specific products requested. Open matching department.",
+  "posCorporateDetailsQty": "Qty: {qty}",
+  "@posCorporateDetailsQty": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "posCorporateDetailsProductId": "Product ID: {id}",
+  "@posCorporateDetailsProductId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "posCorporateApproveError": "Failed to approve booking",
+  "posCorporateRejectSuccess": "Booking Rejected. Portal updated.",
+  "posCorporateRejectError": "Failed to reject booking",
+  "posCorporateNoMatchingOrder": "No matching order found for this booking yet. Please refresh and try again.",
+  "posCorporateStatusCancelled": "Cancelled",
+  "posCorporateStatusRejected": "Rejected",
+  "posCorporateStatusPending": "Pending",
+  "posCorporateStatusApproved": "Approved",
+  "posCorporateStatusInProgress": "In Progress",
+  "posCorporateStatusCompleted": "Completed",
+  "posCorporateStatusWaitingApproval": "Waiting Approval",
+  "posBroadcastActionReject": "Reject",
   "ownerCommonSearchHint": "Search...",
   "ownerBottomHome": "Home",
   "ownerBottomReports": "Reports",
@@ -1066,5 +1198,842 @@
         "type": "String"
       }
     }
-  }
+  },
+  "posLoginAppName": "POS System",
+  "posLoginTitle": "Sign in to continue",
+  "posLoginEmail": "Email",
+  "posLoginEmailHint": "Enter your email",
+  "posLoginEmailRequired": "Please enter email",
+  "posLoginPassword": "Password",
+  "posLoginPasswordHint": "Enter your password",
+  "posLoginPasswordRequired": "Please enter password",
+  "posLoginForgotPassword": "Forgot Password?",
+  "posLoginSignIn": "Sign In",
+  "posLoginSuccess": "Login successful",
+  "posLoginFailed": "Login failed",
+  "posLoginResetPasswordTitle": "Reset Password",
+  "posLoginResetPasswordSubtitle": "Enter your email or mobile number and we'll send you a reset link.",
+  "posLoginResetPasswordEmailLabel": "Email",
+  "posLoginResetPasswordEmailHint": "Enter your email",
+  "posLoginResetPasswordSendButton": "Send Reset Link",
+  "posLoginResetPasswordSentSuccess": "Reset link sent! Check your inbox.",
+  "posLoginPreviousShiftAutoClosed": "Previous shift was automatically closed. New shift started.",
+  "posLoginSessionExpiredError": "Session expired. Please sign in again.",
+  "posYourJobsTitle": "Your Jobs",
+  "posYourJobsNoDepartments": "No departments selected.",
+  "posYourJobsDeptInvoiceTitle": "Department-wise Invoice",
+  "posYourJobsItems": "{count} items",
+  "@posYourJobsItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posYourJobsGrandTotal": "Grand Total",
+  "posYourJobsSaveDraft": "Save Draft",
+  "posYourJobsPlaceOrder": "Place Order",
+  "posYourJobsAssignTechnicians": "Assign Technicians",
+  "posYourJobsAddInventory": "Add Inventory",
+  "posYourJobsAmountSar": "SAR {amount}",
+  "@posYourJobsAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posInvSalesTitle": "Inventory Sales",
+  "posInvSalesRefreshTooltip": "Refresh",
+  "posInvSalesPeriodLabel": "Period",
+  "posInvSalesPresetToday": "Today",
+  "posInvSalesPresetYesterday": "Yesterday",
+  "posInvSalesPresetLast7": "Last 7 days",
+  "posInvSalesPresetLast30": "Last 30 days",
+  "posInvSalesPresetThisMonth": "This month",
+  "posInvSalesPresetCustom": "Custom",
+  "posInvSalesFromLabel": "From (y-MM-dd)",
+  "posInvSalesToLabel": "To (y-MM-dd)",
+  "posInvSalesLoadButton": "Load",
+  "posInvSalesLoadingButton": "Loading…",
+  "posInvSalesStatTotalUnits": "Total units sold",
+  "posInvSalesStatUniqueProducts": "Unique products",
+  "posInvSalesStatDaysActive": "Days with activity",
+  "posInvSalesDismissTooltip": "Dismiss",
+  "posInvSalesNoSalesTitle": "No sales in this period",
+  "posInvSalesNoSalesSubtitle": "API returned successfully with no matching lines (200 + empty list).",
+  "posInvSalesRetry": "Retry",
+  "posInvSalesColProduct": "PRODUCT",
+  "posInvSalesColSku": "SKU / CODE",
+  "posInvSalesColQty": "SOLD QTY",
+  "posInvSalesDayLines": "{count} line",
+  "@posInvSalesDayLines": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posInvSalesDayLinesPlural": "{count} lines",
+  "@posInvSalesDayLinesPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posInvSalesDaySummary": "{lines} · {qty} units",
+  "@posInvSalesDaySummary": {
+    "placeholders": {
+      "lines": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "posInvSalesSessionExpiredError": "Session expired. Please sign in again.",
+  "posInvSalesErrStartBeforeEnd": "Start date must be on or before end date.",
+  "posInvSalesErrRangeExceeded": "Date range cannot exceed {days} days.",
+  "@posInvSalesErrRangeExceeded": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "moreMenuPettyCash": "Petty Cash",
+  "moreMenuPromoCode": "Promo Code",
+  "moreMenuStoreClosing": "Store Closing",
+  "moreMenuSalesReturn": "Sales Return",
+  "posOrdersTitle": "Orders",
+  "posOrdersSearchHint": "Search orders...",
+  "posOrdersTabletSearchHint": "Search plate, name, ID...",
+  "posOrdersTabAll": "All",
+  "posOrdersTabPending": "Pending",
+  "posOrdersTabCompleted": "Completed",
+  "posOrdersNoOrdersFound": "No orders found",
+  "posOrdersNoPendingOrders": "No pending orders found",
+  "posOrdersNoCompletedOrders": "No completed orders found",
+  "posOrdersNewOrder": "New Order",
+  "posOrdersNoOrderSelected": "No Order Selected",
+  "posOrdersSelectFromList": "Select an order from the list on the left to view details",
+  "posOrdersAddDepartment": "ADD DEPARTMENT",
+  "posOrdersAddCustomerDetails": "Add customer details",
+  "posOrdersSelectPaymentMethod": "Select payment method",
+  "posOrdersCustomerDetailsSaved": "Customer details saved",
+  "posOrdersPaymentMethodSaved": "Payment method saved",
+  "posOrdersStatusRejected": "REJECTED",
+  "posOrdersStatusCancelled": "CANCELLED",
+  "posOrdersStatusComplete": "COMPLETE",
+  "posOrdersStatusEdited": "EDITED",
+  "posOrdersStatusInProgress": "IN PROGRESS",
+  "posOrdersStatusPending": "PENDING",
+  "posOrdersStatusUnapproved": "UNAPPROVED",
+  "posOrdersStatusWaitingApproval": "WAITING APPROVAL",
+  "posOrdersStatusCorpApproved": "CORP APPROVED",
+  "posOrdersAssignTechnicians": "Assign Technicians",
+  "posOrdersCancelBtn": "Cancel",
+  "posOrdersMarkComplete": "Mark Complete",
+  "posOrdersDeleteJob": "Delete Job",
+  "posOrdersEditBtn": "Edit",
+  "posOrdersCancelledBtn": "Cancelled",
+  "posOrdersProductsServices": "Products & Services",
+  "posOrdersSendForApproval": "Send for Approval",
+  "posOrdersGenerateInvoice": "Generate Invoice",
+  "posOrdersOrderSummary": "ORDER SUMMARY",
+  "posOrdersOrderPromo": "ORDER PROMO",
+  "posOrdersGrandTotal": "Grand total",
+  "posOrdersNoTechniciansAssigned": "No technicians assigned",
+  "posOrdersNoProducts": "No products or services",
+  "posOrdersDeptPromo": "Dept promo",
+  "posOrdersDeptDiscount": "Dept discount",
+  "posOrdersOrderDiscount": "Order discount",
+  "posOrdersLineDiscount": "Line discount",
+  "posOrdersTotalBeforeVat": "Total before VAT",
+  "posOrdersNoPlate": "No Plate",
+  "posOrdersSplitPayment": "Split Payment",
+  "posOrdersPayment": "Payment",
+  "posOrdersInvoiceTotal": "Invoice Total",
+  "posOrdersConfirmAmounts": "Confirm amounts",
+  "posOrdersAmountSar": "Amount (SAR)",
+  "posOrdersCancelDialog": "Cancel",
+  "posOrdersNoDepartmentsAvailable": "No departments available to add.",
+  "posOrdersJobIdMissing": "Job ID missing.",
+  "posOrdersJobNoLineItems": "This job has no line items.",
+  "posOrdersTechnicianRequired": "Technician assignment is required.",
+  "posOrdersJobNotReadyForInvoice": "Order is not ready for invoicing.",
+  "posOrdersSelectCustomerAndPayment": "Select customer type and payment method first.",
+  "posOrdersDeleteJobTitle": "Delete Job",
+  "posOrdersNoBtn": "NO",
+  "posOrdersYesDeleteBtn": "YES, DELETE",
+  "posReviewFinalReview": "Final Review",
+  "posReviewInvoiceReady": "Invoice Ready",
+  "posReviewBilling": "Billing",
+  "posReviewVehicle": "Vehicle",
+  "posReviewInvoiceDetails": "Invoice details",
+  "posReviewCustomerDetails": "Customer details",
+  "posReviewConfirmBillingAndVehicle": "Confirm billing contact and vehicle before creating the invoice.",
+  "posReviewConfirmBillingOnly": "Confirm billing contact before creating the invoice.",
+  "posReviewCustomerNameLabel": "Customer name",
+  "posReviewMobileLabel": "Mobile",
+  "posReviewVatLabel": "VAT",
+  "posReviewPlateNumberLabel": "Plate number",
+  "posReviewOdometerLabel": "Odometer",
+  "posReviewMakeLabel": "Make",
+  "posReviewModelLabel": "Model",
+  "posReviewYearLabel": "Year",
+  "posReviewVinLabel": "VIN",
+  "posReviewRequiredError": "Required",
+  "posReviewPlateRequiredError": "Plate is required",
+  "posReviewInvalidYearError": "Invalid year",
+  "posReviewCancelBtn": "Cancel",
+  "posReviewContinueBtn": "Continue",
+  "posReviewCorporateCustomerQuestion": "Corporate Customer?",
+  "posReviewIsCorporateCustomer": "Is this a corporate customer?",
+  "posReviewYesCorporate": "Yes — Corporate",
+  "posReviewNoIndividual": "No — Individual",
+  "posReviewPaymentMethod": "Payment Method (Select multiple if splitting)",
+  "posReviewPaymentMethodCorporate": "Payment Method",
+  "posReviewCompleteAndGenerateInvoice": "Complete Order & Generate Invoice",
+  "posReviewInvoiceGeneratedLocked": "Invoice Generated & Locked",
+  "posReviewNoFurtherEdits": "No further edits allowed",
+  "posReviewCommissionsCredited": "Commissions Credited",
+  "posReviewPrintInvoice": "Print Invoice & Receipt",
+  "posReviewCommissionsNote": "Commissions have been credited to technician accounts.",
+  "posReviewOrderNo": "Order #{id}",
+  "posReviewSplitPayment": "Split Payment",
+  "posReviewInvoiceTotal": "Invoice Total",
+  "posReviewConfirmAmounts": "Confirm amounts",
+  "posReviewAmountSar": "Amount (SAR)",
+  "posReviewCancelDialogBtn": "Cancel",
+  "posReviewEmployeesPayment": "Employees (payment)",
+  "posReviewSelectEmployee": "Select employee",
+  "posReviewEmployeeInstructions": "One employee for the Employees payment line. Tap the selected card again to clear.",
+  "posReviewCouldNotLoadEmployees": "Could not load branch employees.",
+  "posReviewRetry": "Retry",
+  "posReviewNoBranchEmployees": "No branch employees listed.",
+  "posReviewGrossAmountExclVat": "Gross Amount (Excl. VAT)",
+  "posReviewItemDiscounts": "Item Discounts",
+  "posReviewInvoiceDiscount": "Invoice Discount",
+  "posReviewPromoDiscount": "Promo Discount ({code})",
+  "posReviewPromoDiscountNoCode": "Promo Discount",
+  "posReviewPriceAfterDiscount": "Price after discount",
+  "posReviewPriceAfterPromo": "Price after promo",
+  "posReviewDiscount": "Discount",
+  "posReviewTaxPct": "Tax ({pct}%)",
+  "posReviewTotalAmount": "Total amount",
+  "posReviewNoDeptData": "No departmental data found.",
+  "posReviewDepartmentCol": "Department",
+  "posReviewJobIdCol": "Job ID",
+  "posReviewStatusCol": "Status",
+  "posReviewProductServiceCol": "Product / Service",
+  "posReviewQtyCol": "Qty",
+  "posReviewAmountSarCol": "Amount (SAR)",
+  "posReviewNoLineItems": "No line items",
+  "posReviewGrossExclVat": "Gross (Excl. VAT)",
+  "posReviewItemLineDiscounts": "Item / line discounts",
+  "posReviewVatPct": "VAT ({pct}%)",
+  "posReviewDepartmentTotal": "Department total",
+  "posReviewOrderSummary": "ORDER SUMMARY",
+  "posReviewTotalTaxable": "Total Taxable Amount",
+  "posReviewVat15": "VAT (15%)",
+  "posReviewLineNetNote": "Line totals are net of item-level discounts.",
+  "posReviewInvoicePromoNote": "Invoice and promo discounts apply to the taxable subtotal.",
+  "posReviewConfirmAmountsNote": "Confirm all amounts match the job before generating the invoice.",
+  "posReviewAssignedTechnicians": "ASSIGNED TECHNICIANS",
+  "posReviewJobHash": "Job #{id}",
+  "posReviewNoTechAssigned": "No technician assigned",
+  "posReviewCommissionLabel": "Commission: {amount}",
+  "posReviewTotal": "TOTAL",
+  "posReviewDone": "Done",
+  "posReviewCorporateMustBeApproved": "Corporate order must be approved before invoicing.",
+  "posReviewOrderNotReadyForInvoicing": "Order is not ready for invoicing.",
+  "posReviewIndicateCorporate": "Please indicate if this is a corporate customer.",
+  "posReviewSelectPaymentMethod": "Please select a payment method.",
+  "posReviewSelectAtLeastOnePayment": "Please select at least one payment method.",
+  "posReviewSelectOneEmployee": "Select one employee for the Employees payment.",
+  "posReviewSplitAmountsMustEqual": "Split amounts must equal the total ({total} SAR). Currently: {current} SAR.",
+  "posReviewFillRequiredInvoiceDetails": "Please fill in the required invoice details.",
+  "posReviewInvoiceNotLoaded": "Invoice could not be loaded.",
+  "posDetailsTitle": "Order Details",
+  "posDetailsCustomerSection": "Customer",
+  "posDetailsVehicleSection": "Vehicle",
+  "posDetailsVehicleNo": "Vehicle no.",
+  "posDetailsCustomer": "Customer",
+  "posDetailsMobile": "Mobile",
+  "posDetailsVat": "VAT",
+  "posDetailsMakeModel": "Make/Model",
+  "posDetailsPlate": "Plate",
+  "posDetailsOdometer": "Odometer",
+  "posDetailsOdometerKm": "{reading} km",
+  "posDetailsJobsSection": "Jobs",
+  "posDetailsNoJobsFound": "No jobs found",
+  "posDetailsJobTitle": "Job {num} • {status}",
+  "posDetailsDepartment": "Department",
+  "posDetailsTechnician": "Technician",
+  "posDetailsSubtotal": "Subtotal",
+  "posDetailsVat15": "VAT",
+  "posDetailsTotal": "Total",
+  "posDetailsItems": "Items ({count})",
+  "paymentMethodCash": "Cash",
+  "paymentMethodCard": "Card",
+  "paymentMethodBankTransfer": "Bank Transfer",
+  "paymentMethodMonthlyBilling": "Monthly billing",
+  "paymentMethodWallet": "Wallet",
+  "paymentMethodTabby": "Tabby",
+  "paymentMethodTamara": "Tamara",
+  "paymentMethodEmployees": "Employees",
+  "suppliersTitle": "Suppliers & Purchases",
+  "suppliersTabSuppliers": "Suppliers",
+  "suppliersTabPurchaseOrders": "Purchase Orders",
+  "suppliersFabAddSupplier": "Add Supplier",
+  "suppliersFabNewPurchase": "New Purchase",
+  "suppliersStatSuppliers": "Suppliers",
+  "suppliersStatOutstanding": "Outstanding",
+  "suppliersStatPendingPos": "Pending POs",
+  "suppliersNoSuppliersFound": "No suppliers found",
+  "suppliersInternalBadge": "INTERNAL",
+  "suppliersOutstandingLabel": "Outstanding",
+  "suppliersAmountSar": "SAR {amount}",
+  "@suppliersAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "suppliersAmountCurrency": "{currency} {amount}",
+  "@suppliersAmountCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "suppliersUnknown": "Unknown",
+  "suppliersStatusPending": "PENDING",
+  "suppliersStatusApproved": "APPROVED",
+  "suppliersStatusRejected": "REJECTED",
+  "suppliersPoStep1Title": "Select Supplier",
+  "suppliersPoStep1Subtitle": "Choose from your registered suppliers.",
+  "suppliersPoStep2Title": "Add Items",
+  "suppliersPoStep2Subtitle": "Supplier: {name}",
+  "@suppliersPoStep2Subtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "suppliersPoStep3Title": "Confirm Order",
+  "suppliersPoStep3Subtitle": "Review before submitting for approval.",
+  "suppliersPoStepSelect": "Select Supplier",
+  "suppliersPoStepAddItems": "Add Items",
+  "suppliersPoStepConfirm": "Confirm",
+  "suppliersPoAddItem": "Add Item",
+  "suppliersPoItemProductName": "Product Name",
+  "suppliersPoItemProductHint": "e.g. Engine Oil",
+  "suppliersPoItemQty": "Qty",
+  "suppliersPoItemUnitPrice": "Unit Price",
+  "suppliersPoConfirmSupplier": "Supplier",
+  "suppliersPoConfirmItems": "{count} items",
+  "@suppliersPoConfirmItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "suppliersPoConfirmStatus": "Status",
+  "suppliersPoConfirmStatusValue": "Pending Approval",
+  "suppliersPoConfirmNote": "This PO will be submitted for manager approval before stock is updated.",
+  "suppliersPoNavNext": "Next",
+  "suppliersPoNavSubmit": "Submit",
+  "suppliersPoNavBack": "Back",
+  "suppliersAddSheetTitle": "Register New Supplier",
+  "suppliersAddSheetSubtitle": "Provide details to add a new supplier.",
+  "suppliersAddFieldName": "Supplier Name",
+  "suppliersAddFieldEmail": "Email Address",
+  "suppliersAddFieldMobile": "Mobile Number",
+  "suppliersAddFieldAddress": "Address",
+  "suppliersAddFieldOpeningBalance": "Opening Balance",
+  "suppliersAddFieldPassword": "Password",
+  "suppliersAddSaveButton": "Save Supplier",
+  "suppliersValidationRequired": "Please fill in all required fields",
+  "suppliersCreateSuccess": "Supplier Created Successfully",
+  "suppliersCreateError": "Failed to create supplier",
+  "suppliersPoValidationEmpty": "Please add at least one item",
+  "suppliersPoValidationItemDetails": "Please fill all item details properly",
+  "suppliersPoValidationInvalidSupplier": "Invalid supplier selected",
+  "suppliersPoCreateSuccess": "Purchase Order Created Successfully",
+  "suppliersPoCreateError": "Failed to create purchase order",
+  "settingsTitle": "Settings",
+  "settingsRoleLabel": "Workshop Owner",
+  "settingsMultiBranchBadge": "MULTI-BRANCH ACCESS",
+  "settingsSectionNotifications": "Notifications",
+  "settingsSectionSecurity": "Security",
+  "settingsSectionBusiness": "Business",
+  "settingsSectionSupport": "Support",
+  "settingsTogglePushNotif": "Push Notifications",
+  "settingsTogglePushNotifSub": "Receive in-app notifications",
+  "settingsToggleEmailAlerts": "Email Alerts",
+  "settingsToggleEmailAlertsSub": "Get critical alerts via email",
+  "settingsToggleStockAlerts": "Stock Alerts",
+  "settingsToggleStockAlertsSub": "Notify when stock is critical",
+  "settingsToggleLockerAlerts": "Locker Difference Alerts",
+  "settingsToggleLockerAlertsSub": "Notify on EOD locker variance",
+  "settingsToggleBiometric": "Biometric Login",
+  "settingsToggleBiometricSub": "Use fingerprint or face ID",
+  "settingsNavChangePassword": "Change Password",
+  "settingsNavTwoFactor": "Two-Factor Authentication",
+  "settingsNavWorkshopProfile": "Workshop Profile",
+  "settingsNavBranchMgmt": "Branch Management",
+  "settingsNavCommissionRules": "Commission Rules",
+  "settingsNavVatSettings": "VAT Settings",
+  "settingsNavHelp": "Help & Documentation",
+  "settingsNavContactSupport": "Contact Support",
+  "settingsNavReportIssue": "Report an Issue",
+  "settingsLogout": "Logout",
+  "settingsLogoutDialogTitle": "Log out",
+  "settingsLogoutDialogBody": "Are you sure you want to log out from your account?",
+  "settingsLogoutDialogCancel": "Cancel",
+  "settingsLogoutDialogConfirm": "Log out",
+  "settingsVersionLabel": "Filter Workshop OS • Version 1.0.0",
+  "settingsLanguageSection": "Language",
+  "settingsLanguageLabel": "App Language",
+  "settingsLanguageEnglish": "English",
+  "settingsLanguageArabic": "Arabic",
+  "posCommonAll": "All",
+  "posCommonProducts": "Products",
+  "posCommonServices": "Services",
+  "posCommonRetry": "Retry",
+  "posCommonSave": "Save",
+  "posCommonSar": "SAR",
+  "posCommonPending": "Pending",
+  "posCommonApproved": "Approved",
+  "posCommonRejected": "Rejected",
+  "posPettyCashTitle": "Petty Cash",
+  "posPettyCashExpenseTab": "Expense",
+  "posPettyCashFundTab": "Fund",
+  "posPettyCashHistoryTab": "History",
+  "posPettyCashSecureWallet": "SECURE WALLET",
+  "posPettyCashAvailable": "Available Petty Cash",
+  "posPettyCashLowBalanceMessage": "Petty cash balance is low. Please request fund.",
+  "posPettyCashRequestFund": "Request Fund",
+  "posPettyCashExpenseDetails": "Expense Details",
+  "posPettyCashAmountSar": "Amount (SAR)",
+  "posPettyCashExpenseCategory": "Expense Category",
+  "posPettyCashEmployeeSalaryAdvance": "Employee (Salary advance)",
+  "posPettyCashDescriptionNotes": "Description / Notes",
+  "posPettyCashEnterDetailsHint": "Enter details...",
+  "posPettyCashProofOfExpense": "Proof of Expense",
+  "posPettyCashExpenseSubmitted": "Expense submitted – pending approval",
+  "posPettyCashSubmitExpense": "Submit Expense",
+  "posPettyCashFundRequest": "Fund Request",
+  "posPettyCashRequestedAmountSar": "Requested Amount (SAR)",
+  "posPettyCashReasonForRequest": "Reason for Request",
+  "posPettyCashReasonHint": "Explain why you need more funds...",
+  "posPettyCashFundRequestSubmitted": "Fund request submitted – pending approval",
+  "posPettyCashSubmitRequest": "Submit Request",
+  "posPettyCashSelectCategory": "Select category",
+  "posPettyCashNoEmployees": "No employees on file",
+  "posPettyCashSelectEmployee": "Select employee",
+  "posPettyCashSelectDate": "Select date",
+  "posPettyCashFrom": "From:",
+  "posPettyCashTo": "To:",
+  "posPettyCashAllCategories": "All categories",
+  "posPettyCashReset": "Reset",
+  "posPettyCashHistoryTitle": "Expense & fund history",
+  "posPettyCashNoHistory": "No history for this filter.",
+  "posPettyCashLoadMore": "Load more",
+  "posPettyCashEmployeePrefix": "Employee: {name}",
+  "@posPettyCashEmployeePrefix": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "posPettyCashRejectionPrefix": "Rejection: {reason}",
+  "@posPettyCashRejectionPrefix": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "posPettyCashTapUploadReceipt": "Tap to upload receipt",
+  "posPettyCashRequestStatus": "Request Status",
+  "posPettyCashPendingUpper": "PENDING",
+  "posPettyCashRequestedAmount": "Requested Amount",
+  "posPettyCashReason": "Reason",
+  "posPettyCashRequestDate": "Request Date",
+  "posPettyCashPendingReviewMessage": "Your request is currently being reviewed by administration. You will be notified once it is approved.",
+  "posPettyCashSubmitNewRequest": "Submit New Request",
+  "posPettyCashValidAmountError": "Please enter a valid amount",
+  "posPettyCashSelectCategoryError": "Please select a category",
+  "posPettyCashSelectEmployeeError": "Please select an employee for Salary Advances",
+  "posPettyCashSubmitExpenseError": "Failed to submit expense. Check balance or try again.",
+  "posPettyCashReasonError": "Please enter a reason",
+  "posPettyCashSubmitRequestError": "Failed to submit fund request",
+  "posPettyCashTokenNotFound": "Token not found",
+  "posPettyCashLowBalanceError": "Low balance - request fund first",
+  "posProductAddTechnician": "Add Technician",
+  "posProductAddProducts": "Add Products",
+  "posProductItemsCount": "{count} items",
+  "@posProductItemsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posProductGrandTotal": "Grand Total",
+  "posProductViewInvoice": "View Invoice",
+  "posProductOrderItems": "Order Items",
+  "posProductNoItemsInvoice": "No items in invoice",
+  "posProductGrossAmountExclVat": "Gross Amount (Excl. VAT)",
+  "posProductLineDiscount": "Line discount",
+  "posProductPriceAfterLineDiscount": "Price after line discount",
+  "posProductTotalDiscountApplied": "Total discount applied",
+  "posProductPriceAfterTotalDiscount": "Price after total discount",
+  "posProductAddPromoCode": "Add Promo Code",
+  "posProductPromoLabel": "Promo: {code}",
+  "@posProductPromoLabel": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "posProductPromoDiscount": "Promo discount",
+  "posProductPriceAfterPromo": "Price after promo",
+  "posProductVat15": "VAT (15%)",
+  "posProductTotal": "Total",
+  "posProductTotalAmount": "Total amount",
+  "posProductEmployeesUpper": "EMPLOYEES",
+  "posProductSelectEmployeePayment": "Select one employee for Employees payment (shown with type). Saves with your order.",
+  "posProductSelectEmployeePaymentShort": "Select one employee for Employees payment (with type).",
+  "posProductNewOrderId": "#NEW-ORDER",
+  "posProductWalkInCustomer": "Walk-in Customer",
+  "posProductNoVehicleDetails": "No Vehicle Details",
+  "posProductNoPhone": "No Phone",
+  "posProductDraft": "Draft",
+  "posProductNoItemsAdded": "No items added",
+  "posProductPendingAssignment": "pending assignment",
+  "posProductCompleteSuccess": "Order marked as completed successfully",
+  "posProductCompleteError": "Failed to complete job",
+  "posProductMarkComplete": "Mark as Complete",
+  "posProductSaveDraft": "Save Draft",
+  "posProductForwardTechnician": "Forward to Technician",
+  "posProductSearchHint": "Search products & services...",
+  "posProductNoSearchMatch": "No products match your search.",
+  "posProductDepartmentNotFound": "Department not found",
+  "posProductAddDepartment": "Add Department",
+  "posProductNoServicesFound": "No services found",
+  "posProductNoProductsFound": "No products found",
+  "posProductUnitLabel": "Unit: {unit}",
+  "@posProductUnitLabel": {
+    "placeholders": {
+      "unit": {}
+    }
+  },
+  "posProductDiscountShort": "Dis.",
+  "posProductTotalDiscount": "Total discount",
+  "posProductCouldNotLoadEmployees": "Could not load employees.",
+  "posProductNoBranchEmployees": "No branch employees.",
+  "posProductsFailedLoad": "Failed to load products",
+  "posProductsBranchLabel": "Branch: {branch}",
+  "@posProductsBranchLabel": {
+    "placeholders": {
+      "branch": {}
+    }
+  },
+  "posHomeTitleWorkshop": "Workshop ",
+  "posHomeTitlePos": "POS",
+  "posHomeSubtitle": "Search by customer number, vehicle number,\nphone number or customer name",
+  "posHomeSearchHint": "Search customer no / vehicle / mobile / plate...",
+  "posHomeNewWalkIn": "New walk-in",
+  "posHomeCorporateBooking": "Corporate booking",
+  "posHomeBranchPrefix": "Branch: {branch}",
+  "@posHomeBranchPrefix": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "posHomeRecentSearches": "Recent Searches",
+  "posHomeNoVehicle": "No Vehicle",
+  "posHomeNoResults": "No results found",
+  "posHomeNoResultsHint": "Try searching with a different name or number",
+  "posDeptSelectTitle": "Select Depart",
+  "posDeptAddTitle": "Add Department",
+  "posDeptNoneFound": "No departs found",
+  "posDeptAlreadyOnOrder": "This department is already on this order.",
+  "posDeptSelectedCount": "{count} departments selected",
+  "@posDeptSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posDeptAddToOrder": "Add to order",
+  "posDeptOrderPlaced": "Order Placed",
+  "posDeptSelectAtLeastOne": "Select at least one department to add.",
+  "posDeptVehicleRequired": "Please add vehicle number first (Add Customer)",
+  "posDeptChangeDeptTitle": "Change Department?",
+  "posDeptChangeDeptBody": "Do you really want to change your department?",
+  "posDeptChangeDeptRefresh": "Your invoice data will be refreshed.",
+  "posDeptChangeDeptCancel": "Cancel",
+  "posDeptChangeDeptContinue": "Continue",
+  "posDeptRetry": "Retry",
+  "posCustomerHistoryTitle": "Customer History",
+  "posCustomerPastOrders": "Past Orders",
+  "posCustomerNoHistory": "No order history found for this customer.",
+  "posCustomerVat": "VAT: {vat}",
+  "@posCustomerVat": {
+    "placeholders": {
+      "vat": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerOrderId": "Order #{id}",
+  "@posCustomerOrderId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerInvoice": "Invoice: {no}",
+  "@posCustomerInvoice": {
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerVin": "VIN {vin}",
+  "@posCustomerVin": {
+    "placeholders": {
+      "vin": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerMoreItems": "+{count} more items",
+  "@posCustomerMoreItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posCustomerAmountSar": "SAR {amount}",
+  "@posCustomerAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerTypeRegular": "REGULAR",
+  "posCustomerTypeCorporate": "CORPORATE",
+  "posProductStockInStock": "In Stock ({count})",
+  "@posProductStockInStock": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posProductStockLow": "Low ({count})",
+  "@posProductStockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posProductStockOut": "Out of Stock",
+  "posProductStockService": "Service",
+  "posOrderStatusInvoiced": "Invoiced",
+  "posOrderStatusCompleted": "Completed",
+  "posOrderStatusPending": "Pending",
+  "posOrderStatusWaiting": "Waiting",
+  "posOrderStatusDraft": "Draft",
+  "posOrderStatusInProgress": "In Progress",
+  "posOrderStatusAccepted": "Accepted",
+  "posSearchHistoryNoVehicle": "No Vehicle",
+  "posSearchHistoryNa": "N/A",
+  "posSearchHistoryContinue": "Continue Order",
+  "posSearchHistoryHistory": "History",
+  "posSearchHistorySalesReturn": "Sales Return",
+  "posNavHome": "Home",
+  "posNavProducts": "Products",
+  "posNavOrders": "Orders",
+  "posNavStoreClosing": "Store Closing",
+  "posPromoViewTitle": "Promo Code",
+  "posPromoViewEntryTitle": "Apply Promo Code",
+  "posPromoViewEntrySubtitle": "Check the validity of a customer provided code.",
+  "posPromoViewCheckValidity": "Check Validity",
+  "posPromoViewAvailableTitle": "Available Promotions",
+  "posPromoViewNoPromos": "No promotions available",
+  "posPromoViewCheckConditions": "Check Conditions",
+  "posPromoViewRemoveTooltip": "Remove promo",
+  "posPromoResultStore": "Store: {value}",
+  "@posPromoResultStore": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoResultProducts": "Products: {value}",
+  "@posPromoResultProducts": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoResultPeriod": "Period: {value}",
+  "@posPromoResultPeriod": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoDialogTitle": "Apply Promo Code",
+  "posPromoDialogSubtitle": "Select any promo code below to apply discount instantly.",
+  "posPromoDialogNoCodesAvailable": "No promo codes available.",
+  "posPromoDialogOrEnterManually": "Or enter code manually",
+  "posPromoDialogHintText": "e.g. SAVE10",
+  "posPromoDialogRemovePromo": "Remove Promo",
+  "posPromoDialogValidCode": "Valid Promo Code",
+  "posPromoDialogLabelDiscount": "Discount:",
+  "posPromoDialogLabelStore": "Store:",
+  "posPromoDialogLabelProducts": "Products:",
+  "posPromoDialogLabelValidity": "Validity:",
+  "posPromoDialogCancel": "Cancel",
+  "posPromoDialogCheckCode": "Check Code",
+  "posPromoDialogApplyDiscount": "Apply Discount",
+  "posPromoDiscountPercent": "{value}% Discount",
+  "@posPromoDiscountPercent": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoDiscountSar": "SAR {value} Discount",
+  "@posPromoDiscountSar": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoAllBranches": "All Branches",
+  "posPromoAllProducts": "All Products",
+  "posPromoNoExpiry": "No Expiry",
+  "posPromoInvalidCode": "Invalid Promo Code",
+  "posPromoInvalidExpired": "Invalid or Expired Promo Code",
+
+  "posTechAssignTitle": "Technician Assignment",
+  "posTechAssignSearchHint": "Search technicians...",
+  "posTechAssignShowAll": "Show all",
+  "posTechAssignOnlineOnly": "Online only",
+  "posTechAssignLoading": "Loading technicians…",
+  "posTechAssignNoResults": "No technicians found",
+  "posTechAssignErrorPrefix": "Error: {message}",
+  "@posTechAssignErrorPrefix": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "posTechAssignRetry": "Retry",
+  "posTechAssignStatusOnline": "Online",
+  "posTechAssignStatusLastSeen": "Last seen: {time}",
+  "@posTechAssignStatusLastSeen": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "posTechAssignSlots": "Slots: {used}/{total}",
+  "@posTechAssignSlots": {
+    "placeholders": {
+      "used": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "posTechAssignBroadcast": "Broadcast",
+  "posTechAssignWait": "Wait {label}",
+  "@posTechAssignWait": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "posTechAssignSave": "Save Technicians",
+  "posTechAssignSuccessEmpty": "All technicians removed from this job",
+  "posTechAssignSuccess": "Technicians assigned successfully",
+  "posTechAssignFailNoJob": "Job not found for this assignment.",
+  "posTechAssignFailGetId": "Failed to get order ID",
+  "posTechAssignFailEditId": "Failed to get job ID for edit",
+  "posTechAssignFailGeneric": "Failed to assign technicians",
+  "posTechAssignUnlockFail": "Could not unlock job to change technicians. Try again.",
+  "posTechLastSeenNever": "Never",
+  "posTechLastSeenJustNow": "Just now",
+  "posTechLastSeenMinutes": "{count}m ago",
+  "@posTechLastSeenMinutes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "posTechLastSeenHours": "{count}h ago",
+  "@posTechLastSeenHours": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "posTechLastSeenDays": "{count}d ago",
+  "@posTechLastSeenDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "posTechViewTitle": "Technicians",
+  "posTechViewSearchHint": "Search technicians...",
+  "posTechViewTabAll": "All",
+  "posTechViewTabOffline": "Offline",
+  "posTechViewTabOnline": "Online",
+  "posTechViewNoTechnicians": "No technicians found",
+  "posTechViewNoOnline": "No online technicians",
+  "posTechViewNoOffline": "No offline technicians",
+  "posTechViewErrorRetry": "Retry",
+  "posTechViewErrorPrefix": "Error: {message}",
+  "@posTechViewErrorPrefix": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "posTechCardOnlineNow": "Online now",
+  "posTechCardLastSeen": "Last seen: {time}",
+  "@posTechCardLastSeen": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "posTechCardNoDepartment": "No department",
+  "posTechCardSlots": "Slots {used}/{total}",
+  "@posTechCardSlots": {
+    "placeholders": {
+      "used": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "posTechPresenceOnline": "Technician marked online",
+  "posTechPresenceOffline": "Technician marked offline"
 }

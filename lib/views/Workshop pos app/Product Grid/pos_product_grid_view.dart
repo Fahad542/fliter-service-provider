@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 import '../../../utils/toast_service.dart';
 import '../../../models/pos_product_model.dart';
@@ -71,6 +72,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
 
   /// Cached for [dispose] — do not call [context.read] after the element is deactivated.
   PosViewModel? _posVmRef;
+  Locale? _lastLocale;
 
   List<String> _resolveInitialDepartmentIds() {
     final ids = (widget.selectedDepartmentIds ?? const [])
@@ -234,7 +236,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               if (isTablet) ...[
                 const SizedBox(width: 6),
                 Text(
-                  'Add Technician',
+                  AppLocalizations.of(context)!.posProductAddTechnician,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.onPrimaryLight,
                     fontWeight: FontWeight.w800,
@@ -248,13 +250,25 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       ),
     );
     if (isTablet) return child;
-    return Tooltip(message: 'Add Technician', child: child);
+    return Tooltip(message: AppLocalizations.of(context)!.posProductAddTechnician, child: child);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _posVmRef = context.read<PosViewModel>();
+    final locale = Localizations.localeOf(context);
+    if (_lastLocale != locale) {
+      _lastLocale = locale;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<ProductGridViewModel>().translateApiDataForLocale(
+                locale,
+                context.read<PosViewModel>().allProducts,
+              );
+        }
+      });
+    }
   }
 
   @override
@@ -627,7 +641,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                   widget.departmentName!.trim().isNotEmpty &&
                   widget.departmentName!.trim().toLowerCase() != 'all')
               ? widget.departmentName!
-              : (widget.isReadOnly ? 'Products' : 'Add Products'),
+              : (widget.isReadOnly ? AppLocalizations.of(context)!.posCommonProducts : AppLocalizations.of(context)!.posProductAddProducts),
           showBackButton: widget.showBackButton,
           showGlobalLeft: false,
           showHamburger: !widget.showBackButton,
@@ -690,7 +704,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         Icon(Icons.shopping_cart_outlined, size: isTablet ? 20 : 17, color: const Color(0xFF1E2124)),
                         const SizedBox(width: 8),
                         Text(
-                          '${context.watch<PosViewModel>().getCartCount(widget.isMainTab)} items',
+                          AppLocalizations.of(context)!.posProductItemsCount(context.watch<PosViewModel>().getCartCount(widget.isMainTab).toString()),
                           style: TextStyle(fontSize: isTablet ? 14 : 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E2124)),
                         ),
                       ],
@@ -703,9 +717,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Grand Total', style: TextStyle(fontSize: isTablet ? 12 : 10, color: Colors.grey, fontWeight: FontWeight.w500)),
+                        Text(AppLocalizations.of(context)!.posProductGrandTotal, style: TextStyle(fontSize: isTablet ? 12 : 10, color: Colors.grey, fontWeight: FontWeight.w500)),
                         Text(
-                          'SAR ${context.watch<PosViewModel>().getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}',
+                          '${AppLocalizations.of(context)!.posCommonSar} ${context.watch<PosViewModel>().getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}',
                           style: TextStyle(fontSize: isTablet ? 19 : 18, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
                         ),
                       ],
@@ -724,7 +738,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         _showInvoiceBottomSheet(context, useTabletSizing);
                       },
                       icon: Icon(Icons.receipt_long_outlined, size: isTablet ? 20 : 18),
-                      label: Text('View Invoice', style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 14 : 13)),
+                      label: Text(AppLocalizations.of(context)!.posProductViewInvoice, style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 14 : 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC145),
                         foregroundColor: const Color(0xFF1E2124),
@@ -851,7 +865,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               children: [
                 Expanded(
                   child: Text(
-                    'Order Items',
+                    AppLocalizations.of(context)!.posProductOrderItems,
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w800,
                       color: AppColors.secondaryLight,
@@ -890,7 +904,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       padding: const EdgeInsets.symmetric(vertical: 28),
                       child: Center(
                         child: Text(
-                          'No items in invoice',
+                          AppLocalizations.of(context)!.posProductNoItemsInvoice,
                           style: TextStyle(color: Colors.grey.shade500),
                         ),
                       ),
@@ -915,21 +929,21 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                 _buildTotalRow(
-                  'Gross Amount (Excl. VAT)',
-                  'SAR ${gross.toStringAsFixed(2)}',
+                  AppLocalizations.of(context)!.posProductGrossAmountExclVat,
+                  '${AppLocalizations.of(context)!.posCommonSar} ${gross.toStringAsFixed(2)}',
                   false,
                 ),
                 const SizedBox(height: 6),
                 _buildTotalRow(
-                  'Line discount',
-                  '-SAR ${itemDiscount.toStringAsFixed(2)}',
+                  AppLocalizations.of(context)!.posProductLineDiscount,
+                  '-${AppLocalizations.of(context)!.posCommonSar} ${itemDiscount.toStringAsFixed(2)}',
                   false,
                   color: itemDiscount > 0 ? Colors.green : Colors.grey.shade600,
                 ),
                 const SizedBox(height: 6),
                 _buildTotalRow(
-                  'Price after line discount',
-                  'SAR ${afterItemDiscount.toStringAsFixed(2)}',
+                  AppLocalizations.of(context)!.posProductPriceAfterLineDiscount,
+                  '${AppLocalizations.of(context)!.posCommonSar} ${afterItemDiscount.toStringAsFixed(2)}',
                   false,
                 ),
                 const SizedBox(height: 8),
@@ -937,16 +951,16 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 const SizedBox(height: 6),
                 if (globalDiscount > 0) ...[
                   _buildTotalRow(
-                    'Total discount applied',
-                    '-SAR ${globalDiscount.toStringAsFixed(2)}',
+                    AppLocalizations.of(context)!.posProductTotalDiscountApplied,
+                    '-${AppLocalizations.of(context)!.posCommonSar} ${globalDiscount.toStringAsFixed(2)}',
                     false,
                     color: Colors.green,
                   ),
                   const SizedBox(height: 6),
                 ],
                 _buildTotalRow(
-                  'Price after total discount',
-                  'SAR ${afterGlobal.toStringAsFixed(2)}',
+                  AppLocalizations.of(context)!.posProductPriceAfterTotalDiscount,
+                  '${AppLocalizations.of(context)!.posCommonSar} ${afterGlobal.toStringAsFixed(2)}',
                   false,
                 ),
                 const SizedBox(height: 8),
@@ -996,8 +1010,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                         )
                                         .trim()
                                         .isEmpty
-                                    ? 'Add Promo Code'
-                                    : 'Promo: ${vm.getActivePromoCode(widget.isMainTab, departmentId: promoContextDeptId).trim()}',
+                                    ? AppLocalizations.of(context)!.posProductAddPromoCode
+                                    : AppLocalizations.of(context)!.posProductPromoLabel(vm.getActivePromoCode(widget.isMainTab, departmentId: promoContextDeptId).trim()),
                                 style: const TextStyle(
                                   color: Color(0xFF1E2124),
                                   fontWeight: FontWeight.w700,
@@ -1044,34 +1058,34 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 const SizedBox(height: 6),
                 if (promoDiscount > 0) ...[
                   _buildTotalRow(
-                    'Promo discount',
-                    '-SAR ${promoDiscount.toStringAsFixed(2)}',
+                    AppLocalizations.of(context)!.posProductPromoDiscount,
+                    '-${AppLocalizations.of(context)!.posCommonSar} ${promoDiscount.toStringAsFixed(2)}',
                     false,
                     color: Colors.green,
                   ),
                   const SizedBox(height: 6),
                 ],
                 _buildTotalRow(
-                  'Price after promo',
-                  'SAR ${taxable.toStringAsFixed(2)}',
+                  AppLocalizations.of(context)!.posProductPriceAfterPromo,
+                  '${AppLocalizations.of(context)!.posCommonSar} ${taxable.toStringAsFixed(2)}',
                   false,
                 ),
                 const SizedBox(height: 6),
                 _buildTotalRow(
-                  'VAT (15%)',
-                  'SAR ${vat.toStringAsFixed(2)}',
+                  AppLocalizations.of(context)!.posProductVat15,
+                  '${AppLocalizations.of(context)!.posCommonSar} ${vat.toStringAsFixed(2)}',
                   false,
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Text(
-                      'Total',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    Text(
+                      AppLocalizations.of(context)!.posProductTotal,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                     ),
                     const Spacer(),
                     Text(
-                      'SAR ${total.toStringAsFixed(2)}',
+                      '${AppLocalizations.of(context)!.posCommonSar} ${total.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -1084,7 +1098,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                   Divider(height: 1, color: Colors.grey.shade200),
                   const SizedBox(height: 10),
                   Text(
-                    'EMPLOYEES',
+                    AppLocalizations.of(context)!.posProductEmployeesUpper,
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w900,
@@ -1094,7 +1108,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Select one employee for Employees payment (shown with type). Saves with your order.',
+                    AppLocalizations.of(context)!.posProductSelectEmployeePayment,
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade600, height: 1.3),
                   ),
                   const SizedBox(height: 8),
@@ -1129,9 +1143,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text(
-                                  'Save',
-                                  style: TextStyle(
+                              : Text(
+                                  AppLocalizations.of(context)!.posCommonSave,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 14,
                                   ),
@@ -1236,7 +1250,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       Builder(
                         builder: (context) {
                           final vm = context.read<PosViewModel>();
-                          String orderIdText = '#NEW-ORDER';
+                          String orderIdText = AppLocalizations.of(context)!.posProductNewOrderId;
                           if (widget.completingOrder?.id != null && widget.completingOrder!.id.isNotEmpty) {
                             orderIdText = '#${widget.completingOrder!.id.length > 8 ? widget.completingOrder!.id.substring(0, 8) : widget.completingOrder!.id}';
                           }
@@ -1244,7 +1258,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                           String custName = vm.customerName.isNotEmpty
                               ? vm.customerName
                               : (widget.completingOrder?.customerName ?? '');
-                          if (custName.isEmpty) custName = 'Walk-in Customer';
+                          if (custName.isEmpty) custName = AppLocalizations.of(context)!.posProductWalkInCustomer;
                           
                           String make = vm.make.isNotEmpty
                               ? vm.make
@@ -1259,14 +1273,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                           if (plate.isNotEmpty) {
                             vehicleText = vehicleText.isNotEmpty ? '$vehicleText • $plate' : plate;
                           }
-                          if (vehicleText.trim().isEmpty || vehicleText == '•') vehicleText = 'No Vehicle Details';
+                          if (vehicleText.trim().isEmpty || vehicleText == '•') vehicleText = AppLocalizations.of(context)!.posProductNoVehicleDetails;
 
                           String phoneText = vm.mobile.isNotEmpty
                               ? vm.mobile
                               : (widget.completingOrder?.customer?.mobile ?? '');
-                          if (phoneText.isEmpty) phoneText = 'No Phone';
+                          if (phoneText.isEmpty) phoneText = AppLocalizations.of(context)!.posProductNoPhone;
 
-                          String statusText = widget.completingOrder?.statusText ?? 'Draft';
+                          String statusText = widget.completingOrder?.statusText ?? AppLocalizations.of(context)!.posProductDraft;
                           Color statusColor = widget.completingOrder?.statusColor ?? Colors.blue;
 
                           return Container(
@@ -1340,7 +1354,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         padding: EdgeInsets.fromLTRB(isTablet ? 24 : 16, isTablet ? 10 : 10, isTablet ? 24 : 16, isTablet ? 6 : 8),
                         child: Row(
                           children: [
-                            Text('Order Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 20 : 14, color: const Color(0xFF1E2124))),
+                            Text(AppLocalizations.of(context)!.posProductOrderItems, style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 20 : 14, color: const Color(0xFF1E2124))),
                             const Spacer(),
                             Consumer<PosViewModel>(
                               builder: (context, vm, _) {
@@ -1379,7 +1393,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                       children: [
                                         Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade300),
                                         const SizedBox(height: 8),
-                                        Text('No items added', style: TextStyle(fontSize: 15, color: Colors.grey.shade400)),
+                                        Text(AppLocalizations.of(context)!.posProductNoItemsAdded, style: TextStyle(fontSize: 15, color: Colors.grey.shade400)),
                                       ],
                                     ),
                                   )
@@ -1473,13 +1487,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 _buildTotalRow(
-                                  'Gross Amount (Excl. VAT)',
+                                  AppLocalizations.of(context)!.posProductGrossAmountExclVat,
                                   'SAR ${vm.getSubtotalGross(widget.isMainTab).toStringAsFixed(2)}',
                                   isTablet,
                                 ),
                                 SizedBox(height: isTablet ? 8 : 6),
                                 _buildTotalRow(
-                                  'Line discount',
+                                  AppLocalizations.of(context)!.posProductLineDiscount,
                                   '-SAR ${vm.getTotalIndividualDiscount(widget.isMainTab).toStringAsFixed(2)}',
                                   isTablet,
                                   color: vm.getTotalIndividualDiscount(widget.isMainTab) > 0
@@ -1488,7 +1502,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 ),
                                 SizedBox(height: isTablet ? 8 : 6),
                                 _buildTotalRow(
-                                  'Price after line discount',
+                                  AppLocalizations.of(context)!.posProductPriceAfterLineDiscount,
                                   'SAR ${vm.getPriceAfterItemDiscounts(widget.isMainTab).toStringAsFixed(2)}',
                                   isTablet,
                                 ),
@@ -1497,7 +1511,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 SizedBox(height: isTablet ? 8 : 6),
                                 if (vm.getTotalGlobalDiscountValue(widget.isMainTab) > 0) ...[
                                   _buildTotalRow(
-                                    'Total discount applied',
+                                    AppLocalizations.of(context)!.posProductTotalDiscountApplied,
                                     '-SAR ${vm.getTotalGlobalDiscountValue(widget.isMainTab).toStringAsFixed(2)}',
                                     isTablet,
                                     color: Colors.green,
@@ -1505,7 +1519,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                   SizedBox(height: isTablet ? 8 : 6),
                                 ],
                                 _buildTotalRow(
-                                  'Price after total discount',
+                                  AppLocalizations.of(context)!.posProductPriceAfterTotalDiscount,
                                   'SAR ${vm.getPriceAfterJobDiscount(widget.isMainTab).toStringAsFixed(2)}',
                                   isTablet,
                                 ),
@@ -1562,8 +1576,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                               ),
                                               child: Text(
                                                 promoCode.isEmpty
-                                                    ? 'Add Promo Code'
-                                                    : 'Promo: $promoCode',
+                                                    ? AppLocalizations.of(context)!.posProductAddPromoCode
+                                                    : AppLocalizations.of(context)!.posProductPromoLabel(promoCode),
                                                 style: TextStyle(
                                                   fontSize: isTablet ? 17 : 12,
                                                   fontWeight: FontWeight.w600,
@@ -1605,7 +1619,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     ) >
                                     0) ...[
                                   _buildTotalRow(
-                                    'Promo discount',
+                                    AppLocalizations.of(context)!.posProductPromoDiscount,
                                     '-SAR ${vm.getTotalPromoDiscountValue(widget.isMainTab).toStringAsFixed(2)}',
                                     isTablet,
                                     color: Colors.green,
@@ -1613,14 +1627,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                   SizedBox(height: isTablet ? 8 : 6),
                                 ],
                                 _buildTotalRow(
-                                  'Price after promo',
+                                  AppLocalizations.of(context)!.posProductPriceAfterPromo,
                                   'SAR ${vm.getTotalTaxableAmountValue(widget.isMainTab).toStringAsFixed(2)}',
                                   isTablet,
                                 ),
                                 Divider(height: 1, color: Colors.grey.shade200),
                                 SizedBox(height: isTablet ? 10 : 8),
                                 _buildTotalRow(
-                                  'VAT (15%)',
+                                  AppLocalizations.of(context)!.posProductVat15,
                                   'SAR ${vm.getTotalTaxValue(widget.isMainTab).toStringAsFixed(2)}',
                                   isTablet,
                                   color: Colors.grey,
@@ -1629,7 +1643,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 Row(
                                   children: [
                                     Text(
-                                      'Total amount',
+                                      AppLocalizations.of(context)!.posProductTotalAmount,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: isLandscape
@@ -1656,7 +1670,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                   Divider(height: 1, color: Colors.grey.shade200),
                                   SizedBox(height: isTablet ? 10 : 8),
                                   Text(
-                                    'EMPLOYEES',
+                                    AppLocalizations.of(context)!.posProductEmployeesUpper,
                                     style: TextStyle(
                                       fontSize: isTablet ? 10 : 9,
                                       fontWeight: FontWeight.w900,
@@ -1666,7 +1680,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                   ),
                                   SizedBox(height: isTablet ? 6 : 4),
                                   Text(
-                                    'Select one employee for Employees payment (with type).',
+                                    AppLocalizations.of(context)!.posProductSelectEmployeePaymentShort,
                                     style: TextStyle(
                                       fontSize: isTablet ? 13 : 11,
                                       color: Colors.grey.shade600,
@@ -1713,10 +1727,10 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                               );
                                               if (response != null && response.success && context.mounted) {
                                                 navigateToPosShellOrdersTab(context);
-                                                ToastService.showSuccess(context, 'Order marked as completed successfully');
+                                                ToastService.showSuccess(context, AppLocalizations.of(context)!.posProductCompleteSuccess);
                                               } else {
                                                 if (context.mounted) {
-                                                  ToastService.showError(context, response?.message ?? 'Failed to complete job');
+                                                  ToastService.showError(context, response?.message ?? AppLocalizations.of(context)!.posProductCompleteError);
                                                 }
                                               }
                                             },
@@ -1736,7 +1750,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                               ),
                                             )
                                           : Text(
-                                              'Mark as Complete',
+                                              AppLocalizations.of(context)!.posProductMarkComplete,
                                               style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 18 : 15),
                                             ),
                                     );
@@ -1805,7 +1819,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                             ),
                                                           )
                                                         : Text(
-                                                            'Save Draft',
+                                                            AppLocalizations.of(context)!.posProductSaveDraft,
                                                             style: TextStyle(
                                                               fontWeight: FontWeight.w600,
                                                               fontSize: isLandscape
@@ -1875,7 +1889,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                           ),
                                                         )
                                                       : Text(
-                                                          'Forward to Technician',
+                                                          AppLocalizations.of(context)!.posProductForwardTechnician,
                                                           style: TextStyle(
                                                             fontWeight: FontWeight.w600,
                                                             fontSize: isLandscape
@@ -1964,7 +1978,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     child: PosSearchBar(
                       controller: gridVm.searchController,
                       onChanged: (v) => gridVm.setSearchQuery(v),
-                      hintText: 'Search products & services...',
+                      hintText: AppLocalizations.of(context)!.posProductSearchHint,
                     ),
                   ),
                   if (!widget.isMainTab) ...[
@@ -2013,7 +2027,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 28),
                           child: Text(
-                            'No products match your search.',
+                            AppLocalizations.of(context)!.posProductNoSearchMatch,
                             textAlign: TextAlign.center,
                             style: _posCatalogEmptyMessageTextStyle(),
                           ),
@@ -2074,7 +2088,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                   child: PosSearchBar(
                     controller: gridVm.searchController,
                     onChanged: (v) => gridVm.setSearchQuery(v),
-                    hintText: 'Search products & services...',
+                    hintText: AppLocalizations.of(context)!.posProductSearchHint,
                   ),
                 ),
                 if (!widget.isMainTab) ...[
@@ -2115,7 +2129,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 28),
                         child: Text(
-                          'No products match your search.',
+                          AppLocalizations.of(context)!.posProductNoSearchMatch,
                           textAlign: TextAlign.center,
                           style: _posCatalogEmptyMessageTextStyle(),
                         ),
@@ -2166,7 +2180,11 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           ),
           alignment: Alignment.center,
           child: Text(
-            type,
+            type == 'All'
+                ? AppLocalizations.of(context)!.posCommonAll
+                : type == 'Products'
+                    ? AppLocalizations.of(context)!.posCommonProducts
+                    : AppLocalizations.of(context)!.posCommonServices,
             style: TextStyle(
               color: isSelected ? AppColors.secondaryLight : AppColors.secondaryLight.withOpacity(0.6),
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
@@ -2249,7 +2267,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             ] : null,
                           ),
                           child: Text(
-                            subCat,
+                            subCat == 'All'
+                                ? AppLocalizations.of(context)!.posCommonAll
+                                : gridVm.localizedText(subCat),
                             style: TextStyle(
                               fontSize: isTablet ? 12 : 11,
                               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -2285,7 +2305,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Department not found',
+              AppLocalizations.of(context)!.posProductDepartmentNotFound,
               style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.w700,
                 color: Colors.grey.shade700,
@@ -2309,7 +2329,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Add Department'),
+                child: Text(AppLocalizations.of(context)!.posProductAddDepartment),
               ),
             ),
           ],
@@ -2326,7 +2346,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Text(
-              vm.selectedProductType == 'Services' ? 'No services found' : 'No products found',
+              vm.selectedProductType == 'Services' ? AppLocalizations.of(context)!.posProductNoServicesFound : AppLocalizations.of(context)!.posProductNoProductsFound,
               textAlign: TextAlign.center,
               style: _posCatalogEmptyMessageTextStyle(),
             ),
@@ -2397,7 +2417,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             const SizedBox(height: 3),
                             if (product.unit != null && product.unit!.isNotEmpty) ...[
                               Text(
-                                'Unit: ${product.unit}',
+                                AppLocalizations.of(context)!.posProductUnitLabel(context.read<ProductGridViewModel>().localizedText(product.unit.toString())),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey.shade600,
@@ -2558,7 +2578,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                             child: (product.unit != null &&
                                     product.unit!.isNotEmpty)
                                 ? Text(
-                                    'Unit: ${product.unit}',
+                                    AppLocalizations.of(context)!.posProductUnitLabel(context.read<ProductGridViewModel>().localizedText(product.unit.toString())),
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: Colors.grey.shade600,
@@ -2711,7 +2731,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(item.product.name,
+                        Text(context.watch<ProductGridViewModel>().localizedText(item.product.name),
                             style: TextStyle(
                               fontSize: isTablet ? 17 : 13,
                               fontWeight: FontWeight.w700,
@@ -2788,9 +2808,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
-                              'Dis.',
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context)!.posProductDiscountShort,
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
                               ),
@@ -2895,7 +2915,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('Dis.', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                            Text(AppLocalizations.of(context)!.posProductDiscountShort, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
                             const SizedBox(width: 3),
                             SizedBox(
                               width: 38,
@@ -2985,7 +3005,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       children: [
         Expanded(
           child: Text(
-            'Total discount',
+            AppLocalizations.of(context)!.posProductTotalDiscount,
             style: TextStyle(
               fontSize: isTablet ? 18 : 10,
               color: Colors.green.shade700,
@@ -3410,7 +3430,7 @@ class _SidebarEmployeesStripState extends State<_SidebarEmployeesStrip> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Could not load employees.',
+            AppLocalizations.of(context)!.posProductCouldNotLoadEmployees,
             style: TextStyle(color: Colors.red.shade700, fontSize: 11),
           ),
           TextButton(
@@ -3421,14 +3441,14 @@ class _SidebarEmployeesStripState extends State<_SidebarEmployeesStrip> {
               });
               _loadEmployees();
             },
-            child: const Text('Retry'),
+            child: Text(AppLocalizations.of(context)!.posCommonRetry),
           ),
         ],
       );
     }
     if (_employees.isEmpty) {
       return Text(
-        'No branch employees.',
+        AppLocalizations.of(context)!.posProductNoBranchEmployees,
         style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
       );
     }

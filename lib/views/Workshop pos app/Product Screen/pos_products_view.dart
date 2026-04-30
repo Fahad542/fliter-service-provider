@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../Home Screen/pos_view_model.dart';
@@ -63,7 +64,7 @@ class _PosProductsViewState extends State<PosProductsView> {
       appBar: PosAppBar(
         userName: vm.cashierName,
         infoTitle: vm.workshopName,
-        infoBranch: 'Branch: ${vm.branchName}',
+        infoBranch: AppLocalizations.of(context)!.posProductsBranchLabel(vm.branchName),
         infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
         showDrawer: false,
         showGlobalLeft: true,
@@ -130,7 +131,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       const Icon(Icons.error_outline, size: 48, color: Colors.red),
                       const SizedBox(height: 16),
                       Text(
-                        'Failed to load products',
+                        AppLocalizations.of(context)!.posProductsFailedLoad,
                         style: AppTextStyles.h2.copyWith(color: AppColors.secondaryLight),
                       ),
                       const SizedBox(height: 8),
@@ -142,7 +143,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () => vm.fetchProducts(),
-                        child: const Text('Retry'),
+                        child: Text(AppLocalizations.of(context)!.posCommonRetry),
                       ),
                     ],
                   ),
@@ -158,7 +159,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade300),
                       const SizedBox(height: 12),
                       Text(
-                        'No products found',
+                        AppLocalizations.of(context)!.posProductNoProductsFound,
                         style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
                       ),
                     ],

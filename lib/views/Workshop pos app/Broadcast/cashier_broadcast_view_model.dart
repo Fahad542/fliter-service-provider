@@ -3,9 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../data/repositories/pos_repository.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/cashier_active_broadcasts_model.dart';
 import '../../../services/realtime_service.dart';
 import '../../../services/session_service.dart';
+
+/// Typed error so the view can resolve a translated message without coupling
+/// the VM to a BuildContext.
+enum _BroadcastError { sessionExpired, fetchFailed }
 
 class CashierBroadcastViewModel extends ChangeNotifier {
   CashierBroadcastViewModel({
@@ -24,13 +29,30 @@ class CashierBroadcastViewModel extends ChangeNotifier {
   int soonThresholdSeconds = 60;
   int activeCountMeta = 0;
   bool isLoading = false;
-  String? errorMessage;
+
+  _BroadcastError? _errorKey;
+  String? _rawErrorDetail;
 
   Timer? _tick;
   Timer? _socketDebounce;
   Timer? _backgroundPoll;
 
   List<CashierActiveBroadcastItem> get broadcasts => List.unmodifiable(_broadcasts);
+
+  /// Returns null when there is no error; otherwise a translated message.
+  String? resolveError(AppLocalizations l10n) {
+    switch (_errorKey) {
+      case _BroadcastError.sessionExpired:
+        return l10n.posBroadcastSessionExpired;
+      case _BroadcastError.fetchFailed:
+        return _rawErrorDetail;
+      case null:
+        return null;
+    }
+  }
+
+  /// Kept for legacy callers.
+  String? get errorMessage => _rawErrorDetail;
 
   void _onSocketBroadcast(Map<String, dynamic> _) {
     _socketDebounce?.cancel();
@@ -42,13 +64,15 @@ class CashierBroadcastViewModel extends ChangeNotifier {
   Future<void> fetchActive({bool silent = false}) async {
     if (!silent) {
       isLoading = true;
-      errorMessage = null;
+      _errorKey = null;
+      _rawErrorDetail = null;
       notifyListeners();
     }
     try {
       final token = await sessionService.getToken(role: 'cashier');
       if (token == null) {
-        errorMessage = 'Session expired. Please sign in again.';
+        _errorKey = _BroadcastError.sessionExpired;
+        _rawErrorDetail = 'Session expired. Please sign in again.';
         return;
       }
       final res = await posRepository.getCashierActiveBroadcasts(token);
@@ -67,7 +91,8 @@ class CashierBroadcastViewModel extends ChangeNotifier {
       _syncBackgroundPoll();
     } catch (e) {
       if (!silent) {
-        errorMessage = e.toString();
+        _errorKey = _BroadcastError.fetchFailed;
+        _rawErrorDetail = e.toString();
       }
     } finally {
       isLoading = false;
@@ -104,6 +129,16 @@ class CashierBroadcastViewModel extends ChangeNotifier {
     final max = windowSeconds <= 0 ? 300 : windowSeconds;
     final left = remainingFor(b).inSeconds.clamp(0, max);
     return left / max;
+  }
+
+  /// Returns a translated badge label for a broadcast type.
+  /// Must be called from the view where [AppLocalizations] is available.
+  String? resolveBadge(String broadcastType, AppLocalizations l10n) {
+    final type = broadcastType.trim().toLowerCase();
+    if (type.isEmpty) return null;
+    if (type == 'on_call') return l10n.posBroadcastTypeOnCall;
+    if (type == 'workshop') return l10n.posBroadcastTypeWorkshop;
+    return broadcastType; // unknown type: pass through
   }
 
   void _syncTicker() {

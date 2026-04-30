@@ -7,19 +7,21 @@ import '../../../utils/app_text_styles.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PosCustomerHistoryView extends StatefulWidget {
   final SearchedCustomer customer;
   final String? focusOrderId;
 
   const PosCustomerHistoryView({
-    super.key, 
+    super.key,
     required this.customer,
     this.focusOrderId,
   });
 
   @override
-  State<PosCustomerHistoryView> createState() => _PosCustomerHistoryViewState();
+  State<PosCustomerHistoryView> createState() =>
+      _PosCustomerHistoryViewState();
 }
 
 class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
@@ -36,21 +38,22 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     final customer = widget.customer;
+    final l = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F6),
-      appBar: PosScreenAppBar(title: 'Customer History'),
+      appBar: PosScreenAppBar(title: l.posCustomerHistoryTitle),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
             horizontal: isTablet ? 32 : 16, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildCustomerProfile(isTablet, customer),
+            _buildCustomerProfile(isTablet, customer, l),
 
             const SizedBox(height: 32),
             Text(
-              'Past Orders',
+              l.posCustomerPastOrders,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.w800,
                 fontSize: isTablet ? 26 : 22,
@@ -75,10 +78,10 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 }
                 final orders = snapshot.data?.orders ?? [];
                 if (orders.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Text('No order history found for this customer.'),
+                      padding: const EdgeInsets.all(32.0),
+                      child: Text(l.posCustomerNoHistory),
                     ),
                   );
                 }
@@ -86,7 +89,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                   return Column(
                     children: [
                       for (int i = 0; i < orders.length; i++) ...[
-                        _buildInvoicedOrderCard(orders[i], isTablet),
+                        _buildInvoicedOrderCard(orders[i], isTablet, l),
                         if (i < orders.length - 1) const SizedBox(height: 12),
                       ],
                     ],
@@ -101,26 +104,17 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                         children: [
                           Expanded(
                             child: _buildInvoicedOrderSlot(
-                              orders,
-                              r * 3,
-                              isTablet,
-                            ),
+                                orders, r * 3, isTablet, l),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildInvoicedOrderSlot(
-                              orders,
-                              r * 3 + 1,
-                              isTablet,
-                            ),
+                                orders, r * 3 + 1, isTablet, l),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildInvoicedOrderSlot(
-                              orders,
-                              r * 3 + 2,
-                              isTablet,
-                            ),
+                                orders, r * 3 + 2, isTablet, l),
                           ),
                         ],
                       ),
@@ -137,163 +131,34 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     );
   }
 
-  Widget _buildHistoryOrderCard(SearchedCustomerOrder order, bool isTablet) {
-    final status = order.status.toLowerCase();
-    Color statusColor;
-    if (status == 'invoiced' || status == 'completed') {
-      statusColor = const Color(0xFF27AE60);
-    } else if (status.contains('pending') || status.contains('waiting') || status.contains('draft')) {
-      statusColor = const Color(0xFFF2994A);
-    } else if (status.contains('progress') || status.contains('accepted')) {
-      statusColor = const Color(0xFF2D9CDB);
-    } else {
-      statusColor = Colors.grey;
-    }
-
-    String formattedDate = order.createdAt;
-    try {
-      final parsed = DateTime.parse(order.createdAt);
-      formattedDate = DateFormat('dd MMM yyyy').format(parsed);
-    } catch (_) {}
-
-    return Container(
-      padding: EdgeInsets.all(isTablet ? 18 : 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Order #${order.id}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: isTablet ? 15 : 13,
-                    color: const Color(0xFF1E2124),
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  order.status.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: isTablet ? 11 : 10,
-                    fontWeight: FontWeight.w700,
-                    color: statusColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (order.vehicle != null) ...[
-            Row(
-              children: [
-                Icon(Icons.directions_car_rounded,
-                    size: isTablet ? 15 : 13, color: Colors.grey.shade500),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    '${order.vehicle!.make} ${order.vehicle!.model}  •  ${order.vehicle!.plateNo}'
-                    '${(order.vehicle!.year != null && order.vehicle!.year!.isNotEmpty) ? '  ·  ${order.vehicle!.year}' : ''}'
-                    '${(order.vehicle!.vin != null && order.vehicle!.vin!.isNotEmpty) ? '  ·  VIN ${order.vehicle!.vin}' : ''}',
-                    style: TextStyle(
-                      fontSize: isTablet ? 13 : 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-          ],
-          Row(
-            children: [
-              Icon(Icons.calendar_today_rounded,
-                  size: isTablet ? 13 : 11, color: Colors.grey.shade400),
-              const SizedBox(width: 6),
-              Text(
-                formattedDate,
-                style: TextStyle(
-                  fontSize: isTablet ? 12 : 11,
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (order.invoiceNo != null && order.invoiceNo!.isNotEmpty) ...[
-                const SizedBox(width: 12),
-                Icon(Icons.receipt_long_rounded,
-                    size: isTablet ? 13 : 11, color: Colors.grey.shade400),
-                const SizedBox(width: 4),
-                Text(
-                  'Invoice: ${order.invoiceNo}',
-                  style: TextStyle(
-                    fontSize: isTablet ? 12 : 11,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildInvoicedOrderSlot(
-    List<InvoicedOrder> orders,
-    int index,
-    bool isTablet,
-  ) {
+      List<InvoicedOrder> orders,
+      int index,
+      bool isTablet,
+      AppLocalizations l,
+      ) {
     if (index >= orders.length) return const SizedBox.shrink();
-    return _buildInvoicedOrderCard(orders[index], isTablet, compact: true);
+    return _buildInvoicedOrderCard(orders[index], isTablet, l, compact: true);
   }
 
   Widget _buildInvoicedOrderCard(
-    InvoicedOrder order,
-    bool isTablet, {
-    bool compact = false,
-  }) {
+      InvoicedOrder order,
+      bool isTablet,
+      AppLocalizations l, {
+        bool compact = false,
+      }) {
+    // Date is always formatted for display — locale-neutral (dd MMM yyyy)
     String formattedDate = order.createdAt;
     try {
       final parsed = DateTime.parse(order.createdAt);
       formattedDate = DateFormat('dd MMM yyyy').format(parsed);
     } catch (_) {}
 
-    final pad = compact
-        ? 12.0
-        : (isTablet ? 18.0 : 14.0);
-    final invFs = compact
-        ? 13.0
-        : (isTablet ? 17.0 : 15.0);
+    final pad = compact ? 12.0 : (isTablet ? 18.0 : 14.0);
+    final invFs = compact ? 13.0 : (isTablet ? 17.0 : 15.0);
     final invIcon = compact ? 14.0 : (isTablet ? 17.0 : 15.0);
-    final totalFs = compact
-        ? 15.0
-        : (isTablet ? 19.0 : 17.0);
-    final dateFs = compact
-        ? 12.0
-        : (isTablet ? 15.0 : 14.0);
+    final totalFs = compact ? 15.0 : (isTablet ? 19.0 : 17.0);
+    final dateFs = compact ? 12.0 : (isTablet ? 15.0 : 14.0);
     final dateIcon = compact ? 13.0 : (isTablet ? 15.0 : 14.0);
     final promoFs = compact ? 11.0 : (isTablet ? 14.0 : 13.0);
     final promoIcon = compact ? 13.0 : (isTablet ? 15.0 : 14.0);
@@ -301,6 +166,15 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     final lineQtyFs = compact ? 11.0 : (isTablet ? 14.0 : 13.0);
     final lineTotalFs = compact ? 12.0 : (isTablet ? 15.0 : 14.0);
     final moreFs = compact ? 12.0 : (isTablet ? 14.0 : 13.0);
+
+    // Invoice/order header: use invoice number if available, else "Order #id"
+    final headerLabel = order.invoiceNo.isNotEmpty
+        ? order.invoiceNo
+        : l.posCustomerOrderId(order.id);
+
+    // Amount — formatted with locale-appropriate currency label
+    final amountLabel =
+    l.posCustomerAmountSar(order.totalAmount.toStringAsFixed(2));
 
     return Container(
       padding: EdgeInsets.all(pad),
@@ -338,7 +212,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                       const SizedBox(width: 5),
                       Expanded(
                         child: Text(
-                          order.invoiceNo.isNotEmpty ? order.invoiceNo : 'Order #${order.id}',
+                          headerLabel,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: invFs,
@@ -353,8 +227,9 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 ),
               ),
               const SizedBox(width: 8),
+              // Amount is in its own non-flexible widget — no overflow risk
               Text(
-                'SAR ${order.totalAmount.toStringAsFixed(2)}',
+                amountLabel,
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: totalFs,
@@ -380,7 +255,8 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (order.promoCodeName != null && order.promoCodeName!.isNotEmpty) ...[
+              if (order.promoCodeName != null &&
+                  order.promoCodeName!.isNotEmpty) ...[
                 const SizedBox(width: 10),
                 Icon(Icons.local_offer_rounded,
                     size: promoIcon, color: Colors.orange.shade400),
@@ -404,7 +280,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
             Divider(color: Colors.grey.shade100, height: 1),
             SizedBox(height: compact ? 8 : 10),
             ...order.items.take(3).map(
-              (item) => Padding(
+                  (item) => Padding(
                 padding: EdgeInsets.only(bottom: compact ? 4 : 6),
                 child: Row(
                   children: [
@@ -419,6 +295,8 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     SizedBox(width: compact ? 6 : 8),
                     Expanded(
                       child: Text(
+                        // productName is the display name from the invoice
+                        // (API data — displayed as received)
                         item.productName,
                         style: TextStyle(
                           fontSize: lineNameFs,
@@ -439,7 +317,8 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     ),
                     SizedBox(width: compact ? 4 : 8),
                     Text(
-                      'SAR ${item.lineTotal.toStringAsFixed(2)}',
+                      l.posCustomerAmountSar(
+                          item.lineTotal.toStringAsFixed(2)),
                       style: TextStyle(
                         fontSize: lineTotalFs,
                         color: const Color(0xFF1E2124),
@@ -454,7 +333,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
-                  '+${order.items.length - 3} more items',
+                  l.posCustomerMoreItems(order.items.length - 3),
                   style: TextStyle(
                     fontSize: moreFs,
                     color: Colors.grey.shade400,
@@ -468,7 +347,11 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     );
   }
 
-  Widget _buildCustomerProfile(bool isTablet, SearchedCustomer customer) {
+  Widget _buildCustomerProfile(
+      bool isTablet,
+      SearchedCustomer customer,
+      AppLocalizations l,
+      ) {
     final outerPad = isTablet ? 18.0 : 24.0;
     final avatarPad = isTablet ? 12.0 : 16.0;
     final avatarIcon = isTablet ? 28.0 : 36.0;
@@ -496,14 +379,20 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
             padding: EdgeInsets.all(avatarPad),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primaryLight.withValues(alpha: 0.2), AppColors.primaryLight.withValues(alpha: 0.05)],
+                colors: [
+                  AppColors.primaryLight.withValues(alpha: 0.2),
+                  AppColors.primaryLight.withValues(alpha: 0.05),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2), width: 1.5),
+              border: Border.all(
+                  color: AppColors.primaryLight.withValues(alpha: 0.2),
+                  width: 1.5),
             ),
-            child: Icon(Icons.person_rounded, color: AppColors.primaryLight, size: avatarIcon),
+            child: Icon(Icons.person_rounded,
+                color: AppColors.primaryLight, size: avatarIcon),
           ),
           SizedBox(width: isTablet ? 16 : 20),
           Expanded(
@@ -523,7 +412,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _buildTypeBadge(customer, isTablet),
+                    _buildTypeBadge(customer, isTablet, l),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -534,10 +423,11 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     fontSize: metaFs,
                   ),
                 ),
-                if (customer.taxId != null && customer.taxId!.isNotEmpty) ...[
+                if (customer.taxId != null &&
+                    customer.taxId!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'VAT: ${customer.taxId}',
+                    l.posCustomerVat(customer.taxId!),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.grey.shade600,
                       fontSize: metaFs,
@@ -552,8 +442,16 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     );
   }
 
-  Widget _buildTypeBadge(SearchedCustomer customer, bool isTablet) {
+  Widget _buildTypeBadge(
+      SearchedCustomer customer,
+      bool isTablet,
+      AppLocalizations l,
+      ) {
     final isCorporate = customer.customerType.toLowerCase() == 'corporate';
+    // Badge label: translated UI string, not raw API value
+    final badgeLabel =
+    isCorporate ? l.posCustomerTypeCorporate : l.posCustomerTypeRegular;
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 8 : 10,
@@ -567,16 +465,14 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
         ),
       ),
       child: Text(
-        customer.customerType.toUpperCase(),
+        badgeLabel,
         style: TextStyle(
-          color: isCorporate ? Colors.blue.shade700 : Colors.grey.shade700,
+          color:
+          isCorporate ? Colors.blue.shade700 : Colors.grey.shade700,
           fontSize: isTablet ? 11 : 13,
           fontWeight: FontWeight.w800,
         ),
       ),
     );
   }
-
 }
-
-
