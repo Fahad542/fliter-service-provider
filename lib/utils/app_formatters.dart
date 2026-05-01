@@ -29,15 +29,6 @@ String? formatInvoiceIssuedAtClock(String? issuedAtIso) {
   return DateFormat.jm().format(d.toLocal());
 }
 
-/// Full date+time for thermal receipts (`dd/MM/yyyy hh:mm:ss a` local).
-String? formatInvoiceIssuedAtDateTime(String? issuedAtIso) {
-  final raw = issuedAtIso?.trim() ?? '';
-  if (raw.isEmpty) return null;
-  final d = DateTime.tryParse(raw);
-  if (d == null) return null;
-  return DateFormat('dd/MM/yyyy hh:mm:ss a').format(d.toLocal());
-}
-
 /// Allows non-negative decimal quantities: digits, optional single `.`, limited fractional digits.
 class DecimalQtyTextInputFormatter extends TextInputFormatter {
   final int maxFractionDigits;

@@ -119,7 +119,6 @@ class AuthRepository {
         {
           'email': email,
           'password': password,
-          'clientOpenedAt': DateTime.now().toIso8601String(),
         },
         headers: {
           'Authorization': 'Bearer $token',
@@ -139,7 +138,6 @@ class AuthRepository {
         {
           'email': email,
           'password': password,
-          'clientClosedAt': DateTime.now().toIso8601String(),
         },
         headers: {
           'Authorization': 'Bearer $token',
@@ -152,10 +150,14 @@ class AuthRepository {
     }
   }
 
-  Future<dynamic> getCurrentSession(String token) async {
+  Future<dynamic> getCurrentSession(String email, String password, String token) async {
     try {
-      final response = await _apiService.get(
+      final response = await _apiService.getWithBody(
         ApiConstants.currentSessionEndpoint,
+        {
+          'email': email,
+          'password': password,
+        },
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

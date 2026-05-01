@@ -2,8 +2,41 @@ import 'package:flutter/material.dart';
 import '../../../../models/workshop_owner_models.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../../services/locker_translation_mixin.dart' as dynamic_i18n;
 
-class PosMonitoringViewModel extends ChangeNotifier {
+/// Mixin that gives any ChangeNotifier access to a BuildContext so it can
+/// resolve localised strings for toast messages.
+///
+/// Usage:
+///   1. Add `with TranslatableMixin` to your ViewModel.
+///   2. Call `setContext(context)` from your View's `initState` /
+///      `didChangeDependencies` (after the first frame if needed).
+///   3. Use `l10n` inside the ViewModel to get translated strings.
+///
+/// IMPORTANT: Never store the context beyond a single method call.
+/// This mixin deliberately exposes only AppLocalizations, not the full
+/// context, so locale is always fresh on every method invocation.
+mixin TranslatableMixin on ChangeNotifier {
+  BuildContext? _ctx;
+
+  void setContext(BuildContext context) {
+    _ctx = context;
+  }
+
+  /// Returns localised strings if a context is available, or null.
+  /// Always call this inside an async method *after* awaiting, using the
+  /// stored context — but verify `_ctx?.mounted == true` first.
+  AppLocalizations? get l10n {
+    final ctx = _ctx;
+    if (ctx == null) return null;
+    return AppLocalizations.of(ctx);
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+class PosMonitoringViewModel extends ChangeNotifier with TranslatableMixin {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
 
@@ -13,44 +46,30 @@ class PosMonitoringViewModel extends ChangeNotifier {
   PosMonitoringResponse? _monitoringResponse;
   PosMonitoringResponse? get monitoringResponse => _monitoringResponse;
 
-  DateTime? _filterFrom;
-  DateTime? _filterTo;
+  final Map<String, String> _translatedBranchNames = {};
+  final Map<String, String> _translatedCashierNames = {};
 
-  /// Inclusive calendar bounds (date only, no time semantics for filter label).
-  DateTime? get filterFrom => _filterFrom;
-  DateTime? get filterTo => _filterTo;
+  String branchDisplayName(PosCounter counter) =>
+      _translatedBranchNames[counter.id] ?? counter.branchName;
+
+  String cashierDisplayName(PosCounter counter) =>
+      _translatedCashierNames[counter.id] ?? counter.cashierName;
 
   PosMonitoringViewModel({
     required this.ownerRepository,
     required this.sessionService,
   });
 
-  void clearDateFilter() {
-    _filterFrom = null;
-    _filterTo = null;
-    notifyListeners();
-  }
-
-  /// Fetches monitoring; optional [from]/[to] query + client-side list filter.
-  Future<void> fetchPosMonitoring({
-    DateTime? from,
-    DateTime? to,
-  }) async {
-    _filterFrom = from;
-    _filterTo = to;
+  Future<void> fetchPosMonitoring() async {
     _isLoading = true;
     notifyListeners();
     try {
       final token = await sessionService.getToken(role: 'owner');
       if (token != null) {
-        final response = await ownerRepository.getPosMonitoring(
-          token,
-          from: from,
-          to: to,
-          viewerUtcOffsetMinutes: DateTime.now().timeZoneOffset.inMinutes,
-        );
+        final response = await ownerRepository.getPosMonitoring(token);
         if (response != null && response['success'] == true) {
           _monitoringResponse = PosMonitoringResponse.fromJson(response);
+          await _translateCounters();
         }
       }
     } catch (e) {
@@ -61,32 +80,38 @@ class PosMonitoringViewModel extends ChangeNotifier {
     }
   }
 
-  static bool _sameDayInRange(DateTime t, DateTime from, DateTime to) {
-    final d = DateTime(t.year, t.month, t.day);
-    final f = DateTime(from.year, from.month, from.day);
-    final end = DateTime(to.year, to.month, to.day);
-    return !d.isBefore(f) && !d.isAfter(end);
+
+  Future<void> _translateCounters() async {
+    _translatedBranchNames.clear();
+    _translatedCashierNames.clear();
+    final counters = <PosCounter>[
+      ...?_monitoringResponse?.liveCounters,
+      ...?_monitoringResponse?.closingReports,
+    ];
+    for (final counter in counters) {
+      if (counter.branchName.trim().isNotEmpty) {
+        _translatedBranchNames[counter.id] =
+            await dynamic_i18n.AppTranslationService.localizedText(
+          counter.branchName,
+        );
+      }
+      if (counter.cashierName.trim().isNotEmpty) {
+        _translatedCashierNames[counter.id] =
+            await dynamic_i18n.AppTranslationService.localizedText(
+          counter.cashierName,
+        );
+      }
+    }
   }
 
-  /// Filter live rows by **session start** ([`sessionStart`]) day in [filterFrom, filterTo].
-  List<PosCounter> filterLiveCounters(List<PosCounter> base) {
-    if (_filterFrom == null || _filterTo == null) return base;
-    final from = _filterFrom!;
-    final to = _filterTo!;
-    return base
-        .where((c) => _sameDayInRange(c.sessionStart, from, to))
-        .toList();
+  Future<void> onLocaleChanged() async {
+    await _translateCounters();
+    notifyListeners();
   }
 
-  /// When the API echoed [`dateRangeFilter`], closing rows are already scoped by [`closedAt`]; otherwise filter client-side.
-  List<PosCounter> filterClosingReports(List<PosCounter> base) {
-    if (_filterFrom == null || _filterTo == null) return base;
-    if (_monitoringResponse?.dateRangeFilter != null) return base;
-    final from = _filterFrom!;
-    final to = _filterTo!;
-    return base.where((c) {
-      final anchor = c.closedAt ?? c.endTime ?? c.openedAt;
-      return _sameDayInRange(anchor, from, to);
-    }).toList();
+  @override
+  void dispose() {
+    _ctx = null;
+    super.dispose();
   }
 }

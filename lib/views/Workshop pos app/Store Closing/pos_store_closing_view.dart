@@ -45,62 +45,62 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: isReconciled
           ? AppBar(
-              automaticallyImplyLeading: false,
-              backgroundColor: AppColors.primaryLight,
-              elevation: 0,
-              centerTitle: true,
-              toolbarHeight: PosTabletLayout.appBarHeight,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(PosTabletLayout.appBarBottomRadius),
-                ),
-              ),
-              title: Text(
-                'Store Closing',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: isTablet ? PosTabletLayout.appBarTitleSize : 19,
-                ),
-              ),
-            )
+        automaticallyImplyLeading: false,
+        backgroundColor: AppColors.primaryLight,
+        elevation: 0,
+        centerTitle: true,
+        toolbarHeight: PosTabletLayout.appBarHeight,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(PosTabletLayout.appBarBottomRadius),
+          ),
+        ),
+        title: Text(
+          'Store Closing',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: isTablet ? PosTabletLayout.appBarTitleSize : 19,
+          ),
+        ),
+      )
           : const PosScreenAppBar(
-              title: 'Store Closing',
-              showBackButton: false,
-            ),
+        title: 'Store Closing',
+        showBackButton: false,
+      ),
       body: wrapPosShellRailBody(
         context,
         Consumer2<StoreClosingViewModel, PosViewModel>(
-        builder: (context, closingVm, posVm, _) {
-          final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-          return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + keyboardHeight),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildReconciliationSummary(isTablet, posVm),
-                const SizedBox(height: 24),
-                _buildSectionTitle('Counter Reconciliation', Icons.account_balance_rounded),
-                const SizedBox(height: 16),
-                if (!closingVm.isReconciled)
-                  _buildPhysicalCountForm(isTablet, closingVm)
-                else ...[
-                  _buildReconciliationResult(isTablet, closingVm),
+          builder: (context, closingVm, posVm, _) {
+            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + keyboardHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildReconciliationSummary(isTablet, posVm),
                   const SizedBox(height: 24),
-                  _buildBottomActions(isTablet, posVm, closingVm),
+                  _buildSectionTitle('Counter Reconciliation', Icons.account_balance_rounded),
+                  const SizedBox(height: 16),
+                  if (!closingVm.isReconciled)
+                    _buildPhysicalCountForm(isTablet, closingVm)
+                  else ...[
+                    _buildReconciliationResult(isTablet, closingVm),
+                    const SizedBox(height: 24),
+                    _buildBottomActions(isTablet, posVm, closingVm),
+                  ],
                 ],
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            );
+          },
+        ),
       ),
       bottomNavigationBar: isReconciled
           ? const SizedBox.shrink()
           : Consumer2<PosViewModel, StoreClosingViewModel>(
-              builder: (context, posVm, closingVm, _) =>
-                  _buildBottomActions(isTablet, posVm, closingVm),
-            ),
+        builder: (context, posVm, closingVm, _) =>
+            _buildBottomActions(isTablet, posVm, closingVm),
+      ),
     );
   }
 
@@ -282,7 +282,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: _buildInputField(
                   label: 'Bank / Card Slips',
@@ -290,18 +290,6 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   icon: Icons.credit_card_outlined,
                   hint: summary != null
                       ? 'Expected: SAR ${summary.systemBank.toStringAsFixed(2)}'
-                      : null,
-                  onChanged: (_) => closingVm.updatePhysicalCount(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInputField(
-                  label: 'Corporate Invoices',
-                  controller: closingVm.corporateController,
-                  icon: Icons.business_outlined,
-                  hint: summary != null
-                      ? 'Expected: SAR ${summary.systemCorporate.toStringAsFixed(2)}'
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -314,6 +302,18 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             children: [
               Expanded(
                 child: _buildInputField(
+                  label: 'Corporate Invoices',
+                  controller: closingVm.corporateController,
+                  icon: Icons.business_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemCorporate.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildInputField(
                   label: 'Tamara Credits',
                   controller: closingVm.tamaraController,
                   icon: Icons.receipt_long_outlined,
@@ -323,30 +323,17 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInputField(
-                  label: 'Tabby Credits',
-                  controller: closingVm.tabbyController,
-                  icon: Icons.receipt_long_outlined,
-                  hint: summary != null
-                      ? 'Expected: SAR ${summary.systemTabby.toStringAsFixed(2)}'
-                      : null,
-                  onChanged: (_) => closingVm.updatePhysicalCount(),
-                ),
-              ),
-              Expanded(
-                child: _buildInputField(
-                  label: 'Others (Employee sales)',
-                  controller: closingVm.othersController,
-                  icon: Icons.groups_outlined,
-                  hint: summary != null
-                      ? 'Expected: SAR ${summary.systemOthers.toStringAsFixed(2)}'
-                      : null,
-                  onChanged: (_) => closingVm.updatePhysicalCount(),
-                ),
-              ),
             ],
+          ),
+          const SizedBox(height: 16),
+          _buildInputField(
+            label: 'Tabby Credits',
+            controller: closingVm.tabbyController,
+            icon: Icons.receipt_long_outlined,
+            hint: summary != null
+                ? 'Expected: SAR ${summary.systemTabby.toStringAsFixed(2)}'
+                : null,
+            onChanged: (_) => closingVm.updatePhysicalCount(),
           ),
           const SizedBox(height: 16),
           _buildInputField(
@@ -537,10 +524,10 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                      const BorderSide(color: AppColors.primaryLight, width: 2)),
+                  const BorderSide(color: AppColors.primaryLight, width: 2)),
               isDense: true,
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
           ),
         ),
@@ -667,8 +654,6 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           _buildResultRow('Tamara', report.systemTamara, report.physicalTamara, report.tamaraDiff),
           const SizedBox(height: 12),
           _buildResultRow('Tabby', report.systemTabby, report.physicalTabby, report.tabbyDiff),
-          const SizedBox(height: 12),
-          _buildResultRow('Others', report.systemOthers, report.physicalOthers, report.othersDiff),
           const Divider(height: 32),
           _buildTotalDifferenceRow(closingVm),
           const SizedBox(height: 12),
@@ -712,7 +697,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
       String label, double system, double physical, double diff) {
     // diff = system - physical: positive = cashier short (red), negative = cashier excess (green)
     final diffColor =
-        diff == 0 ? Colors.green : (diff > 0 ? Colors.red : Colors.green);
+    diff == 0 ? Colors.green : (diff > 0 ? Colors.red : Colors.green);
     return Row(
       children: [
         Expanded(
@@ -768,9 +753,9 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
     final isShort = netDiff > 0;
     final isExcess = netDiff < 0;
     final diffColor =
-        netDiff == 0 ? Colors.green : (isShort ? Colors.red : Colors.green);
+    netDiff == 0 ? Colors.green : (isShort ? Colors.red : Colors.green);
     final statusLabel =
-        netDiff == 0 ? 'BALANCED' : (isShort ? 'SHORT' : 'EXCESS');
+    netDiff == 0 ? 'BALANCED' : (isShort ? 'SHORT' : 'EXCESS');
     final displayAmount = netDiff.abs();
     final displaySign = isShort ? '−' : (isExcess ? '+' : '');
 
@@ -792,7 +777,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
               const SizedBox(height: 2),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: diffColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -885,10 +870,10 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
               child: ElevatedButton(
                 onPressed: (!closingVm.isReconciling)
                     ? () => closingVm.reconcile(
-                          posVm.branchName,
-                          posVm.cashierName,
-                          context,
-                        )
+                  posVm.branchName,
+                  posVm.cashierName,
+                  context,
+                )
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
@@ -901,23 +886,23 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                 ),
                 child: closingVm.isReconciling
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.secondaryLight))
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.secondaryLight))
                     : const Text('Close Shift',
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5)),
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5)),
               ),
             )
           else ...[
             Expanded(
               child: ElevatedButton(
                 onPressed:
-                    closingVm.isGeneratingReport ? null : () => closingVm.buildReport(context),
+                closingVm.isGeneratingReport ? null : () => closingVm.buildReport(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
                   foregroundColor: AppColors.secondaryLight,
@@ -927,13 +912,13 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                 ),
                 child: closingVm.isGeneratingReport
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.secondaryLight))
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.secondaryLight))
                     : const Text('Generate Report',
-                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(width: 16),

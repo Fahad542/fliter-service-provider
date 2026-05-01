@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 /// Cashier invoice payment options (individual vs corporate sets differ in UI).
 enum PaymentMethod {
@@ -13,7 +14,32 @@ enum PaymentMethod {
 }
 
 extension PaymentMethodLabel on PaymentMethod {
-  String get label {
+  /// Localized human-readable label. Requires a BuildContext for l10n lookup.
+  String localizedLabel(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    switch (this) {
+      case PaymentMethod.cash:
+        return l.paymentMethodCash;
+      case PaymentMethod.card:
+        return l.paymentMethodCard;
+      case PaymentMethod.bankTransfer:
+        return l.paymentMethodBankTransfer;
+      case PaymentMethod.monthlyBilling:
+        return l.paymentMethodMonthlyBilling;
+      case PaymentMethod.wallet:
+        return l.paymentMethodWallet;
+      case PaymentMethod.tabby:
+        return l.paymentMethodTabby;
+      case PaymentMethod.tamara:
+        return l.paymentMethodTamara;
+      case PaymentMethod.employees:
+        return l.paymentMethodEmployees;
+    }
+  }
+
+  /// Stable English API key sent to the backend — NEVER localised.
+  /// Use this in network payloads instead of [localizedLabel].
+  String get apiKey {
     switch (this) {
       case PaymentMethod.cash:
         return 'Cash';
@@ -33,6 +59,10 @@ extension PaymentMethodLabel on PaymentMethod {
         return 'Employees';
     }
   }
+
+  /// Kept for backward-compat callers that don't have a context (e.g. pure
+  /// ViewModel code).  New UI code should prefer [localizedLabel].
+  String get label => apiKey;
 
   IconData get icon {
     switch (this) {
@@ -55,9 +85,7 @@ extension PaymentMethodLabel on PaymentMethod {
     }
   }
 
-  /// Individual / split flow — excludes corporate-only methods and Employees payment.
+  /// Individual / split flow — excludes corporate-only methods.
   bool get isRetailSelectable =>
-      this != PaymentMethod.monthlyBilling &&
-      this != PaymentMethod.wallet &&
-      this != PaymentMethod.employees;
+      this != PaymentMethod.monthlyBilling && this != PaymentMethod.wallet;
 }

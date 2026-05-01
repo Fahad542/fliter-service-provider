@@ -24,7 +24,9 @@ class ApprovalsViewModel extends ChangeNotifier with TranslatableMixin {
     required this.ownerRepository,
     required this.sessionService,
     required this.settingsViewModel,
-  });
+  }) {
+    bindLocaleRetranslation(settingsViewModel, _retranslateCachedRequests);
+  }
 
   // ── State ─────────────────────────────────────────────────────────────────
   List<PettyCashRequestItem> _requests = [];
@@ -153,6 +155,19 @@ class ApprovalsViewModel extends ChangeNotifier with TranslatableMixin {
       _rejectingIds.remove(id);
       notifyListeners();
     }
+  }
+
+
+  Future<void> _retranslateCachedRequests() async {
+    if (_requests.isEmpty) return;
+    _requests = await translatePettyCashRequests(_requests);
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unbindLocaleRetranslation();
+    super.dispose();
   }
 
   // ── Realtime stubs ────────────────────────────────────────────────────────

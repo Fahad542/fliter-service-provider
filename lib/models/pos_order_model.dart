@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'order_payment_method_draft.dart';
-
 /// Normalizes API `vehicle.year` / `vehicle.vin` (may be int or string; empty → null).
 String? _orderVehicleJsonString(dynamic value) {
   if (value == null) return null;
@@ -28,14 +26,6 @@ bool _asBool(dynamic value) {
   if (value == false || value == null) return false;
   final s = value.toString().trim().toLowerCase();
   return s == 'true' || s == '1' || s == 'yes';
-}
-
-/// `{ checks: boolean[6] }` from GET /cashier/orders — bilingual invoice checklist.
-List<bool>? _parseMaintenanceChecks(dynamic raw) {
-  if (raw == null || raw is! Map) return null;
-  final c = raw['checks'];
-  if (c is! List || c.length != 6) return null;
-  return List<bool>.generate(6, (i) => _asBool(c[i]));
 }
 
 int _firstNonZeroInt(List<dynamic> values) {
@@ -556,16 +546,6 @@ class PosOrderJobItem {
   }
 }
 
-List<PosPaymentDraftRow>? _parsePosPaymentsList(Map<String, dynamic> json) {
-  final raw = json['posPayments'] ?? json['pos_payments'];
-  if (raw is! List || raw.isEmpty) return null;
-  final out = <PosPaymentDraftRow>[];
-  for (final e in raw) {
-    out.add(PosPaymentDraftRow.fromJson(e));
-  }
-  return out.isEmpty ? null : out;
-}
-
 class PosOrder {
   final String id;
   final String status;
@@ -606,12 +586,6 @@ class PosOrder {
   final List<dynamic> pendingDepartments;
   final List<dynamic> proposalDepartments;
 
-  /// Draft from `PATCH /cashier/order/:id/payment-method` (GET order / orders).
-  final String? posCustomerKind;
-  final List<PosPaymentDraftRow>? posPayments;
-  /// From GET order(s) `{ "maintenanceChecklist": { "checks": [...] } }`.
-  final List<bool>? maintenanceChecks;
-
   PosOrder({
     required this.id,
     required this.status,
@@ -646,9 +620,6 @@ class PosOrder {
     this.fromCorporateBooking = false,
     this.pendingDepartments = const [],
     this.proposalDepartments = const [],
-    this.posCustomerKind,
-    this.posPayments,
-    this.maintenanceChecks,
   });
 
   factory PosOrder.fromJson(Map<String, dynamic> json) {
@@ -791,17 +762,6 @@ class PosOrder {
       proposalDepartments: json['proposalDepartments'] is List
           ? List<dynamic>.from(json['proposalDepartments'] as List)
           : const [],
-      posCustomerKind: () {
-        final s = _firstNonEmptyString([
-          json['posCustomerKind'],
-          json['pos_customer_kind'],
-        ])?.trim();
-        return s?.isNotEmpty == true ? s : null;
-      }(),
-      posPayments: _parsePosPaymentsList(json),
-      maintenanceChecks:
-          _parseMaintenanceChecks(json['maintenanceChecklist']) ??
-              _parseMaintenanceChecks(json['maintenance_checklist']),
     );
   }
 
@@ -839,9 +799,6 @@ class PosOrder {
     bool? fromCorporateBooking,
     List<dynamic>? pendingDepartments,
     List<dynamic>? proposalDepartments,
-    String? posCustomerKind,
-    List<PosPaymentDraftRow>? posPayments,
-    List<bool>? maintenanceChecks,
   }) {
     return PosOrder(
       id: id ?? this.id,
@@ -878,9 +835,6 @@ class PosOrder {
       fromCorporateBooking: fromCorporateBooking ?? this.fromCorporateBooking,
       pendingDepartments: pendingDepartments ?? this.pendingDepartments,
       proposalDepartments: proposalDepartments ?? this.proposalDepartments,
-      posCustomerKind: posCustomerKind ?? this.posCustomerKind,
-      posPayments: posPayments ?? this.posPayments,
-      maintenanceChecks: maintenanceChecks ?? this.maintenanceChecks,
     );
   }
 
@@ -1084,10 +1038,6 @@ class PosOrder {
     return _latestJobStatus;
   }
 
-  /// Takeaway kiosk: no workshop maintenance checklist on server.
-  bool get isTakeawaySource =>
-      source.toLowerCase().contains('takeaway');
-
   /// All departments done (completed / invoiced) → COMPLETED; any other job state → PENDING; no jobs → DRAFT.
   String get jobsAggregateBadgeLabel {
     if (jobs.isEmpty) return 'DRAFT';
@@ -1194,28 +1144,15 @@ class OrderCustomer {
   final String name;
   final String mobile;
   final String vatNumber;
-  /// From order API when billing marks customer as branch employee.
-  final bool isCustomerEmployee;
-  final String? branchEmployeeId;
-  final String? employeeType;
 
   OrderCustomer({
     required this.id,
     required this.name,
     required this.mobile,
     this.vatNumber = '',
-    this.isCustomerEmployee = false,
-    this.branchEmployeeId,
-    this.employeeType,
   });
 
   factory OrderCustomer.fromJson(Map<String, dynamic> json) {
-    final ie = json['isCustomerEmployee'];
-    final employeeFlag = ie == true ||
-        ie == 1 ||
-        '${ie ?? ''}'.toLowerCase().trim() == 'true';
-    final bidRaw = json['branchEmployeeId']?.toString().trim();
-    final etRaw = json['employeeType']?.toString().trim();
     return OrderCustomer(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
@@ -1226,9 +1163,6 @@ class OrderCustomer {
           json['vat']?.toString() ??
           json['vatNo']?.toString() ??
           '',
-      isCustomerEmployee: employeeFlag,
-      branchEmployeeId: bidRaw != null && bidRaw.isNotEmpty ? bidRaw : null,
-      employeeType: etRaw != null && etRaw.isNotEmpty ? etRaw : null,
     );
   }
 }

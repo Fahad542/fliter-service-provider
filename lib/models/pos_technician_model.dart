@@ -1,3 +1,20 @@
+// ignore: depend_on_referenced_packages
+import '../l10n/app_localizations.dart';
+
+/// Locale-aware last-seen string. Call from the view/widget layer only.
+/// Keeps the model itself locale-agnostic so no re-fetch is needed on
+/// locale switch — the widget simply rebuilds with the new l10n instance.
+String localizedLastSeen(PosTechnician tech, AppLocalizations l10n) {
+  if (tech.isOnline) return l10n.posTechCardOnlineNow;
+  final dur = tech.lastSeenDuration;
+  if (dur == null) return tech.status.lastSeenAt.isEmpty ? l10n.posTechLastSeenNever : '';
+  if (dur.inMinutes < 1) return l10n.posTechLastSeenJustNow;
+  if (dur.inMinutes < 60) return l10n.posTechLastSeenMinutes(dur.inMinutes);
+  if (dur.inHours < 24) return l10n.posTechLastSeenHours(dur.inHours);
+  if (dur.inDays < 7) return l10n.posTechLastSeenDays(dur.inDays);
+  return tech.formattedLastSeenDate;
+}
+
 class PosTechnicianResponse {
   final bool success;
   final List<PosTechnician> technicians;
@@ -8,9 +25,9 @@ class PosTechnicianResponse {
     return PosTechnicianResponse(
       success: json['success'] ?? false,
       technicians:
-          (json['technicians'] as List?)
-              ?.map((t) => PosTechnician.fromJson(t))
-              .toList() ??
+      (json['technicians'] as List?)
+          ?.map((t) => PosTechnician.fromJson(t))
+          .toList() ??
           [],
     );
   }
@@ -33,79 +50,44 @@ class PosTechnician {
   final PosTechnicianStatus status;
   final int slotsUsed;
   final int totalSlots;
-  /// Cashier API: duty flags (workshop / on-call / both).
-  final bool workshopDuty;
-  final bool onCallDuty;
-  final String? dutyMode;
   /// Cashier API: only [true] when technician may be assigned (typically online).
   final bool assignable;
-
-  /// Cashier API: `'offline' | 'on_call' | 'inactive' | 'active'` (duty + presence).
-  final String? assignmentStatus;
 
   // Compatibility getters
   String get serviceCategory => technicianType;
   String get statusInfo => status.status;
-  bool get isOnline {
-    final s = status.status.toLowerCase();
-    return s == 'online' || s == 'available';
-  }
+  bool get isOnline => status.status.toLowerCase() == 'online';
 
-  /// Normalized API status, with fallback when older backends omit [assignmentStatus].
-  String get effectiveAssignmentStatus {
-    final raw = assignmentStatus?.trim().toLowerCase();
-    if (raw != null &&
-        raw.isNotEmpty &&
-        raw != 'null' &&
-        raw != 'undefined') {
-      return raw;
-    }
-    if (!isOnline) return 'offline';
-    final dm = dutyMode?.toLowerCase().trim() ?? '';
-    if (dm == 'on_call') return 'on_call';
-    if (dm == 'inactive') return 'inactive';
-    if (onCallDuty && !workshopDuty) return 'on_call';
-    if (workshopDuty || dm == 'workshop' || dm == 'both') return 'active';
-    return 'inactive';
-  }
-
-  String get assignmentStatusDisplayLabel {
-    switch (effectiveAssignmentStatus) {
-      case 'active':
-        return 'Active';
-      case 'inactive':
-        return 'Not available';
-      case 'on_call':
-        return 'On call';
-      case 'offline':
-        return 'Offline';
-      default:
-        return 'Unknown';
-    }
-  }
-
-  /// Workshop POS: assignable row — presence online, [workshopDuty] (workshop / both), floor [active].
-  bool get isEligibleWorkshopAssignmentRow =>
-      isOnline &&
-      workshopDuty &&
-      effectiveAssignmentStatus == 'active';
-
-  String get formattedLastSeen {
-    if (status.lastSeenAt.isEmpty) return 'Never';
+  /// Raw date string fallback (YYYY-MM-DD). Use [localizedLastSeen] in the view layer.
+  String get formattedLastSeenDate {
+    if (status.lastSeenAt.isEmpty) return '';
     try {
-      final dateTime = DateTime.parse(status.lastSeenAt);
-      final now = DateTime.now();
-      final difference = now.difference(dateTime);
-
-      if (difference.inMinutes < 1) return 'Just now';
-      if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
-      if (difference.inHours < 24) return '${difference.inHours}h ago';
-      if (difference.inDays < 7) return '${difference.inDays}d ago';
-
-      return status.lastSeenAt.split('T')[0]; // Return YYYY-MM-DD as fallback
-    } catch (e) {
+      return status.lastSeenAt.split('T')[0];
+    } catch (_) {
       return '';
     }
+  }
+
+  /// Duration since last seen. Returns null when timestamp is absent/unparseable.
+  Duration? get lastSeenDuration {
+    if (status.lastSeenAt.isEmpty) return null;
+    try {
+      return DateTime.now().difference(DateTime.parse(status.lastSeenAt));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Legacy English-only getter kept for unmigrated call sites.
+  /// Prefer the view-layer helper [localizedLastSeen] which uses l10n keys.
+  String get formattedLastSeen {
+    final dur = lastSeenDuration;
+    if (dur == null) return status.lastSeenAt.isEmpty ? 'Never' : '';
+    if (dur.inMinutes < 1) return 'Just now';
+    if (dur.inMinutes < 60) return '${dur.inMinutes}m ago';
+    if (dur.inHours < 24) return '${dur.inHours}h ago';
+    if (dur.inDays < 7) return '${dur.inDays}d ago';
+    return formattedLastSeenDate;
   }
 
   PosTechnician({
@@ -125,11 +107,7 @@ class PosTechnician {
     this.status = const PosTechnicianStatus(status: 'offline', lastSeenAt: ''),
     this.slotsUsed = 0,
     this.totalSlots = 3,
-    this.workshopDuty = false,
-    this.onCallDuty = false,
-    this.dutyMode,
     this.assignable = true,
-    this.assignmentStatus,
   });
 
   PosTechnician copyWith({
@@ -137,10 +115,6 @@ class PosTechnician {
     int? totalSlots,
     PosTechnicianStatus? status,
     bool? assignable,
-    bool? workshopDuty,
-    bool? onCallDuty,
-    String? dutyMode,
-    String? assignmentStatus,
   }) {
     return PosTechnician(
       id: id,
@@ -159,11 +133,7 @@ class PosTechnician {
       status: status ?? this.status,
       slotsUsed: slotsUsed ?? this.slotsUsed,
       totalSlots: totalSlots ?? this.totalSlots,
-      workshopDuty: workshopDuty ?? this.workshopDuty,
-      onCallDuty: onCallDuty ?? this.onCallDuty,
-      dutyMode: dutyMode ?? this.dutyMode,
       assignable: assignable ?? this.assignable,
-      assignmentStatus: assignmentStatus ?? this.assignmentStatus,
     );
   }
 
@@ -229,42 +199,22 @@ class PosTechnician {
       (json['technicianStatus'] is Map<String, dynamic>)
           ? json['technicianStatus'] as Map<String, dynamic>
           : (json['status'] is Map<String, dynamic>)
-              ? json['status'] as Map<String, dynamic>
-              : {
-                  'status': json['onlineStatus'] ?? json['status'] ?? 'offline',
-                  'lastSeenAt': json['lastSeenAt'] ?? '',
-                },
+          ? json['status'] as Map<String, dynamic>
+          : {
+        'status': json['onlineStatus'] ?? json['status'] ?? 'offline',
+        'lastSeenAt': json['lastSeenAt'] ?? '',
+      },
     );
     final online =
-        parsedStatus.status.toLowerCase() == 'online' ||
-            parsedStatus.status.toLowerCase() == 'available';
+        parsedStatus.status.toLowerCase() == 'online';
     final assignableRaw = json['assignable'];
     final assignable = assignableRaw is bool
         ? assignableRaw
         : (assignableRaw?.toString().toLowerCase() == 'true')
-            ? true
-            : (assignableRaw?.toString().toLowerCase() == 'false')
-                ? false
-                : online;
-
-    final dm = json['dutyMode']?.toString().toLowerCase().trim();
-    var wd = json['workshopDuty'] == true;
-    var oc = json['onCallDuty'] == true;
-    if (dm != null && dm.isNotEmpty) {
-      if (dm == 'both') {
-        wd = true;
-        oc = false;
-      } else if (dm == 'workshop') {
-        wd = true;
-        oc = false;
-      } else if (dm == 'on_call') {
-        wd = false;
-        oc = true;
-      } else if (dm == 'inactive') {
-        wd = false;
-        oc = false;
-      }
-    }
+        ? true
+        : (assignableRaw?.toString().toLowerCase() == 'false')
+        ? false
+        : online;
 
     return PosTechnician(
       id: json['id']?.toString() ?? '',
@@ -280,18 +230,14 @@ class PosTechnician {
       isActive: json['isActive'] ?? false,
       isEligible: json['isEligible'] ?? true,
       departments:
-          (json['departments'] as List?)
-              ?.map((d) => PosDepartmentInfo.fromJson(d))
-              .toList() ??
+      (json['departments'] as List?)
+          ?.map((d) => PosDepartmentInfo.fromJson(d))
+          .toList() ??
           [],
       status: parsedStatus,
       assignable: assignable,
       slotsUsed: _parseSlotsUsed(json),
       totalSlots: _parseTotalSlots(json),
-      workshopDuty: wd,
-      onCallDuty: oc,
-      dutyMode: json['dutyMode']?.toString(),
-      assignmentStatus: json['assignmentStatus']?.toString(),
     );
   }
 }
@@ -321,7 +267,7 @@ class PosTechnicianStatus {
   factory PosTechnicianStatus.fromJson(Map<String, dynamic> json) {
     return PosTechnicianStatus(
       status:
-          json['status']?.toString() ??
+      json['status']?.toString() ??
           json['onlineStatus']?.toString() ??
           'offline',
       lastSeenAt: json['lastSeenAt'] ?? '',

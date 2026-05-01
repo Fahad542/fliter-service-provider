@@ -22,9 +22,6 @@ class LoginViewModel extends ChangeNotifier {
 
   bool previousSessionAutoClosed = false;
 
-  /// Set when automatic shift open after login fails or API reports failure (shown after navigation).
-  String? shiftOpenWarning;
-
   // UI State (Moved from View)
   bool _obscurePassword = true;
 
@@ -48,8 +45,6 @@ class LoginViewModel extends ChangeNotifier {
   Future<bool> login(String email, String password) async {
     _setLoading(true);
     _setErrorMessage(null);
-    previousSessionAutoClosed = false;
-    shiftOpenWarning = null;
 
     try {
       final authResponse = await _authRepository.login(email, password);
@@ -65,24 +60,12 @@ class LoginViewModel extends ChangeNotifier {
 
       if (authResponse.token != null) {
         try {
-          final sessionResponse =
-              await _authRepository.openSession(email, password, authResponse.token!);
-          if (sessionResponse is Map) {
-            final map = Map<String, dynamic>.from(sessionResponse);
-            final payload = map['data'] is Map
-                ? Map<String, dynamic>.from(map['data'] as Map)
-                : map;
-            previousSessionAutoClosed = payload['previousSessionAutoClosed'] == true;
-            if (payload['success'] == false) {
-              shiftOpenWarning = payload['message']?.toString() ??
-                  'Shift did not open. Use Current Shift → Start shift.';
-            }
-          }
+          final sessionResponse = await _authRepository.openSession(email, password, authResponse.token!);
+          previousSessionAutoClosed =
+              sessionResponse is Map && sessionResponse['previousSessionAutoClosed'] == true;
         } catch (e) {
           debugPrint('Failed to open shift session: $e');
           previousSessionAutoClosed = false;
-          shiftOpenWarning =
-              'Shift did not open automatically: ${e.toString().length > 200 ? '${e.toString().substring(0, 197)}…' : e}';
         }
       }
 
