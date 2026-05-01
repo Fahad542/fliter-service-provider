@@ -357,7 +357,80 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             maxLines: 3,
             onChanged: (_) {},
           ),
-          const SizedBox(height: 20),
+          if (summary != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blueGrey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blueGrey.shade100),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'System net sales (invoice total after returns)',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      color: Colors.blueGrey.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSummaryHintRow(
+                    'Net invoiced amount',
+                    summary.totalAmount,
+                    bold: true,
+                  ),
+                  if (summary.totalInvoices > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Invoices in window',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            '${summary.totalInvoices}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (summary.salesReturnsTotal != null && summary.salesReturnsTotal! > 0) ...[
+                    if (summary.grossInvoiceTotal != null)
+                      _buildSummaryHintRow(
+                        'Before returns',
+                        summary.grossInvoiceTotal!,
+                      ),
+                    _buildSummaryHintRow(
+                      'Sales returns deducted',
+                      -summary.salesReturnsTotal!,
+                    ),
+                  ],
+                  const Divider(height: 20),
+                  _buildSummaryHintRow(
+                    'Expected payments total (bucket sum)',
+                    summary.netPaymentsTotalShown,
+                    bold: true,
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -599,7 +672,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           const Divider(height: 32),
           _buildTotalDifferenceRow(closingVm),
           const SizedBox(height: 12),
-          _buildSystemSalesRow(report.systemSales),
+          _buildSystemSalesRow(report.systemPaymentsTotalShown),
         ],
       ),
     );
@@ -613,20 +686,20 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12)),
         ),
         SizedBox(
-          width: 64,
+          width: 74,
           child: Text('System',
               textAlign: TextAlign.right,
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade500, fontSize: 12)),
         ),
         SizedBox(
-          width: 72,
+          width: 74,
           child: Text('Physical',
               textAlign: TextAlign.right,
               maxLines: 1,
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade500, fontSize: 12)),
         ),
         SizedBox(
-          width: 56,
+          width: 72,
           child: Text('Diff',
               textAlign: TextAlign.right,
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade500, fontSize: 12)),
@@ -650,34 +723,34 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           ),
         ),
         SizedBox(
-          width: 64,
+          width: 74,
           child: Text(
-            system.toStringAsFixed(0),
+            system.toStringAsFixed(2),
             textAlign: TextAlign.right,
             style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: Colors.grey.shade500,
                 fontWeight: FontWeight.w500),
           ),
         ),
         SizedBox(
-          width: 72,
+          width: 74,
           child: Text(
-            physical.toStringAsFixed(0),
+            physical.toStringAsFixed(2),
             textAlign: TextAlign.right,
             style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: AppColors.secondaryLight,
                 fontWeight: FontWeight.w800),
           ),
         ),
         SizedBox(
-          width: 56,
+          width: 72,
           child: Text(
-            (diff >= 0 ? '+' : '') + diff.toStringAsFixed(0),
+            (diff >= 0 ? '+' : '') + diff.toStringAsFixed(2),
             textAlign: TextAlign.right,
             style: TextStyle(
-                fontWeight: FontWeight.w900, fontSize: 13, color: diffColor),
+                fontWeight: FontWeight.w900, fontSize: 12, color: diffColor),
           ),
         ),
       ],
@@ -746,7 +819,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
     );
   }
 
-  Widget _buildSystemSalesRow(double systemSales) {
+  Widget _buildSystemSalesRow(double netPaymentsTotalShown) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -754,17 +827,39 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.secondaryLight.withOpacity(0.1)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('System Total Sales',
-              style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.secondaryLight)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Text(
+                  'System Total Sales',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.secondaryLight,
+                  ),
+                ),
+              ),
+              Text(
+                'SAR ${netPaymentsTotalShown.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           Text(
-            'SAR ${systemSales.toStringAsFixed(2)}',
-            style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-                color: AppColors.secondaryLight),
+            'Net after returns • matches sum of System column above',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
           ),
         ],
       ),
