@@ -2,37 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../data/repositories/workshop_notifications_repository.dart';
+import '../../../services/locker_translation_mixin.dart';
 import '../../../services/session_service.dart';
+import '../More Tab/settings_view_model.dart';
 
-/// Cashier POS inbox item (from GET /workshop-notifications/inbox).
+/// Cashier POS inbox row (GET /workshop-notifications/inbox).
+/// Keeps [rawTitle] / [rawBody] from the API for re-translation when locale changes;
+/// [title] / [body] getters expose localized display strings when locale is Arabic.
 class PosNotificationRow {
   final String id;
-  final String title;
-  final String body;
+  final String rawTitle;
+  final String rawBody;
+  final String displayTitle;
+  final String displayBody;
   final DateTime createdAt;
   final bool isRead;
   final String rawType;
 
   PosNotificationRow({
     required this.id,
-    required this.title,
-    required this.body,
+    required this.rawTitle,
+    required this.rawBody,
+    required this.displayTitle,
+    required this.displayBody,
     required this.createdAt,
     required this.isRead,
     required this.rawType,
   });
 
+  /// Title shown in the list (localized when app locale is Arabic).
+  String get title => displayTitle;
+
+  /// Body shown in the list (localized when app locale is Arabic).
+  String get body => displayBody;
+
   factory PosNotificationRow.fromJson(Map<String, dynamic> j) {
     final created =
         DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now();
     final unread = j['isUnread'] == true;
+    final rt = j['title'] as String? ?? '';
+    final rb = j['body'] as String? ?? '';
     return PosNotificationRow(
       id: j['id']?.toString() ?? '',
-      title: j['title'] as String? ?? '',
-      body: j['body'] as String? ?? '',
+      rawTitle: rt,
+      rawBody: rb,
+      displayTitle: rt,
+      displayBody: rb,
       createdAt: created,
       isRead: !unread,
       rawType: j['type'] as String? ?? '',
+    );
+  }
+
+  PosNotificationRow copyWith({
+    bool? isRead,
+    String? displayTitle,
+    String? displayBody,
+  }) {
+    return PosNotificationRow(
+      id: id,
+      rawTitle: rawTitle,
+      rawBody: rawBody,
+      displayTitle: displayTitle ?? this.displayTitle,
+      displayBody: displayBody ?? this.displayBody,
+      createdAt: createdAt,
+      isRead: isRead ?? this.isRead,
+      rawType: rawType,
     );
   }
 
@@ -46,10 +81,11 @@ class PosNotificationRow {
       DateFormat('MMM d, yyyy · HH:mm').format(createdAt.toLocal());
 }
 
-class NotificationsViewModel extends ChangeNotifier {
+class NotificationsViewModel extends ChangeNotifier with TranslatableMixin {
   final SessionService sessionService = SessionService();
   final WorkshopNotificationsRepository _repo =
       WorkshopNotificationsRepository();
+  final SettingsViewModel settingsViewModel;
 
   static const String roleParam = 'cashier_user';
 
@@ -59,6 +95,31 @@ class NotificationsViewModel extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
   int totalCount = 0;
+
+  NotificationsViewModel({required this.settingsViewModel}) {
+    settingsViewModel.addListener(_onLocaleChanged);
+  }
+
+  Future<void> _onLocaleChanged() async {
+    if (_items.isEmpty) return;
+    await _applyTranslations();
+    notifyListeners();
+  }
+
+  /// Re-applies dynamic translation using [rawTitle] / [rawBody] from each row.
+  Future<void> _applyTranslations() async {
+    if (_items.isEmpty) return;
+    final translated = await Future.wait(
+      _items.map((r) async {
+        final tTitle = await t(r.rawTitle);
+        final tBody = await t(r.rawBody);
+        return r.copyWith(displayTitle: tTitle, displayBody: tBody);
+      }),
+    );
+    _items
+      ..clear()
+      ..addAll(translated);
+  }
 
   Future<void> refresh() async {
     isLoading = true;
@@ -85,6 +146,7 @@ class NotificationsViewModel extends ChangeNotifier {
             .map((e) => PosNotificationRow.fromJson(
                 Map<String, dynamic>.from(e as Map)))
             .toList());
+      await _applyTranslations();
     } catch (e) {
       errorMessage = '$e';
       _items.clear();
@@ -131,5 +193,11 @@ class NotificationsViewModel extends ChangeNotifier {
       totalCount = 0;
       notifyListeners();
     } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    settingsViewModel.removeListener(_onLocaleChanged);
+    super.dispose();
   }
 }

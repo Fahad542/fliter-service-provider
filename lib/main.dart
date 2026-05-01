@@ -137,7 +137,9 @@ class _MyAppState extends State<MyApp> {
           previous ?? CorporateBookingViewModel(repository: posRepo, sessionService: sessionService),
         ),
         ChangeNotifierProvider<NotificationsViewModel>(
-          create: (_) => NotificationsViewModel(),
+          create: (context) => NotificationsViewModel(
+            settingsViewModel: context.read<SettingsViewModel>(),
+          ),
         ),
         ChangeNotifierProxyProvider2<PosRepository, SessionService, PettyCashViewModel>(
           create: (context) => PettyCashViewModel(
