@@ -1,163 +1,206 @@
-import 'package:flutter/material.dart';
+// Resolved cashier notifications merge — copy to:
+// `Untitled/fliter-service-provider/lib/views/Workshop pos app/Notifications/notifications_view_model.dart`
 
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../../data/repositories/workshop_notifications_repository.dart';
 import '../../../services/locker_translation_mixin.dart';
+import '../../../services/session_service.dart';
 import '../More Tab/settings_view_model.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Raw notification model — stores the ORIGINAL English strings from the API /
-// database. Never mutate these; derive translated display strings separately.
-// ─────────────────────────────────────────────────────────────────────────────
-class NotificationModel {
-  /// Canonical English notification-type key, e.g. "order", "stock", "system".
-  /// Used to look up the translated title/message via AppLocalizations.
-  final String typeKey;
-
-  /// Raw English title coming from the API / database.
+/// Cashier POS inbox row (GET /workshop-notifications/inbox).
+/// Keeps [rawTitle] / [rawBody] from the API for re-translation when locale changes;
+/// [title] / [body] getters expose localized display strings when locale is Arabic.
+class PosNotificationRow {
+  final String id;
   final String rawTitle;
-
-  /// Raw English message body coming from the API / database.
-  final String rawMessage;
-
-  final String time;
-  final IconData icon;
-  final bool isRead;
-
-  // Translated display fields — populated by the ViewModel.
+  final String rawBody;
   final String displayTitle;
-  final String displayMessage;
+  final String displayBody;
+  final DateTime createdAt;
+  final bool isRead;
+  final String rawType;
 
-  const NotificationModel({
-    required this.typeKey,
+  PosNotificationRow({
+    required this.id,
     required this.rawTitle,
-    required this.rawMessage,
-    required this.time,
-    required this.icon,
-    this.isRead = false,
-    // Default display = raw (English); overwritten after translation.
-    String? displayTitle,
-    String? displayMessage,
-  })  : displayTitle = displayTitle ?? rawTitle,
-        displayMessage = displayMessage ?? rawMessage;
+    required this.rawBody,
+    required this.displayTitle,
+    required this.displayBody,
+    required this.createdAt,
+    required this.isRead,
+    required this.rawType,
+  });
 
-  NotificationModel copyWith({
-    String? displayTitle,
-    String? displayMessage,
-    bool? isRead,
-  }) {
-    return NotificationModel(
-      typeKey: typeKey,
-      rawTitle: rawTitle,
-      rawMessage: rawMessage,
-      time: time,
-      icon: icon,
-      isRead: isRead ?? this.isRead,
-      displayTitle: displayTitle ?? this.displayTitle,
-      displayMessage: displayMessage ?? this.displayMessage,
+  /// Title shown in the list (localized when app locale is Arabic).
+  String get title => displayTitle;
+
+  /// Body shown in the list (localized when app locale is Arabic).
+  String get body => displayBody;
+
+  factory PosNotificationRow.fromJson(Map<String, dynamic> j) {
+    final created =
+        DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now();
+    final unread = j['isUnread'] == true;
+    final rt = j['title'] as String? ?? '';
+    final rb = j['body'] as String? ?? '';
+    return PosNotificationRow(
+      id: j['id']?.toString() ?? '',
+      rawTitle: rt,
+      rawBody: rb,
+      displayTitle: rt,
+      displayBody: rb,
+      createdAt: created,
+      isRead: !unread,
+      rawType: j['type'] as String? ?? '',
     );
   }
+
+  PosNotificationRow copyWith({
+    bool? isRead,
+    String? displayTitle,
+    String? displayBody,
+  }) {
+    return PosNotificationRow(
+      id: id,
+      rawTitle: rawTitle,
+      rawBody: rawBody,
+      displayTitle: displayTitle ?? this.displayTitle,
+      displayBody: displayBody ?? this.displayBody,
+      createdAt: createdAt,
+      isRead: isRead ?? this.isRead,
+      rawType: rawType,
+    );
+  }
+
+  IconData get icon {
+    if (rawType.contains('invoiced')) return Icons.receipt_long_rounded;
+    if (rawType.contains('job_accepted')) return Icons.engineering_outlined;
+    return Icons.notifications_active_outlined;
+  }
+
+  String get timeLabel =>
+      DateFormat('MMM d, yyyy · HH:mm').format(createdAt.toLocal());
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ViewModel
-// ─────────────────────────────────────────────────────────────────────────────
 class NotificationsViewModel extends ChangeNotifier with TranslatableMixin {
-  // ── Raw API data — keep in English always ──────────────────────────────────
-  final List<NotificationModel> _raw = [
-    const NotificationModel(
-      typeKey: 'order',
-      rawTitle: 'New Order Received',
-      rawMessage: 'Order #ORD-1024 has been placed by Ali Khan.',
-      time: '02:45 PM',
-      icon: Icons.shopping_basket_outlined,
-    ),
-    const NotificationModel(
-      typeKey: 'stock',
-      rawTitle: 'Low Stock Alert',
-      rawMessage: 'Castrol Engine Oil (5L) is below threshold (5 left).',
-      time: '11:20 AM',
-      icon: Icons.warning_amber_rounded,
-    ),
-    const NotificationModel(
-      typeKey: 'technician',
-      rawTitle: 'Technician Assigned',
-      rawMessage: 'M. Sheraz has been assigned to Order #ORD-1022.',
-      time: '09:15 AM',
-      icon: Icons.engineering_outlined,
-      isRead: true,
-    ),
-    const NotificationModel(
-      typeKey: 'system',
-      rawTitle: 'System Update',
-      rawMessage: 'A new version of the POS system is available.',
-      time: 'Yesterday',
-      icon: Icons.system_update_outlined,
-      isRead: true,
-    ),
-    const NotificationModel(
-      typeKey: 'promo',
-      rawTitle: 'Promotion Active',
-      rawMessage: 'Promo Code WELCOME20 is now active for all branches.',
-      time: '05 Feb 2026',
-      icon: Icons.local_offer_outlined,
-      isRead: true,
-    ),
-  ];
+  final SessionService sessionService = SessionService();
+  final WorkshopNotificationsRepository _repo =
+      WorkshopNotificationsRepository();
+  final SettingsViewModel settingsViewModel;
 
-  // ── Translated display list shown in the UI ────────────────────────────────
-  List<NotificationModel> _translated = [];
+  static const String roleParam = 'cashier_user';
 
-  List<NotificationModel> get notifications => _translated;
+  final List<PosNotificationRow> _items = [];
+  List<PosNotificationRow> get notifications => List.unmodifiable(_items);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Constructor
-  // ─────────────────────────────────────────────────────────────────────────
-  NotificationsViewModel({SettingsViewModel? settingsViewModel}) {
-    // Seed display list with raw English.
-    _translated = List.of(_raw);
+  bool isLoading = false;
+  String? errorMessage;
+  int totalCount = 0;
 
-    // Bind locale change listener so translations refresh automatically when
-    // the user switches language — no need to re-open the screen.
-    if (settingsViewModel != null) {
-      bindLocaleRetranslation(settingsViewModel, _retranslate);
-    }
-
-    // Run initial translation (no-op if locale is English).
-    _retranslate();
+  NotificationsViewModel({required this.settingsViewModel}) {
+    settingsViewModel.addListener(_onLocaleChanged);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Translation
-  // ─────────────────────────────────────────────────────────────────────────
+  Future<void> _onLocaleChanged() async {
+    if (_items.isEmpty) return;
+    await _applyTranslations();
+    notifyListeners();
+  }
 
-  /// Re-translates all raw notification strings and rebuilds [_translated].
-  /// Called on first load and every time the locale changes.
-  Future<void> _retranslate() async {
-    final result = await Future.wait(
-      _raw.map(_translateNotification),
+  /// Re-applies dynamic translation using [rawTitle] / [rawBody] from each row.
+  Future<void> _applyTranslations() async {
+    if (_items.isEmpty) return;
+    final translated = await Future.wait(
+      _items.map((r) async {
+        final tTitle = await t(r.rawTitle);
+        final tBody = await t(r.rawBody);
+        return r.copyWith(displayTitle: tTitle, displayBody: tBody);
+      }),
     );
-    _translated = result;
-    notifyListeners();
+    _items
+      ..clear()
+      ..addAll(translated);
   }
 
-  Future<NotificationModel> _translateNotification(
-      NotificationModel n) async {
-    final title = await t(n.rawTitle);
-    final message = await t(n.rawMessage);
-    return n.copyWith(displayTitle: title, displayMessage: message);
+  Future<void> refresh() async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      final token = await sessionService.getToken(role: 'cashier');
+      if (token == null) {
+        _items.clear();
+        errorMessage = 'Not signed in';
+        return;
+      }
+      final res = await _repo.listInbox(
+        token: token,
+        roleParam: roleParam,
+        page: 1,
+        limit: 100,
+      );
+      totalCount = (res['totalCount'] as num?)?.toInt() ?? 0;
+      final raw = res['items'];
+      _items
+        ..clear()
+        ..addAll((raw is List ? raw : const [])
+            .map((e) => PosNotificationRow.fromJson(
+                Map<String, dynamic>.from(e as Map)))
+            .toList());
+      await _applyTranslations();
+    } catch (e) {
+      errorMessage = '$e';
+      _items.clear();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Actions
-  // ─────────────────────────────────────────────────────────────────────────
+  Future<void> markRead(String id) async {
+    final token = await sessionService.getToken(role: 'cashier');
+    if (token == null) return;
+    try {
+      await _repo.markRead(
+        token: token,
+        notificationId: id,
+        roleParam: roleParam,
+      );
+      await refresh();
+    } catch (_) {}
+  }
 
-  void markAllAsRead() {
-    _translated = _translated.map((n) => n.copyWith(isRead: true)).toList();
-    notifyListeners();
+  Future<void> deleteOne(String id) async {
+    final token = await sessionService.getToken(role: 'cashier');
+    if (token == null) return;
+    try {
+      await _repo.deleteOne(
+        token: token,
+        notificationId: id,
+        roleParam: roleParam,
+      );
+      _items.removeWhere((e) => e.id == id);
+      totalCount = (_items.length).clamp(0, totalCount);
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> clearAll() async {
+    final token = await sessionService.getToken(role: 'cashier');
+    if (token == null) return;
+    try {
+      await _repo.clearAll(token: token, roleParam: roleParam);
+      _items.clear();
+      totalCount = 0;
+      notifyListeners();
+    } catch (_) {}
   }
 
   @override
   void dispose() {
-    unbindLocaleRetranslation();
+    settingsViewModel.removeListener(_onLocaleChanged);
     super.dispose();
   }
 }

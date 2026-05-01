@@ -196,9 +196,10 @@ class StoreClosingViewModel extends ChangeNotifier {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('System Total Sales:',
+                    pw.Text('System Total Sales (net, after returns):',
                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
-                    pw.Text('SAR ${_report!.systemSales.toStringAsFixed(2)}',
+                    pw.Text(
+                        'SAR ${_report!.systemPaymentsTotalShown.toStringAsFixed(2)}',
                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
                   ],
                 ),

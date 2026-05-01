@@ -82,6 +82,15 @@ class StoreClosingReport {
   double get physicalTotal =>
       physicalCash + physicalBank + physicalCorporate + physicalTamara + physicalTabby;
 
+  /// Sum of system-side payment buckets (matches reconciliation table footer).
+  double get systemPaymentsTotalShown =>
+      systemCash +
+      systemBank +
+      systemCorporate +
+      systemTamara +
+      systemTabby +
+      systemOthers;
+
   factory StoreClosingReport.fromApiResponse({
     required String closingId,
     required String branch,
@@ -135,8 +144,12 @@ class StoreClosingSummary {
   final double systemCorporate;
   final double systemTamara;
   final double systemTabby;
+  final double systemOthers;
+  /// Net invoiced sales for the period (gross − sales returns).
   final double totalAmount;
   final int totalInvoices;
+  final double? grossInvoiceTotal;
+  final double? salesReturnsTotal;
 
   StoreClosingSummary({
     required this.systemCash,
@@ -146,10 +159,23 @@ class StoreClosingSummary {
     required this.systemTabby,
     required this.totalAmount,
     required this.totalInvoices,
+    this.grossInvoiceTotal,
+    this.salesReturnsTotal,
   });
+
+  double get netPaymentsTotalShown =>
+      systemCash +
+      systemBank +
+      systemCorporate +
+      systemTamara +
+      systemTabby +
+      systemOthers;
 
   factory StoreClosingSummary.fromJson(Map<String, dynamic> json) {
     final totals = json['paymentCategoryTotals'] as Map<String, dynamic>? ?? {};
+    double? optionalDouble(dynamic v) =>
+        v == null ? null : (v is num ? v.toDouble() : double.tryParse('$v'));
+
     return StoreClosingSummary(
       systemCash: (totals['cash'] ?? json['cashAmount'] ?? 0).toDouble(),
       systemBank: (totals['bankCardSlips'] ?? json['bankAmount'] ?? 0).toDouble(),
@@ -157,7 +183,13 @@ class StoreClosingSummary {
       systemTamara: (totals['tamaraCredits'] ?? 0).toDouble(),
       systemTabby: (totals['tabbyCredits'] ?? 0).toDouble(),
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-      totalInvoices: (json['totalInvoices'] ?? 0),
+      totalInvoices: switch (json['totalInvoices']) {
+        final int x => x,
+        final num x => x.toInt(),
+        _ => int.tryParse('${json['totalInvoices']}') ?? 0,
+      },
+      grossInvoiceTotal: optionalDouble(json['grossInvoiceTotal']),
+      salesReturnsTotal: optionalDouble(json['salesReturnsTotal']),
     );
   }
 }

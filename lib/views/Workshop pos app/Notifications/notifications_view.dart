@@ -6,10 +6,25 @@ import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../l10n/app_localizations.dart';
+
+import 'package:provider/provider.dart';
 import 'notifications_view_model.dart';
 
-class NotificationsView extends StatelessWidget {
+class NotificationsView extends StatefulWidget {
   const NotificationsView({super.key});
+
+  @override
+  State<NotificationsView> createState() => _NotificationsViewState();
+}
+
+class _NotificationsViewState extends State<NotificationsView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationsViewModel>().refresh();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +37,23 @@ class NotificationsView extends StatelessWidget {
       ),
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
-        appBar: PosScreenAppBar(
-          title: l10n.notifTitle,
-          actions: [
-            // "Mark all as read" action
+appBar: PosScreenAppBar(
+  title: l10n.notifTitle,
+  showBackButton: true,
+  actions: [
+    Consumer<NotificationsViewModel>(
+      builder: (context, vm, _) {
+        if (vm.notifications.isEmpty && !vm.isLoading) {
+          return const SizedBox.shrink();
+        }
+
+        return Row(
+          children: [
+            // Mark all as read
             TextButton(
-              onPressed: () =>
-                  context.read<NotificationsViewModel>().markAllAsRead(),
+              onPressed: vm.isLoading
+                  ? null
+                  : () => vm.markAllAsRead(),
               child: Text(
                 l10n.notifMarkRead,
                 style: AppTextStyles.bodyMedium.copyWith(
@@ -36,36 +61,104 @@ class NotificationsView extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+              ),
+            ),
+
+            // Clear all with confirmation
+            TextButton(
+              onPressed: vm.isLoading
+                  ? null
+                  : () async {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: Text(l10n.notifClearAllTitle ?? 'Clear all notifications?'),
+                          content: Text(
+                            l10n.notifClearAllMessage ??
+                                'This removes every notification.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: Text(l10n.cancel ?? 'Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: Text(l10n.clearAll ?? 'Clear all'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (ok == true && context.mounted) {
+                        await vm.clearAll();
+                      }
+                    },
+              child: Text(
+                l10n.clearAll ?? 'Clear all',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.secondaryLight,
+                ),
               ),
             ),
           ],
-        ),
+        );
         body: Consumer<NotificationsViewModel>(
-          builder: (context, vm, _) {
-            final notifications = vm.notifications;
-
-            if (notifications.isEmpty) {
+          builder: (context, vm, child) {
+            if (vm.isLoading && vm.notifications.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (vm.errorMessage != null && vm.notifications.isEmpty) {
               return Center(
-                child: Text(
-                  l10n.notifEmpty,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.grey.shade500,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    vm.errorMessage!,
+                    textAlign: TextAlign.center,
                   ),
                 ),
               );
             }
-
-            return ListView.builder(
-              padding: const EdgeInsets.all(24),
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                return _NotificationCard(
-                  notification: notifications[index],
-                  isTablet: isTablet,
-                );
-              },
+            if (vm.notifications.isEmpty) {
+              return Center(
+                child: Text(
+                  'No notifications yet.',
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(color: Colors.grey.shade600),
+                ),
+              );
+            }
+            return RefreshIndicator(
+              onRefresh: vm.refresh,
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(24),
+                itemCount: vm.notifications.length,
+                itemBuilder: (context, index) {
+                  final n = vm.notifications[index];
+                  return Dismissible(
+                    key: Key('notif-${n.id}'),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 24),
+                      color: Colors.red.shade100,
+                      child: const Icon(Icons.delete_outline),
+                    ),
+                    onDismissed: (_) => vm.deleteOne(n.id),
+                    child: GestureDetector(
+                      onTap: () {
+                        if (!n.isRead) vm.markRead(n.id);
+                      },
+                      child: _NotificationCard(
+  notification: n,
+  isTablet: isTablet,
+),
+                    ),
+                  );
+                },
+              ),
             );
           },
         ),
@@ -158,7 +251,7 @@ class _NotificationCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          notification.time,
+                          notification.timeLabel,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Colors.grey.shade400,
                             fontSize: 10,
