@@ -1,20 +1,3 @@
-// ignore: depend_on_referenced_packages
-import '../l10n/app_localizations.dart';
-
-/// Locale-aware last-seen string. Call from the view/widget layer only.
-/// Keeps the model itself locale-agnostic so no re-fetch is needed on
-/// locale switch — the widget simply rebuilds with the new l10n instance.
-String localizedLastSeen(PosTechnician tech, AppLocalizations l10n) {
-  if (tech.isOnline) return l10n.posTechCardOnlineNow;
-  final dur = tech.lastSeenDuration;
-  if (dur == null) return tech.status.lastSeenAt.isEmpty ? l10n.posTechLastSeenNever : '';
-  if (dur.inMinutes < 1) return l10n.posTechLastSeenJustNow;
-  if (dur.inMinutes < 60) return l10n.posTechLastSeenMinutes(dur.inMinutes);
-  if (dur.inHours < 24) return l10n.posTechLastSeenHours(dur.inHours);
-  if (dur.inDays < 7) return l10n.posTechLastSeenDays(dur.inDays);
-  return tech.formattedLastSeenDate;
-}
-
 class PosTechnicianResponse {
   final bool success;
   final List<PosTechnician> technicians;
@@ -25,9 +8,9 @@ class PosTechnicianResponse {
     return PosTechnicianResponse(
       success: json['success'] ?? false,
       technicians:
-      (json['technicians'] as List?)
-          ?.map((t) => PosTechnician.fromJson(t))
-          .toList() ??
+          (json['technicians'] as List?)
+              ?.map((t) => PosTechnician.fromJson(t))
+              .toList() ??
           [],
     );
   }
@@ -107,36 +90,22 @@ class PosTechnician {
       workshopDuty &&
       effectiveAssignmentStatus == 'active';
 
-  /// Raw date string fallback (YYYY-MM-DD). Use [localizedLastSeen] in the view layer.
-  String get formattedLastSeenDate {
-    if (status.lastSeenAt.isEmpty) return '';
+  String get formattedLastSeen {
+    if (status.lastSeenAt.isEmpty) return 'Never';
     try {
-      return status.lastSeenAt.split('T')[0];
-    } catch (_) {
+      final dateTime = DateTime.parse(status.lastSeenAt);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+
+      if (difference.inMinutes < 1) return 'Just now';
+      if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+      if (difference.inHours < 24) return '${difference.inHours}h ago';
+      if (difference.inDays < 7) return '${difference.inDays}d ago';
+
+      return status.lastSeenAt.split('T')[0]; // Return YYYY-MM-DD as fallback
+    } catch (e) {
       return '';
     }
-  }
-
-  /// Duration since last seen. Returns null when timestamp is absent/unparseable.
-  Duration? get lastSeenDuration {
-    if (status.lastSeenAt.isEmpty) return null;
-    try {
-      return DateTime.now().difference(DateTime.parse(status.lastSeenAt));
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Legacy English-only getter kept for unmigrated call sites.
-  /// Prefer the view-layer helper [localizedLastSeen] which uses l10n keys.
-  String get formattedLastSeen {
-    final dur = lastSeenDuration;
-    if (dur == null) return status.lastSeenAt.isEmpty ? 'Never' : '';
-    if (dur.inMinutes < 1) return 'Just now';
-    if (dur.inMinutes < 60) return '${dur.inMinutes}m ago';
-    if (dur.inHours < 24) return '${dur.inHours}h ago';
-    if (dur.inDays < 7) return '${dur.inDays}d ago';
-    return formattedLastSeenDate;
   }
 
   PosTechnician({
@@ -260,11 +229,11 @@ class PosTechnician {
       (json['technicianStatus'] is Map<String, dynamic>)
           ? json['technicianStatus'] as Map<String, dynamic>
           : (json['status'] is Map<String, dynamic>)
-          ? json['status'] as Map<String, dynamic>
-          : {
-        'status': json['onlineStatus'] ?? json['status'] ?? 'offline',
-        'lastSeenAt': json['lastSeenAt'] ?? '',
-      },
+              ? json['status'] as Map<String, dynamic>
+              : {
+                  'status': json['onlineStatus'] ?? json['status'] ?? 'offline',
+                  'lastSeenAt': json['lastSeenAt'] ?? '',
+                },
     );
     final online =
         parsedStatus.status.toLowerCase() == 'online' ||
@@ -273,10 +242,10 @@ class PosTechnician {
     final assignable = assignableRaw is bool
         ? assignableRaw
         : (assignableRaw?.toString().toLowerCase() == 'true')
-        ? true
-        : (assignableRaw?.toString().toLowerCase() == 'false')
-        ? false
-        : online;
+            ? true
+            : (assignableRaw?.toString().toLowerCase() == 'false')
+                ? false
+                : online;
 
     final dm = json['dutyMode']?.toString().toLowerCase().trim();
     var wd = json['workshopDuty'] == true;
@@ -311,9 +280,9 @@ class PosTechnician {
       isActive: json['isActive'] ?? false,
       isEligible: json['isEligible'] ?? true,
       departments:
-      (json['departments'] as List?)
-          ?.map((d) => PosDepartmentInfo.fromJson(d))
-          .toList() ??
+          (json['departments'] as List?)
+              ?.map((d) => PosDepartmentInfo.fromJson(d))
+              .toList() ??
           [],
       status: parsedStatus,
       assignable: assignable,
@@ -352,7 +321,7 @@ class PosTechnicianStatus {
   factory PosTechnicianStatus.fromJson(Map<String, dynamic> json) {
     return PosTechnicianStatus(
       status:
-      json['status']?.toString() ??
+          json['status']?.toString() ??
           json['onlineStatus']?.toString() ??
           'offline',
       lastSeenAt: json['lastSeenAt'] ?? '',

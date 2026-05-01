@@ -4,35 +4,9 @@ import 'package:intl/intl.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../models/inventory_sales_api_model.dart';
 import '../../../services/session_service.dart';
-import '../../../services/locker_translation_mixin.dart';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// InventorySalesViewModel
-//
-// Translation strategy
-// ────────────────────
-// • Static UI strings (presets, column headers, etc.) are resolved by the
-//   View via AppLocalizations.of(context) — the ViewModel never touches them.
-//
-// • Dynamic API strings (productName, sku) come back in English from the
-//   backend. When the locale is Arabic they are translated on the fly using
-//   TranslatableMixin.t() (which calls AppTranslationService.localizedText).
-//
-// • The ViewModel stores two parallel lists:
-//     _rawLines       — raw, immutable API data (never mutated after fetch)
-//     _displayLines   — translated copies used by the View
-//
-// • bindLocaleRetranslation() hooks into SettingsViewModel so that switching
-//   locale instantly re-translates without a full refetch from the server.
-//
-// • Error messages that should appear in the UI are stored as enum values
-//   (InventorySalesError) so the View can render them through AppLocalizations.
-//   Free-text server errors that come as opaque English strings are translated
-//   on-the-fly via t() before being stored in errorMessage.
-// ─────────────────────────────────────────────────────────────────────────────
 
 /// Drawer tab: sold quantities by product per calendar day for a selected period.
-class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
+class InventorySalesViewModel extends ChangeNotifier {
   InventorySalesViewModel({
     required this.posRepository,
     required this.sessionService,
@@ -41,8 +15,6 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   final PosRepository posRepository;
   final SessionService sessionService;
 
-  // ── Preset definitions — labels are intentionally English keys only.
-  // The View resolves the localized label via _presetLabels(l10n) map.
   static const presets = [
     ('Today', InventorySalesPreset.today),
     ('Yesterday', InventorySalesPreset.yesterday),
@@ -58,12 +30,7 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   int _rangeFromMinutes = 0;
   int _rangeToMinutes = 23 * 60 + 59;
 
-  /// Raw lines exactly as returned by the API (immutable after assignment).
-  List<InventorySaleLine> _rawLines = [];
-
-  /// Display lines — translated copies of _rawLines used by the View.
-  List<InventorySaleLine> _displayLines = [];
-
+  List<InventorySaleLine> _lines = [];
   InventorySalesSummary? _summary;
   List<InventoryProductPeriodSummary> _productsSummary = [];
   List<InventorySalesDayRollup> _dayRollups = [];
@@ -75,13 +42,6 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   String? _apiBusinessTimeZone;
 
   bool isLoading = false;
-
-  /// Structured error so the View can map it to a localized string.
-  /// null means no error.
-  InventorySalesVmError? vmError;
-
-  /// Free-text error (translated server message or translated exception text).
-  /// When vmError is non-null, the View should prefer vmError for i18n strings.
   String? errorMessage;
 
   /// Matches typical backend validation (client-side check).
@@ -89,9 +49,6 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
 
   InventorySalesPreset get preset => _preset;
   bool get isCustomRange => _preset == InventorySalesPreset.custom;
-
-  /// The View always reads translated lines via [lines].
-  List<InventorySaleLine> get lines => List.unmodifiable(_displayLines);
 
   int get rangeFromMinutes => _rangeFromMinutes;
   int get rangeToMinutes => _rangeToMinutes;
@@ -109,6 +66,7 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     return DateFormat.jm().format(dt);
   }
 
+  List<InventorySaleLine> get lines => List.unmodifiable(_lines);
 
   InventorySalesSummary? get summary => _summary;
 
@@ -142,7 +100,7 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
       return t;
     }
     var s = 0.0;
-    for (final l in _rawLines) {
+    for (final l in _lines) {
       if (l.salesAmount != null) s += l.salesAmount!;
     }
     return s;
@@ -192,9 +150,7 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
         final from = DateTime(today.year, today.month, 1);
         return (from: from, toInclusive: today);
       case InventorySalesPreset.custom:
-        final a = _customFrom != null
-            ? clampEnd(_customFrom!)
-            : today.subtract(const Duration(days: 6));
+        final a = _customFrom != null ? clampEnd(_customFrom!) : today.subtract(const Duration(days: 6));
         final b = _customTo != null ? clampEnd(_customTo!) : today;
         if (a.isAfter(b)) {
           return (from: b, toInclusive: a);
@@ -204,9 +160,10 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   /// Sections by calendar day (**ascending**); rows per day by **productName** (asc).
+  /// (Lines are also globally sorted soldDate ↑, productName ↑ after fetch.)
   List<({DateTime day, List<InventorySaleLine> rows})> get groupedByDay {
     final map = <DateTime, List<InventorySaleLine>>{};
-    for (final l in _displayLines) {
+    for (final l in _lines) {
       final d = DateTime(l.soldOn.year, l.soldOn.month, l.soldOn.day);
       map.putIfAbsent(d, () => []).add(l);
     }
@@ -214,29 +171,27 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     return [
       for (final d in days)
         (
-        day: d,
-        rows: () {
-          final r = List<InventorySaleLine>.from(map[d]!);
-          r.sort((a, b) =>
-              a.productName.toLowerCase().compareTo(b.productName.toLowerCase()));
-          return r;
-        }(),
+          day: d,
+          rows: () {
+            final r = List<InventorySaleLine>.from(map[d]!);
+            r.sort((a, b) => a.productName.toLowerCase().compareTo(b.productName.toLowerCase()));
+            return r;
+          }(),
         ),
     ];
   }
 
   num get totalQuantitySold {
-    var total = 0.0;
-    // Use raw lines for numeric aggregation — translation doesn't affect numbers.
-    for (final l in _rawLines) {
-      total += l.quantitySold.toDouble();
+    var t = 0.0;
+    for (final l in _lines) {
+      t += l.quantitySold.toDouble();
     }
-    return total;
+    return t;
   }
 
   int get distinctProductsInPeriod {
     final keys = <String>{};
-    for (final l in _rawLines) {
+    for (final l in _lines) {
       final pid = l.productId?.trim();
       final sid = l.serviceId?.trim();
       final k = (pid != null && pid.isNotEmpty)
@@ -249,22 +204,7 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     return keys.length;
   }
 
-  int get lineCount => _rawLines.length;
-
-  // ── Locale re-translation ─────────────────────────────────────────────────
-
-  /// Call once during widget tree setup (e.g. from a ProxyProvider or
-  /// didChangeDependencies) to bind locale-change retranslation.
-  ///
-  ///   vm.bindLocaleRetranslation(settingsViewModel, vm.retranslate);
-  Future<void> retranslate() async {
-    // Clear cache so fresh translations are produced for the new locale.
-    AppTranslationService.clearCache();
-    await _buildDisplayLines();
-    notifyListeners();
-  }
-
-  // ── Mutations ─────────────────────────────────────────────────────────────
+  int get lineCount => _lines.length;
 
   Future<void> setPreset(InventorySalesPreset p) async {
     _preset = p;
@@ -345,21 +285,16 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     final a = DateTime(from.year, from.month, from.day);
     final b = DateTime(to.year, to.month, to.day);
     if (a.isAfter(b)) {
-      // Store structured error — View maps this to l10n.posInvSalesErrStartBeforeEnd
-      vmError = InventorySalesVmError.startAfterEnd;
-      errorMessage = null;
+      errorMessage = 'Start date must be on or before end date.';
       notifyListeners();
       return;
     }
     final spanDays = b.difference(a).inDays + 1;
     if (spanDays > maxRangeDaysInclusive) {
-      // Store structured error — View maps this to l10n.posInvSalesErrRangeExceeded(days)
-      vmError = InventorySalesVmError.rangeExceeded;
-      errorMessage = null;
+      errorMessage = 'Date range cannot exceed $maxRangeDaysInclusive days.';
       notifyListeners();
       return;
     }
-    vmError = null;
     errorMessage = null;
     _preset = InventorySalesPreset.custom;
     _customFrom = a;
@@ -370,10 +305,8 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
     await fetch();
   }
 
-  // ── Fetch & sort ──────────────────────────────────────────────────────────
-
-  void _applyClientSort(List<InventorySaleLine> list) {
-    list.sort((a, b) {
+  void _applyClientSort() {
+    _lines.sort((a, b) {
       final da = DateTime(a.soldOn.year, a.soldOn.month, a.soldOn.day);
       final db = DateTime(b.soldOn.year, b.soldOn.month, b.soldOn.day);
       final c = da.compareTo(db);
@@ -385,17 +318,14 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   Future<void> fetch({bool silent = false}) async {
     if (!silent) {
       isLoading = true;
-      vmError = null;
       errorMessage = null;
       notifyListeners();
     }
     try {
       final token = await sessionService.getToken(role: 'cashier');
       if (token == null) {
-        vmError = InventorySalesVmError.sessionExpired;
-        errorMessage = null;
-        _rawLines = [];
-        _displayLines = [];
+        errorMessage = 'Session expired. Please sign in again.';
+        _lines = [];
         _summary = null;
         _productsSummary = [];
         _dayRollups = [];
@@ -413,8 +343,7 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
             isCustomRange ? formatMinutesAsHm(_rangeFromMinutes) : null,
         toTime: isCustomRange ? formatMinutesAsHm(_rangeToMinutes) : null,
       );
-      _rawLines = List<InventorySaleLine>.from(res.lines);
-      _applyClientSort(_rawLines);
+      _lines = List<InventorySaleLine>.from(res.lines);
       _summary = res.summary;
       _productsSummary = List<InventoryProductPeriodSummary>.from(
         res.productsSummary,
@@ -425,73 +354,29 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
       _apiPeriodFrom = res.periodFrom;
       _apiPeriodTo = res.periodTo;
       _apiBusinessTimeZone = res.businessTimeZone;
-      await _buildDisplayLines();
+      _applyClientSort();
       if (res.success == false && (res.message?.isNotEmpty ?? false)) {
-        // Server message may be English — translate it for Arabic locale.
-        errorMessage = await t(res.message!);
-        vmError = null;
+        errorMessage = res.message;
       } else {
         errorMessage = null;
-        vmError = null;
       }
     } catch (e) {
-      _rawLines = [];
-      _displayLines = [];
+      _lines = [];
       _summary = null;
       _productsSummary = [];
       _dayRollups = [];
       _clearApiMeta();
-      errorMessage = await t(_shortError(e));
-      vmError = null;
+      errorMessage = _shortError(e);
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Builds _displayLines by translating all dynamic API string fields.
-  /// Product names and SKUs come from the backend in English; when the app
-  /// locale is Arabic they are translated via the GoogleTranslator cache.
-  ///
-  /// NOTE: numeric data (quantitySold, soldOn) is never translated.
-  Future<void> _buildDisplayLines() async {
-    final translated = await Future.wait(
-      _rawLines.map((line) async {
-        final translatedName = await t(line.productName);
-        // SKUs / codes are alphanumeric — skip translation (tReference guards this).
-        final translatedSku =
-            line.sku != null ? await tReference(line.sku!) : null;
-        return InventorySaleLine(
-          productName: translatedName,
-          productId: line.productId,
-          serviceId: line.serviceId,
-          sku: translatedSku,
-          soldOn: line.soldOn,
-          quantitySold: line.quantitySold,
-          salesAmount: line.salesAmount,
-          itemType: line.itemType,
-          departmentId: line.departmentId,
-          departmentName: line.departmentName,
-          salePrice: line.salePrice,
-          avgUnitPrice: line.avgUnitPrice,
-        );
-      }),
-    );
-    _displayLines = translated;
-    _applyClientSort(_displayLines);
-  }
-
   void dismissErrorBanner() {
-    if (errorMessage == null && vmError == null) return;
+    if (errorMessage == null) return;
     errorMessage = null;
-    vmError = null;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    unbindLocaleRetranslation();
-    super.dispose();
   }
 
   void _clearApiMeta() {
@@ -510,8 +395,6 @@ class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 enum InventorySalesPreset {
   today,
   yesterday,
@@ -519,19 +402,4 @@ enum InventorySalesPreset {
   last30,
   thisMonth,
   custom,
-}
-
-/// Structured error codes.
-/// The View maps each value to the appropriate l10n string — this avoids
-/// storing English error text in the ViewModel that would not update when
-/// the locale changes.
-enum InventorySalesVmError {
-  /// From > To — map to l10n.posInvSalesErrStartBeforeEnd
-  startAfterEnd,
-
-  /// Span > maxRangeDaysInclusive — map to l10n.posInvSalesErrRangeExceeded(days)
-  rangeExceeded,
-
-  /// Token is null — map to l10n.posInvSalesSessionExpiredError
-  sessionExpired,
 }

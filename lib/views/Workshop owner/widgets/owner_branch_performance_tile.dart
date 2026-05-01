@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../models/workshop_owner_models.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -17,18 +16,6 @@ class OwnerBranchPerformanceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final localizedBranchName = branch.translatedName?.trim().isNotEmpty == true
-        ? branch.translatedName!
-        : branch.name;
-    final localizedLocation = branch.translatedLocation?.trim().isNotEmpty == true
-        ? branch.translatedLocation!
-        : branch.location;
-    final localizedSalesAmount = l10n.ownerCurrencyAmount(
-      l10n.ownerCurrencySar,
-      branch.salesMTD.toStringAsFixed(0),
-    );
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -71,9 +58,7 @@ class OwnerBranchPerformanceTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      localizedBranchName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      branch.name,
                       style: AppTextStyles.h2.copyWith(
                         fontSize: 15,
                         color: AppColors.secondaryLight,
@@ -81,9 +66,7 @@ class OwnerBranchPerformanceTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      localizedLocation,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      branch.location,
                       style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 11,
@@ -97,20 +80,16 @@ class OwnerBranchPerformanceTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    localizedSalesAmount,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    'SAR ${branch.salesMTD.toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       color: AppColors.secondaryLight,
                       fontSize: 14,
                     ),
                   ),
-                  Text(
-                    l10n.ownerMonthlySales,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                  const Text(
+                    'Monthly Sales',
+                    style: TextStyle(
                       color: Colors.grey,
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
@@ -119,13 +98,7 @@ class OwnerBranchPerformanceTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 12),
-              Icon(
-                Directionality.of(context) == TextDirection.rtl
-                    ? Icons.chevron_left_rounded
-                    : Icons.chevron_right_rounded,
-                color: Colors.grey,
-                size: 20,
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
             ],
           ),
         ),

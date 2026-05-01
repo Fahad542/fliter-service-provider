@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../views/Workshop pos app/More Tab/settings_view_model.dart';
@@ -46,8 +45,6 @@ class OwnerAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
     return Container(
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
@@ -243,14 +240,12 @@ class OwnerDashboardTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          l10n.ownerDashboardRoleLabel,
+          'WORKSHOP OWNER',
           style: AppTextStyles.bodyMedium.copyWith(
             fontSize: 10,
             fontWeight: FontWeight.w900,
