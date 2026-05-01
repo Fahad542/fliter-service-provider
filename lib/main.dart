@@ -1,6 +1,7 @@
 import 'package:filter_service_providers/services/owner_data_service.dart';
 import 'package:filter_service_providers/views/Workshop%20pos%20app/Department/department_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
@@ -398,8 +399,16 @@ class _MyAppState extends State<MyApp> {
             title: 'Workshop Owner',
             debugShowCheckedModeBanner: false,
             // Theme Configuration
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
+            theme: AppTheme.lightTheme.copyWith(
+              textTheme: GoogleFonts.notoNaskhArabicTextTheme(
+                AppTheme.lightTheme.textTheme,
+              ),
+            ),
+            darkTheme: AppTheme.darkTheme.copyWith(
+              textTheme: GoogleFonts.notoNaskhArabicTextTheme(
+                AppTheme.darkTheme.textTheme,
+              ),
+            ),
             themeMode: settings.themeMode,
 
             // Localization Configuration
