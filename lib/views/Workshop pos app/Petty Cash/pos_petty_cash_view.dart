@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
@@ -32,21 +31,6 @@ class PosPettyCashView extends StatefulWidget {
 
 class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  Locale? _lastLocale;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final locale = Localizations.localeOf(context);
-    if (_lastLocale != locale) {
-      _lastLocale = locale;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          context.read<PettyCashViewModel>().translateApiDataForLocale(locale);
-        }
-      });
-    }
-  }
 
   @override
   void initState() {
@@ -74,7 +58,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
   }
 
   void _showError(String message) {
-    ToastService.showError(context, context.read<PettyCashViewModel>().validationMessage(AppLocalizations.of(context)!, message));
+    ToastService.showError(context, message);
   }
 
   Widget _buildTabContent(PettyCashViewModel vm, bool isTablet) {
@@ -83,11 +67,11 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
         return _buildExpenseForm(vm, isTablet);
       case 1:
         return vm.showPendingRequestStatus &&
-            vm.fundRequests.any((r) => r.status == PettyCashStatus.pending)
+                vm.fundRequests.any((r) => r.status == PettyCashStatus.pending)
             ? _buildPendingStatusCard(
-          vm.fundRequests.lastWhere((r) => r.status == PettyCashStatus.pending),
-          isTablet,
-        )
+                vm.fundRequests.lastWhere((r) => r.status == PettyCashStatus.pending),
+                isTablet,
+              )
             : _buildRequestForm(vm, isTablet);
       case 2:
         return _buildExpenseHistoryTab(vm, isTablet);
@@ -100,7 +84,6 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     final vm = Provider.of<PettyCashViewModel>(context);
-    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       // Parent [PosShell] Scaffold already resizes for the keyboard; inner resize
@@ -108,7 +91,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
       resizeToAvoidBottomInset: false,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PosScreenAppBar(
-        title: l10n.posPettyCashTitle,
+        title: 'Petty Cash',
         showBackButton: false,
         showHamburger: true,
         onMenuPressed: () =>
@@ -119,17 +102,17 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
         vm.isPettyCashLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: EdgeInsets.fromLTRB(
-            isTablet ? 16 : 8,
-            isTablet ? 16 : 8,
-            isTablet ? 16 : 8,
-            isTablet ? 16 : 8,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ... (rest of children)
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                isTablet ? 16 : 8,
+                isTablet ? 16 : 8,
+                isTablet ? 16 : 8,
+                isTablet ? 16 : 8,
+              ),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ... (rest of children)
               // Balance Header
               _buildBalanceCard(vm, isTablet),
               const SizedBox(height: 16), // Reduced from 24
@@ -175,17 +158,17 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                     fontSize: isTablet ? 11.5 : 11,
                   ),
                   overlayColor: MaterialStateProperty.resolveWith(
-                        (states) {
+                    (states) {
                       if (states.contains(MaterialState.pressed)) {
                         return AppColors.primaryLight.withValues(alpha: 0.12);
                       }
                       return AppColors.primaryLight.withValues(alpha: 0.06);
                     },
                   ),
-                  tabs: [
-                    Tab(text: l10n.posPettyCashExpenseTab),
-                    Tab(text: l10n.posPettyCashFundTab),
-                    Tab(text: l10n.posPettyCashHistoryTab),
+                  tabs: const [
+                    Tab(text: 'Expense'),
+                    Tab(text: 'Fund'),
+                    Tab(text: 'History'),
                   ],
                 ),
               ),
@@ -197,8 +180,8 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               ),
               const SizedBox(height: 24), // Reduced from 40
             ],
-          ),
-        ),
+              ),
+            ),
       ),
     );
   }
@@ -255,7 +238,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      AppLocalizations.of(context)!.posPettyCashSecureWallet,
+                      'SECURE WALLET',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 10,
@@ -268,7 +251,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               ),
               const SizedBox(height: 16),
               Text(
-                AppLocalizations.of(context)!.posPettyCashAvailable,
+                'Available Petty Cash',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.7),
                   fontSize: isTablet ? 13 : 11,
@@ -281,7 +264,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.posCommonSar,
+                    'SAR',
                     style: TextStyle(
                       color: AppColors.primaryLight,
                       fontSize: isTablet ? 18 : 14,
@@ -328,10 +311,10 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              AppLocalizations.of(context)!.posPettyCashLowBalanceMessage,
+              'Petty cash balance is low. Please request fund.',
               style: TextStyle(
-                color: Colors.red.shade800,
-                fontWeight: FontWeight.w700,
+                color: Colors.red.shade800, 
+                fontWeight: FontWeight.w700, 
                 fontSize: 12,
               ),
             ),
@@ -348,9 +331,9 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
-            child: Text(
-              AppLocalizations.of(context)!.posPettyCashRequestFund,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+            child: const Text(
+              'Request Fund',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
             ),
           ),
         ],
@@ -364,9 +347,9 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
       key: const ValueKey('expense_form'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle(AppLocalizations.of(context)!.posPettyCashExpenseDetails, Icons.receipt_long_outlined),
+        _buildSectionTitle('Expense Details', Icons.receipt_long_outlined),
         const SizedBox(height: 12),
-
+        
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -384,7 +367,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildLabel(AppLocalizations.of(context)!.posPettyCashAmountSar),
+                        _buildLabel('Amount (SAR)'),
                         _buildTextField(
                           vm.amountController,
                           '0.00',
@@ -399,7 +382,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildLabel(AppLocalizations.of(context)!.posPettyCashExpenseCategory),
+                        _buildLabel('Expense Category'),
                         _buildDropdown(vm),
                       ],
                     ),
@@ -408,7 +391,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               ),
               if (vm.selectedCategory?.requiresEmployeeSelection == true) ...[
                 SizedBox(height: isTablet ? 16 : 14),
-                _buildLabel(AppLocalizations.of(context)!.posPettyCashEmployeeSalaryAdvance),
+                _buildLabel('Employee (Salary advance)'),
                 if (vm.branchEmployeesLoading)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
@@ -419,14 +402,14 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               ],
               const SizedBox(height: 16),
 
-              _buildLabel(AppLocalizations.of(context)!.posPettyCashDescriptionNotes),
-              _buildTextField(vm.notesController, AppLocalizations.of(context)!.posPettyCashEnterDetailsHint, Icons.notes, TextInputType.text, maxLines: 2),
+              _buildLabel('Description / Notes'),
+              _buildTextField(vm.notesController, 'Enter details...', Icons.notes, TextInputType.text, maxLines: 2),
             ],
           ),
         ),
         const SizedBox(height: 16),
 
-        _buildSectionTitle(AppLocalizations.of(context)!.posPettyCashProofOfExpense, Icons.camera_alt_outlined),
+        _buildSectionTitle('Proof of Expense', Icons.camera_alt_outlined),
         const SizedBox(height: 12),
         _buildImagePicker(vm),
         const SizedBox(height: 24),
@@ -440,7 +423,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 if (mounted) _showError(error);
               }).then((success) {
                 if (success && mounted) {
-                  ToastService.showSuccess(context, AppLocalizations.of(context)!.posPettyCashExpenseSubmitted);
+                  ToastService.showSuccess(context, 'Expense submitted – pending approval');
                 }
               });
             },
@@ -454,28 +437,28 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
             ),
             child: vm.isExpenseSubmitting
                 ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.check_circle_outline, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  AppLocalizations.of(context)!.posPettyCashSubmitExpense,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: isTablet ? 15.5 : 14,
-                    letterSpacing: 0.2,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_circle_outline, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Submit Expense',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: isTablet ? 15.5 : 14,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ],
@@ -487,7 +470,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
       key: const ValueKey('request_form'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle(AppLocalizations.of(context)!.posPettyCashFundRequest, Icons.add_circle_outline_rounded),
+        _buildSectionTitle('Fund Request', Icons.add_circle_outline_rounded),
         const SizedBox(height: 12),
 
         Container(
@@ -500,12 +483,12 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel(AppLocalizations.of(context)!.posPettyCashRequestedAmountSar),
+              _buildLabel('Requested Amount (SAR)'),
               _buildTextField(vm.requestAmountController, '0.00', Icons.add_card, TextInputType.number),
               const SizedBox(height: 16),
 
-              _buildLabel(AppLocalizations.of(context)!.posPettyCashReasonForRequest),
-              _buildTextField(vm.reasonController, AppLocalizations.of(context)!.posPettyCashReasonHint, Icons.help_outline, TextInputType.text, maxLines: 4),
+              _buildLabel('Reason for Request'),
+              _buildTextField(vm.reasonController, 'Explain why you need more funds...', Icons.help_outline, TextInputType.text, maxLines: 4),
             ],
           ),
         ),
@@ -517,8 +500,8 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           child: ElevatedButton(
             onPressed: vm.isRequestSubmitting ? null : () {
               vm.submitRequestAction(
-                    (error) { if (mounted) _showError(error); },
-                    () { if (mounted) ToastService.showSuccess(context, AppLocalizations.of(context)!.posPettyCashFundRequestSubmitted); },
+                (error) { if (mounted) _showError(error); },
+                () { if (mounted) ToastService.showSuccess(context, 'Fund request submitted – pending approval'); },
               );
             },
             style: ElevatedButton.styleFrom(
@@ -531,28 +514,28 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
             ),
             child: vm.isRequestSubmitting
                 ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.send_rounded, size: isTablet ? 21 : 18),
-                const SizedBox(width: 8),
-                Text(
-                  AppLocalizations.of(context)!.posPettyCashSubmitRequest,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: isTablet ? 15.5 : 14,
-                    letterSpacing: 0.2,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.send_rounded, size: isTablet ? 21 : 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Submit Request',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: isTablet ? 15.5 : 14,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ],
@@ -619,15 +602,15 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12), 
             borderSide: BorderSide(color: Colors.grey.shade100),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12), 
             borderSide: BorderSide(color: Colors.grey.shade100),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12), 
             borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.5),
           ),
           filled: true,
@@ -655,11 +638,11 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
       child: DropdownButtonHideUnderline(
         child: DropdownButton<ExpenseCategory>(
           value: vm.selectedCategory,
-          hint: Text(AppLocalizations.of(context)!.posPettyCashSelectCategory, style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+          hint: Text('Select category', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
           isExpanded: true,
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight.withOpacity(0.5)),
           style: const TextStyle(color: AppColors.secondaryLight, fontSize: 14, fontWeight: FontWeight.w600),
-          items: vm.expenseCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(vm.localizedText(cat.name)))).toList(),
+          items: vm.expenseCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat.name))).toList(),
           onChanged: (val) => vm.setCategory(val),
         ),
       ),
@@ -690,7 +673,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
         child: DropdownButton<BranchEmployee>(
           value: value,
           hint: Text(
-            vm.branchEmployees.isEmpty ? AppLocalizations.of(context)!.posPettyCashNoEmployees : AppLocalizations.of(context)!.posPettyCashSelectEmployee,
+            vm.branchEmployees.isEmpty ? 'No employees on file' : 'Select employee',
             style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
           ),
           isExpanded: true,
@@ -699,10 +682,10 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           items: vm.branchEmployees
               .map(
                 (e) => DropdownMenuItem<BranchEmployee>(
-              value: e,
-              child: Text(e.name.isNotEmpty ? vm.localizedText(e.name) : e.id),
-            ),
-          )
+                  value: e,
+                  child: Text(e.name.isNotEmpty ? e.name : e.id),
+                ),
+              )
               .toList(),
           onChanged: vm.branchEmployees.isEmpty ? null : (e) => vm.setBranchEmployee(e),
         ),
@@ -711,16 +694,15 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
   }
 
   String _historyStatusLabel(String key) {
-    final l10n = AppLocalizations.of(context)!;
     switch (key) {
       case 'all':
-        return l10n.posCommonAll;
+        return 'All';
       case 'pending':
-        return l10n.posCommonPending;
+        return 'Pending';
       case 'approved':
-        return l10n.posCommonApproved;
+        return 'Approved';
       case 'rejected':
-        return l10n.posCommonRejected;
+        return 'Rejected';
       default:
         return key;
     }
@@ -756,7 +738,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
 
   Widget _buildHistoryFilters(PettyCashViewModel vm, bool isTablet) {
     String fmt(DateTime? d) =>
-        d == null ? AppLocalizations.of(context)!.posPettyCashSelectDate : DateFormat('yyyy-MM-dd').format(d);
+        d == null ? 'Select date' : DateFormat('yyyy-MM-dd').format(d);
 
     final dateLabelStyle = TextStyle(
       fontSize: isTablet ? 12 : 10.5,
@@ -835,7 +817,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
         Expanded(
           flex: 18,
           child: dateField(
-            prefix: AppLocalizations.of(context)!.posPettyCashFrom,
+            prefix: 'From:',
             value: vm.expenseHistoryFromDate,
             onTap: () => _pickHistoryFromDate(vm),
           ),
@@ -844,7 +826,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
         Expanded(
           flex: 18,
           child: dateField(
-            prefix: AppLocalizations.of(context)!.posPettyCashTo,
+            prefix: 'To:',
             value: vm.expenseHistoryToDate,
             onTap: () => _pickHistoryToDate(vm),
           ),
@@ -858,19 +840,19 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               isExpanded: true,
               style: filterDropdownTextStyle,
               hint: Text(
-                AppLocalizations.of(context)!.posPettyCashAllCategories,
+                'All categories',
                 style: filterDropdownTextStyle,
               ),
               items: [
                 DropdownMenuItem<String?>(
                   value: null,
-                  child: Text(AppLocalizations.of(context)!.posPettyCashAllCategories, style: filterDropdownTextStyle),
+                  child: Text('All categories', style: filterDropdownTextStyle),
                 ),
                 ...vm.expenseCategories.map(
-                      (c) => DropdownMenuItem<String?>(
+                  (c) => DropdownMenuItem<String?>(
                     value: c.id,
                     child: Text(
-                      vm.localizedText(c.name),
+                      c.name,
                       style: filterDropdownTextStyle,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -916,7 +898,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              AppLocalizations.of(context)!.posPettyCashReset,
+              'Reset',
               style: TextStyle(
                 fontSize: isTablet ? 13 : 11,
                 fontWeight: FontWeight.w700,
@@ -937,7 +919,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
       key: const ValueKey('expense_history_tab'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle(AppLocalizations.of(context)!.posPettyCashHistoryTitle, Icons.history_rounded),
+        _buildSectionTitle('Expense & fund history', Icons.history_rounded),
         const SizedBox(height: 14),
         _buildHistoryFilters(vm, isTablet),
         const SizedBox(height: 16),
@@ -946,77 +928,77 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           child: vm.expenseHistoryLoading && vm.expenseHistory.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : vm.expenseHistory.isEmpty
-              ? RefreshIndicator(
-            onRefresh: () => vm.fetchExpenseHistory(refresh: true),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                SizedBox(
-                  height: listHeight - 48,
-                  child: Center(
-                    child: Text(
-                      AppLocalizations.of(context)!.posPettyCashNoHistory,
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          )
-              : RefreshIndicator(
-            onRefresh: () => vm.fetchExpenseHistory(refresh: true),
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: _expenseHistoryListItemCount(vm, isTablet),
-              itemBuilder: (ctx, i) {
-                if (_expenseHistoryIsLoadMoreRow(vm, i, isTablet)) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Center(
-                      child: TextButton(
-                        onPressed: vm.expenseHistoryLoading
-                            ? null
-                            : () => vm.fetchExpenseHistory(refresh: false),
-                        child: vm.expenseHistoryLoading
-                            ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                            : Text(AppLocalizations.of(context)!.posPettyCashLoadMore),
+                  ? RefreshIndicator(
+                      onRefresh: () => vm.fetchExpenseHistory(refresh: true),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(
+                            height: listHeight - 48,
+                            child: Center(
+                              child: Text(
+                                'No history for this filter.',
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () => vm.fetchExpenseHistory(refresh: true),
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: _expenseHistoryListItemCount(vm, isTablet),
+                        itemBuilder: (ctx, i) {
+                          if (_expenseHistoryIsLoadMoreRow(vm, i, isTablet)) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: TextButton(
+                                  onPressed: vm.expenseHistoryLoading
+                                      ? null
+                                      : () => vm.fetchExpenseHistory(refresh: false),
+                                  child: vm.expenseHistoryLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Text('Load more'),
+                                ),
+                              ),
+                            );
+                          }
+                          if (isTablet) {
+                            final base = i * 3;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: _buildHistorySlot(vm, base, df),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _buildHistorySlot(vm, base + 1, df),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _buildHistorySlot(vm, base + 2, df),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _buildHistoryRow(vm.expenseHistory[i], df),
+                          );
+                        },
                       ),
                     ),
-                  );
-                }
-                if (isTablet) {
-                  final base = i * 3;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: _buildHistorySlot(vm, base, df),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildHistorySlot(vm, base + 1, df),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildHistorySlot(vm, base + 2, df),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _buildHistoryRow(vm, vm.expenseHistory[i], df),
-                );
-              },
-            ),
-          ),
         ),
       ],
     );
@@ -1031,10 +1013,10 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
   }
 
   bool _expenseHistoryIsLoadMoreRow(
-      PettyCashViewModel vm,
-      int index,
-      bool isTablet,
-      ) {
+    PettyCashViewModel vm,
+    int index,
+    bool isTablet,
+  ) {
     if (!vm.expenseHistoryHasMore) return false;
     final n = vm.expenseHistory.length;
     if (!isTablet) return index >= n;
@@ -1043,17 +1025,17 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
   }
 
   Widget _buildHistorySlot(
-      PettyCashViewModel vm,
-      int index,
-      DateFormat df,
-      ) {
+    PettyCashViewModel vm,
+    int index,
+    DateFormat df,
+  ) {
     if (index < 0 || index >= vm.expenseHistory.length) {
       return const SizedBox.shrink();
     }
-    return _buildHistoryRow(vm, vm.expenseHistory[index], df);
+    return _buildHistoryRow(vm.expenseHistory[index], df);
   }
 
-  Widget _buildHistoryRow(PettyCashViewModel vm, CashierExpenseHistoryEntry e, DateFormat df) {
+  Widget _buildHistoryRow(CashierExpenseHistoryEntry e, DateFormat df) {
     final st = e.status.toLowerCase();
     Color c = Colors.orange;
     if (st == 'approved') c = Colors.green;
@@ -1084,7 +1066,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  vm.localizedText(e.kind.replaceAll('_', ' ')).toUpperCase(),
+                  e.kind.replaceAll('_', ' ').toUpperCase(),
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -1094,7 +1076,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 ),
               ),
               Text(
-                '${AppLocalizations.of(context)!.posCommonSar} ${e.amount.toStringAsFixed(2)}',
+                'SAR ${e.amount.toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ],
@@ -1102,21 +1084,21 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           if ((e.category ?? '').isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              vm.localizedText(e.category!),
+              e.category!,
               style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade800),
             ),
           ],
           if ((e.employeeName ?? '').isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              AppLocalizations.of(context)!.posPettyCashEmployeePrefix(vm.localizedText(e.employeeName!)),
+              'Employee: ${e.employeeName}',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
             ),
           ],
           if ((e.description ?? '').isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              vm.localizedText(e.description!),
+              e.description!,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
@@ -1130,7 +1112,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           if ((e.rejectionReason ?? '').isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              AppLocalizations.of(context)!.posPettyCashRejectionPrefix(vm.localizedText(e.rejectionReason!)),
+              'Rejection: ${e.rejectionReason}',
               style: TextStyle(fontSize: 12, color: Colors.red.shade800),
             ),
           ],
@@ -1149,40 +1131,40 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           color: Colors.grey.shade50,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.grey.shade300,
+            color: Colors.grey.shade300, 
             style: BorderStyle.solid,
             width: 1,
           ),
         ),
         child: vm.selectedImage != null
             ? ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.file(vm.selectedImage!, fit: BoxFit.cover),
-        )
+                borderRadius: BorderRadius.circular(16),
+                child: Image.file(vm.selectedImage!, fit: BoxFit.cover),
+              )
             : DottedContainer(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.cloud_upload_outlined, color: AppColors.secondaryLight, size: 24),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap to upload receipt', 
+                      style: TextStyle(
+                        color: AppColors.secondaryLight.withOpacity(0.6), 
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      )
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.cloud_upload_outlined, color: AppColors.secondaryLight, size: 24),
               ),
-              const SizedBox(height: 8),
-              Text(
-                  AppLocalizations.of(context)!.posPettyCashTapUploadReceipt,
-                  style: TextStyle(
-                    color: AppColors.secondaryLight.withOpacity(0.6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  )
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1209,7 +1191,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildSectionTitle(AppLocalizations.of(context)!.posPettyCashRequestStatus, Icons.info_outline),
+              _buildSectionTitle('Request Status', Icons.info_outline),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -1223,7 +1205,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                     Icon(Icons.access_time_rounded, size: 14, color: Colors.orange.shade700),
                     const SizedBox(width: 6),
                     Text(
-                      AppLocalizations.of(context)!.posPettyCashPendingUpper,
+                      'PENDING',
                       style: TextStyle(
                         color: Colors.orange.shade700,
                         fontWeight: FontWeight.w900,
@@ -1236,14 +1218,14 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
             ],
           ),
           const SizedBox(height: 24),
-          _buildInfoRow(Icons.account_balance_wallet_outlined, AppLocalizations.of(context)!.posPettyCashRequestedAmount, '${AppLocalizations.of(context)!.posCommonSar} ${request.amount.toStringAsFixed(2)}'),
+          _buildInfoRow(Icons.account_balance_wallet_outlined, 'Requested Amount', 'SAR ${request.amount.toStringAsFixed(2)}'),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.help_outline, AppLocalizations.of(context)!.posPettyCashReason, request.reason),
+          _buildInfoRow(Icons.help_outline, 'Reason', request.reason),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.calendar_today_outlined, AppLocalizations.of(context)!.posPettyCashRequestDate, '${request.date.day}/${request.date.month}/${request.date.year}'),
+          _buildInfoRow(Icons.calendar_today_outlined, 'Request Date', '${request.date.day}/${request.date.month}/${request.date.year}'),
           const SizedBox(height: 32),
           Text(
-            AppLocalizations.of(context)!.posPettyCashPendingReviewMessage,
+            'Your request is currently being reviewed by administration. You will be notified once it is approved.',
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.5),
           ),
           const SizedBox(height: 32),
@@ -1256,9 +1238,9 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 side: const BorderSide(color: AppColors.primaryLight),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(
-                AppLocalizations.of(context)!.posPettyCashSubmitNewRequest,
-                style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.bold),
+              child: const Text(
+                'Submit New Request',
+                style: TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1278,22 +1260,22 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                  label,
-                  style: TextStyle(
-                    color: AppColors.secondaryLight.withOpacity(0.5),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  )
+                label, 
+                style: TextStyle(
+                  color: AppColors.secondaryLight.withOpacity(0.5), 
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                )
               ),
               const SizedBox(height: 1),
               Text(
-                  value,
-                  style: const TextStyle(
-                    color: AppColors.secondaryLight,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  )
-               ),
+                value, 
+                style: const TextStyle(
+                  color: AppColors.secondaryLight,
+                  fontWeight: FontWeight.w700, 
+                  fontSize: 14,
+                )
+              ),
             ],
           ),
         ),

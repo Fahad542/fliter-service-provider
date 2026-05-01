@@ -1,21 +1,47 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../services/session_service.dart';
+import '../../../services/realtime_service.dart';
 import '../../../models/pos_order_model.dart';
 import '../../../models/pos_technician_model.dart';
 import '../../../utils/toast_service.dart';
-import '../../../l10n/app_localizations.dart';
 
 class TechnicianViewModel extends ChangeNotifier {
   final PosRepository _posRepository;
   final SessionService _sessionService;
+  final RealtimeService _realtime = RealtimeService();
+
+  Timer? _technicianCatalogSocketDebounce;
 
   TechnicianViewModel({
     required PosRepository posRepository,
     required SessionService sessionService,
   })  : _posRepository = posRepository,
-        _sessionService = sessionService;
+        _sessionService = sessionService {
+    _realtime.on(
+      RealtimeService.eventCashierTechniciansUpdated,
+      _onTechniciansCatalogSocket,
+    );
+  }
+
+  void _onTechniciansCatalogSocket(Map<String, dynamic> _) {
+    _technicianCatalogSocketDebounce?.cancel();
+    _technicianCatalogSocketDebounce = Timer(const Duration(milliseconds: 400), () {
+      refreshTechniciansCatalogQuiet();
+    });
+  }
+
+  @override
+  void dispose() {
+    _technicianCatalogSocketDebounce?.cancel();
+    _realtime.off(
+      RealtimeService.eventCashierTechniciansUpdated,
+      _onTechniciansCatalogSocket,
+    );
+    super.dispose();
+  }
 
   List<PosTechnician> _technicians = [];
   String _searchQuery = '';
@@ -27,13 +53,14 @@ class TechnicianViewModel extends ChangeNotifier {
   String? _assignmentMessage;
   bool _assignmentSuccess = false;
   List<JobTechnician> _lastCashierAssignTechnicians = [];
+  final Set<String> _dutyToggleBusyIds = {};
   final Set<String> _presenceToggleBusyIds = {};
 
   List<PosTechnician> get technicians {
     if (_searchQuery.isEmpty) return _technicians;
-    return _technicians.where((t) =>
-    t.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        t.employeeType.toLowerCase().contains(_searchQuery.toLowerCase())
+    return _technicians.where((t) => 
+      t.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      t.employeeType.toLowerCase().contains(_searchQuery.toLowerCase())
     ).toList();
   }
 
@@ -45,12 +72,12 @@ class TechnicianViewModel extends ChangeNotifier {
     final Map<String, List<PosTechnician>> grouped = {};
     for (var tech in technicians) {
       final type =
-      tech.technicianType.isEmpty ? 'General' : tech.technicianType;
+          tech.technicianType.isEmpty ? 'General' : tech.technicianType;
       grouped.putIfAbsent(type, () => []).add(tech);
     }
     return grouped;
   }
-
+ 
   bool get isLoading => _isLoading;
   /// True when [fetchCashierTechnicians] / [fetchTechnicians] has populated `_technicians` (not cleared).
   bool get hasTechnicianList => _technicians.isNotEmpty;
@@ -63,6 +90,8 @@ class TechnicianViewModel extends ChangeNotifier {
       List.unmodifiable(_lastCashierAssignTechnicians);
 
   bool isAssigningTechnician(String id) => _isAssigning && _assigningTechnicianId == id;
+
+  bool isDutyToggleBusy(String id) => _dutyToggleBusyIds.contains(id);
 
   bool isPresenceToggleBusy(String id) => _presenceToggleBusyIds.contains(id);
 
@@ -197,13 +226,13 @@ class TechnicianViewModel extends ChangeNotifier {
       }
 
       final response =
-      await _posRepository.assignTechnicians(jobId, [employeeId], token);
+          await _posRepository.assignTechnicians(jobId, [employeeId], token);
       _assignmentMessage = response.message;
       if (response.isEffectiveAssignFailure([employeeId])) {
         _assignmentSuccess = false;
         if (_assignmentMessage == null || _assignmentMessage!.trim().isEmpty) {
           _assignmentMessage =
-          'Technician was not assigned. The server may still count old assignments on this job.';
+              'Technician was not assigned. The server may still count old assignments on this job.';
         }
         return false;
       }
@@ -242,14 +271,14 @@ class TechnicianViewModel extends ChangeNotifier {
           m.contains('no new assignments') &&
           employeeIds.isNotEmpty) {
         _assignmentMessage =
-        'Cannot apply removals: server treats assign as add-only. Backend must sync '
+            'Cannot apply removals: server treats assign as add-only. Backend must sync '
             '`employeeIds` to the full desired list (or honor sync: true).';
       }
       if (response.isEffectiveAssignFailure(employeeIds)) {
         _assignmentSuccess = false;
         if (_assignmentMessage == null || _assignmentMessage!.trim().isEmpty) {
           _assignmentMessage =
-          'No technicians were assigned. The server may still count cancelled assignments on this job.';
+              'No technicians were assigned. The server may still count cancelled assignments on this job.';
         }
         return false;
       }
@@ -270,12 +299,111 @@ class TechnicianViewModel extends ChangeNotifier {
     }
   }
 
-  /// PATCH /cashier/technicians/:employeeId/online-status then GET /cashier/technicians.
+  static String _encodeDutyModeForType(
+    String technicianType,
+    bool workshop,
+    bool onCall,
+  ) {
+    final t = technicianType.toLowerCase();
+    if (t == 'workshop') {
+      return workshop ? 'workshop' : 'inactive';
+    }
+    if (t == 'on_call') {
+      return onCall ? 'on_call' : 'inactive';
+    }
+    if (!workshop && !onCall) return 'inactive';
+    if (workshop && onCall) return 'workshop';
+    if (workshop) return 'workshop';
+    return 'on_call';
+  }
+
+  Future<void> setTechnicianWorkshopDuty(
+    BuildContext context,
+    PosTechnician tech,
+    bool value,
+  ) async {
+    await _setTechnicianDutyFlags(
+      context,
+      tech,
+      workshop: value,
+      onCall: value ? false : tech.onCallDuty,
+    );
+  }
+
+  Future<void> setTechnicianOnCallDuty(
+    BuildContext context,
+    PosTechnician tech,
+    bool value,
+  ) async {
+    await _setTechnicianDutyFlags(
+      context,
+      tech,
+      workshop: value ? false : tech.workshopDuty,
+      onCall: value,
+    );
+  }
+
+  Future<void> _setTechnicianDutyFlags(
+    BuildContext context,
+    PosTechnician tech, {
+    required bool workshop,
+    required bool onCall,
+  }) async {
+    if (!tech.isOnline) {
+      if (context.mounted) {
+        ToastService.showError(
+          context,
+          'Mark this technician online before changing workshop or on-call duty.',
+        );
+      }
+      return;
+    }
+    final id = tech.id;
+    if (_dutyToggleBusyIds.contains(id)) return;
+    _dutyToggleBusyIds.add(id);
+    notifyListeners();
+
+    try {
+      final token = await _sessionService.getToken();
+      if (token == null) {
+        throw Exception('Not signed in');
+      }
+      final mode = _encodeDutyModeForType(tech.technicianType, workshop, onCall);
+      final res = await _posRepository.patchCashierTechnicianDutyMode(
+        token,
+        id,
+        mode,
+      );
+      if (res['success'] == false) {
+        final err = res['message']?.toString();
+        throw Exception(
+          (err != null && err.isNotEmpty) ? err : 'Failed to update duty',
+        );
+      }
+      await refreshTechniciansCatalogQuiet();
+      if (context.mounted) {
+        final msg = res['message']?.toString();
+        ToastService.showSuccess(
+          context,
+          (msg != null && msg.isNotEmpty) ? msg : 'Duty updated',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, e.toString());
+      }
+    } finally {
+      _dutyToggleBusyIds.remove(id);
+      notifyListeners();
+    }
+  }
+
+  /// PATCH /cashier/technicians/:employeeId/online-status then refresh catalog.
   Future<void> setTechnicianPresence(
-      BuildContext context,
-      String technicianId,
-      bool online,
-      ) async {
+    BuildContext context,
+    String technicianId,
+    bool online,
+  ) async {
     if (_presenceToggleBusyIds.contains(technicianId)) return;
     _presenceToggleBusyIds.add(technicianId);
     notifyListeners();
@@ -299,15 +427,14 @@ class TechnicianViewModel extends ChangeNotifier {
       }
       await refreshTechniciansCatalogQuiet();
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
         final msg = res['message']?.toString();
-        // Prefer server message; fall back to l10n string so locale switch works
-        final fallback = online
-            ? (l10n?.posTechPresenceOnline ?? 'Technician marked online')
-            : (l10n?.posTechPresenceOffline ?? 'Technician marked offline');
         ToastService.showSuccess(
           context,
-          (msg != null && msg.isNotEmpty) ? msg : fallback,
+          (msg != null && msg.isNotEmpty)
+              ? msg
+              : (online
+                  ? 'Technician marked online'
+                  : 'Technician marked offline'),
         );
       }
     } catch (e) {

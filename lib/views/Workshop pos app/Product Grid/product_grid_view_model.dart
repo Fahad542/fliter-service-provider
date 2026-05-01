@@ -1,42 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../services/locker_translation_mixin.dart';
 import '../../../../models/pos_product_model.dart';
 
 class ProductGridViewModel extends ChangeNotifier {
-  Locale? _translatedLocale;
-  String _translationSignature = '';
-  final Map<String, String> _translationCache = {};
-
-  String localizedText(String value) => _translationCache[value] ?? value;
-
-  Future<void> translateApiDataForLocale(Locale locale, List<PosProduct> products) async {
-    final signature = products
-        .map((p) => '${p.id}|${p.name}|${p.category}|${p.departmentName}|${p.unit}')
-        .join(';;');
-    if (_translatedLocale == locale && _translationSignature == signature) return;
-    _translatedLocale = locale;
-    _translationSignature = signature;
-    _translationCache.clear();
-    if (locale.languageCode != 'ar') {
-      notifyListeners();
-      return;
-    }
-
-    Future<void> add(String? value) async {
-      final v = (value ?? '').trim();
-      if (v.isEmpty || _translationCache.containsKey(v)) return;
-      _translationCache[v] = await AppTranslationService.localizedText(v);
-    }
-
-    for (final p in products) {
-      await add(p.name);
-      await add(p.category);
-      await add(p.departmentName);
-      await add(p.unit);
-    }
-    notifyListeners();
-  }
-
   String _selectedDepartment = 'All';
   String _selectedCategory = 'All';
   String _selectedSubCategory = 'All';
@@ -90,8 +55,6 @@ class ProductGridViewModel extends ChangeNotifier {
     cats.sort();
     return ['All', ...cats];
   }
-
-  String categoryDisplayName(String category) => category == 'All' ? 'All' : localizedText(category);
 
   @override
   void dispose() {

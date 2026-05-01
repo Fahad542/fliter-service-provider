@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../l10n/app_localizations.dart';
 
 class WorkshopRegistration {
   final String workshopName;
@@ -156,7 +155,6 @@ class OwnerEmployee {
       technicianStatus.toLowerCase() == 'available' ||
           technicianStatus.toLowerCase() == 'online';
 
-  /// Raw English label — used only where l10n context is unavailable.
   String get technicianStatusLabel {
     final s = technicianStatus.trim().toLowerCase();
     if (s == 'available') return 'AVAILABLE';
@@ -166,17 +164,6 @@ class OwnerEmployee {
     return isTechnicianAvailable ? 'AVAILABLE' : 'OFFLINE';
   }
 
-  /// Localized technician status label.
-  String localizedTechnicianStatusLabel(AppLocalizations l10n) {
-    final s = technicianStatus.trim().toLowerCase();
-    if (s == 'available') return l10n.empStatusAvailable;
-    if (s == 'online') return l10n.empStatusOnline;
-    if (s == 'busy') return l10n.empStatusBusy;
-    if (s == 'offline') return l10n.empStatusOffline;
-    return isTechnicianAvailable ? l10n.empStatusAvailable : l10n.empStatusOffline;
-  }
-
-  /// Raw English last-seen — used only where l10n context is unavailable.
   String get formattedLastSeen {
     if (lastSeenAt.isEmpty) return 'Never';
     try {
@@ -193,42 +180,6 @@ class OwnerEmployee {
     } catch (e) {
       return '';
     }
-  }
-
-  /// Localized last-seen string.
-  String localizedFormattedLastSeen(AppLocalizations l10n) {
-    if (lastSeenAt.isEmpty) return l10n.empLastSeenNever;
-    try {
-      final dateTime = DateTime.parse(lastSeenAt);
-      final now = DateTime.now();
-      final difference = now.difference(dateTime);
-
-      if (difference.inMinutes < 1) return l10n.empLastSeenJustNow;
-      if (difference.inMinutes < 60) return l10n.empLastSeenMinutes(difference.inMinutes);
-      if (difference.inHours < 24) return l10n.empLastSeenHours(difference.inHours);
-      if (difference.inDays < 7) return l10n.empLastSeenDays(difference.inDays);
-      return lastSeenAt.split('T')[0];
-    } catch (e) {
-      return '';
-    }
-  }
-
-  /// Localized display role (e.g. "فني" in Arabic, "TECHNICIAN" in English).
-  String localizedRole(AppLocalizations l10n) {
-    final r = role.trim().toLowerCase();
-    if (r == 'technician') return l10n.empRoleTechnician;
-    if (r == 'cashier') return l10n.empRoleCashier;
-    if (r == 'supplier') return l10n.empRoleSupplier;
-    return role.toUpperCase();
-  }
-
-  /// Localized technician type badge.
-  String localizedTechType(AppLocalizations l10n) {
-    final t = (technicianType ?? '').trim().toLowerCase();
-    if (t == 'workshop') return l10n.empTechTypeWorkshop;
-    if (t == 'both') return l10n.empTechTypeBoth;
-    if (t == 'oncall') return l10n.empTechTypeOnCall;
-    return (technicianType ?? l10n.empMgmtInfoUnknown).toUpperCase();
   }
 
   OwnerEmployee({
@@ -353,56 +304,6 @@ class OwnerProduct {
     this.allowDecimalQty = false,
     this.isActive = true,
   });
-
-  OwnerProduct copyWith({
-    String? id,
-    String? name,
-    String? type,
-    String? category,
-    String? subCategoryName,
-    String? departmentName,
-    List<String>? departmentIds,
-    String? unit,
-    double? conversionFactor,
-    double? purchasePrice,
-    double? salePrice,
-    double? corporateBasePrice,
-    double? corporateLowerLimit,
-    double? corporateUpperLimit,
-    double? stockQty,
-    double? criticalLevel,
-    double? reorderLevel,
-    String? imageUrl,
-    bool? isPriceEditable,
-    int? kmTypeValue,
-    bool? allowDecimalQty,
-    bool? isActive,
-  }) {
-    return OwnerProduct(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      type: type ?? this.type,
-      category: category ?? this.category,
-      subCategoryName: subCategoryName ?? this.subCategoryName,
-      departmentName: departmentName ?? this.departmentName,
-      departmentIds: departmentIds ?? this.departmentIds,
-      unit: unit ?? this.unit,
-      conversionFactor: conversionFactor ?? this.conversionFactor,
-      purchasePrice: purchasePrice ?? this.purchasePrice,
-      salePrice: salePrice ?? this.salePrice,
-      corporateBasePrice: corporateBasePrice ?? this.corporateBasePrice,
-      corporateLowerLimit: corporateLowerLimit ?? this.corporateLowerLimit,
-      corporateUpperLimit: corporateUpperLimit ?? this.corporateUpperLimit,
-      stockQty: stockQty ?? this.stockQty,
-      criticalLevel: criticalLevel ?? this.criticalLevel,
-      reorderLevel: reorderLevel ?? this.reorderLevel,
-      imageUrl: imageUrl ?? this.imageUrl,
-      isPriceEditable: isPriceEditable ?? this.isPriceEditable,
-      kmTypeValue: kmTypeValue ?? this.kmTypeValue,
-      allowDecimalQty: allowDecimalQty ?? this.allowDecimalQty,
-      isActive: isActive ?? this.isActive,
-    );
-  }
 
   factory OwnerProduct.fromJson(Map<String, dynamic> json) {
     return OwnerProduct(
@@ -759,6 +660,7 @@ class PosCounter {
   final double systemCorporate;
   final double systemTamara;
   final double systemTabby;
+  final double systemOthers;
   final double systemTotalSales;
 
   // Per-category physical totals
@@ -767,6 +669,7 @@ class PosCounter {
   final double physicalCorporate;
   final double physicalTamara;
   final double physicalTabby;
+  final double physicalOthers;
 
   // Per-category diffs (physical − system, same sign as DB)
   final double diffCash;
@@ -774,6 +677,7 @@ class PosCounter {
   final double diffCorporate;
   final double diffTamara;
   final double diffTabby;
+  final double diffOthers;
 
   // Overall reconciliation difference (system − physical)
   final double reconciliationTotalDifference;
@@ -782,7 +686,7 @@ class PosCounter {
 
   // Backend-computed summary fields (v2+)
   final double systemSummary;    // json['system'] = systemTotalSales headline
-  final double physicalSummary;  // json['physicalTotal'] = sum of all 5 physical buckets
+  final double physicalSummary;  // json['physicalTotal'] = sum of all physical buckets
   final double lockerDiff;       // json['lockerDiff'] = system − physicalTotal
 
   /// ISO timestamp from [`startTime`]; same instant as [openedAt] when API sends schema v3+.
@@ -807,17 +711,20 @@ class PosCounter {
     this.systemCorporate = 0,
     this.systemTamara = 0,
     this.systemTabby = 0,
+    this.systemOthers = 0,
     this.systemTotalSales = 0,
     this.physicalCash = 0,
     this.physicalBank = 0,
     this.physicalCorporate = 0,
     this.physicalTamara = 0,
     this.physicalTabby = 0,
+    this.physicalOthers = 0,
     this.diffCash = 0,
     this.diffBank = 0,
     this.diffCorporate = 0,
     this.diffTamara = 0,
     this.diffTabby = 0,
+    this.diffOthers = 0,
     this.reconciliationTotalDifference = 0,
     this.closingId,
     this.schemaVersion = 1,
@@ -842,7 +749,7 @@ class PosCounter {
   /// The single "PHYSICAL" headline: prefer backend-computed total, else sum of categories
   double get effectivePhysicalTotal {
     if (physicalSummary > 0) return physicalSummary;
-    return physicalCash + physicalBank + physicalCorporate + physicalTamara + physicalTabby;
+    return physicalCash + physicalBank + physicalCorporate + physicalTamara + physicalTabby + physicalOthers;
   }
 
   /// The single "DIFF" headline: prefer lockerDiff, else reconciliationTotalDifference
@@ -861,9 +768,20 @@ class PosCounter {
     return null;
   }
 
+  /// UTC instant from backend millis (preferred over parsing zoned ISO strings on the client).
+  static DateTime? _fromEpochMs(dynamic v) {
+    if (v == null) return null;
+    final n = v is int ? v : int.tryParse(v.toString());
+    if (n == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(n, isUtc: true);
+  }
+
   factory PosCounter.fromJson(Map<String, dynamic> json) {
     final schemaVersion =
         int.tryParse(json['closingReportSchemaVersion']?.toString() ?? '1') ?? 1;
+
+    final openEpoch = _fromEpochMs(json['openedAtEpochMs']);
+    final closeEpoch = _fromEpochMs(json['closedAtEpochMs']);
 
     final startT = _parseDt(json['startTime']);
     final endT = _parseDt(json['endTime']);
@@ -873,7 +791,7 @@ class PosCounter {
             json['shiftStartedAt'] ??
             json['startedAt'] ??
             json['openTime']);
-    final openedFinal = legacyOpened ?? startT ?? DateTime.now();
+    final openedFinal = openEpoch ?? legacyOpened ?? startT ?? DateTime.now();
 
     final legacyClosed =
         _parseDt(json['closedAt'] ??
@@ -881,11 +799,17 @@ class PosCounter {
             json['endedAt'] ??
             json['closingTime']);
 
+    final startResolved = openEpoch ?? startT;
+    final endResolved = closeEpoch ?? endT;
+    final closedResolved = closeEpoch ?? legacyClosed ?? endT;
+
     final sysCash = _d(json['systemCash']);
     final sysBank = _d(json['systemBank']);
     final sysCorp = _d(json['systemCorporate']);
     final sysTamara = _d(json['systemTamara']);
     final sysTabby = _d(json['systemTabby']);
+    final sysOthers = _d(
+        json['systemOthers'] ?? json['systemOthersTotal']);
     // v2: 'system' = systemTotalSales headline. v1 fallback: shiftSales
     final sysTotalSales = _d(
         json['systemTotalSales'] ?? json['system'] ?? json['shiftSales']);
@@ -895,6 +819,8 @@ class PosCounter {
     final phyCorp = _d(json['physicalCorporate']);
     final phyTamara = _d(json['physicalTamara']);
     final phyTabby = _d(json['physicalTabby']);
+    final phyOthers = _d(
+        json['physicalOthers'] ?? json['physical_others']);
 
     // v2 summary fields
     final systemSummary = _d(json['system'] ?? json['systemTotalSales']);
@@ -907,13 +833,18 @@ class PosCounter {
     final dCorp = json['diffCorporate'] != null ? _d(json['diffCorporate']) : sysCorp - phyCorp;
     final dTamara = json['diffTamara'] != null ? _d(json['diffTamara']) : sysTamara - phyTamara;
     final dTabby = json['diffTabby'] != null ? _d(json['diffTabby']) : sysTabby - phyTabby;
+    final dOthers = json['diffOthers'] != null
+        ? _d(json['diffOthers'])
+        : json['othersDiff'] != null
+            ? _d(json['othersDiff'])
+            : sysOthers - phyOthers;
 
     // Prefer explicit reconciliation total, then lockerDiff, then compute
     final reconTotal = json['reconciliationTotalDifference'] != null
         ? _d(json['reconciliationTotalDifference'])
         : (json['lockerDiff'] != null
         ? _d(json['lockerDiff'])
-        : dCash + dBank + dCorp + dTamara + dTabby);
+        : dCash + dBank + dCorp + dTamara + dTabby + dOthers);
 
     return PosCounter(
       id: json['posSessionId']?.toString() ?? '',
@@ -923,25 +854,28 @@ class PosCounter {
       shiftSales: _d(json['shiftSales']),
       openOrders: int.tryParse(json['shiftOpenOrders']?.toString() ?? '0') ?? 0,
       openedAt: openedFinal,
-      closedAt: legacyClosed ?? endT,
-      startTime: startT,
-      endTime: endT,
+      closedAt: closedResolved,
+      startTime: startResolved,
+      endTime: endResolved,
       systemCash: sysCash,
       systemBank: sysBank,
       systemCorporate: sysCorp,
       systemTamara: sysTamara,
       systemTabby: sysTabby,
+      systemOthers: sysOthers,
       systemTotalSales: sysTotalSales,
       physicalCash: phyCash,
       physicalBank: phyBank,
       physicalCorporate: phyCorp,
       physicalTamara: phyTamara,
       physicalTabby: phyTabby,
+      physicalOthers: phyOthers,
       diffCash: dCash,
       diffBank: dBank,
       diffCorporate: dCorp,
       diffTamara: dTamara,
       diffTabby: dTabby,
+      diffOthers: dOthers,
       reconciliationTotalDifference: reconTotal,
       closingId: json['closingId']?.toString(),
       schemaVersion: schemaVersion,
@@ -1477,10 +1411,6 @@ class PettyCashRequestItem {
   final String? translatedBranchName;
   final String? translatedCashierName;
   final String? translatedStatus;
-  final String? translatedReason;
-  final String? translatedCategoryLabel;
-  final String? translatedEmployeeName;
-  final String? translatedRejectionReason;
 
   /// Alias used by ApprovalsViewModel for the request party name.
   /// Falls back to [cashierName] since petty-cash requests have no separate
@@ -1508,10 +1438,6 @@ class PettyCashRequestItem {
     this.translatedBranchName,
     this.translatedCashierName,
     this.translatedStatus,
-    this.translatedReason,
-    this.translatedCategoryLabel,
-    this.translatedEmployeeName,
-    this.translatedRejectionReason,
   });
 
   PettyCashRequestItem copyWith({
@@ -1535,10 +1461,6 @@ class PettyCashRequestItem {
     String? translatedBranchName,
     String? translatedCashierName,
     String? translatedStatus,
-    String? translatedReason,
-    String? translatedCategoryLabel,
-    String? translatedEmployeeName,
-    String? translatedRejectionReason,
   }) {
     return PettyCashRequestItem(
       id: id ?? this.id,
@@ -1561,10 +1483,6 @@ class PettyCashRequestItem {
       translatedBranchName: translatedBranchName ?? this.translatedBranchName,
       translatedCashierName: translatedCashierName ?? this.translatedCashierName,
       translatedStatus: translatedStatus ?? this.translatedStatus,
-      translatedReason: translatedReason ?? this.translatedReason,
-      translatedCategoryLabel: translatedCategoryLabel ?? this.translatedCategoryLabel,
-      translatedEmployeeName: translatedEmployeeName ?? this.translatedEmployeeName,
-      translatedRejectionReason: translatedRejectionReason ?? this.translatedRejectionReason,
     );
   }
 

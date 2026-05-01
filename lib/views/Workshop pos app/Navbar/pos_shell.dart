@@ -89,9 +89,21 @@ class _PosShellState extends State<PosShell> {
   bool _didBootstrapShell = false;
   final GlobalKey<ScaffoldState> _shellScaffoldKey = GlobalKey<ScaffoldState>();
 
+  /// Only tabs the user has opened are built — avoids IndexedStack eagerly mounting
+  /// every shell tab (each had initState/network calls before first visit).
+  final Set<int> _shellTabsBuilt = {};
+
+  /// Stable element identity per tab — reduces semantics/layout churn inside [IndexedStack].
+  late final List<GlobalKey> _shellTabKeys;
+
   @override
   void initState() {
     super.initState();
+    _shellTabsBuilt.add(widget.initialIndex);
+    _shellTabKeys = List<GlobalKey>.generate(
+      _screens.length,
+      (i) => GlobalKey(debugLabel: 'pos_shell_tab_$i'),
+    );
     PosShellScaffoldRegistry.attach(_shellScaffoldKey);
     _lockPosLandscape();
   }
@@ -160,9 +172,12 @@ class _PosShellState extends State<PosShell> {
       );
     }
 
-    final posVm = context.watch<PosViewModel>();
-    final isReconciled = context.watch<StoreClosingViewModel>().isReconciled;
-    final currentIndex = posVm.shellSelectedIndex;
+    /// [context.watch] on broad ViewModels rebuilds every cart/order tick and
+    /// rebuilds all [IndexedStack] tabs — triggers semantics races on inactive tabs.
+    final currentIndex =
+        context.select((PosViewModel vm) => vm.shellSelectedIndex);
+    final isReconciled =
+        context.select((StoreClosingViewModel s) => s.isReconciled);
 
     // Safety check: Ensure index is within bounds of children
     final validIndex = currentIndex < _screens.length ? currentIndex : 0;
@@ -177,7 +192,14 @@ class _PosShellState extends State<PosShell> {
       bodyLeftPadding: 0,
       child: IndexedStack(
         index: validIndex,
-        children: _screens,
+        children: List<Widget>.generate(_screens.length, (i) {
+          return KeyedSubtree(
+            key: _shellTabKeys[i],
+            child: _shellTabsBuilt.contains(i)
+                ? _screens[i]
+                : const SizedBox.shrink(),
+          );
+        }),
       ),
     );
 
@@ -202,8 +224,9 @@ class _PosShellState extends State<PosShell> {
             : PosBottomBar(
                 currentIndex: currentIndex,
                 onTap: (index) {
+                  setState(() => _shellTabsBuilt.add(index));
+                  context.read<PosViewModel>().setShellSelectedIndex(index);
                   _triggerVisitFetch(context, index);
-                  posVm.setShellSelectedIndex(index);
                 },
               ),
       ),
@@ -244,9 +267,6 @@ class _PosShellState extends State<PosShell> {
       final vm = context.read<PosViewModel>();
       if (!vm.ordersApiFetchCompleted) {
         vm.fetchOrders();
-      }
-      if (vm.corporateAccounts.isEmpty && !vm.isCorpAccountsLoading) {
-        vm.fetchCorporateAccounts(silent: true);
       }
     } else if (index == 6) {
       final vm = context.read<TechnicianViewModel>();
@@ -292,16 +312,16 @@ class _PosShellState extends State<PosShell> {
                     0, 'Home', Icons.home_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    1, 'Products', Icons.inventory_2_outlined, isTablet),
-                const SizedBox(height: 8),
-                _buildDrawerItem(
-                    2, 'Orders', Icons.receipt_long_outlined, isTablet),
+                    2, 'Orders Hub', Icons.receipt_long_outlined, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                     11,
                     'Broadcast Technician',
                     Icons.podcasts_rounded,
                     isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    1, 'Inventory', Icons.inventory_2_outlined, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                   12,
@@ -421,6 +441,7 @@ class _PosShellState extends State<PosShell> {
       child: InkWell(
         onTap: () {
           if (index < _screens.length) {
+            setState(() => _shellTabsBuilt.add(index));
             posVm.setShellSelectedIndex(index);
             _triggerVisitFetch(context, index);
             Navigator.pop(context); // Close drawer

@@ -1,4 +1,4 @@
-    name: filter_service_providers
+name: filter_service_providers
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -54,6 +54,7 @@ dependencies:
   permission_handler: ^11.3.0
   socket_io_client: ^2.0.3+1
   translator: ^1.0.4+1
+  esc_pos_utils_plus: ^2.0.4
 dev_dependencies:
   flutter_test:
     sdk: flutter

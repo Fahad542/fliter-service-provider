@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -19,14 +18,6 @@ class BillingManagementView extends StatefulWidget {
 
 class _BillingManagementViewState extends State<BillingManagementView> {
   int _currentScreen = 0; // 0: Dashboard, 1: Generate, 2: List
-
-  List<MapEntry<String, String>> _billingMonthOptions(AppLocalizations l10n) {
-    final locale = l10n.localeName;
-    return [
-      MapEntry('2026-01', DateFormat.yMMMM(locale).format(DateTime(2026, 1))),
-      MapEntry('2025-12', DateFormat.yMMMM(locale).format(DateTime(2025, 12))),
-    ];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -356,9 +347,9 @@ class _BillingManagementViewState extends State<BillingManagementView> {
                 borderSide: BorderSide.none,
               ),
             ),
-            value: '2026-01',
-            items: _billingMonthOptions(l10n)
-                .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+            value: 'January 2026',
+            items: ['January 2026', 'December 2025']
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                 .toList(),
             onChanged: (val) {},
           ),
@@ -375,7 +366,7 @@ class _BillingManagementViewState extends State<BillingManagementView> {
                     .read<CorporateManagementViewModel>()
                     .corporateCustomers[index];
                 return CheckboxListTile(
-                  title: Text(context.read<CorporateManagementViewModel>().companyDisplayName(c),
+                  title: Text(c.companyName,
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(l10n.billingGeneratorPendingInvoices),
                   value: true,
@@ -417,12 +408,12 @@ class _BillingManagementViewState extends State<BillingManagementView> {
             children: [
               Text(l10n.billingMonthlyTitle, style: AppTextStyles.h2.copyWith(fontSize: 18)),
               DropdownButton<String>(
-                value: '2026-01',
+                value: 'January 2026',
                 style: const TextStyle(
                     color: AppColors.primaryLight, fontWeight: FontWeight.bold),
                 underline: const SizedBox(),
-                items: _billingMonthOptions(l10n)
-                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                items: ['January 2026', 'December 2025']
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
                 onChanged: (val) {},
               ),

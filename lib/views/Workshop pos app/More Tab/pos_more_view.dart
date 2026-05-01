@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../utils/app_text_styles.dart';
+import 'package:provider/provider.dart';
 import '../Home Screen/pos_view_model.dart';
+import '../Promo/pos_promo_view.dart';
+import '../Petty Cash/pos_petty_cash_view.dart';
+import '../Store Closing/pos_store_closing_view.dart';
 import '../Petty Cash/petty_cash_view_model.dart';
 
 class PosMoreView extends StatelessWidget {
@@ -14,9 +15,10 @@ class PosMoreView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final isTablet = MediaQuery.of(context).size.width > 600;
-
+    final isTablet = MediaQuery
+        .of(context)
+        .size
+        .width > 600;
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: PosTabletLayout.textScaler(context),
@@ -24,9 +26,9 @@ class PosMoreView extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          width: isTablet ? 180 : 120,
+          width: isTablet ? 180 : 120, // Further reduced from 200/150
           decoration: BoxDecoration(
-            color: const Color(0xFFFBF9F6),
+            color: const Color(0xFFFBF9F6), // Matches app scaffold background
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -43,89 +45,72 @@ class PosMoreView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-
-                  // ── Petty Cash ─────────────────────────────────────────
                   InkWell(
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect?.call(4);
+                      if (onSelect != null) {
+                        onSelect!(4); // Index 4: Petty Cash
+                      }
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Row(
                         children: [
                           Icon(
                             Icons.account_balance_wallet,
                             size: isTablet ? 20 : 16,
-                            color: context
-                                .watch<PettyCashViewModel>()
-                                .isLowPettyCashBalance
-                                ? Colors.red
-                                : AppColors.secondaryLight.withOpacity(0.7),
+                            color: context.watch<PettyCashViewModel>().isLowPettyCashBalance ? Colors.red : AppColors.secondaryLight.withOpacity(0.7),
                           ),
                           const SizedBox(width: 10),
-                          // Flexible prevents overflow in Arabic
-                          Flexible(
-                            child: Text(
-                              l10n.moreMenuPettyCash,
-                              style: TextStyle(
-                                fontSize: isTablet ? 12 : 10,
-                                color: context
-                                    .watch<PettyCashViewModel>()
-                                    .isLowPettyCashBalance
-                                    ? Colors.red
-                                    : AppColors.secondaryLight,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            'Petty Cash',
+                            style: TextStyle(
+                              fontSize: isTablet ? 12 : 10,
+                              color: context.watch<PettyCashViewModel>().isLowPettyCashBalance ? Colors.red : AppColors.secondaryLight,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
-                  // ── Promo Code ─────────────────────────────────────────
                   _buildMenuItem(
-                    label: l10n.moreMenuPromoCode,
+                    label: 'Promo Code',
                     icon: Icons.local_offer,
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect?.call(5);
+                      if (onSelect != null) {
+                        onSelect!(5); // Index 5: Promo Code
+                      }
                     },
                     isTablet: isTablet,
                   ),
-
                   const SizedBox(height: 12),
-
-                  // ── Store Closing ──────────────────────────────────────
                   _buildMenuItem(
-                    label: l10n.moreMenuStoreClosing,
+                    label: 'Store Closing',
                     icon: Icons.door_front_door_outlined,
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect?.call(6);
+                      if (onSelect != null) {
+                        onSelect!(6); // Index 6: Store Closing
+                      }
                     },
                     isTablet: isTablet,
                   ),
-
                   const SizedBox(height: 12),
-
-                  // ── Sales Return ───────────────────────────────────────
                   _buildMenuItem(
-                    label: l10n.moreMenuSalesReturn,
+                    label: 'Sales Return',
                     icon: Icons.assignment_return_outlined,
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect?.call(7);
+                      if (onSelect != null) {
+                        onSelect!(7); // Index 7: Sales Return
+                      }
                     },
                     isTablet: isTablet,
                   ),
-
                   const SizedBox(height: 12),
                 ],
               );
@@ -147,27 +132,19 @@ class PosMoreView extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 16 : 12,
-          vertical: 8,
+          horizontal: isTablet ? 16 : 12, // Reduced from 24/16
+          vertical: 8, // Reduced vertical padding
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: isTablet ? 18 : 15,
-              color: AppColors.secondaryLight.withOpacity(0.7),
-            ),
+            Icon(icon, size: isTablet ? 18 : 15, color: AppColors.secondaryLight.withOpacity(0.7)),
             const SizedBox(width: 10),
-            // Flexible prevents Arabic text from overflowing the popup.
-            Flexible(
-              child: Text(
-                label,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.secondaryLight,
-                  fontSize: isTablet ? 12 : 10,
-                ),
-                overflow: TextOverflow.ellipsis,
+            Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryLight,
+                fontSize: isTablet ? 12 : 10,
               ),
             ),
           ],

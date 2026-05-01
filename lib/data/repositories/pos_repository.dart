@@ -228,6 +228,31 @@ class PosRepository {
     return <String, dynamic>{};
   }
 
+  /// PATCH /cashier/technicians/:employeeId/duty-status — workshop / on-call / both / inactive.
+  Future<Map<String, dynamic>> patchCashierTechnicianDutyMode(
+    String token,
+    String employeeId,
+    String dutyMode,
+  ) async {
+    final endpoint =
+        ApiConstants.cashierTechnicianDutyStatusEndpoint(employeeId);
+    final body = {'dutyMode': dutyMode};
+    if (kDebugMode) {
+      debugPrint('[POS] PATCH $endpoint body=$body');
+    }
+    final response = await _apiService.patch(
+      endpoint,
+      body,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response is Map<String, dynamic>) return response;
+    if (response is Map) return Map<String, dynamic>.from(response);
+    return <String, dynamic>{};
+  }
+
   /// POST body includes `{ employeeIds: [...], sync: true }` when [ApiConstants.cashierAssignSendSyncReplace].
   /// Response may include `sync`, `removedCount`, and a detailed `message` (roster synced / unchanged).
   Future<AssignTechnicianResponse> assignTechnicians(
@@ -570,6 +595,61 @@ class PosRepository {
     String token,
   ) async {
     final endpoint = ApiConstants.cashierOrderBillingEndpoint(orderId);
+    _logWalkInRequest(endpoint, body);
+    try {
+      final response = await _apiService.patch(
+        endpoint,
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      _logWalkInResponse(endpoint, response);
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      _logWalkInError(endpoint, e);
+      rethrow;
+    }
+  }
+
+  /// PATCH `/cashier/order/:orderId/payment-method` — draft POS payment modal before invoice.
+  Future<Map<String, dynamic>> patchOrderPaymentMethod(
+    String orderId,
+    Map<String, dynamic> body,
+    String token,
+  ) async {
+    final endpoint = ApiConstants.cashierOrderPaymentMethodEndpoint(orderId);
+    _logWalkInRequest(endpoint, body);
+    try {
+      final response = await _apiService.patch(
+        endpoint,
+        body,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      _logWalkInResponse(endpoint, response);
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      _logWalkInError(endpoint, e);
+      rethrow;
+    }
+  }
+
+  /// PATCH `/cashier/order/:orderId/maintenance-checklist` — saves six checklist ticks for invoice print.
+  Future<Map<String, dynamic>> patchOrderMaintenanceChecklist({
+    required String orderId,
+    required List<bool> checks,
+    required String token,
+  }) async {
+    if (checks.length != 6) {
+      throw ArgumentError('maintenance checklist expects 6 booleans');
+    }
+    final endpoint =
+        ApiConstants.cashierOrderMaintenanceChecklistEndpoint(orderId);
+    final body = <String, dynamic>{'checks': checks};
     _logWalkInRequest(endpoint, body);
     try {
       final response = await _apiService.patch(
@@ -1174,16 +1254,29 @@ class PosRepository {
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   /// Product-level sales by day for the cashier branch. Backend: [ApiConstants.cashierInventorySalesEndpoint].
+  /// [utcOffsetMinutes] should be [DateTime.now().timeZoneOffset.inMinutes] so date boundaries match the device.
+  /// Optional [fromTime]/[toTime] as `HH:mm` — only sent together; when null, server uses full local days.
   Future<InventorySalesResponse> getCashierInventorySales(
     String token, {
     required DateTime from,
     required DateTime toInclusive,
+    required int utcOffsetMinutes,
+    String? fromTime,
+    String? toTime,
   }) async {
     final fromDay = DateTime(from.year, from.month, from.day);
     final toDay = DateTime(toInclusive.year, toInclusive.month, toInclusive.day);
     final query = <String, String>{
       'from': _dateOnlyParam(fromDay),
       'to': _dateOnlyParam(toDay),
+      'utcOffsetMinutes': '$utcOffsetMinutes',
+      if (fromTime != null &&
+          fromTime.isNotEmpty &&
+          toTime != null &&
+          toTime.isNotEmpty) ...{
+        'fromTime': fromTime,
+        'toTime': toTime,
+      },
     };
     try {
       final dynamic response = await _apiService.getWithQueryParams(

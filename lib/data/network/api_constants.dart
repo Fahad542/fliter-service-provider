@@ -1,5 +1,5 @@
 class ApiConstants {
-  /// Local dev — change the port to match your backend (e.g. 8080, 5000).
+
  // static const String baseUrl = 'http://localhost:3000';
   static const String baseUrl = 'https://filterbackend-production.up.railway.app';
 
@@ -50,6 +50,13 @@ class ApiConstants {
   /// Standard walk-in only (no corporateAccountId): attach customer / vehicle before invoice.
   static String cashierOrderBillingEndpoint(String orderId) =>
       '/cashier/order/$orderId/billing';
+  /// PATCH — cashier payment modal draft (`customerKind` + split `payments`) before invoice create.
+  static String cashierOrderPaymentMethodEndpoint(String orderId) =>
+      '/cashier/order/$orderId/payment-method';
+
+  /// Six bilingual checklist rows ({ checks: boolean[6] }) before invoicing — printed on invoice.
+  static String cashierOrderMaintenanceChecklistEndpoint(String orderId) =>
+      '/cashier/order/$orderId/maintenance-checklist';
   /// POST — add pending jobs for extra departments (walk_in / walk_in_corporate only).
   static String cashierOrderJobsEndpoint(String orderId) =>
       '/cashier/order/$orderId/jobs';
@@ -58,6 +65,9 @@ class ApiConstants {
   /// PATCH body `{ "status": "online" | "offline" }` — [employeeId] = [technicians].[id] from GET.
   static String cashierTechnicianOnlineStatusEndpoint(String employeeId) =>
       '/cashier/technicians/$employeeId/online-status';
+  /// PATCH body `{ "dutyMode": "workshop" | "on_call" | "inactive" }`.
+  static String cashierTechnicianDutyStatusEndpoint(String employeeId) =>
+      '/cashier/technicians/$employeeId/duty-status';
   /// PATCH — cancel a single job before invoice.
   static String cashierJobCancelEndpoint(String jobId) =>
       '/cashier/job/$jobId/cancel';
@@ -210,6 +220,15 @@ class ApiConstants {
   static const String lockerDashboardEndpoint = '/locker/dashboard';
   static const String lockerCollectionRequestsEndpoint =
       '/locker/collection-requests';
+
+  /// Single collection request detail / assignment targets this path + [requestId].
+  static String lockerCollectionRequestById(String requestId) =>
+      '$lockerCollectionRequestsEndpoint/$requestId';
+
+  /// Assign a field officer to a pending collection request.
+  static String lockerAssignOfficerEndpoint(String requestId) =>
+      '$lockerCollectionRequestsEndpoint/$requestId/assign';
+
   static const String lockerFieldOfficersEndpoint = '/locker/field-officers';
   static const String lockerRecordCollectionEndpoint =
       '/locker/record-collection';

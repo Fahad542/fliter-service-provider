@@ -6,10 +6,8 @@ import '../../../../services/session_service.dart';
 import '../../../../utils/toast_service.dart';
 import '../../../../services/owner_data_service.dart';
 import '../../../../services/google_places_service.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../../../services/locker_translation_mixin.dart';
 
-class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin {
+class EmployeeManagementViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
@@ -20,19 +18,16 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController departmentController = TextEditingController();
   final TextEditingController baseSalaryController = TextEditingController();
-  final TextEditingController commissionPercentController =
-  TextEditingController();
+  final TextEditingController commissionPercentController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
-  final TextEditingController openingBalanceController =
-  TextEditingController();
-  final GooglePlacesService googlePlacesService =
-  GooglePlacesService('AIzaSyDfxcDdlq5IDIHjpRQKeAHepYIFaSYvVMQ');
+  final TextEditingController openingBalanceController = TextEditingController();
+  final GooglePlacesService googlePlacesService = GooglePlacesService('AIzaSyDfxcDdlq5IDIHjpRQKeAHepYIFaSYvVMQ');
 
   double _gpsLat = 24.7136;
   double _gpsLng = 46.6753;
 
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  bool get isLoading => _isLoading; // Separated from ownerDataService loading for cleaner UI
 
   bool _isActive = true;
   bool get isActive => _isActive;
@@ -51,14 +46,11 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
     if (_searchQuery.isEmpty) {
       return _employees;
     }
-    return _employees
-        .where((e) =>
-    e.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        (e.email?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
-            false) ||
-        (e.mobile?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
-            false))
-        .toList();
+    return _employees.where((e) => 
+      e.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      (e.email?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+      (e.mobile?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
+    ).toList();
   }
 
   void updateSearchQuery(String query) {
@@ -71,21 +63,8 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
     notifyListeners();
   }
 
-  final Map<String, String> _translatedBranchNames = {};
-  final Map<String, String> _translatedDepartmentNames = {};
-
   List<Branch> get branches => ownerDataService.branches;
   List<Department> get departments => ownerDataService.departments;
-
-  String branchDisplayName(Branch branch) =>
-      _translatedBranchNames[branch.id] ?? branch.name;
-  String departmentDisplayName(Department department) =>
-      _translatedDepartmentNames[department.id] ?? department.name;
-
-  List<String> get branchDisplayNames =>
-      branches.map(branchDisplayName).toList();
-  List<String> get departmentDisplayNames =>
-      departments.map(departmentDisplayName).toList();
 
   EmployeeManagementViewModel({
     required this.ownerRepository,
@@ -101,28 +80,6 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
     if (branches.isEmpty || departments.isEmpty) {
       await ownerDataService.refreshAll();
     }
-    await _translateLookups();
-  }
-
-
-  Future<void> _translateLookups() async {
-    _translatedBranchNames.clear();
-    _translatedDepartmentNames.clear();
-    for (final branch in branches) {
-      if (branch.name.trim().isNotEmpty) {
-        _translatedBranchNames[branch.id] = await t(branch.name);
-      }
-    }
-    for (final department in departments) {
-      if (department.name.trim().isNotEmpty) {
-        _translatedDepartmentNames[department.id] = await t(department.name);
-      }
-    }
-  }
-
-  Future<void> onLocaleChanged() async {
-    await _translateLookups();
-    notifyListeners();
   }
 
   Future<void> fetchEmployees({bool silent = false}) async {
@@ -136,9 +93,7 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
       if (token == null) throw Exception('No token found');
 
       final response = await ownerRepository.getEmployees(token);
-      if (response != null &&
-          response['success'] == true &&
-          response['employees'] != null) {
+      if (response != null && response['success'] == true && response['employees'] != null) {
         _employees = (response['employees'] as List)
             .map((json) => OwnerEmployee.fromJson(json))
             .toList();
@@ -168,18 +123,17 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
     notifyListeners();
   }
 
-  Future<List<Map<String, dynamic>>> getAddressSuggestions(
-      String input) async {
+  Future<List<Map<String, dynamic>>> getAddressSuggestions(String input) async {
     return await googlePlacesService.getSuggestions(input);
   }
 
   Future<void> onAddressSelected(Map<String, dynamic> selection) async {
     final description = selection['description'] as String;
     addressController.text = description;
-
+    
     final placeId = selection['place_id'] as String;
     final details = await googlePlacesService.getPlaceDetails(placeId);
-
+    
     if (details != null) {
       _gpsLat = details['lat'];
       _gpsLng = details['lng'];
@@ -195,43 +149,42 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
       nameController.text = e.name;
       mobileController.text = e.mobile ?? '';
       emailController.text = e.email ?? '';
-      passwordController.clear();
+      passwordController.clear(); // Don't pre-fill password
       commissionPercentController.text = e.techCommission.toString();
       baseSalaryController.text = e.basicSalary?.toString() ?? '0';
       _isActive = e.status == 'active';
+      // Note: branch and department will be handled in the UI
     }
     notifyListeners();
   }
 
   Future<void> submitTechnicianForm(
-      BuildContext context, {
-        required String? branchId,
-        required String? departmentId,
-        required bool isWorkshop,
-        required bool isOnCall,
-      }) async {
-    final l10n = AppLocalizations.of(context)!;
-
+    BuildContext context, {
+    required String? branchId,
+    required String? departmentId,
+    required bool isWorkshop,
+    required bool isOnCall,
+  }) async {
     if (nameController.text.trim().isEmpty ||
         mobileController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         (!isEditing && passwordController.text.trim().isEmpty)) {
-      ToastService.showError(context, l10n.empMgmtValidationRequired);
+      ToastService.showError(context, 'Please fill in all required text fields.');
       return;
     }
 
     if (!isWorkshop && !isOnCall) {
-      ToastService.showError(context, l10n.empMgmtValidationTechType);
+      ToastService.showError(context, 'Please select at least one technician type.');
       return;
     }
 
     if (branchId == null || branchId.isEmpty) {
-      ToastService.showError(context, l10n.empMgmtValidationNoBranch);
+      ToastService.showError(context, 'Please create a branch first to assign this employee.');
       return;
     }
 
     if (departmentId == null || departmentId.isEmpty) {
-      ToastService.showError(context, l10n.empMgmtValidationNoDepartment);
+      ToastService.showError(context, 'Please create a department first to assign this employee.');
       return;
     }
 
@@ -242,55 +195,46 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
       final token = await sessionService.getToken(role: 'owner');
       if (token == null) throw Exception('No token found');
 
-      String techType = 'workshop';
+      String techType = "workshop";
       if (isWorkshop && isOnCall) {
-        techType = 'both';
+        techType = "both";
       } else if (isOnCall) {
-        techType = 'oncall';
+        techType = "oncall";
       }
 
       final data = {
-        'name': nameController.text.trim(),
-        'mobile': mobileController.text.trim(),
-        'email': emailController.text.trim(),
-        'password': passwordController.text.trim(),
-        'branchId': branchId,
-        'technicianType': techType,
-        'commissionPercent':
-        double.tryParse(commissionPercentController.text.trim()) ?? 0,
-        'basicSalary':
-        double.tryParse(baseSalaryController.text.trim()) ?? 0,
-        'departmentIds': [departmentId],
-        'isActive': _isActive,
+        "name": nameController.text.trim(),
+        "mobile": mobileController.text.trim(),
+        "email": emailController.text.trim(),
+        "password": passwordController.text.trim(),
+        "branchId": branchId,
+        "technicianType": techType,
+        "commissionPercent": double.tryParse(commissionPercentController.text.trim()) ?? 0,
+        "basicSalary": double.tryParse(baseSalaryController.text.trim()) ?? 0,
+        "departmentIds": [departmentId],
+        "isActive": _isActive,
       };
 
       if (passwordController.text.trim().isNotEmpty) {
-        data['password'] = passwordController.text.trim();
+        data["password"] = passwordController.text.trim();
       }
 
       if (_editingEmployeeId == null) {
         await ownerRepository.createTechnician(data, token);
-        if (context.mounted) {
-          ToastService.showSuccess(
-              context, l10n.empMgmtTechnicianCreateSuccess);
-        }
+        if (context.mounted) ToastService.showSuccess(context, 'Technician Created Successfully');
       } else {
-        await ownerRepository.updateTechnician(
-            token, _editingEmployeeId!, data);
-        if (context.mounted) {
-          ToastService.showSuccess(
-              context, l10n.empMgmtTechnicianUpdateSuccess);
-        }
+        await ownerRepository.updateTechnician(token, _editingEmployeeId!, data);
+        if (context.mounted) ToastService.showSuccess(context, 'Technician Updated Successfully');
       }
 
       if (context.mounted) {
         setEditEmployee(null);
-        Navigator.pop(context);
+        Navigator.pop(context); // Close the sheet
         await fetchEmployees(silent: true);
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, l10n.empMgmtTechnicianCreateError);
+        ToastService.showError(context, 'Failed to create technician');
       }
     } finally {
       _isActionLoading = false;
@@ -299,22 +243,19 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
   }
 
   Future<void> submitCashierForm(
-      BuildContext context, {
-        required String? branchId,
-      }) async {
-    final l10n = AppLocalizations.of(context)!;
-
+    BuildContext context, {
+    required String? branchId,
+  }) async {
     if (nameController.text.trim().isEmpty ||
         mobileController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         (!isEditing && passwordController.text.trim().isEmpty)) {
-      ToastService.showError(context, l10n.empMgmtValidationRequired);
+      ToastService.showError(context, 'Please fill in all required text fields.');
       return;
     }
 
     if (branchId == null || branchId.isEmpty) {
-      ToastService.showError(
-          context, l10n.empMgmtValidationNoBranchCashier);
+      ToastService.showError(context, 'Please create a branch first to assign this cashier.');
       return;
     }
 
@@ -326,40 +267,33 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
       if (token == null) throw Exception('No token found');
 
       final data = {
-        'name': nameController.text.trim(),
-        'mobile': mobileController.text.trim(),
-        'email': emailController.text.trim(),
-        'branchId': branchId,
-        'isActive': _isActive,
+        "name": nameController.text.trim(),
+        "mobile": mobileController.text.trim(),
+        "email": emailController.text.trim(),
+        "branchId": branchId,
+        "isActive": _isActive,
       };
 
       if (passwordController.text.trim().isNotEmpty) {
-        data['password'] = passwordController.text.trim();
+        data["password"] = passwordController.text.trim();
       }
 
       if (_editingEmployeeId == null) {
         await ownerRepository.createCashier(data, token);
-        if (context.mounted) {
-          ToastService.showSuccess(
-              context, l10n.empMgmtCashierCreateSuccess);
-        }
+        if (context.mounted) ToastService.showSuccess(context, 'Cashier Created Successfully');
       } else {
-        await ownerRepository.updateCashier(
-            token, _editingEmployeeId!, data);
-        if (context.mounted) {
-          ToastService.showSuccess(
-              context, l10n.empMgmtCashierUpdateSuccess);
-        }
+        await ownerRepository.updateCashier(token, _editingEmployeeId!, data);
+        if (context.mounted) ToastService.showSuccess(context, 'Cashier Updated Successfully');
       }
 
       if (context.mounted) {
         setEditEmployee(null);
-        Navigator.pop(context);
+        Navigator.pop(context); // Close the sheet
         await fetchEmployees(silent: true);
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, l10n.empMgmtCashierCreateError);
+        ToastService.showError(context, 'Failed to create cashier');
       }
     } finally {
       _isActionLoading = false;
@@ -368,12 +302,10 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
   }
 
   Future<void> deleteEmployee(
-      BuildContext context,
-      String id,
-      String role,
-      ) async {
-    final l10n = AppLocalizations.of(context)!;
-
+    BuildContext context,
+    String id,
+    String role,
+  ) async {
     _isActionLoading = true;
     notifyListeners();
 
@@ -388,13 +320,11 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
       }
 
       if (context.mounted) {
-        ToastService.showSuccess(context, l10n.empMgmtDeleteSuccess);
+        ToastService.showSuccess(context, 'Employee Deleted Successfully');
         await fetchEmployees(silent: true);
       }
     } catch (e) {
-      if (context.mounted) {
-        ToastService.showError(context, l10n.empMgmtDeleteError);
-      }
+      if (context.mounted) ToastService.showError(context, 'Failed to delete employee');
     } finally {
       _isActionLoading = false;
       notifyListeners();
@@ -402,15 +332,12 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
   }
 
   Future<void> submitSupplierForm(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
-
     if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         mobileController.text.trim().isEmpty ||
         addressController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
-      ToastService.showError(
-          context, l10n.empMgmtValidationSupplierRequired);
+      ToastService.showError(context, 'Please fill in all required fields');
       return;
     }
 
@@ -422,29 +349,27 @@ class EmployeeManagementViewModel extends ChangeNotifier with TranslatableMixin 
       if (token == null) throw Exception('No token found');
 
       final data = {
-        'name': nameController.text.trim(),
-        'email': emailController.text.trim(),
-        'mobile': mobileController.text.trim(),
-        'address': addressController.text.trim(),
-        'openingBalance':
-        double.tryParse(openingBalanceController.text.trim()) ?? 0,
-        'password': passwordController.text.trim(),
-        'gpsLat': _gpsLat,
-        'gpsLng': _gpsLng,
-        'isActive': _isActive,
+        "name": nameController.text.trim(),
+        "email": emailController.text.trim(),
+        "mobile": mobileController.text.trim(),
+        "address": addressController.text.trim(),
+        "openingBalance": double.tryParse(openingBalanceController.text.trim()) ?? 0,
+        "password": passwordController.text.trim(),
+        "gpsLat": _gpsLat,
+        "gpsLng": _gpsLng,
+        "isActive": _isActive,
       };
 
       await ownerRepository.createSupplier(data, token);
 
       if (context.mounted) {
-        ToastService.showSuccess(
-            context, l10n.empMgmtSupplierCreateSuccess);
+        ToastService.showSuccess(context, 'Supplier Created Successfully');
         clearForm();
-        Navigator.pop(context);
+        Navigator.pop(context); // Close the sheet
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, l10n.empMgmtSupplierCreateError);
+        ToastService.showError(context, 'Failed to create supplier');
       }
     } finally {
       _isActionLoading = false;

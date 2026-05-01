@@ -53,7 +53,8 @@ class TechnicianProfile {
     employeeId = json['employeeId'].toString();
     technicianType = json['technicianType'];
     dutyMode = json['dutyMode'];
-    onlineStatus = json['technicianStatus']?['status']?.toString() ??
+    onlineStatus = json['onlineStatus']?.toString() ??
+        json['technicianStatus']?['status']?.toString() ??
         json['status']?.toString();
     workshopDuty = json['workshopDuty'];
     onCallDuty = json['onCallDuty'];

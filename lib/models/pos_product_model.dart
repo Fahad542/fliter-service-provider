@@ -71,6 +71,35 @@ class PosProduct {
     return decimalUnits.contains(u);
   }
 
+  /// Prefer live balance keys from cashier catalog; adoption/opening last (legacy shapes).
+  static int _parseCatalogStockQty(Map<String, dynamic> json) {
+    const liveKeys = <String>[
+      'qtyOnHand',
+      'quantityOnHand',
+      'currentStock',
+      'currentQty',
+      'stockQty',
+      'stock_qty',
+      'availableQty',
+      'availableQuantity',
+      'onHand',
+      'balance',
+    ];
+    for (final k in liveKeys) {
+      final v = json[k];
+      if (v == null || v.toString().trim().isEmpty) continue;
+      final n = num.tryParse(v.toString());
+      if (n != null) return n.round();
+    }
+    for (final k in ['openingQty', 'opening_qty', 'adoptionQty']) {
+      final v = json[k];
+      if (v == null || v.toString().trim().isEmpty) continue;
+      final n = num.tryParse(v.toString());
+      if (n != null) return n.round();
+    }
+    return 0;
+  }
+
   factory PosProduct.fromJson(Map<String, dynamic> json) {
     final inclVat = double.tryParse(json['salePrice']?.toString() ?? json['sellingPrice']?.toString() ?? '0.0') ?? 0.0;
     final exclVat = double.tryParse(
@@ -85,7 +114,7 @@ class PosProduct {
       price: inclVat,
       priceBeforeVat: exclVat,
       purchasePrice: double.tryParse(json['purchasePrice']?.toString() ?? '0.0'),
-      stock: int.tryParse(json['qtyOnHand']?.toString() ?? json['openingQty']?.toString() ?? '0') ?? 0,
+      stock: _parseCatalogStockQty(json),
       categoryName: json['categoryName'],
       subCategoryName: json['subCategoryName'],
       departmentId: json['departmentId']?.toString(),
