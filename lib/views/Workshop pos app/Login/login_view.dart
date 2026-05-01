@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// import '../../utils/app_colors.dart';
-// import '../../utils/app_text_styles.dart';
-// import '../../utils/toast_service.dart';
-// import '../../widgets/widgets.dart';
+
+import '../../../l10n/app_localizations.dart';
 import '../../../services/session_service.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -15,9 +13,7 @@ import '../../../widgets/custom_text_field.dart';
 
 import '../Navbar/pos_shell.dart';
 import 'login_view_model.dart';
-import '../Home Screen/pos_view_model.dart'; // Add this import
-// import '../Navbar/pos_shell.dart';
-// import '../../services/session_service.dart';
+import '../Home Screen/pos_view_model.dart';
 
 class LoginView extends StatefulWidget {
   final String appName;
@@ -49,9 +45,9 @@ class _LoginViewState extends State<LoginView> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final loginViewModel = context.read<LoginViewModel>();
 
-    // Proceed with login
     final success = await loginViewModel.login(
       _emailController.text.trim(),
       _passwordController.text,
@@ -60,26 +56,19 @@ class _LoginViewState extends State<LoginView> {
     if (success) {
       if (mounted) {
         final autoClosed = loginViewModel.previousSessionAutoClosed;
-        ToastService.showSuccess(context, 'Login successful');
+        ToastService.showSuccess(context, l10n.posLoginSuccess);
         await context.read<SessionService>().saveLastPortal('cashier');
         context.read<PosViewModel>().setShellSelectedIndex(0);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const PosShell()),
         );
-        final shiftWarn = loginViewModel.shiftOpenWarning;
-        if (shiftWarn != null && mounted) {
-          Future.delayed(const Duration(milliseconds: 900), () {
-            if (mounted) {
-              ToastService.showInfo(context, shiftWarn);
-            }
-          });
-        } else if (autoClosed && mounted) {
+        if (autoClosed && mounted) {
           Future.delayed(const Duration(milliseconds: 800), () {
             if (mounted) {
               ToastService.showInfo(
                 context,
-                'Previous shift was automatically closed. New shift started.',
+                l10n.posLoginPreviousShiftAutoClosed,
               );
             }
           });
@@ -87,13 +76,16 @@ class _LoginViewState extends State<LoginView> {
       }
     } else {
       if (mounted) {
-        ToastService.showError(context, loginViewModel.errorMessage ?? 'Login failed');
+        ToastService.showError(
+          context,
+          loginViewModel.errorMessage ?? l10n.posLoginFailed,
+        );
       }
     }
   }
 
-
   void _handleForgotPassword() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -101,6 +93,8 @@ class _LoginViewState extends State<LoginView> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
+        // Re-read l10n inside builder — context may differ but locale is same
+        final sheetL10n = AppLocalizations.of(context)!;
         final isTablet = MediaQuery.of(context).size.width > 600;
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
@@ -129,7 +123,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Reset Password',
+                  sheetL10n.posLoginResetPasswordTitle,
                   style: AppTextStyles.h2.copyWith(
                     color: AppColors.secondaryLight,
                     fontSize: isTablet ? 26 : 22,
@@ -137,7 +131,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Enter your email or mobile number and we\'ll send you a reset link.',
+                  sheetL10n.posLoginResetPasswordSubtitle,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey,
                     fontSize: isTablet ? 16 : 14,
@@ -145,8 +139,8 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 32),
                 CustomTextField(
-                  label: 'Email',
-                  hint: 'Enter your email',
+                  label: sheetL10n.posLoginResetPasswordEmailLabel,
+                  hint: sheetL10n.posLoginResetPasswordEmailHint,
                   prefixIcon: const Icon(Icons.email_outlined),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -154,10 +148,13 @@ class _LoginViewState extends State<LoginView> {
                 SizedBox(
                   width: double.infinity,
                   child: CustomButton(
-                    text: 'Send Reset Link',
+                    text: sheetL10n.posLoginResetPasswordSendButton,
                     onPressed: () {
                       Navigator.pop(context);
-                      ToastService.showSuccess(context, 'Reset link sent! Check your inbox.');
+                      ToastService.showSuccess(
+                        context,
+                        sheetL10n.posLoginResetPasswordSentSuccess,
+                      );
                     },
                   ),
                 ),
@@ -172,10 +169,11 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final horizontalPadding = isTablet ? screenWidth * 0.18 : 40.0;
-    
+
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: PosTabletLayout.textScaler(context),
@@ -191,7 +189,7 @@ class _LoginViewState extends State<LoginView> {
                 children: [
                   CustomAuthHeader(
                     title: widget.appName,
-                    subtitle: 'Sign in to continue',
+                    subtitle: l10n.posLoginTitle,
                     showBackButton: true,
                     height: MediaQuery.of(context).size.height *
                         (isTablet ? 0.37 : 0.42),
@@ -223,25 +221,25 @@ class _LoginViewState extends State<LoginView> {
                           children: [
                             const SizedBox(height: 8),
                             CustomTextField(
-                              label: 'Email',
-                              hint: 'Enter your email',
+                              label: l10n.posLoginEmail,
+                              hint: l10n.posLoginEmailHint,
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               prefixIcon: const Icon(Icons.email_outlined),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter email';
+                                  return l10n.posLoginEmailRequired;
                                 }
                                 return null;
                               },
                             ),
                             const SizedBox(height: 16),
                             CustomTextField(
-                              label: 'Password',
-                              hint: 'Enter your password',
+                              label: l10n.posLoginPassword,
+                              hint: l10n.posLoginPasswordHint,
                               controller: _passwordController,
                               obscureText:
-                                  context.watch<LoginViewModel>().obscurePassword,
+                              context.watch<LoginViewModel>().obscurePassword,
                               prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -253,7 +251,7 @@ class _LoginViewState extends State<LoginView> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter password';
+                                  return l10n.posLoginPasswordRequired;
                                 }
                                 return null;
                               },
@@ -264,7 +262,7 @@ class _LoginViewState extends State<LoginView> {
                               child: TextButton(
                                 onPressed: _handleForgotPassword,
                                 child: Text(
-                                  'Forgot Password?',
+                                  l10n.posLoginForgotPassword,
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: AppColors.primaryLight,
                                     fontWeight: FontWeight.w600,
@@ -279,7 +277,7 @@ class _LoginViewState extends State<LoginView> {
                                 return SizedBox(
                                   width: double.infinity,
                                   child: CustomButton(
-                                    text: 'Sign In',
+                                    text: l10n.posLoginSignIn,
                                     isLoading: viewModel.isLoading,
                                     onPressed: _handleLogin,
                                   ),
@@ -301,6 +299,4 @@ class _LoginViewState extends State<LoginView> {
       ),
     );
   }
-
-
 }

@@ -70,18 +70,6 @@ class CashierActiveBroadcastItem {
   final int remainingSeconds;
   final bool serverIsSoon;
 
-  /// Heading for cards when [title] is empty (e.g. legacy API shape).
-  String get displayTitle {
-    final t = title.trim();
-    if (t.isNotEmpty) return t;
-    final d = departmentName?.trim();
-    if (d != null && d.isNotEmpty) return d;
-    final s = subtitle.trim();
-    if (s.isNotEmpty) return s;
-    if (jobId.isNotEmpty) return 'Job #$jobId';
-    return 'Broadcast';
-  }
-
   CashierActiveBroadcastItem copyWith({
     DateTime? expiresAt,
     int? remainingSeconds,

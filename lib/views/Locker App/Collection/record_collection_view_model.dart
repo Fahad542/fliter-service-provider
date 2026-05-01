@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../data/network/base_api_service.dart';
 import '../../../data/repositories/locker_repository.dart';
-import '../../../utils/debug_log.dart';
 import '../../../models/locker_models.dart';
 import '../../../services/session_service.dart';
+import '../../../utils/debug_log.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -89,7 +89,7 @@ class RecordCollectionViewModel extends ChangeNotifier {
 
     debugLog(
       '[RecordCollectionVM] Submitting — requestId=${request.id} '
-      'receivedAmount=$receivedAmount',
+          'receivedAmount=$receivedAmount',
     );
 
     try {
@@ -108,7 +108,7 @@ class RecordCollectionViewModel extends ChangeNotifier {
 
       debugLog(
         '[RecordCollectionVM] Success — collectionId=${result.collectionId} '
-        'difference=${result.difference} status=${result.collectionStatus}',
+            'difference=${result.difference} status=${result.collectionStatus}',
       );
 
       return true;

@@ -51,9 +51,10 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_localeKey, newLocale.languageCode);
     await prefs.setString('app_locale', newLocale.languageCode);
 
-    // ← ADD THIS LINE so the translation service can read it without context:
+    // Keep the context-free translation service in sync with SettingsViewModel.
     await SessionService.saveLocale(newLocale.languageCode);
   }
 }

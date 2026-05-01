@@ -19,7 +19,6 @@ import '../../../models/invoiced_orders_model.dart';
 import '../../../models/expense_category_model.dart'; // Added
 import '../../../models/cashier_complete_job_model.dart'; // Added
 import '../../../models/cashier_corporate_accounts_api_model.dart';
-import '../../../models/order_payment_method_draft.dart';
 import '../Navbar/pos_shell.dart' show navigateToPosShellBroadcastTab;
 
 class _DepartmentPromoState {
@@ -49,10 +48,6 @@ class WalkInBillingSnapshot {
   final int odometer;
   final String year;
   final String color;
-  /// Cashier toggled “branch employee customer”; optional roster metadata for PATCH.
-  final bool billingCustomerIsEmployee;
-  final String? billingEmployeeId;
-  final String? billingEmployeeType;
 
   const WalkInBillingSnapshot({
     required this.name,
@@ -65,9 +60,6 @@ class WalkInBillingSnapshot {
     required this.odometer,
     required this.year,
     required this.color,
-    this.billingCustomerIsEmployee = false,
-    this.billingEmployeeId,
-    this.billingEmployeeType,
   });
 }
 
@@ -326,8 +318,6 @@ class PosViewModel extends ChangeNotifier {
   final Map<PaymentMethod, double> _invoicePaymentAmounts = <PaymentMethod, double>{};
   final Set<String> _invoicePaymentEmployeeIds = <String>{};
   bool _invoicePaymentWasUserEdited = false;
-  /// Dedup concurrent clears when retail employee hides payment picker but Order still carries old draft rows.
-  final Set<String> _retailEmployeePaymentDraftClearInFlight = {};
 
   /// Per–walk-in-order billing drafts (Add customer details / Final Review). Not global VM bleed.
   final Map<String, WalkInBillingSnapshot> _walkInBillingSnapshotsByOrderId =
@@ -383,8 +373,6 @@ class PosViewModel extends ChangeNotifier {
   }
 
   bool _isLoading = false;
-  /// True while user-triggered refresh runs on the Orders screen (GET /cashier/orders).
-  bool _ordersScreenRefreshInFlight = false;
   /// True after [fetchOrders] finishes (success or error), including `silent` calls.
   bool _ordersApiFetchCompleted = false;
   /// True while Save on the product-grid invoice panel is running (pricing / walk-in from panel).
@@ -407,7 +395,6 @@ class PosViewModel extends ChangeNotifier {
   /// Cashier "Mark complete" API in flight for this job (orders list, product grid, sheets).
   String? _cashierCompletingJobId;
   bool get isLoading => _isLoading;
-  bool get isOrdersScreenRefreshing => _ordersScreenRefreshInFlight;
   bool get ordersApiFetchCompleted => _ordersApiFetchCompleted;
   bool get isInvoicePanelSaveBusy => _invoicePanelSaveBusy;
   bool get isInvoiceLoading => _isInvoiceLoading;
@@ -425,33 +412,6 @@ class PosViewModel extends ChangeNotifier {
   void setShellSelectedIndex(int index) {
     _shellSelectedIndex = index;
     notifyListeners();
-  }
-
-  /// Same rule as `_ordersIsRetailWalkInBranchEmployee` in [pos_orders_view] — payroll retail walk-ins hide cashier payment picker.
-  bool cashierRetailBranchEmployeeHidesPaymentPicker(PosOrder o) {
-    if (!_isStandardWalkInOrderForBilling(o)) return false;
-    if (o.isCorporateWalkIn && !o.isCorporateBookingOrder) return false;
-    final snap = _walkInBillingSnapshotsByOrderId[o.id.trim()];
-    if (snap?.billingCustomerIsEmployee == true) return true;
-    return o.customer?.isCustomerEmployee == true;
-  }
-
-  Future<void> _clearStaleDraftIfRetailEmployeeOrderHasServerPayments(
-    String orderId,
-  ) async {
-    final id = orderId.trim();
-    if (id.isEmpty || _retailEmployeePaymentDraftClearInFlight.contains(id)) {
-      return;
-    }
-    _retailEmployeePaymentDraftClearInFlight.add(id);
-    try {
-      final err = await clearCashierOrderPaymentDraft(id);
-      if (err != null) {
-        debugPrint('Retail employee PAY draft clear skipped/failed: $err');
-      }
-    } finally {
-      _retailEmployeePaymentDraftClearInFlight.remove(id);
-    }
   }
 
   void selectOrder(PosOrder? order) {
@@ -473,46 +433,6 @@ class PosViewModel extends ChangeNotifier {
     if (o == null) return;
     if (_invoicePaymentWasUserEdited) return;
 
-    if (cashierRetailBranchEmployeeHidesPaymentPicker(o)) {
-      _invoicePaymentIsCorporate = null;
-      _invoicePaymentMethods.clear();
-      _invoicePaymentAmounts.clear();
-      _invoicePaymentEmployeeIds.clear();
-      notifyListeners();
-      final hasStaleServerDraft = (o.posPayments != null && o.posPayments!.isNotEmpty) ||
-          ((o.posCustomerKind ?? '').trim().isNotEmpty);
-      if (hasStaleServerDraft) {
-        unawaited(
-          _clearStaleDraftIfRetailEmployeeOrderHasServerPayments(o.id.trim()),
-        );
-      }
-      return;
-    }
-
-    final draftKind = o.posCustomerKind?.trim().toLowerCase();
-    final draftRows = o.posPayments;
-    if (draftKind != null &&
-        draftKind.isNotEmpty &&
-        draftRows != null &&
-        draftRows.isNotEmpty) {
-      _invoicePaymentIsCorporate = draftKind == 'corporate';
-      _invoicePaymentMethods.clear();
-      _invoicePaymentAmounts.clear();
-      _invoicePaymentEmployeeIds.clear();
-      for (final row in draftRows) {
-        final pm = parsePaymentMethodFromDraftApiLabel(row.method);
-        if (pm == null || pm == PaymentMethod.employees) continue;
-        _invoicePaymentMethods.add(pm);
-        _invoicePaymentAmounts[pm] = row.amount;
-      }
-      if (_invoicePaymentMethods.isNotEmpty) {
-        notifyListeners();
-        return;
-      }
-      _invoicePaymentMethods.clear();
-      _invoicePaymentAmounts.clear();
-    }
-
     // Corporate walk-in + corporate booking: default invoice payment dialog to corporate
     // methods, prefilling from order/booking payload or corporate account when possible.
     if (o.isCorporateWalkIn || o.isCorporateBookingOrder) {
@@ -532,14 +452,6 @@ class PosViewModel extends ChangeNotifier {
     }
   }
 
-  /// Sync payment modal + walk-in overlays when GET [/cashier/orders] swaps in fresh [PosOrder] rows
-  /// ([selectOrder] does this explicitly; refreshes assigned [_selectedOrder] without [selectOrder] did not — fixed here).
-  void _applyServerOrderSnapshotToBillingAndPaymentDraftState() {
-    if (_invoicePaymentWasUserEdited) return;
-    _hydrateInvoicePaymentDefaultsForSelectedOrder();
-    _rehydrateWalkInVmFromSelectedOrderDraft();
-  }
-
   /// Ensures payment dialog opens with sensible defaults for the given order.
   /// For corporate orders: Corporate tab + preferred method (or monthly billing).
   void ensureInvoicePaymentPrefillForOrder(PosOrder order) {
@@ -547,14 +459,6 @@ class PosViewModel extends ChangeNotifier {
     if (_invoicePaymentWasUserEdited &&
         _invoicePaymentIsCorporate != null &&
         _invoicePaymentMethods.isNotEmpty) {
-      return;
-    }
-    if (cashierRetailBranchEmployeeHidesPaymentPicker(order)) {
-      _invoicePaymentIsCorporate = null;
-      _invoicePaymentMethods.clear();
-      _invoicePaymentAmounts.clear();
-      _invoicePaymentEmployeeIds.clear();
-      notifyListeners();
       return;
     }
     if (order.isCorporateWalkIn || order.isCorporateBookingOrder) {
@@ -602,9 +506,6 @@ class PosViewModel extends ChangeNotifier {
 
   PaymentMethod? _paymentMethodFromBackendLabel(String raw) {
     final k = raw.trim().toLowerCase().replaceAll('_', ' ');
-    if (k.contains('corporate credit')) {
-      return PaymentMethod.monthlyBilling;
-    }
     if (k.contains('monthly') ||
         k.contains('account receivable') ||
         k.contains('on account') ||
@@ -732,99 +633,6 @@ class PosViewModel extends ChangeNotifier {
     _invoicePaymentEmployeeIds.clear();
   }
 
-  /// Persists cashier payment-modal selection (customer kind + rows) via
-  /// `PATCH /cashier/order/:orderId/payment-method` before invoice creation.
-  Future<String?> persistCashierOrderPaymentDraft({
-    required String orderId,
-    required bool isCorporate,
-    required Set<PaymentMethod> methods,
-    required Map<PaymentMethod, double> paymentAmounts,
-    required double payableTotal,
-  }) async {
-    if (methods.isEmpty) return 'Choose at least one payment method.';
-    double sum = 0;
-    final rows = <Map<String, dynamic>>[];
-    final payable = payableTotal > 0 ? payableTotal : 0.0;
-    for (final pm in methods) {
-      if (pm == PaymentMethod.employees) continue;
-      final double amt;
-      if (methods.length == 1) {
-        final v = paymentAmounts[pm];
-        amt = (v != null && v > 0) ? v : payable;
-      } else {
-        amt = paymentAmounts[pm] ?? 0;
-      }
-      if (amt < 0.01) {
-        return 'Each payment line must be at least 0.01 SAR.';
-      }
-      sum += amt;
-      rows.add({
-        'method': pm.cashierDraftApiMethodLabel,
-        'amount': double.parse((amt).toStringAsFixed(2)),
-      });
-    }
-    if (rows.isEmpty) return 'Choose at least one payment method.';
-    if ((sum - payable).abs() > 0.05) {
-      return 'Split totals must equal the order payable amount '
-          '(${payable.toStringAsFixed(2)} SAR). Currently: ${sum.toStringAsFixed(2)} SAR.';
-    }
-    rows.sort((a, b) =>
-        (a['method'] as String).compareTo(b['method'] as String));
-
-    try {
-      final token = await sessionService.getToken();
-      if (token == null) return 'Session expired. Sign in again.';
-      final body = PatchOrderPaymentMethodPayload.saveDraft(
-        isCorporate: isCorporate,
-        payments: rows,
-      ).toJson();
-
-      final res = await posRepository.patchOrderPaymentMethod(
-        orderId.trim(),
-        body,
-        token,
-      );
-
-      if (res['success'] != true) {
-        final msg = res['message']?.toString().trim();
-        return msg != null && msg.isNotEmpty
-            ? msg
-            : 'Could not save payment selection.';
-      }
-
-      await fetchOrders(silent: true, preferredOrderId: orderId);
-      notifyListeners();
-      return null;
-    } catch (e) {
-      return _extractErrorMessage(e.toString());
-    }
-  }
-
-  Future<String?> clearCashierOrderPaymentDraft(String orderId) async {
-    try {
-      final token = await sessionService.getToken();
-      if (token == null) return 'Session expired. Sign in again.';
-      final res = await posRepository.patchOrderPaymentMethod(
-        orderId.trim(),
-        PatchOrderPaymentMethodPayload.clear().toJson(),
-        token,
-      );
-      if (res['success'] != true) {
-        final msg = res['message']?.toString().trim();
-        return msg != null && msg.isNotEmpty
-            ? msg
-            : 'Could not clear saved payment.';
-      }
-      _clearInvoicePaymentPreferences();
-      await fetchOrders(silent: true, preferredOrderId: orderId);
-      _hydrateInvoicePaymentDefaultsForSelectedOrder();
-      notifyListeners();
-      return null;
-    } catch (e) {
-      return _extractErrorMessage(e.toString());
-    }
-  }
-
   /// Merge technicians from POST /cashier/job/:id/assign before [fetchOrders] returns.
   void applyJobTechniciansFromAssign({
     required String orderId,
@@ -930,10 +738,6 @@ class PosViewModel extends ChangeNotifier {
 
   /// Coalesce rapid socket events (e.g. multiple job updates) into one list refresh.
   Timer? _ordersRealtimeDebounce;
-
-  /// Coalesce parallel [fetchOrders] calls (shell visit + socket debounce firing together).
-  Future<void>? _ordersFetchInFlight;
-
   /// Per department (preferred) or per job: no second broadcast for 5 minutes.
   final Map<String, DateTime> _broadcastCooldownEndsAt = {};
   Timer? _broadcastCooldownTicker;
@@ -1094,14 +898,9 @@ class PosViewModel extends ChangeNotifier {
     int odometer = 0,
     String year = '',
     String color = '',
-    bool billingCustomerIsEmployee = false,
-    String? billingEmployeeId,
-    String? billingEmployeeType,
   }) {
     final oid = forOrderId.trim();
     if (oid.isEmpty) return;
-    final bid = billingEmployeeId?.trim();
-    final et = billingEmployeeType?.trim();
     final snap = WalkInBillingSnapshot(
       name: name.trim(),
       mobile: mobile.trim(),
@@ -1113,9 +912,6 @@ class PosViewModel extends ChangeNotifier {
       odometer: odometer,
       year: year.trim(),
       color: color.trim(),
-      billingCustomerIsEmployee: billingCustomerIsEmployee,
-      billingEmployeeId: bid != null && bid.isNotEmpty ? bid : null,
-      billingEmployeeType: et != null && et.isNotEmpty ? et : null,
     );
     _walkInBillingSnapshotsByOrderId[oid] = snap;
     if (_selectedOrder?.id == oid) {
@@ -1153,19 +949,6 @@ class PosViewModel extends ChangeNotifier {
       if (patchRes['success'] != true) {
         return patchRes['message']?.toString() ??
             'Failed to update billing details';
-      }
-      final snapPost = _walkInBillingSnapshotsByOrderId[order.id.trim()];
-      if (snapPost != null && snapPost.billingCustomerIsEmployee) {
-        final clr = await posRepository.patchOrderPaymentMethod(
-          order.id.trim(),
-          PatchOrderPaymentMethodPayload.clear().toJson(),
-          token,
-        );
-        if (clr['success'] != true) {
-          return clr['message']?.toString() ??
-              'Could not clear saved payment for employee customer.';
-        }
-        _clearInvoicePaymentPreferences();
       }
       await fetchOrders(silent: true, preferredOrderId: order.id);
       return null;
@@ -2930,43 +2713,8 @@ class PosViewModel extends ChangeNotifier {
     int? limit,
     int? offset,
     String? preferredOrderId,
-    bool ordersScreenRefresh = false,
-  }) {
-    if (_ordersFetchInFlight != null) return _ordersFetchInFlight!;
-    _ordersFetchInFlight = _fetchOrdersImpl(
-      silent: silent,
-      statusQuery: statusQuery,
-      limit: limit,
-      offset: offset,
-      preferredOrderId: preferredOrderId,
-      ordersScreenRefresh: ordersScreenRefresh,
-    ).whenComplete(() => _ordersFetchInFlight = null);
-    return _ordersFetchInFlight!;
-  }
-
-  /// Orders tab: GET /cashier/orders with loading indicator (does not toggle global [_isLoading]).
-  Future<void> refreshOrdersScreen() async {
-    final id = _selectedOrder?.id.trim();
-    await fetchOrders(
-      silent: true,
-      preferredOrderId: id != null && id.isNotEmpty ? id : null,
-      ordersScreenRefresh: true,
-    );
-  }
-
-  Future<void> _fetchOrdersImpl({
-    bool silent = false,
-    String? statusQuery,
-    int? limit,
-    int? offset,
-    String? preferredOrderId,
-    bool ordersScreenRefresh = false,
   }) async {
-    if (ordersScreenRefresh) {
-      _ordersScreenRefreshInFlight = true;
-      notifyListeners();
-    }
-    if (!silent && !ordersScreenRefresh) {
+    if (!silent) {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
@@ -3046,8 +2794,6 @@ class PosViewModel extends ChangeNotifier {
           _lastCreatedWalkInVehicleNumber = null;
         }
 
-        _applyServerOrderSnapshotToBillingAndPaymentDraftState();
-
         notifyListeners();
       } else {
         _errorMessage = 'Failed to fetch orders';
@@ -3055,11 +2801,8 @@ class PosViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
-      if (!silent && !ordersScreenRefresh) {
+      if (!silent) {
         _isLoading = false;
-      }
-      if (ordersScreenRefresh) {
-        _ordersScreenRefreshInFlight = false;
       }
       _ordersApiFetchCompleted = true;
       notifyListeners();
@@ -3472,25 +3215,6 @@ class PosViewModel extends ChangeNotifier {
     };
     if (vat.isNotEmpty) body['vatNumber'] = vat;
 
-    // Snapshot reflects the last Invoice details dialog save — explicitly clear employee
-    // flags when toggle is off so the server does not keep a previous payroll customer.
-    if (snap != null) {
-      if (snap.billingCustomerIsEmployee) {
-        body['billingCustomerIsEmployee'] = true;
-        final bid = snap.billingEmployeeId?.trim();
-        if (bid != null && bid.isNotEmpty) {
-          body['branchEmployeeId'] = bid;
-        }
-        final et = snap.billingEmployeeType?.trim();
-        if (et != null && et.isNotEmpty) {
-          body['employeeType'] = et;
-        }
-      } else {
-        body['billingCustomerIsEmployee'] = false;
-        body['isCustomerEmployee'] = false;
-      }
-    }
-
     final plateOrder = (order.vehicle?.plateNo ?? '').trim();
     final plateEff = snap != null
         ? _walkInPickField(snap.vehicleNumber, _vehicleNumber, plateOrder)
@@ -3661,19 +3385,6 @@ class PosViewModel extends ChangeNotifier {
     };
   }
 
-  /// True when [inv] already has payment rows totaling the invoice (e.g. backend applied draft POS payments inside `createInvoice`).
-  bool _invoiceHasPaymentsCoveringTotal(Invoice? inv, double expectedTotal) {
-    if (inv == null) return false;
-    final paid = inv.payments.fold<double>(0, (s, p) => s + p.amount);
-    final total = expectedTotal > 0.0001
-        ? expectedTotal
-        : (inv.totalAmount > 0.0001 ? inv.totalAmount : 0);
-    if (total <= 0.0001) {
-      return inv.payments.isNotEmpty;
-    }
-    return (paid - total).abs() <= 0.06;
-  }
-
   Future<CreateInvoiceResponse?> generateInvoice(
     String orderId, {
     String? paymentMethod,
@@ -3780,20 +3491,10 @@ class PosViewModel extends ChangeNotifier {
         debugPrint(
           'InvoiceFlow: create success, invoiceId=${createResponse.invoice?.id ?? 'N/A'}, invoiceNo=${createResponse.invoice?.invoiceNo ?? 'N/A'}',
         );
-        // Backend may have already created Payment rows from draft `posPaymentsJson` during
-        // createInvoice. In that case skip saveInvoicePayment to avoid "already fully paid".
-        var invAfterCreate = createResponse.invoice;
-        if (invAfterCreate == null) {
-          final snap = await posRepository.getInvoiceByOrder(orderId, token);
-          if (snap.invoice != null) invAfterCreate = snap.invoice;
-        }
-
-        // Persist payment(s) after create when still needed, then fetch invoice again.
-        final payableTotal = (invAfterCreate?.totalAmount ??
-                createResponse.invoice?.totalAmount ??
-                orderCtx?.draftPosOrderTotalDisplay ??
-                0)
-            .toDouble();
+        // Persist payment(s) after create, then fetch invoice again.
+        final payableTotal =
+            (createResponse.invoice?.totalAmount ?? orderCtx?.draftPosOrderTotalDisplay ?? 0)
+                .toDouble();
         final paymentBody = _buildInvoicePaymentBody(
           totalAmount: payableTotal,
           paymentMethod: paymentMethod,
@@ -3812,35 +3513,20 @@ class PosViewModel extends ChangeNotifier {
           return CreateInvoiceResponse(success: false, message: msg);
         }
 
-        final skipSecondPayment =
-            _invoiceHasPaymentsCoveringTotal(invAfterCreate, payableTotal);
-
-        final Map<String, dynamic> paymentRes;
-        if (skipSecondPayment) {
-          debugPrint(
-            'InvoiceFlow: skipping saveInvoicePayment (invoice already fully paid from createInvoice)',
-          );
-          paymentRes = {
-            'success': true,
-            'message': createResponse.message,
-          };
-        } else {
-          final res = await posRepository.saveInvoicePayment(
-            orderId,
-            paymentBody,
-            token,
-          );
-          if (res['success'] != true) {
-            final msg = res['message']?.toString().trim().isNotEmpty == true
-                ? res['message'].toString()
-                : 'Invoice created, but failed to save payment.';
-            _errorMessage = msg;
-            _isInvoiceLoading = false;
-            _loadingOrderId = null;
-            notifyListeners();
-            return CreateInvoiceResponse(success: false, message: msg);
-          }
-          paymentRes = res;
+        final paymentRes = await posRepository.saveInvoicePayment(
+          orderId,
+          paymentBody,
+          token,
+        );
+        if (paymentRes['success'] != true) {
+          final msg = paymentRes['message']?.toString().trim().isNotEmpty == true
+              ? paymentRes['message'].toString()
+              : 'Invoice created, but failed to save payment.';
+          _errorMessage = msg;
+          _isInvoiceLoading = false;
+          _loadingOrderId = null;
+          notifyListeners();
+          return CreateInvoiceResponse(success: false, message: msg);
         }
 
         final detailedResponse = await posRepository.getInvoiceByOrder(orderId, token);
