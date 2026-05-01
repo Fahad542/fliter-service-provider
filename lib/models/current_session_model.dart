@@ -10,10 +10,22 @@ class CurrentSessionResponse {
   });
 
   factory CurrentSessionResponse.fromJson(Map<String, dynamic> json) {
+    // API may wrap payload as { data: { hasOpenSession, session } }.
+    Map<String, dynamic> root = json;
+    final nested = json['data'];
+    if (nested is Map) {
+      root = Map<String, dynamic>.from(nested);
+    }
+    // GET /cashier/session/current returns { hasOpenSession, session } without `success`.
+    final hasKey = root.containsKey('hasOpenSession');
     return CurrentSessionResponse(
-      success: json['success'] ?? false,
-      hasOpenSession: json['hasOpenSession'] ?? false,
-      session: json['session'] != null ? CurrentSession.fromJson(json['session']) : null,
+      success: (root['success'] as bool?) ?? hasKey,
+      hasOpenSession: root['hasOpenSession'] as bool? ?? false,
+      session: root['session'] != null
+          ? CurrentSession.fromJson(
+              Map<String, dynamic>.from(root['session'] as Map),
+            )
+          : null,
     );
   }
 }
