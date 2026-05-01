@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../l10n/app_localizations.dart';
 import '../../../models/department_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -33,19 +32,18 @@ class _PosYourJobsViewState extends State<PosYourJobsView> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final isTablet = MediaQuery.of(context).size.width > 600;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3F0),
-      appBar: PosScreenAppBar(
-        title: l10n.posYourJobsTitle,
+      appBar: const PosScreenAppBar(
+        title: 'Your Jobs',
         showBackButton: true,
         showHamburger: false,
       ),
       body: Consumer<PosViewModel>(
         builder: (context, vm, _) {
           if (_departments.isEmpty) {
-            return Center(child: Text(l10n.posYourJobsNoDepartments));
+            return const Center(child: Text('No departments selected.'));
           }
 
           if (isTablet) {
@@ -111,16 +109,13 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final cart = vm.cartItems;
     final rows = selectedDepartments.map((dept) {
       final deptItems = cart
           .where((i) => (i.product.departmentId ?? '') == dept.id)
           .toList();
-      final gross =
-      deptItems.fold<double>(0, (s, i) => s + i.lineSubtotalGross);
-      final discount =
-      deptItems.fold<double>(0, (s, i) => s + i.actualDiscountAmount);
+      final gross = deptItems.fold<double>(0, (s, i) => s + i.lineSubtotalGross);
+      final discount = deptItems.fold<double>(0, (s, i) => s + i.actualDiscountAmount);
       final taxable = (gross - discount).clamp(0, double.infinity).toDouble();
       final vat = taxable * 0.15;
       final total = taxable + vat;
@@ -139,7 +134,7 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.posYourJobsDeptInvoiceTitle,
+            'Department-wise Invoice',
             style: AppTextStyles.bodyLarge.copyWith(
               fontWeight: FontWeight.w800,
               color: AppColors.secondaryLight,
@@ -173,7 +168,7 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              l10n.posYourJobsItems(row.count),
+                              '${row.count} items',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 11,
@@ -183,8 +178,7 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        l10n.posYourJobsAmountSar(
-                            row.total.toStringAsFixed(2)),
+                        'SAR ${row.total.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -199,14 +193,13 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
           const Divider(height: 16),
           Row(
             children: [
-              Text(
-                l10n.posYourJobsGrandTotal,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+              const Text(
+                'Grand Total',
+                style: TextStyle(fontWeight: FontWeight.w800),
               ),
               const Spacer(),
               Text(
-                l10n.posYourJobsAmountSar(
-                    vm.getTotalAmountValue(false).toStringAsFixed(2)),
+                'SAR ${vm.getTotalAmountValue(false).toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ],
@@ -226,9 +219,9 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: Text(
-                    l10n.posYourJobsSaveDraft,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  child: const Text(
+                    'Save Draft',
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -245,9 +238,9 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: Text(
-                    l10n.posYourJobsPlaceOrder,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  child: const Text(
+                    'Place Order',
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -270,7 +263,6 @@ class _DepartmentJobsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final isTablet = MediaQuery.of(context).size.width > 600;
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
@@ -329,10 +321,10 @@ class _DepartmentJobsList extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: FittedBox(
+                          child: const FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              l10n.posYourJobsAssignTechnicians,
+                              'Assign Technicians',
                               maxLines: 1,
                               softWrap: false,
                             ),
@@ -363,10 +355,10 @@ class _DepartmentJobsList extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: FittedBox(
+                          child: const FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              l10n.posYourJobsAddInventory,
+                              'Add Inventory',
                               maxLines: 1,
                               softWrap: false,
                             ),
@@ -400,3 +392,4 @@ class _DepartmentJobsList extends StatelessWidget {
     );
   }
 }
+

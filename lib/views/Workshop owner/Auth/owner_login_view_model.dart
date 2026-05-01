@@ -63,7 +63,7 @@ class OwnerLoginViewModel extends ChangeNotifier {
       );
 
       if (authResponse.success == false) {
-        _setErrorMessage(authResponse.message);
+        _setErrorMessage(authResponse.message ?? 'Invalid email or password');
         _setLoading(false);
         return false;
       }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../l10n/app_localizations.dart';
 
 class WorkshopRegistration {
   final String workshopName;
@@ -156,7 +155,6 @@ class OwnerEmployee {
       technicianStatus.toLowerCase() == 'available' ||
           technicianStatus.toLowerCase() == 'online';
 
-  /// Raw English label — used only where l10n context is unavailable.
   String get technicianStatusLabel {
     final s = technicianStatus.trim().toLowerCase();
     if (s == 'available') return 'AVAILABLE';
@@ -166,17 +164,6 @@ class OwnerEmployee {
     return isTechnicianAvailable ? 'AVAILABLE' : 'OFFLINE';
   }
 
-  /// Localized technician status label.
-  String localizedTechnicianStatusLabel(AppLocalizations l10n) {
-    final s = technicianStatus.trim().toLowerCase();
-    if (s == 'available') return l10n.empStatusAvailable;
-    if (s == 'online') return l10n.empStatusOnline;
-    if (s == 'busy') return l10n.empStatusBusy;
-    if (s == 'offline') return l10n.empStatusOffline;
-    return isTechnicianAvailable ? l10n.empStatusAvailable : l10n.empStatusOffline;
-  }
-
-  /// Raw English last-seen — used only where l10n context is unavailable.
   String get formattedLastSeen {
     if (lastSeenAt.isEmpty) return 'Never';
     try {
@@ -193,42 +180,6 @@ class OwnerEmployee {
     } catch (e) {
       return '';
     }
-  }
-
-  /// Localized last-seen string.
-  String localizedFormattedLastSeen(AppLocalizations l10n) {
-    if (lastSeenAt.isEmpty) return l10n.empLastSeenNever;
-    try {
-      final dateTime = DateTime.parse(lastSeenAt);
-      final now = DateTime.now();
-      final difference = now.difference(dateTime);
-
-      if (difference.inMinutes < 1) return l10n.empLastSeenJustNow;
-      if (difference.inMinutes < 60) return l10n.empLastSeenMinutes(difference.inMinutes);
-      if (difference.inHours < 24) return l10n.empLastSeenHours(difference.inHours);
-      if (difference.inDays < 7) return l10n.empLastSeenDays(difference.inDays);
-      return lastSeenAt.split('T')[0];
-    } catch (e) {
-      return '';
-    }
-  }
-
-  /// Localized display role (e.g. "فني" in Arabic, "TECHNICIAN" in English).
-  String localizedRole(AppLocalizations l10n) {
-    final r = role.trim().toLowerCase();
-    if (r == 'technician') return l10n.empRoleTechnician;
-    if (r == 'cashier') return l10n.empRoleCashier;
-    if (r == 'supplier') return l10n.empRoleSupplier;
-    return role.toUpperCase();
-  }
-
-  /// Localized technician type badge.
-  String localizedTechType(AppLocalizations l10n) {
-    final t = (technicianType ?? '').trim().toLowerCase();
-    if (t == 'workshop') return l10n.empTechTypeWorkshop;
-    if (t == 'both') return l10n.empTechTypeBoth;
-    if (t == 'oncall') return l10n.empTechTypeOnCall;
-    return (technicianType ?? l10n.empMgmtInfoUnknown).toUpperCase();
   }
 
   OwnerEmployee({
@@ -353,56 +304,6 @@ class OwnerProduct {
     this.allowDecimalQty = false,
     this.isActive = true,
   });
-
-  OwnerProduct copyWith({
-    String? id,
-    String? name,
-    String? type,
-    String? category,
-    String? subCategoryName,
-    String? departmentName,
-    List<String>? departmentIds,
-    String? unit,
-    double? conversionFactor,
-    double? purchasePrice,
-    double? salePrice,
-    double? corporateBasePrice,
-    double? corporateLowerLimit,
-    double? corporateUpperLimit,
-    double? stockQty,
-    double? criticalLevel,
-    double? reorderLevel,
-    String? imageUrl,
-    bool? isPriceEditable,
-    int? kmTypeValue,
-    bool? allowDecimalQty,
-    bool? isActive,
-  }) {
-    return OwnerProduct(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      type: type ?? this.type,
-      category: category ?? this.category,
-      subCategoryName: subCategoryName ?? this.subCategoryName,
-      departmentName: departmentName ?? this.departmentName,
-      departmentIds: departmentIds ?? this.departmentIds,
-      unit: unit ?? this.unit,
-      conversionFactor: conversionFactor ?? this.conversionFactor,
-      purchasePrice: purchasePrice ?? this.purchasePrice,
-      salePrice: salePrice ?? this.salePrice,
-      corporateBasePrice: corporateBasePrice ?? this.corporateBasePrice,
-      corporateLowerLimit: corporateLowerLimit ?? this.corporateLowerLimit,
-      corporateUpperLimit: corporateUpperLimit ?? this.corporateUpperLimit,
-      stockQty: stockQty ?? this.stockQty,
-      criticalLevel: criticalLevel ?? this.criticalLevel,
-      reorderLevel: reorderLevel ?? this.reorderLevel,
-      imageUrl: imageUrl ?? this.imageUrl,
-      isPriceEditable: isPriceEditable ?? this.isPriceEditable,
-      kmTypeValue: kmTypeValue ?? this.kmTypeValue,
-      allowDecimalQty: allowDecimalQty ?? this.allowDecimalQty,
-      isActive: isActive ?? this.isActive,
-    );
-  }
 
   factory OwnerProduct.fromJson(Map<String, dynamic> json) {
     return OwnerProduct(
@@ -1510,10 +1411,6 @@ class PettyCashRequestItem {
   final String? translatedBranchName;
   final String? translatedCashierName;
   final String? translatedStatus;
-  final String? translatedReason;
-  final String? translatedCategoryLabel;
-  final String? translatedEmployeeName;
-  final String? translatedRejectionReason;
 
   /// Alias used by ApprovalsViewModel for the request party name.
   /// Falls back to [cashierName] since petty-cash requests have no separate
@@ -1541,10 +1438,6 @@ class PettyCashRequestItem {
     this.translatedBranchName,
     this.translatedCashierName,
     this.translatedStatus,
-    this.translatedReason,
-    this.translatedCategoryLabel,
-    this.translatedEmployeeName,
-    this.translatedRejectionReason,
   });
 
   PettyCashRequestItem copyWith({
@@ -1568,10 +1461,6 @@ class PettyCashRequestItem {
     String? translatedBranchName,
     String? translatedCashierName,
     String? translatedStatus,
-    String? translatedReason,
-    String? translatedCategoryLabel,
-    String? translatedEmployeeName,
-    String? translatedRejectionReason,
   }) {
     return PettyCashRequestItem(
       id: id ?? this.id,
@@ -1594,10 +1483,6 @@ class PettyCashRequestItem {
       translatedBranchName: translatedBranchName ?? this.translatedBranchName,
       translatedCashierName: translatedCashierName ?? this.translatedCashierName,
       translatedStatus: translatedStatus ?? this.translatedStatus,
-      translatedReason: translatedReason ?? this.translatedReason,
-      translatedCategoryLabel: translatedCategoryLabel ?? this.translatedCategoryLabel,
-      translatedEmployeeName: translatedEmployeeName ?? this.translatedEmployeeName,
-      translatedRejectionReason: translatedRejectionReason ?? this.translatedRejectionReason,
     );
   }
 

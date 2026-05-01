@@ -7,7 +7,6 @@ import '../../../services/realtime_service.dart';
 import '../../../models/pos_order_model.dart';
 import '../../../models/pos_technician_model.dart';
 import '../../../utils/toast_service.dart';
-import '../../../l10n/app_localizations.dart';
 
 class TechnicianViewModel extends ChangeNotifier {
   final PosRepository _posRepository;
@@ -59,9 +58,9 @@ class TechnicianViewModel extends ChangeNotifier {
 
   List<PosTechnician> get technicians {
     if (_searchQuery.isEmpty) return _technicians;
-    return _technicians.where((t) =>
-    t.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        t.employeeType.toLowerCase().contains(_searchQuery.toLowerCase())
+    return _technicians.where((t) => 
+      t.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      t.employeeType.toLowerCase().contains(_searchQuery.toLowerCase())
     ).toList();
   }
 
@@ -73,12 +72,12 @@ class TechnicianViewModel extends ChangeNotifier {
     final Map<String, List<PosTechnician>> grouped = {};
     for (var tech in technicians) {
       final type =
-      tech.technicianType.isEmpty ? 'General' : tech.technicianType;
+          tech.technicianType.isEmpty ? 'General' : tech.technicianType;
       grouped.putIfAbsent(type, () => []).add(tech);
     }
     return grouped;
   }
-
+ 
   bool get isLoading => _isLoading;
   /// True when [fetchCashierTechnicians] / [fetchTechnicians] has populated `_technicians` (not cleared).
   bool get hasTechnicianList => _technicians.isNotEmpty;
@@ -227,13 +226,13 @@ class TechnicianViewModel extends ChangeNotifier {
       }
 
       final response =
-      await _posRepository.assignTechnicians(jobId, [employeeId], token);
+          await _posRepository.assignTechnicians(jobId, [employeeId], token);
       _assignmentMessage = response.message;
       if (response.isEffectiveAssignFailure([employeeId])) {
         _assignmentSuccess = false;
         if (_assignmentMessage == null || _assignmentMessage!.trim().isEmpty) {
           _assignmentMessage =
-          'Technician was not assigned. The server may still count old assignments on this job.';
+              'Technician was not assigned. The server may still count old assignments on this job.';
         }
         return false;
       }
@@ -272,14 +271,14 @@ class TechnicianViewModel extends ChangeNotifier {
           m.contains('no new assignments') &&
           employeeIds.isNotEmpty) {
         _assignmentMessage =
-        'Cannot apply removals: server treats assign as add-only. Backend must sync '
+            'Cannot apply removals: server treats assign as add-only. Backend must sync '
             '`employeeIds` to the full desired list (or honor sync: true).';
       }
       if (response.isEffectiveAssignFailure(employeeIds)) {
         _assignmentSuccess = false;
         if (_assignmentMessage == null || _assignmentMessage!.trim().isEmpty) {
           _assignmentMessage =
-          'No technicians were assigned. The server may still count cancelled assignments on this job.';
+              'No technicians were assigned. The server may still count cancelled assignments on this job.';
         }
         return false;
       }
@@ -401,10 +400,10 @@ class TechnicianViewModel extends ChangeNotifier {
 
   /// PATCH /cashier/technicians/:employeeId/online-status then refresh catalog.
   Future<void> setTechnicianPresence(
-      BuildContext context,
-      String technicianId,
-      bool online,
-      ) async {
+    BuildContext context,
+    String technicianId,
+    bool online,
+  ) async {
     if (_presenceToggleBusyIds.contains(technicianId)) return;
     _presenceToggleBusyIds.add(technicianId);
     notifyListeners();
@@ -428,15 +427,15 @@ class TechnicianViewModel extends ChangeNotifier {
       }
       await refreshTechniciansCatalogQuiet();
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
         final msg = res['message']?.toString();
-        // Prefer server message; fall back to l10n string so locale switch works
-        final fallback = online
-            ? (l10n?.posTechPresenceOnline ?? 'Technician marked online')
-            : (l10n?.posTechPresenceOffline ?? 'Technician marked offline');
         ToastService.showSuccess(
           context,
-          (msg != null && msg.isNotEmpty) ? msg : fallback,        );
+          (msg != null && msg.isNotEmpty)
+              ? msg
+              : (online
+                  ? 'Technician marked online'
+                  : 'Technician marked offline'),
+        );
       }
     } catch (e) {
       if (context.mounted) {

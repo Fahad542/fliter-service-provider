@@ -5,9 +5,8 @@ import '../../../services/session_service.dart';
 import '../../../data/repositories/owner_repository.dart';
 import '../../../services/owner_data_service.dart';
 import '../../../services/realtime_service.dart';
-import '../../../services/locker_translation_mixin.dart';
 
-class OwnerDashboardViewModel extends ChangeNotifier with TranslatableMixin {
+class OwnerDashboardViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
@@ -15,16 +14,7 @@ class OwnerDashboardViewModel extends ChangeNotifier with TranslatableMixin {
   bool _isLoading = false;
   bool get isLoading => _isLoading || ownerDataService.isLoadingBranches;
 
-  final Map<String, String> _translatedBranchNames = {};
-  final Map<String, String> _translatedBranchLocations = {};
-
   List<Branch> get branches => ownerDataService.branches;
-
-  String branchDisplayName(Branch branch) =>
-      _translatedBranchNames[branch.id] ?? branch.name;
-
-  String branchDisplayLocation(Branch branch) =>
-      _translatedBranchLocations[branch.id] ?? branch.location;
 
   Branch? _selectedBranch;
   Branch? get selectedBranch => _selectedBranch;
@@ -32,13 +22,11 @@ class OwnerDashboardViewModel extends ChangeNotifier with TranslatableMixin {
   List<OwnerEmployee> _employees = [];
   List<OwnerEmployee> get employees => _employees;
 
-  String _rawOwnerName = '';
-  String _ownerName = '';
+  String _ownerName = 'Admin';
   String get ownerName => _ownerName;
 
   OwnerDashboardResponse? _dashboardData;
   OwnerDashboardResponse? get dashboardData => _dashboardData;
-  List<PettyCashRequestItem> _rawPendingPettyCashRequests = [];
   List<PettyCashRequestItem> _pendingPettyCashRequests = [];
   List<PettyCashRequestItem> get pendingPettyCashRequests =>
       _pendingPettyCashRequests;
@@ -67,15 +55,15 @@ class OwnerDashboardViewModel extends ChangeNotifier with TranslatableMixin {
     notifyListeners();
     
     final user = await sessionService.getUser(role: 'owner');
-    _rawOwnerName = user?.name ?? '';
-    _ownerName = await tNullable(_rawOwnerName) ?? _rawOwnerName;
+    if (user != null && user.name != null) {
+      _ownerName = user.name ?? 'Admin';
+    }
 
     String? token = await sessionService.getToken(role: 'owner');
     if (token != null) {
       if (branches.isEmpty) {
         await ownerDataService.fetchBranches();
       }
-      await _translateBranches();
       await _fetchDashboardData(token);
       await _fetchPendingPettyCashRequests(token);
       await _bindRealtime(token);
@@ -113,13 +101,10 @@ class OwnerDashboardViewModel extends ChangeNotifier with TranslatableMixin {
         limit: 20,
         offset: 0,
       );
-      _rawPendingPettyCashRequests = response.requests;
-      _pendingPettyCashRequests =
-          await translatePettyCashRequests(_rawPendingPettyCashRequests);
+      _pendingPettyCashRequests = response.requests;
       _pettyCashCurrency = response.currency;
     } catch (e) {
       debugPrint('Error fetching pending petty-cash requests: $e');
-      _rawPendingPettyCashRequests = [];
       _pendingPettyCashRequests = [];
     }
   }
@@ -178,28 +163,6 @@ class OwnerDashboardViewModel extends ChangeNotifier with TranslatableMixin {
     final token = await sessionService.getToken(role: 'owner');
     if (token == null) return;
     await _fetchPendingPettyCashRequests(token);
-    notifyListeners();
-  }
-
-
-  Future<void> _translateBranches() async {
-    _translatedBranchNames.clear();
-    _translatedBranchLocations.clear();
-    for (final branch in branches) {
-      if (branch.name.trim().isNotEmpty) {
-        _translatedBranchNames[branch.id] = await t(branch.name);
-      }
-      if (branch.location.trim().isNotEmpty) {
-        _translatedBranchLocations[branch.id] = await t(branch.location);
-      }
-    }
-  }
-
-  Future<void> onLocaleChanged() async {
-    _ownerName = await tNullable(_rawOwnerName) ?? _rawOwnerName;
-    await _translateBranches();
-    _pendingPettyCashRequests =
-        await translatePettyCashRequests(_rawPendingPettyCashRequests);
     notifyListeners();
   }
 

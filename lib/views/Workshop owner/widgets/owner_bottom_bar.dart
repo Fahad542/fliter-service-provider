@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 
@@ -15,8 +14,6 @@ class OwnerBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -34,10 +31,10 @@ class OwnerBottomBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(context, 0, Icons.home_rounded, l10n.ownerBottomHome, 0),
-              _buildNavItem(context, 1, Icons.bar_chart_rounded, l10n.ownerBottomReports, 5),
-              _buildNavItem(context, 2, Icons.receipt_long_rounded, l10n.ownerBottomBilling, 6),
-              _buildNavItem(context, 3, Icons.person_rounded, l10n.ownerBottomProfile, 12),
+              _buildNavItem(context, 0, Icons.home_rounded, 'Home', 0),
+              _buildNavItem(context, 1, Icons.bar_chart_rounded, 'Reports', 5),
+              _buildNavItem(context, 2, Icons.receipt_long_rounded, 'Billing', 6),
+              _buildNavItem(context, 3, Icons.person_rounded, 'Profile', 12),
             ],
           ),
         ),
@@ -74,9 +71,6 @@ class OwnerBottomBar extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontSize: isTablet ? 12 : 10,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,

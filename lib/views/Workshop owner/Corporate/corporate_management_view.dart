@@ -17,19 +17,6 @@ class CorporateManagementView extends StatefulWidget {
 
 class _CorporateManagementViewState extends State<CorporateManagementView> {
   String _searchQuery = '';
-  Locale? _lastLocale;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final locale = Localizations.localeOf(context);
-    if (_lastLocale != null && _lastLocale != locale) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.read<CorporateManagementViewModel>().onLocaleChanged();
-      });
-    }
-    _lastLocale = locale;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +25,6 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
       builder: (context, vm, child) {
         final filteredCustomers = vm.corporateCustomers.where((c) =>
         c.companyName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            vm.companyDisplayName(c).toLowerCase().contains(_searchQuery.toLowerCase()) ||
             c.vatNumber.contains(_searchQuery),
         ).toList();
 
@@ -63,7 +49,7 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
                 Expanded(
                   child: vm.isListLoading
                       ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
-                      : _buildCustomerList(filteredCustomers, vm),
+                      : _buildCustomerList(filteredCustomers),
                 ),
               ],
             ),
@@ -83,7 +69,7 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
     );
   }
 
-  Widget _buildCustomerList(List<CorporateCustomer> customers, CorporateManagementViewModel vm) {
+  Widget _buildCustomerList(List<CorporateCustomer> customers) {
     final l10n = AppLocalizations.of(context)!;
     if (customers.isEmpty) {
       return Center(child: Text(l10n.corporateNoneFound));
@@ -93,12 +79,12 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
       itemCount: customers.length,
       itemBuilder: (context, index) {
         final customer = customers[index];
-        return _buildCustomerCard(customer, vm);
+        return _buildCustomerCard(customer);
       },
     );
   }
 
-  Widget _buildCustomerCard(CorporateCustomer customer, CorporateManagementViewModel vm) {
+  Widget _buildCustomerCard(CorporateCustomer customer) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -142,7 +128,7 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        vm.companyDisplayName(customer),
+                        customer.companyName,
                         style: AppTextStyles.h2.copyWith(fontSize: 16, color: AppColors.secondaryLight),
                       ),
                       const SizedBox(height: 4),
@@ -151,7 +137,7 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
                           const Icon(Icons.person_pin_rounded, size: 14, color: Colors.grey),
                           const SizedBox(width: 4),
                           Text(
-                            vm.contactDisplayName(customer),
+                            customer.contactName,
                             style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
                           ),
                         ],
@@ -482,19 +468,19 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
       ),
       child: ListView.builder(
         shrinkWrap: true,
-        itemCount: vm.displayBranches.length,
+        itemCount: vm.branches.length,
         itemBuilder: (context, index) {
-          final branch = vm.displayBranches[index];
+          final branch = vm.branches[index];
           final isSelected = vm.selectedBranchIds.contains(branch.id);
           return CheckboxListTile(
             value: isSelected,
             activeColor: AppColors.primaryLight,
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-            title: Text(branch.translatedName ?? branch.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-            subtitle: (branch.translatedLocation ?? branch.location).isEmpty
+            title: Text(branch.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            subtitle: branch.location.isEmpty
                 ? null
-                : Text(branch.translatedLocation ?? branch.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                : Text(branch.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
             onChanged: (_) => vm.toggleBranchSelection(branch.id),
           );
         },
@@ -559,9 +545,7 @@ class _AddCorporateSheetState extends State<_AddCorporateSheet> {
             .map((r) => DropdownMenuItem<String>(
           value: r.id,
           child: Text(
-            vm.referralDisplayCategory(r).isEmpty
-                ? vm.referralDisplayName(r)
-                : '${vm.referralDisplayName(r)} (${vm.referralDisplayCategory(r)})',
+            r.category.isEmpty ? r.name : '${r.name} (${r.category})',
             overflow: TextOverflow.ellipsis,
           ),
         ))
@@ -878,9 +862,9 @@ class _EditCorporateSheet extends StatelessWidget {
                           ),
                           child: ListView.builder(
                             shrinkWrap: true,
-                            itemCount: vm.displayBranches.length,
+                            itemCount: vm.branches.length,
                             itemBuilder: (ctx, i) {
-                              final branch = vm.displayBranches[i];
+                              final branch = vm.branches[i];
                               final isSelected = vm.editSelectedBranchIds.contains(branch.id);
                               return CheckboxListTile(
                                 value: isSelected,
@@ -888,12 +872,12 @@ class _EditCorporateSheet extends StatelessWidget {
                                 controlAffinity: ListTileControlAffinity.leading,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                                 title: Text(
-                                  branch.translatedName ?? branch.name,
+                                  branch.name,
                                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                                 ),
-                                subtitle: (branch.translatedLocation ?? branch.location).isEmpty
+                                subtitle: branch.location.isEmpty
                                     ? null
-                                    : Text(branch.translatedLocation ?? branch.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                    : Text(branch.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                                 onChanged: (_) => vm.toggleEditBranchSelection(branch.id),
                               );
                             },
