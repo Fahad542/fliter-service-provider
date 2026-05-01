@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
+import '../../../services/localized_api_text.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/toast_service.dart';
@@ -751,7 +752,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         alignment: Alignment.center,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 9),
-          child: Text(
+          child: LocalizedApiText(
             label,
             textAlign: TextAlign.center,
             maxLines: 2,
@@ -816,7 +817,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                           ]
                         : null,
                   ),
-                  child: Text(
+                  child: LocalizedApiText(
                     subCat,
                     style: TextStyle(
                       fontSize: isTablet ? 12 : 11,
@@ -995,7 +996,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                   padding: EdgeInsets.only(
                                     right: cartQty > 0 ? 44 : 0,
                                   ),
-                                  child: Text(
+                                  child: LocalizedApiText(
                                     product.name,
                                     style: AppTextStyles.bodyMedium.copyWith(
                                       fontWeight: FontWeight.w700,
@@ -1189,7 +1190,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                       children: [
                         SizedBox(
                           height: 36,
-                          child: Text(
+                          child: LocalizedApiText(
                             product.name,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w700,
@@ -1731,7 +1732,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
+                    child: LocalizedApiText(
                       line.product.name,
                       style: TextStyle(
                         fontSize: isTablet ? 17 : 13,

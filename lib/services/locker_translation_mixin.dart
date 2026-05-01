@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:translator/translator.dart';
 import 'session_service.dart';
+import '../models/workshop_owner_models.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // lib/services/locker_translation_mixin.dart
@@ -66,6 +68,11 @@ class AppTranslationService {
     'fund'              : 'شحن رصيد',
     'all'               : 'الكل',
     'FUND'              : 'شحن رصيد',
+    'fund_request'      : 'طلب تمويل',
+    'FUND REQUEST'      : 'طلب تمويل',
+    'cashier expense'   : 'مصروف أمين الصندوق',
+    'CASHIER EXPENSE'   : 'مصروف أمين الصندوق',
+    'Petty cash request': 'طلب عهدة نقدية',
     // ── Employee / POS statuses ───────────────────────────────────────────
     'active'            : 'نشط',
     'inactive'          : 'غير نشط',
@@ -86,6 +93,31 @@ class AppTranslationService {
     'Overdue'           : 'متأخر',
     'paid'              : 'مدفوع',
     'partially paid'    : 'مدفوع جزئياً',
+    'submitted'         : 'مرسل',
+    'SUBMITTED'         : 'مرسل',
+    'waiting approval'  : 'في انتظار الموافقة',
+    'Waiting Approval'  : 'في انتظار الموافقة',
+    'complete'          : 'مكتمل',
+    'completed'         : 'مكتمل',
+    'invoiced'          : 'تم إصدار الفاتورة',
+    'cancelled'         : 'ملغي',
+    'canceled'          : 'ملغي',
+    'cash'              : 'نقداً',
+    'Cash'              : 'نقداً',
+    'card'              : 'بطاقة',
+    'Card'              : 'بطاقة',
+    'bank transfer'     : 'تحويل بنكي',
+    'Bank Transfer'     : 'تحويل بنكي',
+    'wallet'            : 'محفظة',
+    'Wallet'            : 'محفظة',
+    'All'               : 'الكل',
+    'Today'             : 'اليوم',
+    'general'           : 'عام',
+    'General'           : 'عام',
+    'service'           : 'خدمة',
+    'Service'           : 'خدمة',
+    'product'           : 'منتج',
+    'Product'           : 'منتج',
   };
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -100,7 +132,7 @@ class AppTranslationService {
       }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return text;
-    if (double.tryParse(trimmed) != null) return text; // numbers unchanged
+    if (_shouldKeepRaw(trimmed)) return text;           // IDs, phone, dates, money, URLs unchanged
     if (_containsArabic(trimmed)) return text;          // already Arabic
 
     // Status fast-path — no network call needed.
@@ -138,6 +170,16 @@ class AppTranslationService {
     return translate(text);
   }
 
+  /// Context/locale-safe variant for widgets. This avoids stale API/database
+  /// strings when the user switches language while a screen is already open.
+  static Future<String> localizedTextForLanguage(
+    String text,
+    String languageCode,
+  ) async {
+    if (languageCode != 'ar') return text;
+    return translate(text);
+  }
+
   /// Nullable variant — returns null when input is null.
   static Future<String?> localizedTextNullable(String? text) async {
     if (text == null) return null;
@@ -161,6 +203,21 @@ class AppTranslationService {
   static Future<bool> _isArabic() async {
     final locale = await SessionService.getLocale();
     return locale == 'ar';
+  }
+
+  static bool _shouldKeepRaw(String text) {
+    final v = text.trim();
+    if (v.isEmpty) return true;
+    if (double.tryParse(v) != null) return true;
+    if (RegExp(r'^https?://', caseSensitive: false).hasMatch(v)) return true;
+    if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) return true;
+    if (RegExp(r'^[+]?\d[\d\s().-]{5,}$').hasMatch(v)) return true;
+    if (RegExp(r'^#?[A-Z]{1,6}[-_/]?[A-Z0-9]{2,}$').hasMatch(v)) return true;
+    if (RegExp(r'^[A-Z0-9]{2,}[-_/][A-Z0-9-_/]{2,}$').hasMatch(v)) return true;
+    if (RegExp(r'^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}').hasMatch(v)) return true;
+    if (RegExp(r'^(SAR|AED|USD|PKR|EUR|GBP)\s*\d', caseSensitive: false).hasMatch(v)) return true;
+    if (RegExp(r'^\d+\s*(SAR|AED|USD|PKR|EUR|GBP)$', caseSensitive: false).hasMatch(v)) return true;
+    return false;
   }
 
   static bool _containsArabic(String text) =>
@@ -208,6 +265,39 @@ typedef LockerRequestTranslated = RequestTranslated;
 ///     }
 ///   }
 mixin TranslatableMixin {
+  Listenable? _localeListenable;
+  VoidCallback? _localeListener;
+
+  /// Bind this ViewModel to SettingsViewModel (or any Listenable that changes
+  /// when locale changes). Call this once from the ViewModel constructor:
+  ///
+  ///   bindLocaleRetranslation(settingsViewModel, translateCachedData);
+  ///
+  /// Keep raw API objects in the ViewModel, and update only translated display
+  /// fields inside [retranslate]. This prevents stale Arabic/English text when
+  /// the user switches language without re-opening the screen.
+  void bindLocaleRetranslation(
+    Listenable settingsViewModel,
+    Future<void> Function() retranslate,
+  ) {
+    unbindLocaleRetranslation();
+    _localeListenable = settingsViewModel;
+    _localeListener = () async {
+      AppTranslationService.clearCache();
+      await retranslate();
+    };
+    settingsViewModel.addListener(_localeListener!);
+  }
+
+  /// Call this from the ViewModel dispose() method.
+  void unbindLocaleRetranslation() {
+    if (_localeListenable != null && _localeListener != null) {
+      _localeListenable!.removeListener(_localeListener!);
+    }
+    _localeListenable = null;
+    _localeListener = null;
+  }
+
   // ── Core wrappers ─────────────────────────────────────────────────────────
 
   Future<String> t(String text) =>
@@ -277,6 +367,42 @@ mixin TranslatableMixin {
     final isCode = RegExp(r'^[A-Z0-9#\-_/]+$').hasMatch(ref.trim());
     if (isCode) return ref;
     return t(ref);
+  }
+
+  /// Translates branch name/location returned by API/database.
+  Future<Branch> translateBranch(Branch branch) async {
+    return branch.copyWith(
+      translatedName: await tBranch(branch.name),
+      translatedLocation: await t(branch.location),
+    );
+  }
+
+  /// Translates a list of branches without mutating raw API data.
+  Future<List<Branch>> translateBranches(List<Branch> branches) async {
+    return Future.wait(branches.map(translateBranch));
+  }
+
+  /// Translates all dynamic display fields on a petty-cash request.
+  Future<PettyCashRequestItem> translatePettyCashRequest(
+    PettyCashRequestItem request,
+  ) async {
+    return request.copyWith(
+      translatedPartyName: await tNullable(request.partyName),
+      translatedBranchName: await tBranch(request.branchName),
+      translatedCashierName: await tPerson(request.cashierName),
+      translatedStatus: await tUiStatus(request.status),
+      translatedReason: await tNotes(request.reason),
+      translatedCategoryLabel: await tNullable(request.categoryLabel),
+      translatedEmployeeName: await tNullable(request.employeeName),
+      translatedRejectionReason: await tNullable(request.rejectionReason),
+    );
+  }
+
+  /// Translates a list of petty-cash requests without mutating raw API data.
+  Future<List<PettyCashRequestItem>> translatePettyCashRequests(
+    List<PettyCashRequestItem> requests,
+  ) async {
+    return Future.wait(requests.map(translatePettyCashRequest));
   }
 }
 

@@ -10,7 +10,7 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../../services/session_service.dart';
 import 'owner_registration_view_model.dart';
 
-// ---------------------------------------------------------------------------
+// -- -------------------------------------------------------------------------
 // OwnerRegistrationView
 //
 // All user-visible strings are served via AppLocalizations (l10n.*).

@@ -19,6 +19,7 @@ import '../Sales Return/pos_sales_return_view.dart';
 import 'pos_view_model.dart';
 import 'pos_customer_history_view.dart';
 import '../Corporate Bookings/pos_corporate_bookings_view.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PosHomeView extends StatelessWidget {
   const PosHomeView({super.key});
@@ -27,136 +28,134 @@ class PosHomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     final vm = context.watch<PosViewModel>();
+    final l = AppLocalizations.of(context)!;
 
     return MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(textScaler: PosTabletLayout.textScaler(context)),
+      data: MediaQuery.of(context).copyWith(
+        textScaler: PosTabletLayout.textScaler(context),
+      ),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         resizeToAvoidBottomInset: false,
         appBar: PosAppBar(
           userName: vm.cashierName,
           infoTitle: vm.workshopName,
-          infoBranch: 'Branch: ${vm.branchName}',
+          infoBranch: l.posHomeBranchPrefix(vm.branchName),
           infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
           onMenuPressed: () => PosShellScaffoldRegistry.openDrawer(),
         ),
         body: wrapPosShellRailBody(
           context,
           GestureDetector(
-          onTap: () {
-            if (vm.homeSearchController.text.isEmpty) {
-              vm.homeSearchFocusNode.unfocus();
-            }
-          },
-          child: Column(
-            children: [
-              // 2. Custom Info Bar (Merged into AppBar)
+            onTap: () {
+              if (vm.homeSearchController.text.isEmpty) {
+                vm.homeSearchFocusNode.unfocus();
+              }
+            },
+            child: Column(
+              children: [
+                Padding(
+                  padding:
+                  EdgeInsets.symmetric(horizontal: isTablet ? 20 : 24),
+                  child: Column(
+                    children: [
+                      SizedBox(height: isTablet ? 18 : 24),
+                      // Title
+                      RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: l.posHomeTitleWorkshop,
+                              style: AppTextStyles.h1.copyWith(
+                                color: AppColors.primaryLight,
+                                fontSize: isTablet ? 36 : 34,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            TextSpan(
+                              text: l.posHomeTitlePos,
+                              style: AppTextStyles.h1.copyWith(
+                                color: AppColors.secondaryLight,
+                                fontSize: isTablet ? 36 : 34,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l.posHomeSubtitle,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Colors.grey,
+                          fontSize: 15,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
 
-              // 3. Main Content
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 24),
-                child: Column(
-                  children: [
-                    SizedBox(height: isTablet ? 18 : 24),
-                    // Title
-                    RichText(
-                      textAlign: TextAlign.center,
-                      text: TextSpan(
+                      // Search bar
+                      PosSearchBar(
+                        controller: vm.homeSearchController,
+                        focusNode: vm.homeSearchFocusNode,
+                        hintText: l.posHomeSearchHint,
+                        onChanged: (val) => vm.handleSearchDebounce(val),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          TextSpan(
-                            text: 'Workshop ',
-                            style: AppTextStyles.h1.copyWith(
-                              color: AppColors.primaryLight,
-                              fontSize: isTablet ? 36 : 34,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          _buildActionChip(
+                            context: context,
+                            icon: Icons.add,
+                            label: l.posHomeNewWalkIn,
+                            onTap: () {
+                              context.read<PosViewModel>().clearCustomerData();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                  const PosAddCustomerView(initialTab: 0),
+                                ),
+                              );
+                            },
                           ),
-                          TextSpan(
-                            text: 'POS',
-                            style: AppTextStyles.h1.copyWith(
-                              color: AppColors.secondaryLight,
-                              fontSize: isTablet ? 36 : 34,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          const SizedBox(width: 12),
+                          _buildActionChip(
+                            context: context,
+                            icon: Icons.business,
+                            label: l.posHomeCorporateBooking,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                  const PosCorporateBookingsView(),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Search by customer number, vehicle number,\nphone number or customer name',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: Colors.grey,
-                        fontSize: 15,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Search bar
-                    PosSearchBar(
-                      controller: vm.homeSearchController,
-                      focusNode: vm.homeSearchFocusNode,
-                      hintText:
-                          'Search customer no / vehicle / mobile / plate...',
-                      onChanged: (val) => vm.handleSearchDebounce(val),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildActionChip(
-                          context: context,
-                          icon: Icons.add,
-                          label: 'New walk-in',
-                          onTap: () {
-                            context.read<PosViewModel>().clearCustomerData();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const PosAddCustomerView(initialTab: 0),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        _buildActionChip(
-                          context: context,
-                          icon: Icons.business,
-                          label: 'Corporate booking',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const PosCorporateBookingsView(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-
-              if (vm.homeSearchController.text.isNotEmpty ||
-                  vm.homeSearchFocusNode.hasFocus)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: _buildSearchResults(context, isTablet),
+                      const SizedBox(height: 12),
+                    ],
                   ),
                 ),
-            ],
+
+                if (vm.homeSearchController.text.isNotEmpty ||
+                    vm.homeSearchFocusNode.hasFocus)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _buildSearchResults(context, isTablet),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -165,6 +164,8 @@ class PosHomeView extends StatelessWidget {
   Widget _buildSearchResults(BuildContext context, bool isTablet) {
     return Consumer<PosViewModel>(
       builder: (context, vm, child) {
+        final l = AppLocalizations.of(context)!;
+
         if (vm.isSearchingCustomer) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
@@ -179,7 +180,7 @@ class PosHomeView extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(6, 10, 6, 14),
                 child: Text(
-                  'Recent Searches',
+                  l.posHomeRecentSearches,
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontSize: isTablet ? 16 : 14,
                     fontWeight: FontWeight.w600,
@@ -201,21 +202,29 @@ class PosHomeView extends StatelessWidget {
                           : null;
                       final vehicle = latestOrder?.vehicle;
 
+                      // Vehicle label — "No Vehicle" is a UI string, translated here
+                      final vehicleLabel = vehicle != null
+                          ? '${vehicle.make} ${vehicle.model}'
+                          '${(vehicle.year != null && vehicle.year!.isNotEmpty) ? ' · ${vehicle.year}' : ''}'
+                          : l.posHomeNoVehicle;
+
+                      // Status from API — translated at render time (locale-switch safe)
+                      final statusLabel = latestOrder != null
+                          ? localizeOrderStatus(context, latestOrder.status)
+                          : l.posSearchHistoryNa;
+
                       return SearchHistoryItem(
-                        vehicle: vehicle != null
-                            ? '${vehicle.make} ${vehicle.model}'
-                                '${(vehicle.year != null && vehicle.year!.isNotEmpty) ? ' · ${vehicle.year}' : ''}'
-                            : 'No Vehicle',
-                        plate: vehicle?.plateNo ?? 'N/A',
+                        vehicle: vehicleLabel,
+                        plate: vehicle?.plateNo ?? l.posSearchHistoryNa,
                         customer: customer.name,
                         phone: customer.mobile,
                         lastVisit: latestOrder != null
                             ? vm.formatDate(latestOrder.createdAt)
-                            : 'N/A',
-                        lastService: latestOrder?.status.toUpperCase() ?? 'N/A',
+                            : l.posSearchHistoryNa,
+                        lastService: statusLabel,
                         orderNumber: latestOrder?.id,
-                        isCorporate:
-                            customer.customerType.toLowerCase() == 'corporate',
+                        isCorporate: customer.customerType.toLowerCase() ==
+                            'corporate',
                         onContinue: () {
                           final posVm = context.read<PosViewModel>();
                           final isCorporateCustomer =
@@ -254,13 +263,16 @@ class PosHomeView extends StatelessWidget {
                           );
                         },
                         onSalesReturn: () {
-                          final returnVm = context.read<SalesReturnViewModel>();
-                          returnVm.searchController.text = customer.id.toString();
+                          final returnVm =
+                          context.read<SalesReturnViewModel>();
+                          returnVm.searchController.text =
+                              customer.id.toString();
                           returnVm.searchInvoice();
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const PosSalesReturnView(showBackButton: true),
+                              builder: (_) => const PosSalesReturnView(
+                                  showBackButton: true),
                             ),
                           );
                         },
@@ -311,7 +323,7 @@ class PosHomeView extends StatelessWidget {
           );
         }
 
-        // Show "No Results" only if we've actually searched for something and got nothing back
+        // Show "No Results" only when user has typed something and search returned empty
         if (vm.homeSearchController.text.isNotEmpty &&
             !vm.isSearchingCustomer) {
           return Padding(
@@ -325,7 +337,7 @@ class PosHomeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'No results found',
+                  l.posHomeNoResults,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey.shade400,
                     fontWeight: FontWeight.w600,
@@ -333,7 +345,7 @@ class PosHomeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Try searching with a different name or number',
+                  l.posHomeNoResultsHint,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: Colors.grey.shade400,
                   ),
@@ -354,7 +366,6 @@ class PosHomeView extends StatelessWidget {
     required VoidCallback onTap,
     required BuildContext context,
   }) {
-    // Reverting to previous compact style as requested
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -392,4 +403,23 @@ class PosHomeView extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Translates an API order status string (always English from the backend) to
+/// the current locale.  Called in the Widget build tree so locale switches
+/// are reflected immediately on the next rebuild — no ViewModel involvement.
+String localizeOrderStatus(BuildContext context, String apiStatus) {
+  final l = AppLocalizations.of(context)!;
+  final s = apiStatus.trim().toLowerCase();
+
+  if (s == 'invoiced') return l.posOrderStatusInvoiced;
+  if (s == 'completed' || s == 'complete') return l.posOrderStatusCompleted;
+  if (s.contains('progress')) return l.posOrderStatusInProgress;
+  if (s.contains('accepted')) return l.posOrderStatusAccepted;
+  if (s.contains('waiting')) return l.posOrderStatusWaiting;
+  if (s.contains('pending')) return l.posOrderStatusPending;
+  if (s.contains('draft')) return l.posOrderStatusDraft;
+
+  // Unknown statuses: surface the raw value in uppercase so it remains visible.
+  return apiStatus.toUpperCase();
 }
