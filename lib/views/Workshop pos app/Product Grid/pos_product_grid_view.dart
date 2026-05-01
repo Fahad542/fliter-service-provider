@@ -1488,7 +1488,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               children: [
                                 _buildTotalRow(
                                   AppLocalizations.of(context)!.posProductGrossAmountExclVat,
-                                  'SAR ${vm.getSubtotalGross(widget.isMainTab).toStringAsFixed(2)}',
+                                  '\${AppLocalizations.of(context)!.currencySymbol} vm.getSubtotalGross(widget.isMainTab).toStringAsFixed(2)',
                                   isTablet,
                                 ),
                                 SizedBox(height: isTablet ? 8 : 6),
@@ -1503,7 +1503,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 SizedBox(height: isTablet ? 8 : 6),
                                 _buildTotalRow(
                                   AppLocalizations.of(context)!.posProductPriceAfterLineDiscount,
-                                  'SAR ${vm.getPriceAfterItemDiscounts(widget.isMainTab).toStringAsFixed(2)}',
+                                  '\${AppLocalizations.of(context)!.currencySymbol} vm.getPriceAfterItemDiscounts(widget.isMainTab).toStringAsFixed(2)',
                                   isTablet,
                                 ),
                                 SizedBox(height: isTablet ? 10 : 8),
@@ -1520,7 +1520,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 ],
                                 _buildTotalRow(
                                   AppLocalizations.of(context)!.posProductPriceAfterTotalDiscount,
-                                  'SAR ${vm.getPriceAfterJobDiscount(widget.isMainTab).toStringAsFixed(2)}',
+                                  '\${AppLocalizations.of(context)!.currencySymbol} vm.getPriceAfterJobDiscount(widget.isMainTab).toStringAsFixed(2)',
                                   isTablet,
                                 ),
                                 SizedBox(height: isTablet ? 12 : 10),
@@ -1628,14 +1628,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 ],
                                 _buildTotalRow(
                                   AppLocalizations.of(context)!.posProductPriceAfterPromo,
-                                  'SAR ${vm.getTotalTaxableAmountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                  '\${AppLocalizations.of(context)!.currencySymbol} vm.getTotalTaxableAmountValue(widget.isMainTab).toStringAsFixed(2)',
                                   isTablet,
                                 ),
                                 Divider(height: 1, color: Colors.grey.shade200),
                                 SizedBox(height: isTablet ? 10 : 8),
                                 _buildTotalRow(
                                   AppLocalizations.of(context)!.posProductVat15,
-                                  'SAR ${vm.getTotalTaxValue(widget.isMainTab).toStringAsFixed(2)}',
+                                  '\${AppLocalizations.of(context)!.currencySymbol} vm.getTotalTaxValue(widget.isMainTab).toStringAsFixed(2)',
                                   isTablet,
                                   color: Colors.grey,
                                 ),
@@ -1654,7 +1654,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     ),
                                     const Spacer(),
                                     Text(
-                                      'SAR ${vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                      '\${AppLocalizations.of(context)!.currencySymbol} vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: isLandscape
@@ -2478,7 +2478,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'SAR ${product.price.toStringAsFixed(2)}',
+                            '\${AppLocalizations.of(context)!.currencySymbol} product.price.toStringAsFixed(2)',
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w800,
                               fontSize: 14,
@@ -2616,7 +2616,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'SAR ${product.price.toStringAsFixed(2)}',
+                          '\${AppLocalizations.of(context)!.currencySymbol} product.price.toStringAsFixed(2)',
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
@@ -2780,7 +2780,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         Padding(
                           padding: const EdgeInsets.only(right: 2),
                           child: Text(
-                            'SAR ${item.lineSubtotalExclVat.toStringAsFixed(2)}',
+                            '\${AppLocalizations.of(context)!.currencySymbol} item.lineSubtotalExclVat.toStringAsFixed(2)',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -2876,7 +2876,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                   borderRadius: BorderRadius.circular(7),
                                 ),
                                 child: Text(
-                                  item.isDiscountPercent ? '%' : 'SAR',
+                                  item.isDiscountPercent ? '%' : AppLocalizations.of(context)!.currencySymbol,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
@@ -2899,7 +2899,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'SAR ${item.lineSubtotalExclVat.toStringAsFixed(2)}',
+                          '\${AppLocalizations.of(context)!.currencySymbol} item.lineSubtotalExclVat.toStringAsFixed(2)',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -2950,7 +2950,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  item.isDiscountPercent ? '%' : 'SAR',
+                                  item.isDiscountPercent ? '%' : AppLocalizations.of(context)!.currencySymbol,
                                   style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF1E2124)),
                                 ),
                               ),
@@ -3067,7 +3067,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
               border: Border.all(color: Colors.green.withOpacity(0.3)),
             ),
             child: Text(
-              vm.getActiveIsGlobalDiscountPercent(widget.isMainTab) ? '%' : 'SAR',
+              vm.getActiveIsGlobalDiscountPercent(widget.isMainTab) ? '%' : AppLocalizations.of(context)!.currencySymbol,
               style: TextStyle(
                 fontSize: isTablet ? 12 : 9,
                 fontWeight: FontWeight.w700,
@@ -3628,7 +3628,7 @@ class _EditableServiceUnitPriceRowState extends State<_EditableServiceUnitPriceR
             ),
           ),
           Text(
-            'SAR ',
+            '\${AppLocalizations.of(context)!.currencySymbol} ',
             style: TextStyle(
               fontSize: widget.isTablet ? 12 : 10,
               fontWeight: FontWeight.w600,

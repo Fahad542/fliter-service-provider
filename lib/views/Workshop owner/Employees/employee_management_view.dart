@@ -490,7 +490,7 @@ class _EmployeeManagementViewState extends State<EmployeeManagementView> {
                               const EdgeInsets.symmetric(horizontal: 4),
                               child: _buildInfoItem(
                                 l10n.empMgmtInfoSalary,
-                                'SAR ${(employee.basicSalary ?? 0.0).toStringAsFixed(0)}',
+                                l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, ((employee.basicSalary ?? 0.0).toStringAsFixed(0)).toString()),
                                 Icons.payments_outlined,
                               ),
                             ),

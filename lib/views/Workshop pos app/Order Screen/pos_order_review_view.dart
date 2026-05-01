@@ -1181,8 +1181,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.posReviewInvoiceTotal, style: AppTextStyles.bodyMedium)),
-                          Text('\${_totalAmount.toStringAsFixed(2)} SAR',
-                              style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700)),
+                          Builder(builder: (bctx2) => Text('\${_totalAmount.toStringAsFixed(2)} \${AppLocalizations.of(bctx2)!.currencySymbol}',
+                              style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700))),
                         ],
                       ),
                     ),
@@ -1219,8 +1219,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           remaining > 0
-                              ? 'Remaining: ${remaining.toStringAsFixed(2)} SAR'
-                              : 'Exceeds total by ${remaining.abs().toStringAsFixed(2)} SAR',
+                              ? 'Remaining: \${remaining.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}'
+                              : 'Exceeds total by \${remaining.abs().toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                           style: TextStyle(
                             color: remaining > 0 ? Colors.orange.shade700 : Colors.red,
                             fontWeight: FontWeight.w600,
@@ -1287,7 +1287,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
               children: [
                 Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.posReviewInvoiceTotal, style: AppTextStyles.bodyMedium)),
                 Text(
-                  '${_totalAmount.toStringAsFixed(2)} SAR',
+                  '\${_totalAmount.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                   style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
@@ -1361,8 +1361,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 remaining > 0
-                    ? 'Remaining: \${remaining.toStringAsFixed(2)} SAR'
-                    : 'Exceeds total by \${remaining.abs().toStringAsFixed(2)} SAR',
+                    ? 'Remaining: \${remaining.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}'
+                    : 'Exceeds total by \${remaining.abs().toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                 style: TextStyle(
                   color: remaining > 0 ? Colors.orange.shade700 : Colors.red,
                   fontWeight: FontWeight.w600,
@@ -2710,7 +2710,7 @@ class _ItemRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(children: [
                     Expanded(child: Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.posReviewDiscount, style: labelStyle))),
-                    Text('- SAR ${item.discountAmount.toStringAsFixed(2)}', style: valStyle.copyWith(color: Colors.green)),
+                    Builder(builder: (ctx) => Text('- \${AppLocalizations.of(ctx)!.currencySymbol} \${item.discountAmount.toStringAsFixed(2)}', style: valStyle.copyWith(color: Colors.green))),
                   ]),
                   const SizedBox(height: 2),
                   Row(children: [
@@ -2863,7 +2863,7 @@ class _VatBreakdownWidget extends StatelessWidget {
     borderRadius: BorderRadius.circular(6),
     ),
     child: Text(
-    globalDiscountType == 'percent' ? '%' : 'SAR',
+    globalDiscountType == 'percent' ? '%' : AppLocalizations.of(context)!.currencySymbol,
     style: TextStyle(
     fontSize: 13,
     color: Colors.green.shade700,

@@ -10,6 +10,7 @@ import '../../../models/takeaway_models.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Home Screen/pos_view_model.dart';
+import '../../../l10n/app_localizations.dart';
 import '../Order Screen/pos_invoice_payment_dialog.dart';
 import '../Order Screen/pos_order_review_view.dart'
 show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
@@ -328,7 +329,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
 
   /// Right column on tablet — mirrors Products tab live invoice (narrow panel + totals).
   Widget _buildLiveInvoicePanel(BuildContext context, TakeawayViewModel vm) {
-    final currency = vm.catalog?.currency ?? 'SAR';
+    final currency = AppLocalizations.of(context)!.currencySymbol;
 
     final gross = vm.grossExclVatBeforeLineDiscounts;
     final lineDiscount = vm.lineDiscountTotalExclVat;
@@ -860,7 +861,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     bool isPortrait,
   ) {
     final filtered = vm.visibleProducts;
-    final currency = vm.catalog?.currency ?? 'SAR';
+    final currency = AppLocalizations.of(context)!.currencySymbol;
 
     if (filtered.isEmpty) {
       return RefreshIndicator(
@@ -1373,7 +1374,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     TakeawayViewModel vm,
     bool isTablet,
   ) {
-    final currency = vm.catalog?.currency ?? 'SAR';
+    final currency = AppLocalizations.of(context)!.currencySymbol;
     return Container(
       padding: EdgeInsets.fromLTRB(
         isTablet ? 18 : 16,
@@ -1873,7 +1874,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                         borderRadius: BorderRadius.circular(7),
                       ),
                       child: Text(
-                        isPercent ? '%' : 'SAR',
+                        isPercent ? '%' : AppLocalizations.of(context)!.currencySymbol,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

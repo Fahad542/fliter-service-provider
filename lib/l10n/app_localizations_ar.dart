@@ -57,7 +57,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerShellLogoutTitle => 'تسجيل الخروج';
 
   @override
-  String get ownerShellLogoutBody => 'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟';
+  String get ownerShellLogoutBody =>
+      'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟';
 
   @override
   String get ownerShellLogoutCancel => 'إلغاء';
@@ -126,7 +127,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get billingGeneratorStep2 => 'الخطوة 2: معاينة الفواتير المؤهلة';
 
   @override
-  String get billingGeneratorPendingInvoices => 'فواتير معلقة: 15 • الإجمالي المتوقع: 12,450 ر.س';
+  String get billingGeneratorPendingInvoices =>
+      'فواتير معلقة: 15 • الإجمالي المتوقع: 12,450 ر.س';
 
   @override
   String get billingGeneratorPostAll => 'إنشاء وترحيل الكل';
@@ -227,7 +229,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get branchDeleteConfirmTitle => 'حذف الفرع';
 
   @override
-  String get branchDeleteConfirmBody => 'هل أنت متأكد من رغبتك في حذف هذا الفرع؟';
+  String get branchDeleteConfirmBody =>
+      'هل أنت متأكد من رغبتك في حذف هذا الفرع؟';
 
   @override
   String get branchDeleteConfirmCancel => 'إلغاء';
@@ -296,7 +299,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerLogOut => 'تسجيل الخروج';
 
   @override
-  String get lockerLogOutConfirm => 'هل أنت متأكد من تسجيل الخروج من بوابة الخزينة؟';
+  String get lockerLogOutConfirm =>
+      'هل أنت متأكد من تسجيل الخروج من بوابة الخزينة؟';
 
   @override
   String get lockerCancel => 'إلغاء';
@@ -482,7 +486,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerGenerateAuditPdf => 'إنشاء تقرير PDF';
 
   @override
-  String get lockerCollectionPendingApproval => 'التحصيل في انتظار موافقة المشرف.';
+  String get lockerCollectionPendingApproval =>
+      'التحصيل في انتظار موافقة المشرف.';
 
   @override
   String get lockerPendingSupervisorApproval => 'في انتظار موافقة المشرف';
@@ -497,7 +502,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerVarianceRejectedBanner => 'تم رفض الفارق';
 
   @override
-  String get lockerVarianceDifferenceReview => 'يوجد فارق في هذا التحصيل. يرجى المراجعة والموافقة أو الرفض.';
+  String get lockerVarianceDifferenceReview =>
+      'يوجد فارق في هذا التحصيل. يرجى المراجعة والموافقة أو الرفض.';
 
   @override
   String get lockerApproveVariance => 'تمت الموافقة على الفارق بنجاح';
@@ -512,7 +518,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerRejectVarianceTitle => 'رفض الفارق';
 
   @override
-  String get lockerRejectVarianceBody => 'يمكنك تقديم سبب اختياري لرفض هذا الفارق.';
+  String get lockerRejectVarianceBody =>
+      'يمكنك تقديم سبب اختياري لرفض هذا الفارق.';
 
   @override
   String get lockerRejectionReasonHint => 'أدخل سبب الرفض (اختياري)';
@@ -611,7 +618,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardViewAll => 'عرض الكل';
 
   @override
-  String get dashboardNoPendingApprovals => 'لا توجد طلبات صندوق صغير معلقة الآن.';
+  String get dashboardNoPendingApprovals =>
+      'لا توجد طلبات صندوق صغير معلقة الآن.';
 
   @override
   String dashboardMoreApprovals(int count) {
@@ -880,19 +888,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get empMgmtValidationTechType => 'يرجى اختيار نوع فني واحد على الأقل.';
 
   @override
-  String get empMgmtValidationNoBranch => 'يرجى إنشاء فرع أولاً لتعيين هذا الموظف.';
+  String get empMgmtValidationNoBranch =>
+      'يرجى إنشاء فرع أولاً لتعيين هذا الموظف.';
 
   @override
-  String get empMgmtValidationNoBranchCashier => 'يرجى إنشاء فرع أولاً لتعيين هذا الكاشير.';
+  String get empMgmtValidationNoBranchCashier =>
+      'يرجى إنشاء فرع أولاً لتعيين هذا الكاشير.';
 
   @override
-  String get empMgmtValidationNoDepartment => 'يرجى إنشاء قسم أولاً لتعيين هذا الموظف.';
+  String get empMgmtValidationNoDepartment =>
+      'يرجى إنشاء قسم أولاً لتعيين هذا الموظف.';
 
   @override
-  String get empMgmtValidationSupplierRequired => 'يرجى ملء جميع الحقول المطلوبة';
+  String get empMgmtValidationSupplierRequired =>
+      'يرجى ملء جميع الحقول المطلوبة';
 
   @override
-  String get empMgmtApiNotIntegrated => 'الأنواع المتاحة للإنشاء: الفني، الكاشير، والمورّد فقط.';
+  String get empMgmtApiNotIntegrated =>
+      'الأنواع المتاحة للإنشاء: الفني، الكاشير، والمورّد فقط.';
 
   @override
   String get empMgmtTechnicianCreateSuccess => 'تم إنشاء الفني بنجاح';
@@ -988,7 +1001,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posAddCustomerSectionVehicleInfo => 'معلومات المركبة';
 
   @override
-  String get posAddCustomerSectionCompanyDetails => 'تفاصيل الشركة (مُعبَّأة تلقائياً)';
+  String get posAddCustomerSectionCompanyDetails =>
+      'تفاصيل الشركة (مُعبَّأة تلقائياً)';
 
   @override
   String get posAddCustomerSectionCorporateAccount => 'الحساب المؤسسي';
@@ -1030,7 +1044,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posAddCustomerFieldNA => 'غير متوفر';
 
   @override
-  String get posAddCustomerValidationVehicleRequired => 'يرجى إدخال رقم المركبة';
+  String get posAddCustomerValidationVehicleRequired =>
+      'يرجى إدخال رقم المركبة';
 
   @override
   String get posAddCustomerValidationRequired => 'مطلوب';
@@ -1147,7 +1162,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posMonitoringDiffNone => '—';
 
   @override
-  String get posMonitoringBackendWarning => '⚠ التفاصيل الكاملة غير متاحة — يرجى تحديث الخادم للاطلاع على بيانات كل فئة';
+  String get posMonitoringBackendWarning =>
+      '⚠ التفاصيل الكاملة غير متاحة — يرجى تحديث الخادم للاطلاع على بيانات كل فئة';
 
   @override
   String posMonitoringAmountSar(String amount) {
@@ -1254,7 +1270,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get promoSubmitUpdate => 'تحديث العرض';
 
   @override
-  String get promoValidationRequired => 'يرجى ملء الحقول المطلوبة (الرمز، القيمة)';
+  String get promoValidationRequired =>
+      'يرجى ملء الحقول المطلوبة (الرمز، القيمة)';
 
   @override
   String get promoCreateSuccess => 'تم إنشاء رمز العرض بنجاح!';
@@ -1278,7 +1295,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerSelectOfficer => 'اختر الموظف';
 
   @override
-  String get lockerSelectOfficerSubtitle => 'اختر موظفاً ميدانياً لتعيينه لهذا طلب التحصيل.';
+  String get lockerSelectOfficerSubtitle =>
+      'اختر موظفاً ميدانياً لتعيينه لهذا طلب التحصيل.';
 
   @override
   String get lockerOfficersLoadError => 'تعذّر تحميل قائمة الموظفين.';
@@ -1320,7 +1338,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerNotes => 'ملاحظات';
 
   @override
-  String get lockerAuditFootnote => 'هذا التقرير مُولَّد آلياً ويُعدّ سجلاً رسمياً للتدقيق.';
+  String get lockerAuditFootnote =>
+      'هذا التقرير مُولَّد آلياً ويُعدّ سجلاً رسمياً للتدقيق.';
 
   @override
   String lockerAuditFootnoteAmounts(String currency) {
@@ -1348,7 +1367,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerNoPendingVariance => 'لا توجد موافقات فوارق معلّقة حالياً.';
 
   @override
-  String get lockerVarianceReviewBanner => 'هذه التحصيلات تحتوي على فوارق نقدية وتتطلب موافقتك.';
+  String get lockerVarianceReviewBanner =>
+      'هذه التحصيلات تحتوي على فوارق نقدية وتتطلب موافقتك.';
 
   @override
   String get lockerShortLabel => 'ناقص';
@@ -1360,7 +1380,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerApproveVarianceTitle => 'الموافقة على الفارق';
 
   @override
-  String lockerApproveVarianceConfirm(String type, String amount, String branch) {
+  String lockerApproveVarianceConfirm(
+    String type,
+    String amount,
+    String branch,
+  ) {
     return 'الموافقة على فارق $type بمبلغ $amount ريال لـ$branch؟';
   }
 
@@ -1528,7 +1552,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerNoComplianceData => 'لا توجد بيانات امتثال لهذه الفترة.';
 
   @override
-  String get lockerNoResultsMatchFilters => 'لا توجد نتائج تطابق عوامل التصفية.';
+  String get lockerNoResultsMatchFilters =>
+      'لا توجد نتائج تطابق عوامل التصفية.';
 
   @override
   String get lockerNoAuditLogsFound => 'لم يتم العثور على سجلات تدقيق.';
@@ -1617,7 +1642,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lockerStoragePermissionRequired => 'إذن التخزين مطلوب';
 
   @override
-  String get lockerStoragePermissionBody => 'إذن التخزين مطلوب لحفظ الملفات المُصدَّرة. يرجى تفعيله من إعدادات التطبيق.';
+  String get lockerStoragePermissionBody =>
+      'إذن التخزين مطلوب لحفظ الملفات المُصدَّرة. يرجى تفعيله من إعدادات التطبيق.';
 
   @override
   String get lockerOpenSettings => 'فتح الإعدادات';
@@ -1923,7 +1949,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get corporateRegisterTitle => 'تسجيل شريك مؤسسي';
 
   @override
-  String get corporateRegisterSubtitle => 'أدخل التفاصيل لإنشاء حساب مؤسسي جديد.';
+  String get corporateRegisterSubtitle =>
+      'أدخل التفاصيل لإنشاء حساب مؤسسي جديد.';
 
   @override
   String get corporateFieldCompanyName => 'اسم الشركة';
@@ -1964,7 +1991,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get corporateAddUserTitle => 'إضافة مستخدم مؤسسي';
 
   @override
-  String get corporateAddUserSubtitle => 'أنشئ بيانات اعتماد لمستخدم مرتبط بهذا الحساب المؤسسي.';
+  String get corporateAddUserSubtitle =>
+      'أنشئ بيانات اعتماد لمستخدم مرتبط بهذا الحساب المؤسسي.';
 
   @override
   String get corporateUserFieldName => 'الاسم الكامل';
@@ -1982,7 +2010,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get corporateEditTitle => 'تعديل الحساب المؤسسي';
 
   @override
-  String get corporateEditSubtitle => 'حدِّث التفاصيل أدناه. سيُرسَل فقط ما تم تغييره.';
+  String get corporateEditSubtitle =>
+      'حدِّث التفاصيل أدناه. سيُرسَل فقط ما تم تغييره.';
 
   @override
   String get invTitle => 'المخزون والمنتجات';
@@ -2092,7 +2121,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invUpdateProduct => 'تحديث المنتج';
 
   @override
-  String get invCreateProductSubtitle => 'أدخل تفاصيل المنتج لإضافته إلى المخزون.';
+  String get invCreateProductSubtitle =>
+      'أدخل تفاصيل المنتج لإضافته إلى المخزون.';
 
   @override
   String get invUpdateProductSubtitle => 'تعديل تفاصيل المنتج الحالي.';
@@ -2248,7 +2278,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invCreateSubCategory => 'إنشاء فئة فرعية';
 
   @override
-  String get invCreateSubCategorySubtitle => 'أدخل تفاصيل الفئة الفرعية الجديدة.';
+  String get invCreateSubCategorySubtitle =>
+      'أدخل تفاصيل الفئة الفرعية الجديدة.';
 
   @override
   String get invFieldSubCategoryName => 'اسم الفئة الفرعية';
@@ -2296,19 +2327,19 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get notifTypeExpense => 'expense';
+  String get notifTypeExpense => 'مصروف';
 
   @override
-  String get notifTypeStock => 'stock';
+  String get notifTypeStock => 'مخزون';
 
   @override
-  String get notifTypePayment => 'payment';
+  String get notifTypePayment => 'دفع';
 
   @override
-  String get notifTypeLocker => 'locker';
+  String get notifTypeLocker => 'خزينة';
 
   @override
-  String get notifTypeInvoice => 'invoice';
+  String get notifTypeInvoice => 'فاتورة';
 
   @override
   String get reportsTitle => 'التقارير والتحليلات';
@@ -2378,13 +2409,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posCurrentShiftNoActiveSession => 'لا توجد جلسة نشطة.';
 
   @override
-  String get posCurrentShiftNoActiveShiftFound => 'لم يتم العثور على وردية نشطة.';
+  String get posCurrentShiftNoActiveShiftFound =>
+      'لم يتم العثور على وردية نشطة.';
 
   @override
   String get posCurrentShiftRetry => 'إعادة المحاولة';
 
   @override
-  String get posCurrentShiftSessionExpiredError => 'انتهت الجلسة. يرجى تسجيل الدخول مججداً.';
+  String get posCurrentShiftSessionExpiredError =>
+      'انتهت الجلسة. يرجى تسجيل الدخول مججداً.';
 
   @override
   String posCurrentShiftFetchError(String error) {
@@ -2450,7 +2483,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posBroadcastTypeWorkshop => 'الورشة';
 
   @override
-  String get posBroadcastSessionExpired => 'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.';
+  String get posBroadcastSessionExpired =>
+      'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.';
 
   @override
   String get posCorporateBookingsTitle => 'حجوزات الشركات';
@@ -2468,7 +2502,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posCorporateNoBookingsTitle => 'لا توجد حجوزات';
 
   @override
-  String get posCorporateNoBookingsSubtitle => 'لا توجد حجوزات مؤسسية للفلتر المحدد.';
+  String get posCorporateNoBookingsSubtitle =>
+      'لا توجد حجوزات مؤسسية للفلتر المحدد.';
 
   @override
   String get posCorporateCardLabelVehicle => 'المركبة';
@@ -2556,7 +2591,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posCorporateDetailsLicensePlate => 'لوحة الترخيص';
 
   @override
-  String get posCorporateDetailsNoProducts => 'لا توجد منتجات محددة. افتح القسم المطابق.';
+  String get posCorporateDetailsNoProducts =>
+      'لا توجد منتجات محددة. افتح القسم المطابق.';
 
   @override
   String posCorporateDetailsQty(String qty) {
@@ -2578,7 +2614,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posCorporateRejectError => 'فشل في رفض الحجز';
 
   @override
-  String get posCorporateNoMatchingOrder => 'لم يتم العثور على طلب مطابق لهذا الحجز. يرجى التحديث والمحاولة مجدداً.';
+  String get posCorporateNoMatchingOrder =>
+      'لم يتم العثور على طلب مطابق لهذا الحجز. يرجى التحديث والمحاولة مجدداً.';
 
   @override
   String get posCorporateStatusCancelled => 'ملغى';
@@ -2729,7 +2766,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posLoginResetPasswordTitle => 'إعادة تعيين كلمة المرور';
 
   @override
-  String get posLoginResetPasswordSubtitle => 'أدخل بريدك الإلكتروني أو رقم جوالك وسنرسل لك رابط إعادة التعيين.';
+  String get posLoginResetPasswordSubtitle =>
+      'أدخل بريدك الإلكتروني أو رقم جوالك وسنرسل لك رابط إعادة التعيين.';
 
   @override
   String get posLoginResetPasswordEmailLabel => 'البريد الإلكتروني';
@@ -2741,13 +2779,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posLoginResetPasswordSendButton => 'إرسال رابط إعادة التعيين';
 
   @override
-  String get posLoginResetPasswordSentSuccess => 'تم إرسال الرابط! تحقق من بريدك الإلكتروني.';
+  String get posLoginResetPasswordSentSuccess =>
+      'تم إرسال الرابط! تحقق من بريدك الإلكتروني.';
 
   @override
-  String get posLoginPreviousShiftAutoClosed => 'تم إغلاق الوردية السابقة تلقائياً. بدأت وردية جديدة.';
+  String get posLoginPreviousShiftAutoClosed =>
+      'تم إغلاق الوردية السابقة تلقائياً. بدأت وردية جديدة.';
 
   @override
-  String get posLoginSessionExpiredError => 'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.';
+  String get posLoginSessionExpiredError =>
+      'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.';
 
   @override
   String get posYourJobsTitle => 'مهامي';
@@ -2838,7 +2879,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posInvSalesNoSalesTitle => 'لا توجد مبيعات في هذه الفترة';
 
   @override
-  String get posInvSalesNoSalesSubtitle => 'أعادت الواجهة البرمجية استجابة ناجحة بدون سطور مطابقة (200 + قائمة فارغة).';
+  String get posInvSalesNoSalesSubtitle =>
+      'أعادت الواجهة البرمجية استجابة ناجحة بدون سطور مطابقة (200 + قائمة فارغة).';
 
   @override
   String get posInvSalesRetry => 'إعادة المحاولة';
@@ -2868,10 +2910,12 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get posInvSalesSessionExpiredError => 'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.';
+  String get posInvSalesSessionExpiredError =>
+      'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.';
 
   @override
-  String get posInvSalesErrStartBeforeEnd => 'يجب أن يكون تاريخ البدء قبل تاريخ الانتهاء أو مساوياً له.';
+  String get posInvSalesErrStartBeforeEnd =>
+      'يجب أن يكون تاريخ البدء قبل تاريخ الانتهاء أو مساوياً له.';
 
   @override
   String posInvSalesErrRangeExceeded(int days) {
@@ -2924,7 +2968,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posOrdersNoOrderSelected => 'لم يتم تحديد طلب';
 
   @override
-  String get posOrdersSelectFromList => 'اختر طلباً من القائمة على اليسار لعرض التفاصيل';
+  String get posOrdersSelectFromList =>
+      'اختر طلباً من القائمة على اليسار لعرض التفاصيل';
 
   @override
   String get posOrdersAddDepartment => 'إضافة قسم';
@@ -3062,7 +3107,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posOrdersJobNotReadyForInvoice => 'الطلب غير جاهز للفوترة.';
 
   @override
-  String get posOrdersSelectCustomerAndPayment => 'حدد نوع العميل وطريقة الدفع أولاً.';
+  String get posOrdersSelectCustomerAndPayment =>
+      'حدد نوع العميل وطريقة الدفع أولاً.';
 
   @override
   String get posOrdersDeleteJobTitle => 'حذف المهمة';
@@ -3092,10 +3138,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posReviewCustomerDetails => 'بيانات العميل';
 
   @override
-  String get posReviewConfirmBillingAndVehicle => 'تأكيد جهة الاتصال للفوترة والمركبة قبل إنشاء الفاتورة.';
+  String get posReviewConfirmBillingAndVehicle =>
+      'تأكيد جهة الاتصال للفوترة والمركبة قبل إنشاء الفاتورة.';
 
   @override
-  String get posReviewConfirmBillingOnly => 'تأكيد جهة الاتصال للفوترة قبل إنشاء الفاتورة.';
+  String get posReviewConfirmBillingOnly =>
+      'تأكيد جهة الاتصال للفوترة قبل إنشاء الفاتورة.';
 
   @override
   String get posReviewCustomerNameLabel => 'اسم العميل';
@@ -3152,13 +3200,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posReviewNoIndividual => 'لا — فرد';
 
   @override
-  String get posReviewPaymentMethod => 'طريقة الدفع (اختر أكثر من واحدة للتقسيم)';
+  String get posReviewPaymentMethod =>
+      'طريقة الدفع (اختر أكثر من واحدة للتقسيم)';
 
   @override
   String get posReviewPaymentMethodCorporate => 'طريقة الدفع';
 
   @override
-  String get posReviewCompleteAndGenerateInvoice => 'إتمام الطلب وإنشاء الفاتورة';
+  String get posReviewCompleteAndGenerateInvoice =>
+      'إتمام الطلب وإنشاء الفاتورة';
 
   @override
   String get posReviewInvoiceGeneratedLocked => 'تم إنشاء الفاتورة وقفلها';
@@ -3202,7 +3252,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posReviewSelectEmployee => 'اختر موظفاً';
 
   @override
-  String get posReviewEmployeeInstructions => 'موظف واحد لسطر دفع الموظفين. اضغط على البطاقة المحددة مجدداً للإلغاء.';
+  String get posReviewEmployeeInstructions =>
+      'موظف واحد لسطر دفع الموظفين. اضغط على البطاقة المحددة مجدداً للإلغاء.';
 
   @override
   String get posReviewCouldNotLoadEmployees => 'تعذّر تحميل موظفي الفرع.';
@@ -3295,13 +3346,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posReviewVat15 => 'ضريبة القيمة المضافة (15%)';
 
   @override
-  String get posReviewLineNetNote => 'إجماليات البنود صافية من الخصومات على مستوى البند.';
+  String get posReviewLineNetNote =>
+      'إجماليات البنود صافية من الخصومات على مستوى البند.';
 
   @override
-  String get posReviewInvoicePromoNote => 'تُطبَّق خصومات الفاتورة والعروض على الوعاء الضريبي.';
+  String get posReviewInvoicePromoNote =>
+      'تُطبَّق خصومات الفاتورة والعروض على الوعاء الضريبي.';
 
   @override
-  String get posReviewConfirmAmountsNote => 'تأكد من تطابق جميع المبالغ مع المهمة قبل إنشاء الفاتورة.';
+  String get posReviewConfirmAmountsNote =>
+      'تأكد من تطابق جميع المبالغ مع المهمة قبل إنشاء الفاتورة.';
 
   @override
   String get posReviewAssignedTechnicians => 'الفنيون المعيَّنون';
@@ -3326,22 +3380,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posReviewDone => 'تم';
 
   @override
-  String get posReviewCorporateMustBeApproved => 'يجب اعتماد طلب الشركة قبل الفوترة.';
+  String get posReviewCorporateMustBeApproved =>
+      'يجب اعتماد طلب الشركة قبل الفوترة.';
 
   @override
   String get posReviewOrderNotReadyForInvoicing => 'الطلب غير جاهز للفوترة.';
 
   @override
-  String get posReviewIndicateCorporate => 'يرجى الإشارة إذا كان هذا عميل شركة.';
+  String get posReviewIndicateCorporate =>
+      'يرجى الإشارة إذا كان هذا عميل شركة.';
 
   @override
   String get posReviewSelectPaymentMethod => 'يرجى اختيار طريقة دفع.';
 
   @override
-  String get posReviewSelectAtLeastOnePayment => 'يرجى اختيار طريقة دفع واحدة على الأقل.';
+  String get posReviewSelectAtLeastOnePayment =>
+      'يرجى اختيار طريقة دفع واحدة على الأقل.';
 
   @override
-  String get posReviewSelectOneEmployee => 'اختر موظفاً واحداً لسطر دفع الموظفين.';
+  String get posReviewSelectOneEmployee =>
+      'اختر موظفاً واحداً لسطر دفع الموظفين.';
 
   @override
   String posReviewSplitAmountsMustEqual(Object current, Object total) {
@@ -3349,7 +3407,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get posReviewFillRequiredInvoiceDetails => 'يرجى تعبئة تفاصيل الفاتورة المطلوبة.';
+  String get posReviewFillRequiredInvoiceDetails =>
+      'يرجى تعبئة تفاصيل الفاتورة المطلوبة.';
 
   @override
   String get posReviewInvoiceNotLoaded => 'تعذّر تحميل الفاتورة.';
@@ -3558,7 +3617,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get suppliersPoConfirmStatusValue => 'في انتظار الموافقة';
 
   @override
-  String get suppliersPoConfirmNote => 'سيُرسَل هذا الأمر لموافقة المدير قبل تحديث المخزون.';
+  String get suppliersPoConfirmNote =>
+      'سيُرسَل هذا الأمر لموافقة المدير قبل تحديث المخزون.';
 
   @override
   String get suppliersPoNavNext => 'التالي';
@@ -3609,7 +3669,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get suppliersPoValidationEmpty => 'يرجى إضافة صنف واحد على الأقل';
 
   @override
-  String get suppliersPoValidationItemDetails => 'يرجى ملء تفاصيل جميع الأصناف بشكل صحيح';
+  String get suppliersPoValidationItemDetails =>
+      'يرجى ملء تفاصيل جميع الأصناف بشكل صحيح';
 
   @override
   String get suppliersPoValidationInvalidSupplier => 'المورّد المحدد غير صحيح';
@@ -3651,25 +3712,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsToggleEmailAlerts => 'تنبيهات البريد الإلكتروني';
 
   @override
-  String get settingsToggleEmailAlertsSub => 'استقبال التنبيهات الحرجة عبر البريد';
+  String get settingsToggleEmailAlertsSub =>
+      'استقبال التنبيهات الحرجة عبر البريد';
 
   @override
   String get settingsToggleStockAlerts => 'تنبيهات المخزون';
 
   @override
-  String get settingsToggleStockAlertsSub => 'تنبيه عند وصول المخزون للحد الحرج';
+  String get settingsToggleStockAlertsSub =>
+      'تنبيه عند وصول المخزون للحد الحرج';
 
   @override
   String get settingsToggleLockerAlerts => 'تنبيهات فوارق الخزينة';
 
   @override
-  String get settingsToggleLockerAlertsSub => 'تنبيه عند وجود فارق في الخزينة عند نهاية اليوم';
+  String get settingsToggleLockerAlertsSub =>
+      'تنبيه عند وجود فارق في الخزينة عند نهاية اليوم';
 
   @override
   String get settingsToggleBiometric => 'تسجيل الدخول البيومتري';
 
   @override
-  String get settingsToggleBiometricSub => 'استخدام بصمة الإصبع أو التعرف على الوجه';
+  String get settingsToggleBiometricSub =>
+      'استخدام بصمة الإصبع أو التعرف على الوجه';
 
   @override
   String get settingsNavChangePassword => 'تغيير كلمة المرور';
@@ -3705,7 +3770,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsLogoutDialogTitle => 'تسجيل الخروج';
 
   @override
-  String get settingsLogoutDialogBody => 'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟';
+  String get settingsLogoutDialogBody =>
+      'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟';
 
   @override
   String get settingsLogoutDialogCancel => 'إلغاء';
@@ -3774,7 +3840,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posPettyCashAvailable => 'الرصيد النثري المتاح';
 
   @override
-  String get posPettyCashLowBalanceMessage => 'رصيد المصروفات النثرية منخفض. يرجى طلب تمويل.';
+  String get posPettyCashLowBalanceMessage =>
+      'رصيد المصروفات النثرية منخفض. يرجى طلب تمويل.';
 
   @override
   String get posPettyCashRequestFund => 'طلب تمويل';
@@ -3801,7 +3868,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posPettyCashProofOfExpense => 'إثبات المصروف';
 
   @override
-  String get posPettyCashExpenseSubmitted => 'تم إرسال المصروف – بانتظار الموافقة';
+  String get posPettyCashExpenseSubmitted =>
+      'تم إرسال المصروف – بانتظار الموافقة';
 
   @override
   String get posPettyCashSubmitExpense => 'إرسال المصروف';
@@ -3819,7 +3887,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posPettyCashReasonHint => 'اشرح لماذا تحتاج إلى تمويل إضافي...';
 
   @override
-  String get posPettyCashFundRequestSubmitted => 'تم إرسال طلب التمويل – بانتظار الموافقة';
+  String get posPettyCashFundRequestSubmitted =>
+      'تم إرسال طلب التمويل – بانتظار الموافقة';
 
   @override
   String get posPettyCashSubmitRequest => 'إرسال الطلب';
@@ -3886,7 +3955,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posPettyCashRequestDate => 'تاريخ الطلب';
 
   @override
-  String get posPettyCashPendingReviewMessage => 'طلبك قيد المراجعة حالياً من الإدارة. سيتم إشعارك عند الموافقة عليه.';
+  String get posPettyCashPendingReviewMessage =>
+      'طلبك قيد المراجعة حالياً من الإدارة. سيتم إشعارك عند الموافقة عليه.';
 
   @override
   String get posPettyCashSubmitNewRequest => 'إرسال طلب جديد';
@@ -3901,7 +3971,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posPettyCashSelectEmployeeError => 'يرجى اختيار موظف لسلفة الراتب';
 
   @override
-  String get posPettyCashSubmitExpenseError => 'فشل إرسال المصروف. تحقق من الرصيد أو حاول مرة أخرى.';
+  String get posPettyCashSubmitExpenseError =>
+      'فشل إرسال المصروف. تحقق من الرصيد أو حاول مرة أخرى.';
 
   @override
   String get posPettyCashReasonError => 'يرجى إدخال السبب';
@@ -3980,10 +4051,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posProductEmployeesUpper => 'الموظفون';
 
   @override
-  String get posProductSelectEmployeePayment => 'اختر موظفاً واحداً لدفع الموظفين (يظهر مع النوع). سيتم حفظه مع الطلب.';
+  String get posProductSelectEmployeePayment =>
+      'اختر موظفاً واحداً لدفع الموظفين (يظهر مع النوع). سيتم حفظه مع الطلب.';
 
   @override
-  String get posProductSelectEmployeePaymentShort => 'اختر موظفاً واحداً لدفع الموظفين (مع النوع).';
+  String get posProductSelectEmployeePaymentShort =>
+      'اختر موظفاً واحداً لدفع الموظفين (مع النوع).';
 
   @override
   String get posProductNewOrderId => '#طلب-جديد';
@@ -4071,10 +4144,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posHomeTitlePos => 'نقطة البيع';
 
   @override
-  String get posHomeSubtitle => 'ابحث برقم العميل أو رقم المركبة\nأو رقم الهاتف أو اسم العميل';
+  String get posHomeSubtitle =>
+      'ابحث برقم العميل أو رقم المركبة\nأو رقم الهاتف أو اسم العميل';
 
   @override
-  String get posHomeSearchHint => 'ابحث برقم العميل / المركبة / الهاتف / اللوحة...';
+  String get posHomeSearchHint =>
+      'ابحث برقم العميل / المركبة / الهاتف / اللوحة...';
 
   @override
   String get posHomeNewWalkIn => 'عميل جديد';
@@ -4126,7 +4201,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posDeptSelectAtLeastOne => 'اختر قسمًا واحدًا على الأقل للإضافة.';
 
   @override
-  String get posDeptVehicleRequired => 'الرجاء إضافة رقم المركبة أولاً (إضافة عميل)';
+  String get posDeptVehicleRequired =>
+      'الرجاء إضافة رقم المركبة أولاً (إضافة عميل)';
 
   @override
   String get posDeptChangeDeptTitle => 'تغيير القسم؟';
@@ -4262,7 +4338,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posPromoViewEntryTitle => 'تطبيق رمز الخصم';
 
   @override
-  String get posPromoViewEntrySubtitle => 'تحقق من صلاحية الرمز المقدم من العميل.';
+  String get posPromoViewEntrySubtitle =>
+      'تحقق من صلاحية الرمز المقدم من العميل.';
 
   @override
   String get posPromoViewCheckValidity => 'تحقق من الصلاحية';
@@ -4298,7 +4375,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posPromoDialogTitle => 'تطبيق رمز الخصم';
 
   @override
-  String get posPromoDialogSubtitle => 'اختر أي رمز خصم أدناه لتطبيق الخصم فوراً.';
+  String get posPromoDialogSubtitle =>
+      'اختر أي رمز خصم أدناه لتطبيق الخصم فوراً.';
 
   @override
   String get posPromoDialogNoCodesAvailable => 'لا تتوفر رموز خصم.';
@@ -4361,90 +4439,222 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get posPromoInvalidExpired => 'رمز الخصم غير صالح أو منتهي الصلاحية';
 
-  // ── Technician Assignment Screen ────────────────────────────────────────────
   @override
   String get posTechAssignTitle => 'تعيين الفنيين';
+
   @override
   String get posTechAssignSearchHint => 'ابحث عن فني...';
+
   @override
   String get posTechAssignShowAll => 'عرض الكل';
+
   @override
   String get posTechAssignOnlineOnly => 'المتصلون فقط';
+
   @override
   String get posTechAssignLoading => 'جارٍ تحميل الفنيين…';
+
   @override
   String get posTechAssignNoResults => 'لا يوجد فنيون';
+
   @override
-  String posTechAssignErrorPrefix(String message) => 'خطأ: $message';
+  String posTechAssignErrorPrefix(String message) {
+    return 'خطأ: $message';
+  }
+
   @override
   String get posTechAssignRetry => 'إعادة المحاولة';
+
   @override
   String get posTechAssignStatusOnline => 'متصل';
+
   @override
-  String posTechAssignStatusLastSeen(String time) => 'آخر ظهور: $time';
+  String posTechAssignStatusLastSeen(String time) {
+    return 'آخر ظهور: $time';
+  }
+
   @override
-  String posTechAssignSlots(int used, int total) => 'المهام: $used/$total';
+  String posTechAssignSlots(int used, int total) {
+    return 'المهام: $used/$total';
+  }
+
   @override
   String get posTechAssignBroadcast => 'إذاعة';
+
   @override
-  String posTechAssignWait(String label) => 'انتظر $label';
+  String posTechAssignWait(String label) {
+    return 'انتظر $label';
+  }
+
   @override
   String get posTechAssignSave => 'حفظ الفنيين';
+
   @override
   String get posTechAssignSuccessEmpty => 'تمت إزالة جميع الفنيين من هذا الطلب';
+
   @override
   String get posTechAssignSuccess => 'تم تعيين الفنيين بنجاح';
+
   @override
   String get posTechAssignFailNoJob => 'لم يُعثر على الطلب لهذا التعيين.';
+
   @override
   String get posTechAssignFailGetId => 'فشل في الحصول على معرّف الطلب';
+
   @override
   String get posTechAssignFailEditId => 'فشل في الحصول على معرّف الطلب للتعديل';
+
   @override
   String get posTechAssignFailGeneric => 'فشل في تعيين الفنيين';
+
   @override
-  String get posTechAssignUnlockFail => 'تعذّر فتح الطلب لتغيير الفنيين. حاول مرة أخرى.';
+  String get posTechAssignUnlockFail =>
+      'تعذّر فتح الطلب لتغيير الفنيين. حاول مرة أخرى.';
+
   @override
   String get posTechLastSeenNever => 'لم يُرَ قط';
+
   @override
   String get posTechLastSeenJustNow => 'الآن';
+
   @override
-  String posTechLastSeenMinutes(int count) => 'منذ ${count} د';
+  String posTechLastSeenMinutes(int count) {
+    return 'منذ $count د';
+  }
+
   @override
-  String posTechLastSeenHours(int count) => 'منذ ${count} س';
+  String posTechLastSeenHours(int count) {
+    return 'منذ $count س';
+  }
+
   @override
-  String posTechLastSeenDays(int count) => 'منذ ${count} ي';
+  String posTechLastSeenDays(int count) {
+    return 'منذ $count ي';
+  }
 
   @override
   String get posTechViewTitle => 'الفنيون';
+
   @override
   String get posTechViewSearchHint => 'ابحث عن فني...';
+
   @override
   String get posTechViewTabAll => 'الكل';
+
   @override
   String get posTechViewTabOffline => 'غير متصل';
+
   @override
   String get posTechViewTabOnline => 'متصل';
+
   @override
   String get posTechViewNoTechnicians => 'لا يوجد فنيون';
+
   @override
   String get posTechViewNoOnline => 'لا يوجد فنيون متصلون';
+
   @override
   String get posTechViewNoOffline => 'لا يوجد فنيون غير متصلين';
+
   @override
   String get posTechViewErrorRetry => 'إعادة المحاولة';
+
   @override
-  String posTechViewErrorPrefix(String message) => 'خطأ: $message';
+  String posTechViewErrorPrefix(String message) {
+    return 'خطأ: $message';
+  }
+
   @override
   String get posTechCardOnlineNow => 'متصل الآن';
+
   @override
-  String posTechCardLastSeen(String time) => 'آخر ظهور: $time';
+  String posTechCardLastSeen(String time) {
+    return 'آخر ظهور: $time';
+  }
+
   @override
   String get posTechCardNoDepartment => 'لا يوجد قسم';
+
   @override
-  String posTechCardSlots(int used, int total) => 'المهام $used/$total';
+  String posTechCardSlots(int used, int total) {
+    return 'المهام $used/$total';
+  }
+
   @override
   String get posTechPresenceOnline => 'تم تعيين الفني كمتصل';
+
   @override
   String get posTechPresenceOffline => 'تم تعيين الفني كغير متصل';
+
+  @override
+  String get storeClosingPhysicalDrawerCount => 'عدد الأدراج الفعلي';
+
+  @override
+  String get storeClosingEnterAmounts =>
+      'أدخل المبالغ الفعلية التي قمت بعدها لكل فئة دفع.';
+
+  @override
+  String get storeClosingLabelPhysicalCash => 'المبلغ النقدي الفعلي';
+
+  @override
+  String get storeClosingLabelBankCard => 'إيصالات البنك / البطاقة';
+
+  @override
+  String get storeClosingLabelCorporate => 'فواتير الشركات';
+
+  @override
+  String get storeClosingLabelTamara => 'رصيد تمارا';
+
+  @override
+  String get storeClosingLabelTabby => 'رصيد تابي';
+
+  @override
+  String get storeClosingLabelNotes => 'ملاحظات (اختياري)';
+
+  @override
+  String get storeClosingTotalPhysical => 'إجمالي المبلغ الفعلي';
+
+  @override
+  String storeClosingExpectedSar(String sar, String amount) {
+    return 'المتوقع: $sar $amount';
+  }
+
+  @override
+  String get storeClosingShiftBalanced => 'الوردية متوازنة';
+
+  @override
+  String get storeClosingDiscrepancy => 'تم اكتشاف تعارض';
+
+  @override
+  String get storeClosingShiftClosedOk => 'تم إغلاق الوردية بنجاح.';
+
+  @override
+  String get storeClosingPositiveDiff => 'الفرق الموجب = النظام > الفعلي.';
+
+  @override
+  String get storeClosingClosingId => 'معرّف الإغلاق';
+
+  @override
+  String get storeClosingTotalDiff => 'إجمالي الفرق';
+
+  @override
+  String get storeClosingSystemTotalSales => 'إجمالي مبيعات النظام';
+
+  @override
+  String get posOrdersTotalInclVat => 'الإجمالي (شامل ضريبة القيمة المضافة)';
+
+  @override
+  String get currencySymbol => 'ر.س';
+
+  @override
+  String get currencySymbolAr => 'ر.س';
+
+  @override
+  String get toastSuccess => 'تم بنجاح';
+
+  @override
+  String get toastError => 'خطأ';
+
+  @override
+  String get toastInfo => 'معلومة';
 }

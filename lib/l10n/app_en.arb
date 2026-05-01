@@ -1940,7 +1940,6 @@
   "posPromoNoExpiry": "No Expiry",
   "posPromoInvalidCode": "Invalid Promo Code",
   "posPromoInvalidExpired": "Invalid or Expired Promo Code",
-
   "posTechAssignTitle": "Technician Assignment",
   "posTechAssignSearchHint": "Search technicians...",
   "posTechAssignShowAll": "Show all",
@@ -1950,7 +1949,9 @@
   "posTechAssignErrorPrefix": "Error: {message}",
   "@posTechAssignErrorPrefix": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "posTechAssignRetry": "Retry",
@@ -1958,21 +1959,29 @@
   "posTechAssignStatusLastSeen": "Last seen: {time}",
   "@posTechAssignStatusLastSeen": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "posTechAssignSlots": "Slots: {used}/{total}",
   "@posTechAssignSlots": {
     "placeholders": {
-      "used": { "type": "int" },
-      "total": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "posTechAssignBroadcast": "Broadcast",
   "posTechAssignWait": "Wait {label}",
   "@posTechAssignWait": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "posTechAssignSave": "Save Technicians",
@@ -1988,22 +1997,27 @@
   "posTechLastSeenMinutes": "{count}m ago",
   "@posTechLastSeenMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "posTechLastSeenHours": "{count}h ago",
   "@posTechLastSeenHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "posTechLastSeenDays": "{count}d ago",
   "@posTechLastSeenDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "posTechViewTitle": "Technicians",
   "posTechViewSearchHint": "Search technicians...",
   "posTechViewTabAll": "All",
@@ -2016,24 +2030,65 @@
   "posTechViewErrorPrefix": "Error: {message}",
   "@posTechViewErrorPrefix": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "posTechCardOnlineNow": "Online now",
   "posTechCardLastSeen": "Last seen: {time}",
   "@posTechCardLastSeen": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "posTechCardNoDepartment": "No department",
   "posTechCardSlots": "Slots {used}/{total}",
   "@posTechCardSlots": {
     "placeholders": {
-      "used": { "type": "int" },
-      "total": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "posTechPresenceOnline": "Technician marked online",
-  "posTechPresenceOffline": "Technician marked offline"
+  "posTechPresenceOffline": "Technician marked offline",
+  "storeClosingPhysicalDrawerCount": "Physical Drawer Count",
+  "storeClosingEnterAmounts": "Enter the physical amounts you have counted for each payment category.",
+  "storeClosingLabelPhysicalCash": "Physical Cash Amount",
+  "storeClosingLabelBankCard": "Bank / Card Slips",
+  "storeClosingLabelCorporate": "Corporate Invoices",
+  "storeClosingLabelTamara": "Tamara Credits",
+  "storeClosingLabelTabby": "Tabby Credits",
+  "storeClosingLabelNotes": "Notes (Optional)",
+  "storeClosingTotalPhysical": "Total Physical Sum",
+  "storeClosingExpectedSar": "Expected: {sar} {amount}",
+  "storeClosingShiftBalanced": "Shift Balanced",
+  "storeClosingDiscrepancy": "Discrepancy Detected",
+  "storeClosingShiftClosedOk": "Shift closed successfully.",
+  "storeClosingPositiveDiff": "Positive diff = system > physical.",
+  "storeClosingClosingId": "Closing ID",
+  "storeClosingTotalDiff": "Total Difference",
+  "storeClosingSystemTotalSales": "System Total Sales",
+  "posOrdersTotalInclVat": "Total (incl. VAT)",
+  "currencySymbol": "SAR",
+  "currencySymbolAr": "ر.س",
+  "@storeClosingExpectedSar": {
+    "placeholders": {
+      "sar": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "toastSuccess": "Success",
+  "toastError": "Error",
+  "toastInfo": "Info"
 }

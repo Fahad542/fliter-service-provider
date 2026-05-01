@@ -6,9 +6,9 @@ class WorkshopNotificationsRepository {
   final BaseApiService _api = BaseApiService();
 
   Map<String, String> _headers(String token) => {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      };
+    'Authorization': 'Bearer $token',
+    'Content-Type': 'application/json',
+  };
 
   String _qp(Map<String, String> q) {
     if (q.isEmpty) return '';
@@ -25,11 +25,11 @@ class WorkshopNotificationsRepository {
   }) async {
     final endpoint =
         '${ApiConstants.workshopNotificationsInbox}${_qp({
-          'role': roleParam,
-          'page': '$page',
-          'limit': '$limit',
-          if (unreadOnly) 'unreadOnly': 'true',
-        })}';
+      'role': roleParam,
+      'page': '$page',
+      'limit': '$limit',
+      if (unreadOnly) 'unreadOnly': 'true',
+    })}';
     final res = await _api.get(endpoint, headers: _headers(token));
     return Map<String, dynamic>.from(res as Map);
   }

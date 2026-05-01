@@ -1,7 +1,7 @@
 class ReconciliationBucket {
   final double system;
   final double physical;
-  final double difference; // system - physical (positive = system > physical)
+  final double difference;
 
   ReconciliationBucket({
     required this.system,
@@ -31,6 +31,7 @@ class StoreClosingReport {
   final double systemCorporate;
   final double systemTamara;
   final double systemTabby;
+  final double systemOthers;
 
   // Physical Counts
   final double physicalCash;
@@ -58,6 +59,7 @@ class StoreClosingReport {
     required this.systemCorporate,
     required this.systemTamara,
     required this.systemTabby,
+    this.systemOthers = 0,
     required this.physicalCash,
     required this.physicalBank,
     required this.physicalCorporate,
@@ -71,7 +73,6 @@ class StoreClosingReport {
     this.apiTotalDifference,
   });
 
-  // Uses API-provided diffs if available, otherwise calculates locally
   double get cashDiff => apiCashDiff ?? (systemCash - physicalCash);
   double get bankDiff => apiBankDiff ?? (systemBank - physicalBank);
   double get corporateDiff => apiCorporateDiff ?? (systemCorporate - physicalCorporate);
@@ -82,14 +83,13 @@ class StoreClosingReport {
   double get physicalTotal =>
       physicalCash + physicalBank + physicalCorporate + physicalTamara + physicalTabby;
 
-  /// Sum of system-side payment buckets (matches reconciliation table footer).
   double get systemPaymentsTotalShown =>
       systemCash +
-      systemBank +
-      systemCorporate +
-      systemTamara +
-      systemTabby +
-      systemOthers;
+          systemBank +
+          systemCorporate +
+          systemTamara +
+          systemTabby +
+          systemOthers;
 
   factory StoreClosingReport.fromApiResponse({
     required String closingId,
@@ -122,6 +122,7 @@ class StoreClosingReport {
       systemCorporate: corp.system,
       systemTamara: tamara.system,
       systemTabby: tabby.system,
+      systemOthers: (json['othersAmount'] ?? 0).toDouble(),
       physicalCash: cash.physical,
       physicalBank: bank.physical,
       physicalCorporate: corp.physical,
@@ -145,7 +146,6 @@ class StoreClosingSummary {
   final double systemTamara;
   final double systemTabby;
   final double systemOthers;
-  /// Net invoiced sales for the period (gross − sales returns).
   final double totalAmount;
   final int totalInvoices;
   final double? grossInvoiceTotal;
@@ -157,6 +157,7 @@ class StoreClosingSummary {
     required this.systemCorporate,
     required this.systemTamara,
     required this.systemTabby,
+    required this.systemOthers,
     required this.totalAmount,
     required this.totalInvoices,
     this.grossInvoiceTotal,
@@ -165,11 +166,11 @@ class StoreClosingSummary {
 
   double get netPaymentsTotalShown =>
       systemCash +
-      systemBank +
-      systemCorporate +
-      systemTamara +
-      systemTabby +
-      systemOthers;
+          systemBank +
+          systemCorporate +
+          systemTamara +
+          systemTabby +
+          systemOthers;
 
   factory StoreClosingSummary.fromJson(Map<String, dynamic> json) {
     final totals = json['paymentCategoryTotals'] as Map<String, dynamic>? ?? {};
@@ -182,6 +183,7 @@ class StoreClosingSummary {
       systemCorporate: (totals['corporateInvoice'] ?? json['corporateAmount'] ?? 0).toDouble(),
       systemTamara: (totals['tamaraCredits'] ?? 0).toDouble(),
       systemTabby: (totals['tabbyCredits'] ?? 0).toDouble(),
+      systemOthers: (totals['others'] ?? json['othersAmount'] ?? 0).toDouble(),
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
       totalInvoices: switch (json['totalInvoices']) {
         final int x => x,

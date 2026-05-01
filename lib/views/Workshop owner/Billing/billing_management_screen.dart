@@ -125,17 +125,17 @@ class _BillingManagementViewState extends State<BillingManagementView> {
       children: [
         Row(
           children: [
-            Expanded(child: _buildSummaryCard(l10n.billingSummaryTotalBilled,   'SAR ${vm.totalBilledMonth}',   Icons.receipt_rounded,         Colors.blue)),
+            Expanded(child: _buildSummaryCard(l10n.billingSummaryTotalBilled,   l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, '${vm.totalBilledMonth}'),   Icons.receipt_rounded,         Colors.blue)),
             const SizedBox(width: 16),
-            Expanded(child: _buildSummaryCard(l10n.billingSummaryTotalReceived, 'SAR ${vm.totalReceivedMonth}', Icons.payments_rounded,         Colors.green)),
+            Expanded(child: _buildSummaryCard(l10n.billingSummaryTotalReceived, l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, '${vm.totalReceivedMonth}'), Icons.payments_rounded,         Colors.green)),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildSummaryCard(l10n.billingSummaryOutstanding, 'SAR ${vm.totalOutstanding}', Icons.pending_actions_rounded,  Colors.orange)),
+            Expanded(child: _buildSummaryCard(l10n.billingSummaryOutstanding, l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, '${vm.totalOutstanding}'), Icons.pending_actions_rounded,  Colors.orange)),
             const SizedBox(width: 16),
-            Expanded(child: _buildSummaryCard(l10n.billingSummaryOverdue,     'SAR ${vm.overdueAmount}',    Icons.warning_amber_rounded,    Colors.red)),
+            Expanded(child: _buildSummaryCard(l10n.billingSummaryOverdue,     l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, '${vm.overdueAmount}'),    Icons.warning_amber_rounded,    Colors.red)),
           ],
         ),
       ],
@@ -302,7 +302,7 @@ class _BillingManagementViewState extends State<BillingManagementView> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'SAR ${bill.totalAmount}',
+                    l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, '${bill.totalAmount}'),
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,

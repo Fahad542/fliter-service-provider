@@ -7,7 +7,6 @@ import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../l10n/app_localizations.dart';
 
-import 'package:provider/provider.dart';
 import 'notifications_view_model.dart';
 
 class NotificationsView extends StatefulWidget {
@@ -37,73 +36,77 @@ class _NotificationsViewState extends State<NotificationsView> {
       ),
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
-appBar: PosScreenAppBar(
-  title: l10n.notifTitle,
-  showBackButton: true,
-  actions: [
-    Consumer<NotificationsViewModel>(
-      builder: (context, vm, _) {
-        if (vm.notifications.isEmpty && !vm.isLoading) {
-          return const SizedBox.shrink();
-        }
+        appBar: PosScreenAppBar(
+          title: l10n.notifTitle,
+          showBackButton: true,
+          actions: [
+            Consumer<NotificationsViewModel>(
+              builder: (context, vm, _) {
+                if (vm.notifications.isEmpty && !vm.isLoading) {
+                  return const SizedBox.shrink();
+                }
 
-        return Row(
-          children: [
-            // Mark all as read
-            TextButton(
-              onPressed: vm.isLoading
-                  ? null
-                  : () => vm.markAllAsRead(),
-              child: Text(
-                l10n.notifMarkRead,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.primaryLight,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-
-            // Clear all with confirmation
-            TextButton(
-              onPressed: vm.isLoading
-                  ? null
-                  : () async {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: Text(l10n.notifClearAllTitle ?? 'Clear all notifications?'),
-                          content: Text(
-                            l10n.notifClearAllMessage ??
-                                'This removes every notification.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: Text(l10n.cancel ?? 'Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: Text(l10n.clearAll ?? 'Clear all'),
-                            ),
-                          ],
+                return Row(
+                  children: [
+                    // Mark all as read
+                    TextButton(
+                      onPressed: vm.isLoading ? null : () => vm.markAllAsRead(),
+                      child: Text(
+                        l10n.notifMarkRead,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.primaryLight,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
+                      ),
+                    ),
 
-                      if (ok == true && context.mounted) {
-                        await vm.clearAll();
-                      }
-                    },
-              child: Text(
-                l10n.clearAll ?? 'Clear all',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.secondaryLight,
-                ),
-              ),
+                    // Clear all with confirmation
+                    TextButton(
+                      onPressed: vm.isLoading
+                          ? null
+                          : () async {
+                        final ok = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Clear all notifications?'),
+                            content: const Text(
+                              'This removes every notification.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(ctx, true),
+                                child: const Text('Clear all'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (ok == true && context.mounted) {
+                          await vm.clearAll();
+                        }
+                      },
+                      child: const Text(
+                        'Clear all',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.secondaryLight,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
-        );
+        ),
+        // FIX: body was previously nested inside the actions builder
         body: Consumer<NotificationsViewModel>(
           builder: (context, vm, child) {
             if (vm.isLoading && vm.notifications.isEmpty) {
@@ -152,9 +155,9 @@ appBar: PosScreenAppBar(
                         if (!n.isRead) vm.markRead(n.id);
                       },
                       child: _NotificationCard(
-  notification: n,
-  isTablet: isTablet,
-),
+                        notification: n,
+                        isTablet: isTablet,
+                      ),
                     ),
                   );
                 },
@@ -172,7 +175,8 @@ appBar: PosScreenAppBar(
 // the build method readable and avoid closure captures.
 // ─────────────────────────────────────────────────────────────────────────────
 class _NotificationCard extends StatelessWidget {
-  final NotificationModel notification;
+  // FIX: was 'NotificationModel' — correct type is 'PosNotificationRow'
+  final PosNotificationRow notification;
   final bool isTablet;
 
   const _NotificationCard({
@@ -182,8 +186,6 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use Directionality to handle RTL Arabic text correctly.
-    // Row children are automatically mirrored in RTL; no manual adjustment needed.
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -207,7 +209,7 @@ class _NotificationCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Icon bubble ────────────────────────────────────────────────
+          // ── Icon bubble ──────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(10),
             decoration: const BoxDecoration(
@@ -222,7 +224,7 @@ class _NotificationCard extends StatelessWidget {
           ),
           const SizedBox(width: 16),
 
-          // ── Text block ─────────────────────────────────────────────────
+          // ── Text block ───────────────────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +234,6 @@ class _NotificationCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Title — flex so it never overflows in long Arabic text
                     Expanded(
                       child: Text(
                         notification.displayTitle,
@@ -245,8 +246,6 @@ class _NotificationCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Time + unread indicator — kept in a Row so they
-                    // stay together and do NOT grow.
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -275,7 +274,6 @@ class _NotificationCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
 
-                // Message body — softWrap handles long Arabic sentences
                 Text(
                   notification.displayMessage,
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -283,7 +281,6 @@ class _NotificationCard extends StatelessWidget {
                     fontSize: 13,
                     height: 1.4,
                   ),
-                  // Allow wrapping — Arabic text can be longer than English.
                   softWrap: true,
                 ),
               ],

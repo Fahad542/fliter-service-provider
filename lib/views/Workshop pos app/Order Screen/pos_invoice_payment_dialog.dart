@@ -9,6 +9,7 @@ import '../../../models/cashier_expense_models.dart';
 import '../../../models/pos_payment_method.dart';
 import '../../../services/session_service.dart';
 import '../../../utils/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Result of [showInvoicePaymentChoiceDialog].
 class InvoicePaymentChoiceResult {
@@ -455,7 +456,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Remaining: ${_remainingAmount.toStringAsFixed(2)} SAR',
+                  'Remaining: \${_remainingAmount.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
@@ -483,7 +484,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
       onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
         labelText: '${pm.label} amount',
-        suffixText: 'SAR',
+        suffixText: AppLocalizations.of(context)!.currencySymbol,
         isDense: true,
         filled: true,
         fillColor: Colors.white,

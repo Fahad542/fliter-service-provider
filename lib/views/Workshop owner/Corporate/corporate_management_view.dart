@@ -190,7 +190,7 @@ class _CorporateManagementViewState extends State<CorporateManagementView> {
                     padding: const EdgeInsets.only(left: 16),
                     child: _buildInfoItem(
                       l10n.corporateRevenueLabel,
-                      'SAR ${customer.totalSales.toStringAsFixed(0)}',
+                      l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, (customer.totalSales.toStringAsFixed(0)).toString()),
                       Icons.payments_rounded,
                       isPrimary: true,
                     ),

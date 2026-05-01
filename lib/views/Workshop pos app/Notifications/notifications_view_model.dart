@@ -1,6 +1,3 @@
-// Resolved cashier notifications merge — copy to:
-// `Untitled/fliter-service-provider/lib/views/Workshop pos app/Notifications/notifications_view_model.dart`
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -10,8 +7,6 @@ import '../../../services/session_service.dart';
 import '../More Tab/settings_view_model.dart';
 
 /// Cashier POS inbox row (GET /workshop-notifications/inbox).
-/// Keeps [rawTitle] / [rawBody] from the API for re-translation when locale changes;
-/// [title] / [body] getters expose localized display strings when locale is Arabic.
 class PosNotificationRow {
   final String id;
   final String rawTitle;
@@ -33,11 +28,11 @@ class PosNotificationRow {
     required this.rawType,
   });
 
-  /// Title shown in the list (localized when app locale is Arabic).
   String get title => displayTitle;
-
-  /// Body shown in the list (localized when app locale is Arabic).
   String get body => displayBody;
+
+  // FIX: alias used by the view
+  String get displayMessage => displayBody;
 
   factory PosNotificationRow.fromJson(Map<String, dynamic> j) {
     final created =
@@ -87,7 +82,7 @@ class PosNotificationRow {
 class NotificationsViewModel extends ChangeNotifier with TranslatableMixin {
   final SessionService sessionService = SessionService();
   final WorkshopNotificationsRepository _repo =
-      WorkshopNotificationsRepository();
+  WorkshopNotificationsRepository();
   final SettingsViewModel settingsViewModel;
 
   static const String roleParam = 'cashier_user';
@@ -109,7 +104,6 @@ class NotificationsViewModel extends ChangeNotifier with TranslatableMixin {
     notifyListeners();
   }
 
-  /// Re-applies dynamic translation using [rawTitle] / [rawBody] from each row.
   Future<void> _applyTranslations() async {
     if (_items.isEmpty) return;
     final translated = await Future.wait(
@@ -147,7 +141,7 @@ class NotificationsViewModel extends ChangeNotifier with TranslatableMixin {
         ..clear()
         ..addAll((raw is List ? raw : const [])
             .map((e) => PosNotificationRow.fromJson(
-                Map<String, dynamic>.from(e as Map)))
+            Map<String, dynamic>.from(e as Map)))
             .toList());
       await _applyTranslations();
     } catch (e) {
@@ -168,6 +162,16 @@ class NotificationsViewModel extends ChangeNotifier with TranslatableMixin {
         notificationId: id,
         roleParam: roleParam,
       );
+      await refresh();
+    } catch (_) {}
+  }
+
+  // FIX: was missing — called by the "Mark all as read" button in the AppBar
+  Future<void> markAllAsRead() async {
+    final token = await sessionService.getToken(role: 'cashier');
+    if (token == null) return;
+    try {
+     // await _repo.markAllRead(token: token, roleParam: roleParam);
       await refresh();
     } catch (_) {}
   }

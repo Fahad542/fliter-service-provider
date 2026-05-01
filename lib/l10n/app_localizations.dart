@@ -62,7 +62,8 @@ import 'app_localizations_en.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -70,7 +71,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -82,17 +84,18 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
-    Locale('en')
+    Locale('en'),
   ];
 
   /// No description provided for @ownerShellHome.
@@ -2733,7 +2736,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Approve {type} variance of SAR {amount} for {branch}?'**
-  String lockerApproveVarianceConfirm(String type, String amount, String branch);
+  String lockerApproveVarianceConfirm(
+    String type,
+    String amount,
+    String branch,
+  );
 
   /// No description provided for @lockerApproveSuccess.
   ///
@@ -8465,8 +8472,6 @@ abstract class AppLocalizations {
   /// **'Invalid or Expired Promo Code'**
   String get posPromoInvalidExpired;
 
-  // ── Technician Assignment Screen ────────────────────────────────────────────
-
   /// No description provided for @posTechAssignTitle.
   ///
   /// In en, this message translates to:
@@ -8718,9 +8723,148 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Technician marked offline'**
   String get posTechPresenceOffline;
+
+  /// No description provided for @storeClosingPhysicalDrawerCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Physical Drawer Count'**
+  String get storeClosingPhysicalDrawerCount;
+
+  /// No description provided for @storeClosingEnterAmounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the physical amounts you have counted for each payment category.'**
+  String get storeClosingEnterAmounts;
+
+  /// No description provided for @storeClosingLabelPhysicalCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Physical Cash Amount'**
+  String get storeClosingLabelPhysicalCash;
+
+  /// No description provided for @storeClosingLabelBankCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank / Card Slips'**
+  String get storeClosingLabelBankCard;
+
+  /// No description provided for @storeClosingLabelCorporate.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate Invoices'**
+  String get storeClosingLabelCorporate;
+
+  /// No description provided for @storeClosingLabelTamara.
+  ///
+  /// In en, this message translates to:
+  /// **'Tamara Credits'**
+  String get storeClosingLabelTamara;
+
+  /// No description provided for @storeClosingLabelTabby.
+  ///
+  /// In en, this message translates to:
+  /// **'Tabby Credits'**
+  String get storeClosingLabelTabby;
+
+  /// No description provided for @storeClosingLabelNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (Optional)'**
+  String get storeClosingLabelNotes;
+
+  /// No description provided for @storeClosingTotalPhysical.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Physical Sum'**
+  String get storeClosingTotalPhysical;
+
+  /// No description provided for @storeClosingExpectedSar.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected: {sar} {amount}'**
+  String storeClosingExpectedSar(String sar, String amount);
+
+  /// No description provided for @storeClosingShiftBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift Balanced'**
+  String get storeClosingShiftBalanced;
+
+  /// No description provided for @storeClosingDiscrepancy.
+  ///
+  /// In en, this message translates to:
+  /// **'Discrepancy Detected'**
+  String get storeClosingDiscrepancy;
+
+  /// No description provided for @storeClosingShiftClosedOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift closed successfully.'**
+  String get storeClosingShiftClosedOk;
+
+  /// No description provided for @storeClosingPositiveDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive diff = system > physical.'**
+  String get storeClosingPositiveDiff;
+
+  /// No description provided for @storeClosingClosingId.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing ID'**
+  String get storeClosingClosingId;
+
+  /// No description provided for @storeClosingTotalDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Difference'**
+  String get storeClosingTotalDiff;
+
+  /// No description provided for @storeClosingSystemTotalSales.
+  ///
+  /// In en, this message translates to:
+  /// **'System Total Sales'**
+  String get storeClosingSystemTotalSales;
+
+  /// No description provided for @posOrdersTotalInclVat.
+  ///
+  /// In en, this message translates to:
+  /// **'Total (incl. VAT)'**
+  String get posOrdersTotalInclVat;
+
+  /// No description provided for @currencySymbol.
+  ///
+  /// In en, this message translates to:
+  /// **'SAR'**
+  String get currencySymbol;
+
+  /// No description provided for @currencySymbolAr.
+  ///
+  /// In en, this message translates to:
+  /// **'ر.س'**
+  String get currencySymbolAr;
+
+  /// No description provided for @toastSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Success'**
+  String get toastSuccess;
+
+  /// No description provided for @toastError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get toastError;
+
+  /// No description provided for @toastInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get toastInfo;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -8729,25 +8873,26 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['ar', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['ar', 'en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'ar': return AppLocalizationsAr();
-    case 'en': return AppLocalizationsEn();
+    case 'ar':
+      return AppLocalizationsAr();
+    case 'en':
+      return AppLocalizationsEn();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

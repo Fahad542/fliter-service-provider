@@ -967,11 +967,11 @@
       }
     }
   },
-  "notifTypeExpense": "expense",
-  "notifTypeStock": "stock",
-  "notifTypePayment": "payment",
-  "notifTypeLocker": "locker",
-  "notifTypeInvoice": "invoice",
+  "notifTypeExpense": "مصروف",
+  "notifTypeStock": "مخزون",
+  "notifTypePayment": "دفع",
+  "notifTypeLocker": "خزينة",
+  "notifTypeInvoice": "فاتورة",
   "reportsTitle": "التقارير والتحليلات",
   "reportsFinancialOverview": "النظرة المالية العامة",
   "reportsOperationalPerformance": "الأداء التشغيلي",
@@ -1940,7 +1940,6 @@
   "posPromoNoExpiry": "بدون انتهاء",
   "posPromoInvalidCode": "رمز الخصم غير صالح",
   "posPromoInvalidExpired": "رمز الخصم غير صالح أو منتهي الصلاحية",
-
   "posTechAssignTitle": "تعيين الفنيين",
   "posTechAssignSearchHint": "ابحث عن فني...",
   "posTechAssignShowAll": "عرض الكل",
@@ -1950,7 +1949,9 @@
   "posTechAssignErrorPrefix": "خطأ: {message}",
   "@posTechAssignErrorPrefix": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "posTechAssignRetry": "إعادة المحاولة",
@@ -1958,21 +1959,29 @@
   "posTechAssignStatusLastSeen": "آخر ظهور: {time}",
   "@posTechAssignStatusLastSeen": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "posTechAssignSlots": "المهام: {used}/{total}",
   "@posTechAssignSlots": {
     "placeholders": {
-      "used": { "type": "int" },
-      "total": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "posTechAssignBroadcast": "إذاعة",
   "posTechAssignWait": "انتظر {label}",
   "@posTechAssignWait": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "posTechAssignSave": "حفظ الفنيين",
@@ -1988,22 +1997,27 @@
   "posTechLastSeenMinutes": "منذ {count} د",
   "@posTechLastSeenMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "posTechLastSeenHours": "منذ {count} س",
   "@posTechLastSeenHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "posTechLastSeenDays": "منذ {count} ي",
   "@posTechLastSeenDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "posTechViewTitle": "الفنيون",
   "posTechViewSearchHint": "ابحث عن فني...",
   "posTechViewTabAll": "الكل",
@@ -2016,24 +2030,65 @@
   "posTechViewErrorPrefix": "خطأ: {message}",
   "@posTechViewErrorPrefix": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "posTechCardOnlineNow": "متصل الآن",
   "posTechCardLastSeen": "آخر ظهور: {time}",
   "@posTechCardLastSeen": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "posTechCardNoDepartment": "لا يوجد قسم",
   "posTechCardSlots": "المهام {used}/{total}",
   "@posTechCardSlots": {
     "placeholders": {
-      "used": { "type": "int" },
-      "total": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "posTechPresenceOnline": "تم تعيين الفني كمتصل",
-  "posTechPresenceOffline": "تم تعيين الفني كغير متصل"
+  "posTechPresenceOffline": "تم تعيين الفني كغير متصل",
+  "storeClosingPhysicalDrawerCount": "عدد الأدراج الفعلي",
+  "storeClosingEnterAmounts": "أدخل المبالغ الفعلية التي قمت بعدها لكل فئة دفع.",
+  "storeClosingLabelPhysicalCash": "المبلغ النقدي الفعلي",
+  "storeClosingLabelBankCard": "إيصالات البنك / البطاقة",
+  "storeClosingLabelCorporate": "فواتير الشركات",
+  "storeClosingLabelTamara": "رصيد تمارا",
+  "storeClosingLabelTabby": "رصيد تابي",
+  "storeClosingLabelNotes": "ملاحظات (اختياري)",
+  "storeClosingTotalPhysical": "إجمالي المبلغ الفعلي",
+  "storeClosingExpectedSar": "المتوقع: {sar} {amount}",
+  "storeClosingShiftBalanced": "الوردية متوازنة",
+  "storeClosingDiscrepancy": "تم اكتشاف تعارض",
+  "storeClosingShiftClosedOk": "تم إغلاق الوردية بنجاح.",
+  "storeClosingPositiveDiff": "الفرق الموجب = النظام > الفعلي.",
+  "storeClosingClosingId": "معرّف الإغلاق",
+  "storeClosingTotalDiff": "إجمالي الفرق",
+  "storeClosingSystemTotalSales": "إجمالي مبيعات النظام",
+  "posOrdersTotalInclVat": "الإجمالي (شامل ضريبة القيمة المضافة)",
+  "currencySymbol": "ر.س",
+  "currencySymbolAr": "ر.س",
+  "@storeClosingExpectedSar": {
+    "placeholders": {
+      "sar": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "toastSuccess": "تم بنجاح",
+  "toastError": "خطأ",
+  "toastInfo": "معلومة"
 }

@@ -104,12 +104,12 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
         ? <({String title, String value, IconData icon})>[
       (
       title: l10n.dashboardKpiTotalSalesToday,
-      value: 'SAR ${vm.totalSalesToday.toStringAsFixed(0)}',
+      value: l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, vm.totalSalesToday.toStringAsFixed(0)),
       icon: Icons.payments_rounded,
       ),
       (
       title: l10n.dashboardKpiThisMonth,
-      value: 'SAR ${vm.totalSalesMonth.toStringAsFixed(0)}',
+      value: l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, vm.totalSalesMonth.toStringAsFixed(0)),
       icon: Icons.calendar_today_rounded,
       ),
       (
@@ -126,7 +126,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
         : <({String title, String value, IconData icon})>[
       (
       title: l10n.dashboardKpiTodaysSales,
-      value: 'SAR ${vm.totalSalesToday.toStringAsFixed(0)}',
+      value: l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, vm.totalSalesToday.toStringAsFixed(0)),
       icon: Icons.payments_rounded,
       ),
       (

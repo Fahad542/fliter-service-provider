@@ -299,12 +299,12 @@ class _InventoryManagementViewState extends State<InventoryManagementView>
                   Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
                   Expanded(child: Padding(
                     padding: const EdgeInsets.only(left: 12),
-                    child: _buildMetricItem(l10n.invMetricPurchase, 'SAR ${product.purchasePrice.toInt()}', Colors.grey.shade600),
+                    child: _buildMetricItem(l10n.invMetricPurchase, l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, (product.purchasePrice.toInt()).toString()), Colors.grey.shade600),
                   )),
                   Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
                   Expanded(child: Padding(
                     padding: const EdgeInsets.only(left: 12),
-                    child: _buildMetricItem(l10n.invMetricRetail, 'SAR ${product.salePrice.toInt()}', Colors.grey.shade600),
+                    child: _buildMetricItem(l10n.invMetricRetail, l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, (product.salePrice.toInt()).toString()), Colors.grey.shade600),
                   )),
                   Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
                   Expanded(child: Padding(
@@ -312,15 +312,15 @@ class _InventoryManagementViewState extends State<InventoryManagementView>
                     child: _buildMetricItem(
                       l10n.invMetricCorporate,
                       (product.corporateLowerLimit != null && product.corporateLowerLimit! > 0)
-                          ? 'SAR ${product.corporateLowerLimit!.toInt()} - ${product.corporateUpperLimit?.toInt() ?? ""}'
-                          : 'SAR ${product.corporateBasePrice?.toInt() ?? "0"}',
+                          ? '${l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, product.corporateLowerLimit!.toInt().toString())} – ${product.corporateUpperLimit?.toInt() ?? ""}'
+                          : l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, (product.corporateBasePrice?.toInt() ?? "0").toString()),
                       AppColors.primaryLight,
                     ),
                   )),
                 ],
                 if (isService) ...[
                   Expanded(child: _buildMetricItem(
-                    l10n.invMetricPrice, 'SAR ${product.salePrice.toInt()}', Colors.grey.shade600, centered: true,
+                    l10n.invMetricPrice, l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, (product.salePrice.toInt()).toString()), Colors.grey.shade600, centered: true,
                   )),
                   Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1)),
                   Expanded(child: Padding(
@@ -328,7 +328,7 @@ class _InventoryManagementViewState extends State<InventoryManagementView>
                     child: _buildMetricItem(
                       l10n.invMetricCorpRange,
                       (product.minPriceCorporate != null && product.minPriceCorporate! > 0)
-                          ? 'SAR ${product.minPriceCorporate!.toInt()} - ${product.maxPriceCorporate?.toInt() ?? 0}'
+                          ? '${l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, product.minPriceCorporate!.toInt().toString())} – ${product.maxPriceCorporate?.toInt() ?? 0}'
                           : '-',
                       AppColors.primaryLight,
                       centered: true,

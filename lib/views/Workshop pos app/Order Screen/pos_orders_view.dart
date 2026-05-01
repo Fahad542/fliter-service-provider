@@ -1061,7 +1061,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
                         : AppLocalizations.of(context)!.posOrdersProductsServices,
                     trailing: hasDeptItems
                         ? Text(
-                      'SAR ${deptTotal.toStringAsFixed(2)}',
+                      '\${AppLocalizations.of(context)!.currencySymbol} \${deptTotal.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -1583,7 +1583,7 @@ class _JobCard extends StatelessWidget {
       return '$text%';
     }
     if (t.commissionAmount > 0) {
-      return 'SAR ${t.commissionAmount.toStringAsFixed(2)}';
+      return '\${AppLocalizations.of(context)!.currencySymbol} \${t.commissionAmount.toStringAsFixed(2)}';
     }
     return '—';
   }
@@ -1706,7 +1706,7 @@ class _JobCard extends StatelessWidget {
                         : 'Products & Services',
                     trailing: hasLineItems
                         ? Text(
-                      'SAR ${jobTotalDisplay.toStringAsFixed(2)}',
+                      '\${AppLocalizations.of(context)!.currencySymbol} \${jobTotalDisplay.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -2098,7 +2098,7 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
         children: [
           Expanded(child: Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.posOrdersTotalBeforeVat, style: labelStyle))),
           Text(
-            '${beforeVat.toStringAsFixed(2)} SAR',
+            '\${beforeVat.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
             style: valueStyle,
           ),
         ],
@@ -2109,7 +2109,7 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
         children: [
           Expanded(child: Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.posReviewVatPct(pctLabel), style: labelStyle))),
           Text(
-            '+ ${vatAmount.toStringAsFixed(2)} SAR',
+            '+ \${vatAmount.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
             style: valueStyle.copyWith(color: Colors.red.shade700),
           ),
         ],
@@ -2119,25 +2119,25 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-            child: Text(
-              'Total (incl. VAT)',
+            child: Builder(builder: (ctx) => Text(
+              AppLocalizations.of(ctx)!.posOrdersTotalInclVat,
               style: GoogleFonts.manrope(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 color: Colors.grey.shade800,
                 height: 1.25,
               ),
-            ),
+            )),
           ),
-          Text(
-            '${totalInclVat.toStringAsFixed(2)} SAR',
+          Builder(builder: (ctx) => Text(
+            '\${totalInclVat.toStringAsFixed(2)} \${AppLocalizations.of(ctx)!.currencySymbol}',
             style: GoogleFonts.manrope(
               fontSize: 10,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF1E2124),
               height: 1.25,
             ),
-          ),
+          )),
         ],
       ),
     ],
@@ -2363,7 +2363,7 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
     children: [
     Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.posOrdersInvoiceTotal, style: AppTextStyles.bodyMedium)),
     Text(
-    '${widget.invoiceTotal.toStringAsFixed(2)} SAR',
+    '\${widget.invoiceTotal.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
     style: AppTextStyles.bodyLarge
         .copyWith(fontWeight: FontWeight.w700),
     ),
@@ -2417,8 +2417,8 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
     padding: const EdgeInsets.only(top: 8),
     child: Text(
     remaining > 0
-    ? 'Remaining: ${remaining.toStringAsFixed(2)} SAR'
-        : 'Exceeds total by ${remaining.abs().toStringAsFixed(2)} SAR',
+    ? 'Remaining: \${remaining.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}'
+        : 'Exceeds total by \${remaining.abs().toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
     style: TextStyle(
     color: remaining > 0 ? Colors.orange.shade700 : Colors.red,
     fontWeight: FontWeight.w600,
@@ -2520,7 +2520,7 @@ Future<void> _generateInvoiceFromOrdersSummary(
     if ((splitSum - totalAmount).abs() > 0.05) {
       ToastService.showError(
         context,
-        'Split amounts must equal total (${totalAmount.toStringAsFixed(2)} SAR).',
+        'Split amounts must equal total (\${totalAmount.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}).',
       );
       return;
     }
@@ -2654,7 +2654,7 @@ class _OrderSummaryPanel extends StatelessWidget {
                 ),
               if (orderPromoAmt > 0)
                 Text(
-                  '− ${orderPromoAmt.toStringAsFixed(2)} SAR',
+                  '− \${orderPromoAmt.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -2690,7 +2690,7 @@ class _OrderSummaryPanel extends StatelessWidget {
                 ),
               ),
               Text(
-                '− ${orderDiscAmt.toStringAsFixed(2)} SAR',
+                '− \${orderDiscAmt.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -2773,7 +2773,7 @@ class _OrderSummaryPanel extends StatelessWidget {
                 ),
               ),
               Text(
-                '${grandTotal.toStringAsFixed(2)} SAR',
+                '\${grandTotal.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w900,
@@ -3073,7 +3073,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '− ${discAmt.toStringAsFixed(2)} SAR',
+                            '− \${discAmt.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
@@ -3153,7 +3153,7 @@ class _DraftDepartmentSection extends StatelessWidget {
             ),
           if (jobPromoAmt > 0)
             Text(
-              '− ${jobPromoAmt.toStringAsFixed(2)} SAR',
+              '− \${jobPromoAmt.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -3184,7 +3184,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                 ),
               ),
               Text(
-                '− ${jobDiscAmt.toStringAsFixed(2)} SAR',
+                '− \${jobDiscAmt.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
