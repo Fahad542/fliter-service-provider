@@ -152,14 +152,10 @@ class AuthRepository {
     }
   }
 
-  Future<dynamic> getCurrentSession(String email, String password, String token) async {
+  Future<dynamic> getCurrentSession(String token) async {
     try {
-      final response = await _apiService.getWithBody(
+      final response = await _apiService.get(
         ApiConstants.currentSessionEndpoint,
-        {
-          'email': email,
-          'password': password,
-        },
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

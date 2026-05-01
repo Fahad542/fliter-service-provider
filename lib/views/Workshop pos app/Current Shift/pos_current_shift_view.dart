@@ -70,7 +70,56 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
 
     final session = vm.currentSession;
     if (session == null) {
-      return const Center(child: Text('No active session.'));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.waving_hand_rounded, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'No active shift open',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.grey.shade800),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Start a shift to use the register, or refresh if you already opened one on another device.',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              if (vm.isOpeningShift)
+                const CircularProgressIndicator(color: AppColors.primaryLight)
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => vm.openShift(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondaryLight,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Start shift', style: TextStyle(color: Colors.white)),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton(
+                      onPressed: () => vm.fetchCurrentSession(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Refresh'),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      );
     }
 
     // Attempt to format the date

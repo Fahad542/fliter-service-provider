@@ -67,7 +67,14 @@ class _LoginViewState extends State<LoginView> {
           context,
           MaterialPageRoute(builder: (_) => const PosShell()),
         );
-        if (autoClosed && mounted) {
+        final shiftWarn = loginViewModel.shiftOpenWarning;
+        if (shiftWarn != null && mounted) {
+          Future.delayed(const Duration(milliseconds: 900), () {
+            if (mounted) {
+              ToastService.showInfo(context, shiftWarn);
+            }
+          });
+        } else if (autoClosed && mounted) {
           Future.delayed(const Duration(milliseconds: 800), () {
             if (mounted) {
               ToastService.showInfo(
