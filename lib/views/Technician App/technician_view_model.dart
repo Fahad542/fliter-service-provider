@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/technician_models.dart';
 import '../../data/repositories/technician_repository.dart';
+import '../../data/repositories/workshop_notifications_repository.dart';
 import '../../services/session_service.dart';
 import '../../services/realtime_service.dart';
 import '../../models/technician_performance_model.dart';
@@ -14,6 +15,8 @@ import '../../utils/toast_service.dart';
 class TechAppViewModel extends ChangeNotifier {
   final TechnicianRepository _repository;
   final SessionService _sessionService;
+  final WorkshopNotificationsRepository _workshopNotif =
+      WorkshopNotificationsRepository();
   final RealtimeService _realtimeService = RealtimeService();
 
   TechAppViewModel({
@@ -40,6 +43,7 @@ class TechAppViewModel extends ChangeNotifier {
   /// New broadcast(s) from cashier — sync with GET /technician/broadcasts.
   void _onBroadcastCreated(Map<String, dynamic> payload) {
     fetchBroadcasts();
+    unawaited(fetchWorkshopNotifications());
   }
 
   /// Broadcast ended (e.g. reason `accepted` by another tech) — drop locally first, then re-fetch.
@@ -1033,18 +1037,66 @@ class TechAppViewModel extends ChangeNotifier {
     unawaited(fetchAssignedOrders(affectLoading: false));
     unawaited(fetchCommissionHistory());
     unawaited(fetchBroadcasts());
-    
-    // Notifications remain mock for now as per image focus
-    _notifications = [
-      TechNotification(
-        id: '1',
-        title: 'Commission Credited',
-        message: 'SAR 45.00 added to your daily earnings for ORD-7721',
-        timestamp: DateTime.now(),
-        type: 'Commission',
-      ),
-    ];
-    notifyListeners();
+    unawaited(fetchWorkshopNotifications());
+  }
+
+  static const String _workshopNotifRole = 'technician';
+
+  Future<void> fetchWorkshopNotifications() async {
+    final token = await _sessionService.getToken(role: 'tech');
+    if (token == null) return;
+    try {
+      final res = await _workshopNotif.listInbox(
+        token: token,
+        roleParam: _workshopNotifRole,
+        page: 1,
+        limit: 100,
+      );
+      final items = (res['items'] as List?) ?? [];
+      _notifications = items
+          .map((e) => TechNotification.fromWorkshop(
+              Map<String, dynamic>.from(e as Map)))
+          .toList();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> markWorkshopNotificationRead(String id) async {
+    final token = await _sessionService.getToken(role: 'tech');
+    if (token == null) return;
+    try {
+      await _workshopNotif.markRead(
+        token: token,
+        notificationId: id,
+        roleParam: _workshopNotifRole,
+      );
+      await fetchWorkshopNotifications();
+    } catch (_) {}
+  }
+
+  Future<void> deleteWorkshopNotification(String id) async {
+    final token = await _sessionService.getToken(role: 'tech');
+    if (token == null) return;
+    try {
+      await _workshopNotif.deleteOne(
+        token: token,
+        notificationId: id,
+        roleParam: _workshopNotifRole,
+      );
+      _notifications.removeWhere((n) => n.id == id);
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> clearAllWorkshopNotifications() async {
+    final token = await _sessionService.getToken(role: 'tech');
+    if (token == null) return;
+    try {
+      await _workshopNotif.clearAll(
+          token: token, roleParam: _workshopNotifRole);
+      _notifications = [];
+      notifyListeners();
+    } catch (_) {}
   }
 
   void clearSession() {
