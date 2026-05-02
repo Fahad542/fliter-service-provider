@@ -1,0 +1,482 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../l10n/app_localizations.dart';
+import '../../../models/cashier_active_broadcasts_model.dart';
+import '../../../utils/app_colors.dart';
+import '../../../services/localized_api_text.dart';
+import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../Technician App/Notifications/notifications_view.dart';
+import 'cashier_broadcast_view_model.dart';
+
+class PosCashierBroadcastView extends StatefulWidget {
+  const PosCashierBroadcastView({super.key});
+
+  @override
+  State<PosCashierBroadcastView> createState() => _PosCashierBroadcastViewState();
+}
+
+class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CashierBroadcastViewModel>().fetchActive();
+    });
+  }
+
+  double _gridChildAspectRatio(double gridInnerWidth) {
+    const crossGap = 12.0;
+    final cellW = (gridInnerWidth - crossGap) / 2;
+    const targetCellHeight = 136.0;
+    return (cellW / targetCellHeight).clamp(2.0, 4.5);
+  }
+
+  String _formatCountdown(Duration d) {
+    if (d.isNegative) return '00:00';
+    final m = d.inMinutes.remainder(100).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  /// Builds a localised window label e.g. "05:00 window" / "05:00 نافذة"
+  String _windowLabel(int seconds, AppLocalizations l10n) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return l10n.posBroadcastWindow(m, s);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final vm = context.watch<CashierBroadcastViewModel>();
+    final list = vm.broadcasts;
+    final window = vm.windowSeconds;
+    final displayCount = vm.activeCountMeta > 0 ? vm.activeCountMeta : list.length;
+    final windowLabel = _windowLabel(window, l10n);
+    final errorText = vm.resolveError(l10n);
+
+    final scroll = CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.secondaryLight,
+                    AppColors.secondaryLight.withOpacity(0.92),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondaryLight.withOpacity(0.18),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.podcasts_rounded,
+                      color: AppColors.secondaryLight,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.posBroadcastHeading,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          list.isEmpty && !vm.isLoading
+                              ? l10n.posBroadcastNoActive
+                              : l10n.posBroadcastCountActive(displayCount, windowLabel),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.72),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (vm.isLoading && list.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
+          )
+        else if (errorText != null && list.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      errorText,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () => vm.fetchActive(),
+                      child: Text(l10n.posBroadcastRetry),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else if (list.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Text(
+                  l10n.posBroadcastNoActive,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              sliver: SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  final aspect = _gridChildAspectRatio(constraints.crossAxisExtent);
+                  return SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: aspect,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                        final e = list[index];
+                        return _BroadcastCard(
+                          item: e,
+                          vm: vm,
+                          windowLabel: windowLabel,
+                          formatCountdown: _formatCountdown,
+                        );
+                      },
+                      childCount: list.length,
+                    ),
+                  );
+                },
+              ),
+            ),
+      ],
+    );
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FD),
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryLight,
+        elevation: 0,
+        toolbarHeight: 70,
+        automaticallyImplyLeading: false,
+        leadingWidth: 70,
+        leading: Center(
+          child: GestureDetector(
+            onTap: () => Scaffold.of(context).openDrawer(),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.secondaryLight,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondaryLight.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.menu_rounded, size: 22, color: Colors.white),
+            ),
+          ),
+        ),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
+        title: Text(
+          l10n.posBroadcastTitle,
+          style: const TextStyle(
+            color: AppColors.secondaryLight,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            letterSpacing: 1.2,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(builder: (_) => const NotificationsView()),
+            ),
+            child: Container(
+              width: 40,
+              height: 40,
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.35),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.notifications_outlined, size: 22, color: AppColors.secondaryLight),
+            ),
+          ),
+        ],
+      ),
+      body: wrapPosShellRailBody(context, scroll),
+    );
+  }
+}
+
+class _BroadcastCard extends StatelessWidget {
+  const _BroadcastCard({
+    required this.item,
+    required this.vm,
+    required this.windowLabel,
+    required this.formatCountdown,
+  });
+
+  final CashierActiveBroadcastItem item;
+  final CashierBroadcastViewModel vm;
+  final String windowLabel;
+  final String Function(Duration) formatCountdown;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final left = vm.remainingFor(item);
+    final expired = vm.isExpired(item);
+    final urgent = vm.showSoon(item);
+    final progress = vm.progressRemaining(item);
+    // Badge resolved in view so it picks up locale on every rebuild.
+    final badge = vm.resolveBadge(item.broadcastType, l10n);
+
+    return Material(
+      color: Colors.white,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: expired
+                ? Colors.grey.shade200
+                : urgent
+                ? const Color(0xFFFFB74D).withOpacity(0.55)
+                : Colors.grey.shade200,
+            width: urgent && !expired ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 9, 10, 7),
+          child: SingleChildScrollView(
+            primary: false,
+            physics: const ClampingScrollPhysics(),
+            clipBehavior: Clip.hardEdge,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: expired ? Colors.grey.shade300 : AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.campaign_outlined,
+                        color: expired ? Colors.grey.shade600 : AppColors.secondaryLight,
+                        size: 19,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: LocalizedApiText(
+                                  item.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: expired ? Colors.grey.shade500 : const Color(0xFF1B1E24),
+                                    height: 1.15,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (!expired && urgent)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      margin: const EdgeInsets.only(bottom: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFF3E0),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Text(
+                                        l10n.posBroadcastLabelSoon,
+                                        style: const TextStyle(
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFFE65100),
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                  Text(
+                                    formatCountdown(left),
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.35,
+                                      height: 1.05,
+                                      fontFeatures: const [FontFeature.tabularFigures()],
+                                      color: expired
+                                          ? Colors.grey.shade400
+                                          : urgent
+                                          ? const Color(0xFFE65100)
+                                          : AppColors.secondaryLight,
+                                    ),
+                                  ),
+                                  Text(
+                                    expired ? l10n.posBroadcastLabelClosed : l10n.posBroadcastLabelRemaining,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade500,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          if (badge != null) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              badge,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade700,
+                                height: 1.05,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 2),
+                          LocalizedApiText(
+                            item.subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: expired ? 0 : progress,
+                    minHeight: 3,
+                    backgroundColor: Colors.grey.shade200,
+                    color: expired
+                        ? Colors.grey.shade300
+                        : urgent
+                        ? const Color(0xFFFF9800)
+                        : AppColors.primaryLight,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  expired ? l10n.posBroadcastLabelExpired : windowLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

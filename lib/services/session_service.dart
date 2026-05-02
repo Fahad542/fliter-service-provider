@@ -1,0 +1,93 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/auth_response_model.dart';
+
+class SessionService {
+
+  Future<void> saveSession(AuthResponse authResponse, {String role = 'cashier'}) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (authResponse.token != null) {
+      print('Saving $role Token: ${authResponse.token}');
+      await prefs.setString('${role}_auth_token', authResponse.token!);
+    }
+    if (authResponse.user != null) {
+      final userData = jsonEncode(authResponse.user!.toJson());
+      print('Saving $role User Data: $userData');
+      await prefs.setString('${role}_user_data', userData);
+    }
+  }
+
+  Future<String?> getToken({String role = 'cashier'}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('${role}_auth_token');
+    print('Retrieved $role Token: $token');
+    return token;
+  }
+
+  Future<User?> getUser({String role = 'cashier'}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userData = prefs.getString('${role}_user_data');
+    print('Retrieved $role User Data: $userData');
+    if (userData != null) {
+      return User.fromJson(jsonDecode(userData));
+    }
+    return null;
+  }
+
+  Future<void> clearSession({String role = 'cashier'}) async {
+    if (kDebugMode) {
+      debugPrint('SessionService.clearSession(role: $role) called');
+      debugPrint(StackTrace.current.toString());
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('${role}_auth_token');
+    await prefs.remove('${role}_user_data');
+  }
+
+  Future<bool> isLoggedIn({String role = 'cashier'}) async {
+    final token = await getToken(role: role);
+    return token != null;
+  }
+
+  Future<void> saveLastPortal(String portal) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_portal', portal);
+  }
+
+  Future<String?> getLastPortal() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('last_portal');
+  }
+
+  Future<void> saveCredentials(String email, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pos_user_email', email);
+    await prefs.setString('pos_user_password', password);
+  }
+
+  Future<Map<String, String>?> getCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('pos_user_email');
+    final password = prefs.getString('pos_user_password');
+    if (email != null && password != null) {
+      return {'email': email, 'password': password};
+    }
+    return null;
+  }
+
+  // ── Locale helpers ─────────────────────────────────────────────────────────
+
+  /// Persists the app locale ('en' or 'ar') so translation services
+  /// can read it without needing a BuildContext.
+  static Future<void> saveLocale(String languageCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_locale', languageCode);
+  }
+
+  /// Returns the persisted locale language code, defaulting to 'en'.
+  static Future<String> getLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('app_locale') ?? 'en';
+  }
+}

@@ -1,0 +1,2094 @@
+{
+  "@@locale": "ar",
+  "ownerShellHome": "الرئيسية",
+  "ownerShellBranches": "الفروع",
+  "ownerShellDepartments": "الأقسام",
+  "ownerShellEmployees": "الموظفون",
+  "ownerShellCorporate": "الشركات",
+  "ownerShellInventory": "المخزون",
+  "ownerShellPosMonitoring": "مراقبة نقاط البيع",
+  "ownerShellSuppliers": "الموردون",
+  "ownerShellAccounting": "المحاسبة",
+  "ownerShellPromoCodes": "رموز العروض",
+  "ownerShellApprovals": "الموافقات",
+  "ownerShellNotifications": "الإشعارات",
+  "ownerShellLogout": "تسجيل الخروج",
+  "ownerShellRoleLabel": "مالك الورشة",
+  "ownerShellVersion": "v1.0.0 • نظام الورشة",
+  "ownerShellLogoutTitle": "تسجيل الخروج",
+  "ownerShellLogoutBody": "هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟",
+  "ownerShellLogoutCancel": "إلغاء",
+  "ownerShellLogoutConfirm": "تسجيل الخروج",
+  "lockerDefaultUser": "المالك",
+  "billingDashboardTitle": "لوحة الفوترة",
+  "billingGenerateTitle": "إنشاء فواتير",
+  "billingMonthlyTitle": "الفواتير الشهرية",
+  "billingOverdueTitle": "المدفوعات المتأخرة",
+  "billingDefaultTitle": "الفوترة",
+  "billingSummaryTotalBilled": "إجمالي المفوتر",
+  "billingSummaryTotalReceived": "إجمالي المستلم",
+  "billingSummaryOutstanding": "المبالغ المعلقة",
+  "billingSummaryOverdue": "المتأخرات",
+  "billingQuickActions": "إجراءات سريعة",
+  "billingRecentActivity": "آخر نشاط في الفوترة",
+  "billingSeeAll": "عرض الكل",
+  "billingNoRecentActivity": "لا يوجد نشاط حديث",
+  "billingActionGenerate": "إنشاء فواتير",
+  "billingActionViewAll": "عرض كل الفواتير",
+  "billingActionRecordPayment": "تسجيل دفعة",
+  "billingActionSendReminders": "إرسال تذكيرات",
+  "billingGeneratorStep1": "الخطوة 1: اختر فترة الفوترة",
+  "billingGeneratorStep2": "الخطوة 2: معاينة الفواتير المؤهلة",
+  "billingGeneratorPendingInvoices": "فواتير معلقة: 15 • الإجمالي المتوقع: 12,450 ر.س",
+  "billingGeneratorPostAll": "إنشاء وترحيل الكل",
+  "billingPeriodLabel": "فترة الفوترة: {month}/{year}",
+  "@billingPeriodLabel": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "billingStatusPaid": "مدفوع",
+  "billingStatusOverdue": "متأخر",
+  "billingStatusPartiallyPaid": "مدفوع جزئياً",
+  "billingStatusPending": "قيد الانتظار",
+  "branchManagementTitle": "الفروع",
+  "branchSearchHint": "البحث في الفروع…",
+  "branchAddButton": "إضافة فرع",
+  "branchEditButton": "تعديل",
+  "branchDeleteButton": "حذف",
+  "branchNoBranches": "لا توجد فروع",
+  "branchStatusActive": "نشط",
+  "branchStatusInactive": "غير نشط",
+  "branchFormTitleAdd": "إضافة فرع",
+  "branchFormTitleEdit": "تعديل الفرع",
+  "branchFormNameLabel": "اسم الفرع",
+  "branchFormNameHint": "أدخل اسم الفرع",
+  "branchFormAddressLabel": "العنوان",
+  "branchFormAddressHint": "ابحث عن العنوان…",
+  "branchFormLatLabel": "خط العرض GPS",
+  "branchFormLngLabel": "خط الطول GPS",
+  "branchFormStatusLabel": "نشط",
+  "branchFormSaveButton": "حفظ الفرع",
+  "branchFormUpdateButton": "تحديث الفرع",
+  "branchFormValidationError": "اسم الفرع والعنوان مطلوبان",
+  "branchCreateSuccess": "تم إنشاء الفرع بنجاح",
+  "branchUpdateSuccess": "تم تحديث الفرع بنجاح",
+  "branchDeleteSuccess": "تم حذف الفرع بنجاح",
+  "branchSaveError": "فشل حفظ الفرع",
+  "branchDeleteError": "فشل حذف الفرع",
+  "branchDeleteConfirmTitle": "حذف الفرع",
+  "branchDeleteConfirmBody": "هل أنت متأكد من رغبتك في حذف هذا الفرع؟",
+  "branchDeleteConfirmCancel": "إلغاء",
+  "branchDeleteConfirmDelete": "حذف",
+  "lockerPortalTitle": "بوابة الخزينة",
+  "lockerPortalSubtitle": "إدارة الأصول الآمنة للفرع",
+  "lockerPortalAppBarTitle": "بوابة الخزينة",
+  "lockerSecureAssetManagement": "إدارة الأصول الآمنة",
+  "lockerEmail": "البريد الإلكتروني",
+  "lockerEmailHint": "أدخل بريدك الإلكتروني",
+  "lockerEmailRequired": "البريد الإلكتروني مطلوب",
+  "lockerPassword": "كلمة المرور",
+  "lockerPasswordHint": "أدخل كلمة المرور",
+  "lockerPasswordRequired": "كلمة المرور مطلوبة",
+  "lockerForgotPassword": "نسيت كلمة المرور؟",
+  "lockerContinue": "متابعة",
+  "lockerLoadingDashboard": "جارٍ تحميل لوحة التحكم…",
+  "lockerFailedLoadDashboard": "فشل تحميل لوحة التحكم",
+  "lockerUnexpectedError": "حدث خطأ غير متوقع.",
+  "lockerRetry": "إعادة المحاولة",
+  "lockerRefresh": "تحديث",
+  "lockerSupervisorTab": "المشرف",
+  "lockerCollectorTab": "المحصِّل",
+  "lockerLogOut": "تسجيل الخروج",
+  "lockerLogOutConfirm": "هل أنت متأكد من تسجيل الخروج من بوابة الخزينة؟",
+  "lockerCancel": "إلغاء",
+  "lockerLogOutButton": "تسجيل الخروج",
+  "lockerWelcomeBack": "مرحباً بعودتك",
+  "lockerRoleSupervisor": "مشرف",
+  "lockerRoleManager": "مدير",
+  "lockerRoleWorkshopOwner": "صاحب الورشة",
+  "lockerRoleWorkshopSupervisor": "مشرف الورشة",
+  "lockerRoleCollector": "محصِّل",
+  "lockerRoleCollectionOfficer": "موظف التحصيل",
+  "lockerRoleWorkshopCollector": "محصِّل الورشة",
+  "lockerSupervisorOverview": "نظرة عامة للمشرف",
+  "lockerMyPerformance": "أدائي",
+  "lockerKpiPending": "قيد الانتظار",
+  "lockerKpiAwaiting": "في انتظار الموافقة",
+  "lockerKpiOverdue": "متأخر",
+  "lockerKpiVariance": "الفارق",
+  "lockerKpiOpenAssignments": "المهام المفتوحة",
+  "lockerKpiPendingApproval": "في انتظار الموافقة",
+  "lockerKpiTodaysCollections": "تحصيلات اليوم",
+  "lockerKpiMonthlyCollected": "المحصَّل الشهري",
+  "lockerCoreOperations": "العمليات الأساسية",
+  "lockerManageAllRequests": "إدارة جميع الطلبات",
+  "lockerStartCollection": "بدء التحصيل",
+  "lockerAssignOfficers": "تعيين الموظفين",
+  "lockerManageVarianceRequests": "إدارة طلبات الفوارق",
+  "lockerFinancialAnalytics": "التحليلات المالية",
+  "lockerSearchHint": "البحث في الطلبات…",
+  "lockerLoadingRequests": "جارٍ تحميل الطلبات…",
+  "lockerFailedLoadRequests": "فشل تحميل الطلبات",
+  "lockerNoRequestsFound": "لا توجد طلبات",
+  "lockerAdjustFilters": "جرِّب تعديل البحث أو عوامل التصفية.",
+  "lockerLockedCashAsset": "النقد المحفوظ",
+  "lockerTapToCollect": "انقر للتحصيل",
+  "lockerStatusPending": "قيد الانتظار",
+  "lockerStatusAssigned": "معيَّن",
+  "lockerStatusAwaiting": "في انتظار الموافقة",
+  "lockerStatusCollected": "محصَّل",
+  "lockerStatusApproved": "معتمد",
+  "lockerStatusRejected": "مرفوض",
+  "lockerStatusMatched": "مطابق",
+  "lockerLoadingRequest": "جارٍ تحميل الطلب…",
+  "lockerFailedLoadDetails": "فشل تحميل تفاصيل الطلب",
+  "lockerSystemStatus": "حالة النظام",
+  "lockerTotalSecuredAsset": "إجمالي الأصول المحفوظة",
+  "lockerCounterClosing": "إغلاق الكاونتر",
+  "lockerPhysicalCash": "النقد الفعلي",
+  "lockerSystemTotal": "إجمالي النظام",
+  "lockerDifference": "الفارق",
+  "lockerCollectionRecord": "سجل التحصيل",
+  "lockerReceived": "المستلَم",
+  "lockerInternalData": "البيانات الداخلية",
+  "lockerSourceBranch": "الفرع المصدر",
+  "lockerCashier": "أمين الصندوق",
+  "lockerCashierIdentity": "أمين الصندوق",
+  "lockerShiftCloseTime": "وقت إغلاق الوردية",
+  "lockerSessionOpened": "وقت فتح الجلسة",
+  "lockerSessionClosed": "وقت إغلاق الجلسة",
+  "lockerAssignedOfficer": "الموظف المعيَّن",
+  "lockerAssignCollectionOfficer": "تعيين موظف التحصيل",
+  "lockerProceedToCollection": "المتابعة للتحصيل",
+  "lockerGenerateAuditPdf": "إنشاء تقرير PDF",
+  "lockerCollectionPendingApproval": "التحصيل في انتظار موافقة المشرف.",
+  "lockerPendingSupervisorApproval": "في انتظار موافقة المشرف",
+  "lockerCollectedSuccessfully": "تم تسجيل التحصيل بنجاح",
+  "lockerVarianceApproved": "تمت الموافقة على الفارق",
+  "lockerVarianceRejectedBanner": "تم رفض الفارق",
+  "lockerVarianceDifferenceReview": "يوجد فارق في هذا التحصيل. يرجى المراجعة والموافقة أو الرفض.",
+  "lockerApproveVariance": "تمت الموافقة على الفارق بنجاح",
+  "lockerApprove": "موافقة",
+  "lockerReject": "رفض",
+  "lockerRejectVarianceTitle": "رفض الفارق",
+  "lockerRejectVarianceBody": "يمكنك تقديم سبب اختياري لرفض هذا الفارق.",
+  "lockerRejectionReasonHint": "أدخل سبب الرفض (اختياري)",
+  "lockerConfirmReject": "تأكيد الرفض",
+  "corporateFieldMobileMobile": "الجوال",
+  "corporateFieldTaxId": "الرقم الضريبي (ض.ق.م)",
+  "corporateFieldStatus": "الحالة",
+  "corporateSaveChanges": "حفظ التغييرات",
+  "corporateStatusPending": "قيد الانتظار",
+  "corporateStatusActive": "نشط",
+  "corporateStatusRejected": "مرفوض",
+  "corporateCreateSuccess": "تم إنشاء الحساب المؤسسي بنجاح",
+  "corporateCreateError": "فشل إنشاء الحساب المؤسسي",
+  "corporateUpdateSuccess": "تم تحديث الحساب المؤسسي بنجاح",
+  "corporateUpdateError": "فشل تحديث الحساب المؤسسي",
+  "corporateUserCreateSuccess": "تم إنشاء المستخدم المؤسسي بنجاح",
+  "corporateUserCreateError": "فشل إنشاء المستخدم المؤسسي",
+  "corporateValidationRequired": "يرجى ملء جميع الحقول المطلوبة",
+  "corporateValidationBranch": "يرجى اختيار فرع واحد على الأقل",
+  "corporateValidationCompanyName": "اسم الشركة مطلوب",
+  "dashboardAllBranches": "جميع الفروع",
+  "dashboardViewingDataFor": "عرض بيانات",
+  "dashboardAllBranchesAggregated": "جميع الفروع مجمّعة",
+  "dashboardSelectBranch": "اختر الفرع",
+  "dashboardKpiTotalSalesToday": "إجمالي مبيعات اليوم",
+  "dashboardKpiThisMonth": "هذا الشهر",
+  "dashboardKpiPendingInvoices": "الفواتير المعلقة",
+  "dashboardKpiLowStockAlerts": "تنبيهات نقص المخزون",
+  "dashboardKpiTodaysSales": "مبيعات اليوم",
+  "dashboardKpiActiveOrders": "الطلبات النشطة",
+  "dashboardKpiTechWorkload": "حمل الفني",
+  "dashboardKpiPendingApproval": "بانتظار الموافقة",
+  "dashboardPendingApprovalsTitle": "الموافقات المعلقة",
+  "dashboardViewAll": "عرض الكل",
+  "dashboardNoPendingApprovals": "لا توجد طلبات صندوق صغير معلقة الآن.",
+  "dashboardMoreApprovals": "+{count} أخرى في الموافقات",
+  "@dashboardMoreApprovals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardBranchPerformance": "أداء الفروع",
+  "dashboardBranchHighlights": "أبرز الفرع",
+  "dashboardBranchStatus": "حالة الفرع",
+  "dashboardTotalStaff": "إجمالي الموظفين",
+  "dashboardSalesTarget": "هدف المبيعات",
+  "dashboardSalesTargetValue": "85% محقق",
+  "branchPerformanceListTitle": "أداء الفروع",
+  "branchPerformanceNoBranches": "لا توجد فروع بعد.",
+  "deptMgmtTitle": "إدارة الأقسام",
+  "deptMgmtSearchHint": "بحث باسم القسم...",
+  "deptMgmtAddButton": "إضافة قسم جديد",
+  "deptMgmtNoDepartments": "لا توجد أقسام.",
+  "deptMgmtLabelDepartment": "قسم",
+  "deptMgmtMenuEdit": "تعديل",
+  "deptMgmtMenuDelete": "حذف",
+  "deptMgmtConfirmDeleteTitle": "تأكيد الحذف",
+  "deptMgmtConfirmDeleteBody": "هل أنت متأكد من حذف \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+  "@deptMgmtConfirmDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deptMgmtCancel": "إلغاء",
+  "deptMgmtDelete": "حذف",
+  "deptMgmtStatusActive": "نشط",
+  "deptMgmtStatusInactive": "غير نشط",
+  "deptMgmtSheetAddTitle": "إضافة قسم",
+  "deptMgmtSheetUpdateTitle": "تحديث القسم",
+  "deptMgmtSheetAddSubtitle": "أدخل اسم القسم الجديد.",
+  "deptMgmtSheetUpdateSubtitle": "تعديل تفاصيل القسم الحالي.",
+  "deptMgmtFieldName": "اسم القسم",
+  "deptMgmtFieldActiveStatus": "الحالة النشطة",
+  "deptMgmtSheetAddButton": "إضافة قسم",
+  "deptMgmtSheetUpdateButton": "تحديث القسم",
+  "deptMgmtValidationNameRequired": "اسم القسم مطلوب",
+  "deptMgmtCreateSuccess": "تم إنشاء القسم بنجاح",
+  "deptMgmtUpdateSuccess": "تم تحديث القسم بنجاح",
+  "deptMgmtDeleteSuccess": "تم حذف القسم بنجاح",
+  "deptMgmtSaveError": "فشل حفظ القسم",
+  "deptMgmtDeleteError": "فشل حذف القسم",
+  "empMgmtTitle": "إدارة الموظفين",
+  "empMgmtSearchHint": "بحث بالاسم أو البريد أو الجوال...",
+  "empMgmtAddButton": "إضافة موظف",
+  "empMgmtFilterAllBranches": "جميع الفروع",
+  "empMgmtNoEmployees": "لا يوجد موظفون.",
+  "empMgmtLastSeen": "آخر ظهور: {time}",
+  "@empMgmtLastSeen": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "empMgmtInfoBranch": "الفرع",
+  "empMgmtInfoDept": "القسم",
+  "empMgmtInfoRoleType": "نوع الدور",
+  "empMgmtInfoTechType": "نوع الفني",
+  "empMgmtInfoSalary": "الراتب",
+  "empMgmtInfoCommission": "العمولة",
+  "empMgmtInfoUnknown": "غير محدد",
+  "empMgmtInfoNone": "لا يوجد",
+  "empMgmtMenuEdit": "تعديل",
+  "empMgmtMenuDelete": "حذف",
+  "empMgmtDeleteTitle": "حذف الموظف",
+  "empMgmtDeleteBody": "هل أنت متأكد من حذف \"{name}\"؟",
+  "@empMgmtDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "empMgmtDeleteCancel": "إلغاء",
+  "empMgmtDeleteConfirm": "حذف",
+  "empMgmtSheetAddTitle": "إضافة موظف جديد",
+  "empMgmtSheetUpdateTitle": "تحديث الموظف",
+  "empMgmtSheetAddSubtitle": "أدخل التفاصيل لتسجيل عضو جديد.",
+  "empMgmtSheetUpdateSubtitle": "تعديل بيانات الموظف الحالي.",
+  "empMgmtFieldRole": "الدور",
+  "empMgmtFieldFullName": "الاسم الكامل",
+  "empMgmtFieldMobile": "رقم الجوال",
+  "empMgmtFieldEmail": "البريد الإلكتروني",
+  "empMgmtFieldPassword": "كلمة المرور",
+  "empMgmtFieldPasswordOptional": "كلمة المرور (اختياري)",
+  "empMgmtFieldBranch": "تعيين للفرع",
+  "empMgmtFieldDepartment": "تعيين القسم",
+  "empMgmtFieldAddress": "العنوان",
+  "empMgmtFieldOpeningBalance": "الرصيد الافتتاحي",
+  "empMgmtFieldBaseSalary": "الراتب الأساسي",
+  "empMgmtFieldCommission": "نسبة العمولة %",
+  "empMgmtFieldActiveStatus": "الحالة النشطة",
+  "empMgmtSectionTechSpecifics": "تفاصيل الفني",
+  "empMgmtSectionSalary": "الراتب والعمولة",
+  "empMgmtSectionAvailability": "التوفر",
+  "empMgmtToggleWorkshop": "فني ورشة",
+  "empMgmtToggleOnCall": "فني عند الطلب",
+  "empMgmtNoAddressFound": "لا توجد عناوين",
+  "empMgmtSaveButton": "حفظ الموظف",
+  "empMgmtUpdateButton": "تحديث الموظف",
+  "empMgmtRoleTechnician": "فني",
+  "empMgmtRoleCashier": "كاشير",
+  "empMgmtRoleSupplier": "مورّد",
+  "empMgmtValidationRequired": "يرجى ملء جميع الحقول المطلوبة.",
+  "empMgmtValidationTechType": "يرجى اختيار نوع فني واحد على الأقل.",
+  "empMgmtValidationNoBranch": "يرجى إنشاء فرع أولاً لتعيين هذا الموظف.",
+  "empMgmtValidationNoBranchCashier": "يرجى إنشاء فرع أولاً لتعيين هذا الكاشير.",
+  "empMgmtValidationNoDepartment": "يرجى إنشاء قسم أولاً لتعيين هذا الموظف.",
+  "empMgmtValidationSupplierRequired": "يرجى ملء جميع الحقول المطلوبة",
+  "empMgmtApiNotIntegrated": "الأنواع المتاحة للإنشاء: الفني، الكاشير، والمورّد فقط.",
+  "empMgmtTechnicianCreateSuccess": "تم إنشاء الفني بنجاح",
+  "empMgmtTechnicianUpdateSuccess": "تم تحديث الفني بنجاح",
+  "empMgmtTechnicianCreateError": "فشل إنشاء الفني",
+  "empMgmtCashierCreateSuccess": "تم إنشاء الكاشير بنجاح",
+  "empMgmtCashierUpdateSuccess": "تم تحديث الكاشير بنجاح",
+  "empMgmtCashierCreateError": "فشل إنشاء الكاشير",
+  "empMgmtSupplierCreateSuccess": "تم إنشاء المورّد بنجاح",
+  "empMgmtSupplierCreateError": "فشل إنشاء المورّد",
+  "empMgmtDeleteSuccess": "تم حذف الموظف بنجاح",
+  "empMgmtDeleteError": "فشل حذف الموظف",
+  "empStatusAvailable": "متاح",
+  "empStatusOnline": "متصل",
+  "empStatusBusy": "مشغول",
+  "empStatusOffline": "غير متصل",
+  "empLastSeenNever": "أبداً",
+  "empLastSeenJustNow": "الآن",
+  "empLastSeenMinutes": "منذ {m} د",
+  "@empLastSeenMinutes": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "empLastSeenHours": "منذ {h} س",
+  "@empLastSeenHours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "empLastSeenDays": "منذ {d} ي",
+  "@empLastSeenDays": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "empTechTypeWorkshop": "ورشة",
+  "empTechTypeBoth": "كلاهما",
+  "empTechTypeOnCall": "عند الطلب",
+  "empRoleTechnician": "فني",
+  "empRoleCashier": "كاشير",
+  "empRoleSupplier": "مورّد",
+  "posAddCustomerTitle": "إضافة عميل جديد",
+  "posAddCustomerTabNormal": "عميل عادي",
+  "posAddCustomerTabCorporate": "عميل مؤسسي",
+  "posAddCustomerSectionVehicleInfo": "معلومات المركبة",
+  "posAddCustomerSectionCompanyDetails": "تفاصيل الشركة (مُعبَّأة تلقائياً)",
+  "posAddCustomerSectionCorporateAccount": "الحساب المؤسسي",
+  "posAddCustomerFieldVehicleNumber": "رقم المركبة",
+  "posAddCustomerFieldVin": "رقم الهيكل (VIN)",
+  "posAddCustomerFieldMake": "الشركة المصنِّعة",
+  "posAddCustomerFieldModel": "الطراز",
+  "posAddCustomerFieldOdometer": "عداد المسافة",
+  "posAddCustomerFieldCompanyName": "اسم الشركة",
+  "posAddCustomerFieldVatNumber": "الرقم الضريبي",
+  "posAddCustomerFieldBillingAddress": "عنوان الفوترة",
+  "posAddCustomerSelectCorporate": "اختر الحساب المؤسسي",
+  "posAddCustomerNoCorporateFound": "لا توجد حسابات مؤسسية",
+  "posAddCustomerSaveButton": "حفظ والمتابعة إلى القسم",
+  "posAddCustomerFieldNA": "غير متوفر",
+  "posAddCustomerValidationVehicleRequired": "يرجى إدخال رقم المركبة",
+  "posAddCustomerValidationRequired": "مطلوب",
+  "posAddCustomerValidationVinMax": "الحد الأقصى 17 حرفاً",
+  "posAddCustomerValidationInvalidNumber": "يرجى إدخال رقم صحيح",
+  "posAddCustomerValidationInvalidNumberShort": "رقم غير صحيح",
+  "posMonitoringTitle": "مراقبة نقاط البيع",
+  "posMonitoringLiveCounters": "الكاونترات المباشرة",
+  "posMonitoringClosingReports": "تقارير الإغلاق",
+  "posMonitoringSummaryLiveCounters": "الكاونترات المباشرة",
+  "posMonitoringSummaryOpenOrders": "الطلبات المفتوحة",
+  "posMonitoringSummaryTodaySales": "مبيعات اليوم",
+  "posMonitoringNoLiveCounters": "لا توجد كاونترات مباشرة نشطة",
+  "posMonitoringNoClosingReports": "لا توجد تقارير إغلاق متاحة",
+  "posMonitoringStatusOpen": "مفتوح",
+  "posMonitoringStatusClosing": "جارٍ الإغلاق",
+  "posMonitoringStatusClosed": "مغلق",
+  "posMonitoringStatShiftSales": "مبيعات الوردية",
+  "posMonitoringStatOpenOrders": "الطلبات المفتوحة",
+  "posMonitoringStatElapsed": "الوقت المنقضي",
+  "posMonitoringElapsedFormat": "{h}س {m}د",
+  "@posMonitoringElapsedFormat": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "posMonitoringClosed": "مغلق",
+  "posMonitoringTableCategory": "الفئة",
+  "posMonitoringTableSystem": "النظام",
+  "posMonitoringTablePhysical": "الفعلي",
+  "posMonitoringTableDiff": "الفارق",
+  "posMonitoringTableTotalSales": "إجمالي المبيعات",
+  "posMonitoringRowCash": "نقد",
+  "posMonitoringRowBank": "بنك/بطاقات",
+  "posMonitoringRowCorporate": "شركات",
+  "posMonitoringRowTamara": "تمارا",
+  "posMonitoringRowTabby": "تابي",
+  "posMonitoringDiffShort": "ناقص",
+  "posMonitoringDiffExcess": "زائد",
+  "posMonitoringDiffBalanced": "متوازن",
+  "posMonitoringDiffShortSymbol": "− ر.س {amount}",
+  "@posMonitoringDiffShortSymbol": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posMonitoringDiffExcessSymbol": "+ ر.س {amount}",
+  "@posMonitoringDiffExcessSymbol": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posMonitoringDiffNone": "—",
+  "posMonitoringBackendWarning": "⚠ التفاصيل الكاملة غير متاحة — يرجى تحديث الخادم للاطلاع على بيانات كل فئة",
+  "posMonitoringAmountSar": "ر.س {amount}",
+  "@posMonitoringAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "promoTitle": "رموز العروض",
+  "promoNewButton": "عرض جديد",
+  "promoNoCodesFound": "لا توجد رموز عروض",
+  "promoMenuEdit": "تعديل",
+  "promoMenuDelete": "حذف",
+  "promoDiscountOff": "{value} {unit} خصم",
+  "@promoDiscountOff": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "promoUnitPercent": "%",
+  "promoUnitSar": "ر.س",
+  "promoStatUsage": "الاستخدام",
+  "promoStatMinOrder": "الحد الأدنى للطلب",
+  "promoStatValidTill": "صالح حتى",
+  "promoMinOrderAmount": "ر.س {amount}",
+  "@promoMinOrderAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "promoDeleteConfirmTitle": "تأكيد الحذف",
+  "promoDeleteConfirmBody": "هل أنت متأكد من حذف \"{code}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+  "@promoDeleteConfirmBody": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "promoDeleteCancel": "إلغاء",
+  "promoDeleteConfirm": "حذف",
+  "promoSheetCreateTitle": "إنشاء رمز عرض",
+  "promoSheetUpdateTitle": "تحديث رمز العرض",
+  "promoSheetCreateSubtitle": "قم بضبط رمز خصم جديد للعملاء.",
+  "promoSheetUpdateSubtitle": "تعديل تفاصيل رمز العرض الحالي.",
+  "promoFieldCode": "رمز العرض (مثال: SUMMER20)",
+  "promoFieldDiscountValue": "قيمة الخصم",
+  "promoFieldUsageLimit": "حد الاستخدام",
+  "promoFieldMinOrder": "الحد الأدنى للطلب (ر.س)",
+  "promoFieldDescription": "الوصف",
+  "promoFieldValidFrom": "صالح من",
+  "promoFieldValidTo": "صالح حتى",
+  "promoTypeFixed": "مبلغ ثابت",
+  "promoTypePercent": "نسبة مئوية (%)",
+  "promoSubmitCreate": "إنشاء العرض",
+  "promoSubmitUpdate": "تحديث العرض",
+  "promoValidationRequired": "يرجى ملء الحقول المطلوبة (الرمز، القيمة)",
+  "promoCreateSuccess": "تم إنشاء رمز العرض بنجاح!",
+  "promoUpdateSuccess": "تم تحديث رمز العرض بنجاح!",
+  "promoDeleteSuccess": "تم حذف رمز العرض بنجاح!",
+  "promoCreateError": "فشل معالجة رمز العرض",
+  "promoDeleteError": "فشل حذف رمز العرض",
+  "lockerVarianceRejected": "تم رفض الفارق",
+  "lockerSelectOfficer": "اختر الموظف",
+  "lockerSelectOfficerSubtitle": "اختر موظفاً ميدانياً لتعيينه لهذا طلب التحصيل.",
+  "lockerOfficersLoadError": "تعذّر تحميل قائمة الموظفين.",
+  "lockerAssignedTo": "تم التعيين إلى",
+  "lockerLoaderAuditReport": "تقرير تدقيق الخزينة",
+  "lockerGeneratedAt": "تاريخ الإنشاء",
+  "lockerPage": "صفحة",
+  "lockerOf": "من",
+  "lockerRequestInformation": "معلومات الطلب",
+  "lockerPosSession": "جلسة نقطة البيع",
+  "lockerOpenedAt": "وقت الفتح",
+  "lockerClosedAt": "وقت الإغلاق",
+  "lockerSessionStatus": "حالة الجلسة",
+  "lockerReceivedAmount": "المبلغ المستلَم",
+  "lockerNotes": "ملاحظات",
+  "lockerAuditFootnote": "هذا التقرير مُولَّد آلياً ويُعدّ سجلاً رسمياً للتدقيق.",
+  "lockerAuditFootnoteAmounts": "جميع المبالغ بالعملة: {currency}.",
+  "@lockerAuditFootnoteAmounts": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "lockerCurrencyPrefix": "{currency} {amount}",
+  "@lockerCurrencyPrefix": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "lockerSarCurrency": "ريال",
+  "lockerLoadingVariance": "جارٍ تحميل موافقات الفوارق…",
+  "lockerFailedLoadVariance": "فشل تحميل موافقات الفوارق",
+  "lockerAllClear": "لا توجد فوارق!",
+  "lockerNoPendingVariance": "لا توجد موافقات فوارق معلّقة حالياً.",
+  "lockerVarianceReviewBanner": "هذه التحصيلات تحتوي على فوارق نقدية وتتطلب موافقتك.",
+  "lockerShortLabel": "ناقص",
+  "lockerOverLabel": "زائد",
+  "lockerApproveVarianceTitle": "الموافقة على الفارق",
+  "lockerApproveVarianceConfirm": "الموافقة على فارق {type} بمبلغ {amount} ريال لـ{branch}؟",
+  "@lockerApproveVarianceConfirm": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "lockerApproveSuccess": "تمت الموافقة على الفارق بنجاح",
+  "lockerRejectSuccess": "تم رفض الفارق",
+  "lockerRejectVarianceDialogTitle": "رفض الفارق",
+  "lockerRejectingFor": "رفض الفارق الخاص بـ{branch}.",
+  "@lockerRejectingFor": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "lockerRejectionReasonOptional": "السبب (اختياري)",
+  "lockerShortVariance": "ناقص",
+  "lockerOverVariance": "زائد",
+  "lockerCashierLabel": "أمين الصندوق",
+  "lockerOfficerLabel": "الموظف",
+  "lockerExpected": "المتوقَّع",
+  "lockerReceivedLabel": "المستلَم",
+  "lockerDiffLabel": "الفارق",
+  "lockerRecordCollectionTitle": "تسجيل التحصيل",
+  "lockerExpectedAmount": "المبلغ المتوقَّع",
+  "lockerVerifiedReceivedAmount": "المبلغ المستلَم الموثَّق",
+  "lockerLockedAmount": "المبلغ المقفل",
+  "lockerReceivedAmountLabel": "المبلغ المستلَم",
+  "lockerCollectionNotes": "ملاحظات التحصيل",
+  "lockerCollectionNotesHint": "أدخل أي ملاحظات أو سبب الفارق…",
+  "lockerCollectionEvidence": "دليل التحصيل",
+  "lockerCapturePhoto": "التقاط صورة",
+  "lockerAttachLogs": "إرفاق السجلات",
+  "lockerConfirmFinalise": "تأكيد وإنهاء الأصول",
+  "lockerEnterValidAmount": "يرجى إدخال مبلغ مستلَم صحيح.",
+  "lockerSuccessPendingApproval": "في انتظار الموافقة",
+  "lockerSuccessCollectionRecorded": "تم تسجيل التحصيل",
+  "lockerStatusReview": "مراجعة",
+  "lockerStatusOk": "موافق",
+  "lockerStatusLabel": "الحالة",
+  "lockerDone": "تم",
+  "lockerNotificationsTitle": "الإشعارات",
+  "lockerSessionExpired": "انتهت الجلسة. يرجى تسجيل الدخول مجدداً.",
+  "lockerSomethingWentWrong": "حدث خطأ ما.",
+  "lockerCouldNotRefresh": "تعذّر التحديث.",
+  "lockerNoNotificationsYet": "لا توجد إشعارات بعد.",
+  "lockerTryAgain": "حاول مجدداً",
+  "lockerFinancialReports": "التقارير المالية",
+  "lockerTabHistory": "السجل",
+  "lockerTabAnalytics": "التحليلات",
+  "lockerSearchByRefOrOfficer": "البحث بالمرجع أو الموظف…",
+  "lockerAuditLogs": "سجلات التدقيق",
+  "lockerRecordsCount": "{count} سجل",
+  "@lockerRecordsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockerExportPdf": "PDF",
+  "lockerExportExcel": "إكسل",
+  "lockerDifferencesSummary": "ملخص الفوارق",
+  "lockerTotalShort": "إجمالي الناقص",
+  "lockerTotalOver": "إجمالي الزائد",
+  "lockerNetDifference": "صافي الفارق",
+  "lockerTotalCollections": "إجمالي التحصيلات",
+  "lockerMyCollectionPerformance": "أداء تحصيلاتي",
+  "lockerCollectionPerformance": "أداء التحصيل",
+  "lockerOfficerComplianceRatings": "تقييمات امتثال الموظفين",
+  "lockerNoComplianceData": "لا توجد بيانات امتثال لهذه الفترة.",
+  "lockerNoResultsMatchFilters": "لا توجد نتائج تطابق عوامل التصفية.",
+  "lockerNoAuditLogsFound": "لم يتم العثور على سجلات تدقيق.",
+  "lockerAnErrorOccurred": "حدث خطأ.",
+  "lockerAllRecords": "جميع السجلات",
+  "lockerFilterSearch": "بحث",
+  "lockerFilterBranch": "الفرع",
+  "lockerAllBranches": "جميع الفروع",
+  "lockerFilterByBranch": "تصفية حسب الفرع…",
+  "lockerLoadingBranches": "جارٍ تحميل الفروع…",
+  "lockerSortBy": "ترتيب حسب",
+  "lockerSortDate": "التاريخ",
+  "lockerSortReceivedAmount": "المبلغ المستلَم",
+  "lockerSortDifference": "الفارق",
+  "lockerSortAsc": "تصاعدي",
+  "lockerSortDesc": "تنازلي",
+  "lockerSelectDateRange": "اختر نطاقاً زمنياً",
+  "lockerDateFrom": "من",
+  "lockerDateTo": "إلى",
+  "lockerTapToSet": "انقر للتحديد",
+  "lockerApplyFilter": "تطبيق",
+  "lockerClearFilters": "مسح",
+  "lockerNoData": "لا توجد بيانات",
+  "lockerWeeklyCollectionVolume": "حجم التحصيل الأسبوعي",
+  "lockerTransactionRef": "مرجع المعاملة",
+  "lockerReceivedFundLabel": "المبلغ المستلَم",
+  "lockerFailedToLoad": "فشل التحميل",
+  "lockerOneCollection": "تحصيل واحد",
+  "lockerNCollections": "{count} تحصيلات",
+  "@lockerNCollections": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockerStoragePermissionRequired": "إذن التخزين مطلوب",
+  "lockerStoragePermissionBody": "إذن التخزين مطلوب لحفظ الملفات المُصدَّرة. يرجى تفعيله من إعدادات التطبيق.",
+  "lockerOpenSettings": "فتح الإعدادات",
+  "lockerFinancialHistoryPdfTitle": "السجل المالي للخزينة",
+  "lockerPdfGenerated": "تاريخ الإنشاء",
+  "lockerPdfTotal": "الإجمالي",
+  "lockerPdfRecords": "سجل",
+  "lockerPdfRef": "المرجع",
+  "lockerPdfDate": "التاريخ",
+  "lockerPdfBranch": "الفرع",
+  "lockerPdfReceived": "المستلَم",
+  "lockerPdfExpected": "المتوقَّع",
+  "lockerPdfDiff": "الفارق",
+  "lockerPdfStatus": "الحالة",
+  "lockerPdfExportFailed": "فشل تصدير PDF",
+  "lockerExcelSheetName": "سجل الخزينة",
+  "lockerExcelOfficer": "الموظف",
+  "lockerExcelReceivedSar": "المستلَم (ريال)",
+  "lockerExcelExpectedSar": "المتوقَّع (ريال)",
+  "lockerExcelDiffSar": "الفارق (ريال)",
+  "lockerExcelRequestRef": "مرجع الطلب",
+  "lockerExcelExportFailed": "فشل تصدير إكسل",
+  "accountingTitle": "المحاسبة",
+  "accountingTabPayables": "المستحقات",
+  "accountingTabReceivables": "المديونيات",
+  "accountingTabExpenses": "المصروفات",
+  "accountingTabAdvances": "السلف",
+  "accountingPayables": "المستحقات",
+  "accountingReceivables": "المديونيات",
+  "accountingOverdue": "المتأخرات",
+  "accountingNoEntries": "لا توجد إدخالات",
+  "accountingRefPrefix": "مرجع: {ref} • {date}",
+  "@accountingRefPrefix": {
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accountingStatusOverdue": "متأخر",
+  "accountingStatusSettled": "مسوَّى",
+  "accountingStatusPending": "قيد الانتظار",
+  "accountingLoadingError": "فشل تحميل بيانات المحاسبة",
+  "accountingAmountLabel": "ر.س {amount}",
+  "@accountingAmountLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalsTitle": "الموافقات",
+  "approvalsQueueLabel": "قائمة الانتظار",
+  "approvalsStatusLabel": "الحالة",
+  "approvalsQueueAll": "الكل",
+  "approvalsQueueTopUps": "شحن الرصيد",
+  "approvalsQueueExpenses": "المصروفات",
+  "approvalsStatusAll": "الكل",
+  "approvalsStatusPending": "قيد الانتظار",
+  "approvalsStatusApproved": "معتمد",
+  "approvalsStatusRejected": "مرفوض",
+  "approvalsEmptyExpenses": "لا توجد موافقات مصروفات",
+  "approvalsEmptyPettyCash": "لا توجد طلبات صندوق صغير",
+  "approvalsEmptySubtitle": "لا توجد سجلات لهذه القائمة والحالة.",
+  "approvalsNoAddressesFound": "لم يتم العثور على عناوين.",
+  "approvalsLoadingError": "فشل تحميل الموافقات",
+  "approvalsApproveConfirm": "الموافقة على هذا الطلب؟",
+  "approvalsRejectTitle": "رفض الطلب",
+  "approvalsRejectHint": "أدخل سبب الرفض (اختياري)",
+  "approvalsConfirmReject": "تأكيد الرفض",
+  "approvalsCancel": "إلغاء",
+  "ownerLoginTitle": "صاحب الورشة",
+  "ownerLoginSubtitle": "سجّل الدخول إلى لوحة التحكم",
+  "ownerLoginEmail": "البريد الإلكتروني",
+  "ownerLoginEmailHint": "أدخل بريدك الإلكتروني",
+  "ownerLoginEmailRequired": "يرجى إدخال البريد الإلكتروني",
+  "ownerLoginPassword": "كلمة المرور",
+  "ownerLoginPasswordHint": "أدخل كلمة المرور",
+  "ownerLoginPasswordRequired": "يرجى إدخال كلمة المرور",
+  "ownerLoginForgotPassword": "نسيت كلمة المرور؟",
+  "ownerLoginSignIn": "تسجيل الدخول",
+  "ownerLoginSuccess": "تم تسجيل الدخول بنجاح",
+  "ownerLoginFailed": "فشل تسجيل الدخول",
+  "ownerLoginNoAccount": "ليس لديك حساب؟ سجّل الآن",
+  "ownerRegisterTitle": "إنشاء حساب",
+  "ownerRegisterSubtitle": "تسجيل ورشتك",
+  "ownerRegisterWorkshopName": "اسم الورشة",
+  "ownerRegisterWorkshopNameHint": "أدخل اسم الورشة",
+  "ownerRegisterOwnerName": "اسم المالك",
+  "ownerRegisterOwnerNameHint": "أدخل الاسم الكامل",
+  "ownerRegisterEmail": "البريد الإلكتروني",
+  "ownerRegisterEmailHint": "أدخل البريد الإلكتروني",
+  "ownerRegisterMobile": "رقم الجوال",
+  "ownerRegisterMobileHint": "+966...",
+  "ownerRegisterTaxId": "الرقم الضريبي",
+  "ownerRegisterTaxIdHint": "أدخل الرقم الضريبي",
+  "ownerRegisterAddress": "العنوان",
+  "ownerRegisterAddressHint": "ابحث عن العنوان الكامل واختره",
+  "ownerRegisterPassword": "كلمة المرور",
+  "ownerRegisterPasswordHint": "أنشئ كلمة مرور",
+  "ownerRegisterButton": "تسجيل",
+  "ownerRegisterSuccess": "تم التسجيل بنجاح. يرجى تسجيل الدخول.",
+  "ownerRegisterFailed": "فشل التسجيل",
+  "ownerRegisterFieldRequired": "مطلوب",
+  "ownerRegisterHaveAccount": "لديك حساب بالفعل؟ سجّل الدخول",
+  "corporateManagementTitle": "إدارة الشركات",
+  "corporateSearchHint": "البحث بالاسم أو الرقم الضريبي...",
+  "corporateAddButton": "إضافة شركة",
+  "corporateNoneFound": "لا يوجد عملاء شركات.",
+  "corporateVatLabel": "ض.ق.م: {vat}",
+  "@corporateVatLabel": {
+    "placeholders": {
+      "vat": {
+        "type": "String"
+      }
+    }
+  },
+  "corporateVehiclesLabel": "المركبات",
+  "corporateRevenueLabel": "الإيرادات",
+  "corporateAddUser": "إضافة مستخدم",
+  "corporateEdit": "تعديل",
+  "corporateRegisterTitle": "تسجيل شريك مؤسسي",
+  "corporateRegisterSubtitle": "أدخل التفاصيل لإنشاء حساب مؤسسي جديد.",
+  "corporateFieldCompanyName": "اسم الشركة",
+  "corporateFieldCustomerName": "اسم العميل",
+  "corporateFieldMobile": "رقم الجوال",
+  "corporateFieldVat": "الرقم الضريبي",
+  "corporateFieldEmail": "البريد الإلكتروني",
+  "corporateFieldPassword": "كلمة المرور",
+  "corporateFieldReferral": "المحيل",
+  "corporateSelectBranches": "اختر الفروع",
+  "corporateSelectedCount": "{count} مختار",
+  "@corporateSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "corporateNoBranches": "لا توجد فروع",
+  "corporateCreateButton": "إنشاء الشريك",
+  "corporateAddUserTitle": "إضافة مستخدم مؤسسي",
+  "corporateAddUserSubtitle": "أنشئ بيانات اعتماد لمستخدم مرتبط بهذا الحساب المؤسسي.",
+  "corporateUserFieldName": "الاسم الكامل",
+  "corporateUserFieldEmail": "البريد الإلكتروني",
+  "corporateUserFieldPassword": "كلمة المرور",
+  "corporateCreateUserButton": "إنشاء المستخدم",
+  "corporateEditTitle": "تعديل الحساب المؤسسي",
+  "corporateEditSubtitle": "حدِّث التفاصيل أدناه. سيُرسَل فقط ما تم تغييره.",
+  "invTitle": "المخزون والمنتجات",
+  "invTabProducts": "المنتجات",
+  "invTabServices": "الخدمات",
+  "invTabCategory": "الفئات",
+  "invAddProduct": "إضافة منتج",
+  "invAddService": "إضافة خدمة",
+  "invAddCategory": "إضافة فئة",
+  "invAdd": "إضافة",
+  "invSearchProductsHint": "بحث بالاسم أو الفئة...",
+  "invSearchServicesHint": "بحث في الخدمات...",
+  "invSearchCategoriesHint": "بحث في الفئات...",
+  "invNoProductsFound": "لا توجد منتجات.",
+  "invNoServicesFound": "لا توجد خدمات.",
+  "invNoCategoriesFound": "لا توجد فئات.",
+  "invNoProductsMatchSearch": "لا توجد منتجات تطابق بحثك.",
+  "invNoServicesMatchSearch": "لا توجد خدمات تطابق بحثك.",
+  "invNoCategoriesMatchSearch": "لا توجد فئات تطابق بحثك.",
+  "invMetricStock": "المخزون",
+  "invMetricPurchase": "الشراء",
+  "invMetricRetail": "البيع",
+  "invMetricPrice": "السعر",
+  "invMetricCorpRange": "نطاق الشركات",
+  "invMetricCorporate": "الشركات",
+  "invEditTooltip": "تعديل",
+  "invDeleteTooltip": "حذف",
+  "invMenuEdit": "تعديل",
+  "invMenuDelete": "حذف",
+  "invConfirmDeleteTitle": "تأكيد الحذف",
+  "invConfirmDeleteBody": "هل تريد حذف \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+  "@invConfirmDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "invCancel": "إلغاء",
+  "invConfirm": "تأكيد",
+  "invCategoryTabProducts": "المنتجات",
+  "invCategoryTabServices": "الخدمات",
+  "invCreateProduct": "إنشاء منتج",
+  "invUpdateProduct": "تحديث المنتج",
+  "invCreateProductSubtitle": "أدخل تفاصيل المنتج لإضافته إلى المخزون.",
+  "invUpdateProductSubtitle": "تعديل تفاصيل المنتج الحالي.",
+  "invFieldBranch": "الفرع",
+  "invFieldDepartment": "القسم",
+  "invFieldCategory": "الفئة",
+  "invFieldProductName": "اسم المنتج",
+  "invFieldStockQty": "كمية المخزون",
+  "invFieldUnit": "الوحدة",
+  "invFieldCriticalStock": "نقطة المخزون الحرجة",
+  "invSectionPricing": "تفاصيل التسعير",
+  "invFieldPurchasePrice": "سعر الشراء",
+  "invFieldSalePrice": "سعر البيع",
+  "invFieldMinCorpPrice": "أدنى سعر للشركات",
+  "invFieldMaxCorpPrice": "أعلى سعر للشركات",
+  "invToggleDecimal": "السماح بالكسور العشرية",
+  "invToggleActive": "الحالة النشطة",
+  "invSaveProduct": "حفظ المنتج",
+  "invProductCreateSuccess": "تم إنشاء المنتج بنجاح",
+  "invProductUpdateSuccess": "تم تحديث المنتج بنجاح",
+  "invProductCreateError": "فشل إنشاء المنتج",
+  "invProductDeleteSuccess": "تم حذف المنتج بنجاح",
+  "invProductDeleteError": "فشل حذف المنتج",
+  "invValidationFillRequired": "يرجى ملء جميع الحقول المطلوبة.",
+  "invValidationSelectDepartment": "يرجى اختيار قسم.",
+  "invValidationCreateCategory": "يرجى إنشاء فئة أولاً.",
+  "invValidationSelectBranch": "يرجى اختيار فرع.",
+  "invCreateService": "إنشاء خدمة",
+  "invUpdateService": "تحديث الخدمة",
+  "invCreateServiceSubtitle": "أدخل تفاصيل الخدمة.",
+  "invUpdateServiceSubtitle": "تعديل تفاصيل الخدمة الحالية.",
+  "invFieldServiceName": "اسم الخدمة",
+  "invFieldServicePrice": "سعر الخدمة",
+  "invTogglePriceEditable": "يمكن للكاشير تغيير السعر في نقطة البيع",
+  "invSaveService": "حفظ الخدمة",
+  "invServiceCreateSuccess": "تم إنشاء الخدمة بنجاح",
+  "invServiceUpdateSuccess": "تم تحديث الخدمة بنجاح",
+  "invServiceCreateError": "فشل إنشاء الخدمة",
+  "invServiceDeleteSuccess": "تم حذف الخدمة بنجاح",
+  "invServiceDeleteError": "فشل حذف الخدمة",
+  "invValidationFillServiceRequired": "يرجى ملء الحقول المطلوبة.",
+  "invCreateCategory": "إنشاء فئة",
+  "invUpdateCategory": "تحديث الفئة",
+  "invCreateCategorySubtitle": "أدخل تفاصيل الفئة الجديدة.",
+  "invUpdateCategorySubtitle": "تعديل تفاصيل الفئة الحالية.",
+  "invFieldCategoryName": "اسم الفئة",
+  "invSaveCategory": "حفظ الفئة",
+  "invCategoryCreateSuccess": "تم إنشاء الفئة بنجاح",
+  "invCategoryUpdateSuccess": "تم تحديث الفئة بنجاح",
+  "invCategoryCreateError": "فشل إنشاء الفئة",
+  "invCategoryDeleteSuccess": "تم حذف الفئة بنجاح",
+  "invCategoryDeleteError": "فشل حذف الفئة",
+  "invCreateSubCategory": "إنشاء فئة فرعية",
+  "invCreateSubCategorySubtitle": "أدخل تفاصيل الفئة الفرعية الجديدة.",
+  "invFieldSubCategoryName": "اسم الفئة الفرعية",
+  "invSaveSubCategory": "حفظ الفئة الفرعية",
+  "invSubCategoryCreateSuccess": "تم إنشاء الفئة الفرعية بنجاح",
+  "invSubCategoryUpdateSuccess": "تم تحديث الفئة الفرعية بنجاح",
+  "invSubCategoryCreateError": "فشل إنشاء الفئة الفرعية",
+  "invSubCategoryDeleteSuccess": "تم حذف الفئة الفرعية بنجاح",
+  "invSubCategoryDeleteError": "فشل حذف الفئة الفرعية",
+  "notifTitle": "الإشعارات",
+  "notifMarkRead": "تحديد الكل كمقروء",
+  "notifEmpty": "لا توجد إشعارات بعد.",
+  "notifTimeMinutes": "منذ {m} د",
+  "@notifTimeMinutes": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "notifTimeHours": "منذ {h} س",
+  "@notifTimeHours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "notifTimeDays": "منذ {d} ي",
+  "@notifTimeDays": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "notifTypeExpense": "مصروف",
+  "notifTypeStock": "مخزون",
+  "notifTypePayment": "دفع",
+  "notifTypeLocker": "خزينة",
+  "notifTypeInvoice": "فاتورة",
+  "reportsTitle": "التقارير والتحليلات",
+  "reportsFinancialOverview": "النظرة المالية العامة",
+  "reportsOperationalPerformance": "الأداء التشغيلي",
+  "reportsInventoryValuation": "تقييم المخزون",
+  "reportsTotalRevenue": "إجمالي الإيرادات",
+  "reportsNoDataThisWeek": "لا توجد بيانات لهذا الأسبوع",
+  "reportsTotalJobs": "إجمالي الأعمال: {count}",
+  "@reportsTotalJobs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsCommissionLabel": "العمولة",
+  "reportsStockValueCost": "قيمة المخزون (التكلفة)",
+  "reportsPotentialProfit": "الربح المتوقع",
+  "reportsActiveSkus": "المنتجات النشطة",
+  "reportsItemsUnit": "{count} منتج",
+  "@reportsItemsUnit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsAmountSar": "ر.س {amount}",
+  "@reportsAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsNoOperationalData": "لا توجد بيانات أداء تشغيلي",
+  "reportsRevChangePositive": "+{pct}%",
+  "@reportsRevChangePositive": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsRevChangeNegative": "{pct}%",
+  "@reportsRevChangeNegative": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "posCurrentShiftTitle": "الوردية الحالية",
+  "posCurrentShiftDetails": "تفاصيل الوردية",
+  "posCurrentShiftNoActiveSession": "لا توجد جلسة نشطة.",
+  "posCurrentShiftNoActiveShiftFound": "لم يتم العثور على وردية نشطة.",
+  "posCurrentShiftRetry": "إعادة المحاولة",
+  "posCurrentShiftSessionExpiredError": "انتهت الجلسة. يرجى تسجيل الدخول مججداً.",
+  "posCurrentShiftFetchError": "فشل في جلب تفاصيل الوردية: {error}",
+  "@posCurrentShiftFetchError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "posCurrentShiftLabelCashier": "أمين الصندوق",
+  "posCurrentShiftLabelSessionId": "رقم الجلسة",
+  "posCurrentShiftLabelBranch": "الفرع",
+  "posCurrentShiftLabelElapsedTime": "الوقت المنقضي",
+  "posCurrentShiftLabelOpenedAt": "فُتحت في",
+  "posCurrentShiftLabelBranchAddress": "عنوان الفرع",
+  "posBroadcastTitle": "البث",
+  "posBroadcastHeading": "بث الفنيين",
+  "posBroadcastNoActive": "لا توجد بثوث نشطة",
+  "posBroadcastCountActive": "{count} نشط · {window} لكل عنصر",
+  "@posBroadcastCountActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "posBroadcastRetry": "إعادة المحاولة",
+  "posBroadcastLabelSoon": "قريباً",
+  "posBroadcastLabelClosed": "مغلق",
+  "posBroadcastLabelRemaining": "متبقٍ",
+  "posBroadcastLabelExpired": "منتهٍ",
+  "posBroadcastWindow": "{m}:{s} نافذة",
+  "@posBroadcastWindow": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      },
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "posBroadcastTypeOnCall": "عند الطلب",
+  "posBroadcastTypeWorkshop": "الورشة",
+  "posBroadcastSessionExpired": "انتهت الجلسة. يرجى تسجيل الدخول مجدداً.",
+  "posCorporateBookingsTitle": "حجوزات الشركات",
+  "posCorporateFilterAll": "الكل",
+  "posCorporateFilterToday": "اليوم",
+  "posCorporateFilterPending": "قيد الانتظار",
+  "posCorporateNoBookingsTitle": "لا توجد حجوزات",
+  "posCorporateNoBookingsSubtitle": "لا توجد حجوزات مؤسسية للفلتر المحدد.",
+  "posCorporateCardLabelVehicle": "المركبة",
+  "posCorporateCardLabelPlate": "اللوحة",
+  "posCorporateCardLabelDepartment": "القسم",
+  "posCorporateCardLabelDate": "التاريخ",
+  "posCorporateActionDetails": "التفاصيل",
+  "posCorporateActionReject": "رفض",
+  "posCorporateActionApprove": "موافقة",
+  "posCorporateActionContinue": "متابعة",
+  "posCorporateActionApproveBooking": "الموافقة على الحجز",
+  "posCorporateActionClose": "إغلاق",
+  "posCorporateActionSubmitReason": "إرسال السبب",
+  "posCorporateActionCancel": "إلغاء",
+  "posCorporateDialogDetailsTitle": "تفاصيل الحجز المؤسسي",
+  "posCorporateDialogRejectTitle": "تفاصيل الحجز",
+  "posCorporateDialogRejectBody": "يرجى تقديم سبب {action} هذا الحجز لـ {company}. ستُرسَل هذه المعلومات إلى البوابة المؤسسية.",
+  "@posCorporateDialogRejectBody": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "company": {
+        "type": "String"
+      }
+    }
+  },
+  "posCorporateDialogReasonLabel": "السبب",
+  "posCorporateDialogReasonHint": "أدخل سببك هنا...",
+  "posCorporateDialogReasonRequired": "يرجى تقديم سبب {action}.",
+  "@posCorporateDialogReasonRequired": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "posCorporateDetailsSectionBooking": "تفاصيل الحجز",
+  "posCorporateDetailsSectionVehicle": "معلومات المركبة",
+  "posCorporateDetailsSectionProducts": "المنتجات المطلوبة",
+  "posCorporateDetailsBookingId": "رقم الحجز",
+  "posCorporateDetailsScheduledTime": "الوقت المحدد",
+  "posCorporateDetailsDepartment": "القسم",
+  "posCorporateDetailsRejectionReason": "سبب الرفض",
+  "posCorporateDetailsVehicleName": "اسم المركبة",
+  "posCorporateDetailsLicensePlate": "لوحة الترخيص",
+  "posCorporateDetailsNoProducts": "لا توجد منتجات محددة. افتح القسم المطابق.",
+  "posCorporateDetailsQty": "الكمية: {qty}",
+  "@posCorporateDetailsQty": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "posCorporateDetailsProductId": "رقم المنتج: {id}",
+  "@posCorporateDetailsProductId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "posCorporateApproveError": "فشل في الموافقة على الحجز",
+  "posCorporateRejectSuccess": "تم رفض الحجز. تم تحديث البوابة.",
+  "posCorporateRejectError": "فشل في رفض الحجز",
+  "posCorporateNoMatchingOrder": "لم يتم العثور على طلب مطابق لهذا الحجز. يرجى التحديث والمحاولة مجدداً.",
+  "posCorporateStatusCancelled": "ملغى",
+  "posCorporateStatusRejected": "مرفوض",
+  "posCorporateStatusPending": "قيد الانتظار",
+  "posCorporateStatusApproved": "موافق عليه",
+  "posCorporateStatusInProgress": "قيد التنفيذ",
+  "posCorporateStatusCompleted": "مكتمل",
+  "posCorporateStatusWaitingApproval": "في انتظار الموافقة",
+  "posBroadcastActionReject": "رفض",
+  "ownerCommonSearchHint": "بحث...",
+  "ownerBottomHome": "الرئيسية",
+  "ownerBottomReports": "التقارير",
+  "ownerBottomBilling": "الفوترة",
+  "ownerBottomProfile": "الملف الشخصي",
+  "ownerDashboardRoleLabel": "مالك الورشة",
+  "ownerMonthlySales": "المبيعات الشهرية",
+  "ownerCurrencySar": "ر.س",
+  "ownerCurrencyAmount": "{amount} {currency}",
+  "@ownerCurrencyAmount": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "pettyCashQueueCashierExpense": "مصروف أمين الصندوق",
+  "pettyCashQueueFundRequest": "طلب تمويل",
+  "pettyCashRequestLabel": "طلب عهدة نقدية",
+  "pettyCashApprove": "موافقة",
+  "pettyCashReject": "رفض",
+  "pettyCashConfirmReject": "تأكيد الرفض",
+  "pettyCashRejectRequestTitle": "رفض الطلب",
+  "pettyCashRejectRequestBody": "يرجى إدخال سبب الرفض.",
+  "pettyCashRejectReasonHint": "مثال: الميزانية غير معتمدة",
+  "pettyCashRejectReasonRequired": "يرجى إدخال سبب الرفض",
+  "pettyCashRequestApprovedSuccess": "تمت الموافقة على الطلب بنجاح",
+  "pettyCashRequestApproveFailed": "فشل اعتماد الطلب",
+  "pettyCashRequestRejectedSuccess": "تم رفض الطلب بنجاح",
+  "pettyCashRequestRejectFailed": "فشل رفض الطلب",
+  "pettyCashStatusPending": "قيد الانتظار",
+  "pettyCashStatusApproved": "معتمد",
+  "pettyCashStatusRejected": "مرفوض",
+  "pettyCashStatusFallback": "{status}",
+  "@pettyCashStatusFallback": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "posLoginAppName": "نظام نقاط البيع",
+  "posLoginTitle": "تسجيل الدخول للمتابعة",
+  "posLoginEmail": "البريد الإلكتروني",
+  "posLoginEmailHint": "أدخل بريدك الإلكتروني",
+  "posLoginEmailRequired": "يرجى إدخال البريد الإلكتروني",
+  "posLoginPassword": "كلمة المرور",
+  "posLoginPasswordHint": "أدخل كلمة المرور",
+  "posLoginPasswordRequired": "يرجى إدخال كلمة المرور",
+  "posLoginForgotPassword": "نسيت كلمة المرور؟",
+  "posLoginSignIn": "تسجيل الدخول",
+  "posLoginSuccess": "تم تسجيل الدخول بنجاح",
+  "posLoginFailed": "فشل تسجيل الدخول",
+  "posLoginResetPasswordTitle": "إعادة تعيين كلمة المرور",
+  "posLoginResetPasswordSubtitle": "أدخل بريدك الإلكتروني أو رقم جوالك وسنرسل لك رابط إعادة التعيين.",
+  "posLoginResetPasswordEmailLabel": "البريد الإلكتروني",
+  "posLoginResetPasswordEmailHint": "أدخل بريدك الإلكتروني",
+  "posLoginResetPasswordSendButton": "إرسال رابط إعادة التعيين",
+  "posLoginResetPasswordSentSuccess": "تم إرسال الرابط! تحقق من بريدك الإلكتروني.",
+  "posLoginPreviousShiftAutoClosed": "تم إغلاق الوردية السابقة تلقائياً. بدأت وردية جديدة.",
+  "posLoginSessionExpiredError": "انتهت الجلسة. يرجى تسجيل الدخول مجدداً.",
+  "posYourJobsTitle": "مهامي",
+  "posYourJobsNoDepartments": "لم يتم اختيار أي قسم.",
+  "posYourJobsDeptInvoiceTitle": "الفاتورة حسب القسم",
+  "posYourJobsItems": "{count} عناصر",
+  "@posYourJobsItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posYourJobsGrandTotal": "الإجمالي الكلي",
+  "posYourJobsSaveDraft": "حفظ كمسودة",
+  "posYourJobsPlaceOrder": "تأكيد الطلب",
+  "posYourJobsAssignTechnicians": "تعيين فنيين",
+  "posYourJobsAddInventory": "إضافة مخزون",
+  "posYourJobsAmountSar": "{amount} ر.س",
+  "@posYourJobsAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posInvSalesTitle": "مبيعات المخزون",
+  "posInvSalesRefreshTooltip": "تحديث",
+  "posInvSalesPeriodLabel": "الفترة",
+  "posInvSalesPresetToday": "اليوم",
+  "posInvSalesPresetYesterday": "أمس",
+  "posInvSalesPresetLast7": "آخر 7 أيام",
+  "posInvSalesPresetLast30": "آخر 30 يوماً",
+  "posInvSalesPresetThisMonth": "هذا الشهر",
+  "posInvSalesPresetCustom": "مخصص",
+  "posInvSalesFromLabel": "من (سنة-شهر-يوم)",
+  "posInvSalesToLabel": "إلى (سنة-شهر-يوم)",
+  "posInvSalesLoadButton": "تحميل",
+  "posInvSalesLoadingButton": "جارٍ التحميل…",
+  "posInvSalesStatTotalUnits": "إجمالي الوحدات المبيعة",
+  "posInvSalesStatUniqueProducts": "منتجات فريدة",
+  "posInvSalesStatDaysActive": "أيام بها نشاط",
+  "posInvSalesDismissTooltip": "إغلاق",
+  "posInvSalesNoSalesTitle": "لا توجد مبيعات في هذه الفترة",
+  "posInvSalesNoSalesSubtitle": "أعادت الواجهة البرمجية استجابة ناجحة بدون سطور مطابقة (200 + قائمة فارغة).",
+  "posInvSalesRetry": "إعادة المحاولة",
+  "posInvSalesColProduct": "المنتج",
+  "posInvSalesColSku": "الرمز / الكود",
+  "posInvSalesColQty": "الكمية المبيعة",
+  "posInvSalesDayLines": "{count} سطر",
+  "@posInvSalesDayLines": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posInvSalesDayLinesPlural": "{count} سطور",
+  "@posInvSalesDayLinesPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posInvSalesDaySummary": "{lines} · {qty} وحدة",
+  "@posInvSalesDaySummary": {
+    "placeholders": {
+      "lines": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "posInvSalesSessionExpiredError": "انتهت الجلسة. يرجى تسجيل الدخول مجدداً.",
+  "posInvSalesErrStartBeforeEnd": "يجب أن يكون تاريخ البدء قبل تاريخ الانتهاء أو مساوياً له.",
+  "posInvSalesErrRangeExceeded": "لا يمكن أن يتجاوز النطاق الزمني {days} يوماً.",
+  "@posInvSalesErrRangeExceeded": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "moreMenuPettyCash": "العهدة النقدية",
+  "moreMenuPromoCode": "رمز العرض",
+  "moreMenuStoreClosing": "إغلاق المتجر",
+  "moreMenuSalesReturn": "مرتجع المبيعات",
+  "posOrdersTitle": "الطلبات",
+  "posOrdersSearchHint": "بحث في الطلبات...",
+  "posOrdersTabletSearchHint": "بحث بالصفيحة أو الاسم أو الرقم...",
+  "posOrdersTabAll": "الكل",
+  "posOrdersTabPending": "قيد الانتظار",
+  "posOrdersTabCompleted": "مكتملة",
+  "posOrdersNoOrdersFound": "لا توجد طلبات",
+  "posOrdersNoPendingOrders": "لا توجد طلبات معلقة",
+  "posOrdersNoCompletedOrders": "لا توجد طلبات مكتملة",
+  "posOrdersNewOrder": "طلب جديد",
+  "posOrdersNoOrderSelected": "لم يتم تحديد طلب",
+  "posOrdersSelectFromList": "اختر طلباً من القائمة على اليسار لعرض التفاصيل",
+  "posOrdersAddDepartment": "إضافة قسم",
+  "posOrdersAddCustomerDetails": "إضافة بيانات العميل",
+  "posOrdersSelectPaymentMethod": "اختر طريقة الدفع",
+  "posOrdersCustomerDetailsSaved": "تم حفظ بيانات العميل",
+  "posOrdersPaymentMethodSaved": "تم حفظ طريقة الدفع",
+  "posOrdersStatusRejected": "مرفوض",
+  "posOrdersStatusCancelled": "ملغى",
+  "posOrdersStatusComplete": "مكتمل",
+  "posOrdersStatusEdited": "معدَّل",
+  "posOrdersStatusInProgress": "جارٍ التنفيذ",
+  "posOrdersStatusPending": "قيد الانتظار",
+  "posOrdersStatusUnapproved": "غير معتمد",
+  "posOrdersStatusWaitingApproval": "في انتظار الموافقة",
+  "posOrdersStatusCorpApproved": "معتمد من الشركة",
+  "posOrdersAssignTechnicians": "تعيين فنيين",
+  "posOrdersCancelBtn": "إلغاء",
+  "posOrdersMarkComplete": "تعيين مكتمل",
+  "posOrdersDeleteJob": "حذف المهمة",
+  "posOrdersEditBtn": "تعديل",
+  "posOrdersCancelledBtn": "ملغى",
+  "posOrdersProductsServices": "المنتجات والخدمات",
+  "posOrdersSendForApproval": "إرسال للاعتماد",
+  "posOrdersGenerateInvoice": "إنشاء فاتورة",
+  "posOrdersOrderSummary": "ملخص الطلب",
+  "posOrdersOrderPromo": "عرض الطلب",
+  "posOrdersGrandTotal": "الإجمالي الكلي",
+  "posOrdersNoTechniciansAssigned": "لم يتم تعيين فنيين",
+  "posOrdersNoProducts": "لا توجد منتجات أو خدمات",
+  "posOrdersDeptPromo": "عرض القسم",
+  "posOrdersDeptDiscount": "خصم القسم",
+  "posOrdersOrderDiscount": "خصم الطلب",
+  "posOrdersLineDiscount": "خصم السطر",
+  "posOrdersTotalBeforeVat": "الإجمالي قبل الضريبة",
+  "posOrdersNoPlate": "لا صفيحة",
+  "posOrdersSplitPayment": "تقسيم الدفع",
+  "posOrdersPayment": "الدفع",
+  "posOrdersInvoiceTotal": "إجمالي الفاتورة",
+  "posOrdersConfirmAmounts": "تأكيد المبالغ",
+  "posOrdersAmountSar": "المبلغ (ريال)",
+  "posOrdersCancelDialog": "إلغاء",
+  "posOrdersNoDepartmentsAvailable": "لا توجد أقسام متاحة للإضافة.",
+  "posOrdersJobIdMissing": "رقم المهمة مفقود.",
+  "posOrdersJobNoLineItems": "لا توجد بنود في هذه المهمة.",
+  "posOrdersTechnicianRequired": "تعيين الفني مطلوب.",
+  "posOrdersJobNotReadyForInvoice": "الطلب غير جاهز للفوترة.",
+  "posOrdersSelectCustomerAndPayment": "حدد نوع العميل وطريقة الدفع أولاً.",
+  "posOrdersDeleteJobTitle": "حذف المهمة",
+  "posOrdersNoBtn": "لا",
+  "posOrdersYesDeleteBtn": "نعم، احذف",
+  "posReviewFinalReview": "المراجعة النهائية",
+  "posReviewInvoiceReady": "الفاتورة جاهزة",
+  "posReviewBilling": "بيانات الفاتورة",
+  "posReviewVehicle": "المركبة",
+  "posReviewInvoiceDetails": "تفاصيل الفاتورة",
+  "posReviewCustomerDetails": "بيانات العميل",
+  "posReviewConfirmBillingAndVehicle": "تأكيد جهة الاتصال للفوترة والمركبة قبل إنشاء الفاتورة.",
+  "posReviewConfirmBillingOnly": "تأكيد جهة الاتصال للفوترة قبل إنشاء الفاتورة.",
+  "posReviewCustomerNameLabel": "اسم العميل",
+  "posReviewMobileLabel": "الجوال",
+  "posReviewVatLabel": "الضريبة",
+  "posReviewPlateNumberLabel": "رقم اللوحة",
+  "posReviewOdometerLabel": "العداد",
+  "posReviewMakeLabel": "الصانع",
+  "posReviewModelLabel": "الموديل",
+  "posReviewYearLabel": "السنة",
+  "posReviewVinLabel": "رقم الهيكل",
+  "posReviewRequiredError": "مطلوب",
+  "posReviewPlateRequiredError": "رقم اللوحة مطلوب",
+  "posReviewInvalidYearError": "سنة غير صالحة",
+  "posReviewCancelBtn": "إلغاء",
+  "posReviewContinueBtn": "متابعة",
+  "posReviewCorporateCustomerQuestion": "عميل شركة؟",
+  "posReviewIsCorporateCustomer": "هل هذا عميل شركة؟",
+  "posReviewYesCorporate": "نعم — شركة",
+  "posReviewNoIndividual": "لا — فرد",
+  "posReviewPaymentMethod": "طريقة الدفع (اختر أكثر من واحدة للتقسيم)",
+  "posReviewPaymentMethodCorporate": "طريقة الدفع",
+  "posReviewCompleteAndGenerateInvoice": "إتمام الطلب وإنشاء الفاتورة",
+  "posReviewInvoiceGeneratedLocked": "تم إنشاء الفاتورة وقفلها",
+  "posReviewNoFurtherEdits": "لا يمكن إجراء مزيد من التعديلات",
+  "posReviewCommissionsCredited": "العمولات المحوَّلة",
+  "posReviewPrintInvoice": "طباعة الفاتورة والإيصال",
+  "posReviewCommissionsNote": "تم إضافة العمولات لحسابات الفنيين.",
+  "posReviewOrderNo": "طلب #{id}",
+  "posReviewSplitPayment": "تقسيم الدفع",
+  "posReviewInvoiceTotal": "إجمالي الفاتورة",
+  "posReviewConfirmAmounts": "تأكيد المبالغ",
+  "posReviewAmountSar": "المبلغ (ريال)",
+  "posReviewCancelDialogBtn": "إلغاء",
+  "posReviewEmployeesPayment": "الموظفون (الدفع)",
+  "posReviewSelectEmployee": "اختر موظفاً",
+  "posReviewEmployeeInstructions": "موظف واحد لسطر دفع الموظفين. اضغط على البطاقة المحددة مجدداً للإلغاء.",
+  "posReviewCouldNotLoadEmployees": "تعذّر تحميل موظفي الفرع.",
+  "posReviewRetry": "إعادة المحاولة",
+  "posReviewNoBranchEmployees": "لا يوجد موظفون مدرجون للفرع.",
+  "posReviewGrossAmountExclVat": "الإجمالي (بدون ضريبة)",
+  "posReviewItemDiscounts": "خصومات البنود",
+  "posReviewInvoiceDiscount": "خصم الفاتورة",
+  "posReviewPromoDiscount": "خصم الكود ({code})",
+  "posReviewPromoDiscountNoCode": "خصم الكود",
+  "posReviewPriceAfterDiscount": "السعر بعد الخصم",
+  "posReviewPriceAfterPromo": "السعر بعد العرض",
+  "posReviewDiscount": "خصم",
+  "posReviewTaxPct": "الضريبة ({pct}%)",
+  "posReviewTotalAmount": "الإجمالي",
+  "posReviewNoDeptData": "لا توجد بيانات أقسام.",
+  "posReviewDepartmentCol": "القسم",
+  "posReviewJobIdCol": "رقم المهمة",
+  "posReviewStatusCol": "الحالة",
+  "posReviewProductServiceCol": "المنتج / الخدمة",
+  "posReviewQtyCol": "الكمية",
+  "posReviewAmountSarCol": "المبلغ (ريال)",
+  "posReviewNoLineItems": "لا توجد بنود",
+  "posReviewGrossExclVat": "الإجمالي (بدون ضريبة)",
+  "posReviewItemLineDiscounts": "خصومات البنود",
+  "posReviewVatPct": "ضريبة ({pct}%)",
+  "posReviewDepartmentTotal": "إجمالي القسم",
+  "posReviewOrderSummary": "ملخص الطلب",
+  "posReviewTotalTaxable": "الوعاء الضريبي",
+  "posReviewVat15": "ضريبة القيمة المضافة (15%)",
+  "posReviewLineNetNote": "إجماليات البنود صافية من الخصومات على مستوى البند.",
+  "posReviewInvoicePromoNote": "تُطبَّق خصومات الفاتورة والعروض على الوعاء الضريبي.",
+  "posReviewConfirmAmountsNote": "تأكد من تطابق جميع المبالغ مع المهمة قبل إنشاء الفاتورة.",
+  "posReviewAssignedTechnicians": "الفنيون المعيَّنون",
+  "posReviewJobHash": "مهمة #{id}",
+  "posReviewNoTechAssigned": "لم يتم تعيين فني",
+  "posReviewCommissionLabel": "العمولة: {amount}",
+  "posReviewTotal": "الإجمالي",
+  "posReviewDone": "تم",
+  "posReviewCorporateMustBeApproved": "يجب اعتماد طلب الشركة قبل الفوترة.",
+  "posReviewOrderNotReadyForInvoicing": "الطلب غير جاهز للفوترة.",
+  "posReviewIndicateCorporate": "يرجى الإشارة إذا كان هذا عميل شركة.",
+  "posReviewSelectPaymentMethod": "يرجى اختيار طريقة دفع.",
+  "posReviewSelectAtLeastOnePayment": "يرجى اختيار طريقة دفع واحدة على الأقل.",
+  "posReviewSelectOneEmployee": "اختر موظفاً واحداً لسطر دفع الموظفين.",
+  "posReviewSplitAmountsMustEqual": "يجب أن تساوي مبالغ التقسيم الإجمالي ({total} ريال). الحالي: {current} ريال.",
+  "posReviewFillRequiredInvoiceDetails": "يرجى تعبئة تفاصيل الفاتورة المطلوبة.",
+  "posReviewInvoiceNotLoaded": "تعذّر تحميل الفاتورة.",
+  "posDetailsTitle": "تفاصيل الطلب",
+  "posDetailsCustomerSection": "العميل",
+  "posDetailsVehicleSection": "المركبة",
+  "posDetailsVehicleNo": "رقم المركبة",
+  "posDetailsCustomer": "العميل",
+  "posDetailsMobile": "الجوال",
+  "posDetailsVat": "الضريبة",
+  "posDetailsMakeModel": "الصانع/الموديل",
+  "posDetailsPlate": "اللوحة",
+  "posDetailsOdometer": "العداد",
+  "posDetailsOdometerKm": "{reading} كم",
+  "posDetailsJobsSection": "المهام",
+  "posDetailsNoJobsFound": "لا توجد مهام",
+  "posDetailsJobTitle": "مهمة {num} • {status}",
+  "posDetailsDepartment": "القسم",
+  "posDetailsTechnician": "الفني",
+  "posDetailsSubtotal": "المجموع الفرعي",
+  "posDetailsVat15": "الضريبة",
+  "posDetailsTotal": "الإجمالي",
+  "posDetailsItems": "البنود ({count})",
+  "paymentMethodCash": "نقد",
+  "paymentMethodCard": "بطاقة",
+  "paymentMethodBankTransfer": "تحويل بنكي",
+  "paymentMethodMonthlyBilling": "فوترة شهرية",
+  "paymentMethodWallet": "المحفظة",
+  "paymentMethodTabby": "تابي",
+  "paymentMethodTamara": "تمارا",
+  "paymentMethodEmployees": "الموظفون",
+  "suppliersTitle": "الموردون والمشتريات",
+  "suppliersTabSuppliers": "الموردون",
+  "suppliersTabPurchaseOrders": "أوامر الشراء",
+  "suppliersFabAddSupplier": "إضافة مورّد",
+  "suppliersFabNewPurchase": "أمر شراء جديد",
+  "suppliersStatSuppliers": "الموردون",
+  "suppliersStatOutstanding": "المستحق",
+  "suppliersStatPendingPos": "الطلبات المعلقة",
+  "suppliersNoSuppliersFound": "لا يوجد موردون",
+  "suppliersInternalBadge": "داخلي",
+  "suppliersOutstandingLabel": "المستحق",
+  "suppliersAmountSar": "ر.س {amount}",
+  "@suppliersAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "suppliersAmountCurrency": "{currency} {amount}",
+  "@suppliersAmountCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "suppliersUnknown": "غير محدد",
+  "suppliersStatusPending": "معلق",
+  "suppliersStatusApproved": "معتمد",
+  "suppliersStatusRejected": "مرفوض",
+  "suppliersPoStep1Title": "اختر المورّد",
+  "suppliersPoStep1Subtitle": "اختر من الموردين المسجلين لديك.",
+  "suppliersPoStep2Title": "إضافة أصناف",
+  "suppliersPoStep2Subtitle": "المورّد: {name}",
+  "@suppliersPoStep2Subtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "suppliersPoStep3Title": "تأكيد الأمر",
+  "suppliersPoStep3Subtitle": "راجع التفاصيل قبل الإرسال للموافقة.",
+  "suppliersPoStepSelect": "اختر المورّد",
+  "suppliersPoStepAddItems": "إضافة الأصناف",
+  "suppliersPoStepConfirm": "تأكيد",
+  "suppliersPoAddItem": "إضافة صنف",
+  "suppliersPoItemProductName": "اسم المنتج",
+  "suppliersPoItemProductHint": "مثال: زيت المحرك",
+  "suppliersPoItemQty": "الكمية",
+  "suppliersPoItemUnitPrice": "سعر الوحدة",
+  "suppliersPoConfirmSupplier": "المورّد",
+  "suppliersPoConfirmItems": "{count} أصناف",
+  "@suppliersPoConfirmItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "suppliersPoConfirmStatus": "الحالة",
+  "suppliersPoConfirmStatusValue": "في انتظار الموافقة",
+  "suppliersPoConfirmNote": "سيُرسَل هذا الأمر لموافقة المدير قبل تحديث المخزون.",
+  "suppliersPoNavNext": "التالي",
+  "suppliersPoNavSubmit": "إرسال",
+  "suppliersPoNavBack": "السابق",
+  "suppliersAddSheetTitle": "تسجيل مورّد جديد",
+  "suppliersAddSheetSubtitle": "أدخل التفاصيل لإضافة مورّد جديد.",
+  "suppliersAddFieldName": "اسم المورّد",
+  "suppliersAddFieldEmail": "البريد الإلكتروني",
+  "suppliersAddFieldMobile": "رقم الجوال",
+  "suppliersAddFieldAddress": "العنوان",
+  "suppliersAddFieldOpeningBalance": "الرصيد الافتتاحي",
+  "suppliersAddFieldPassword": "كلمة المرور",
+  "suppliersAddSaveButton": "حفظ المورّد",
+  "suppliersValidationRequired": "يرجى ملء جميع الحقول المطلوبة",
+  "suppliersCreateSuccess": "تم إنشاء المورّد بنجاح",
+  "suppliersCreateError": "فشل إنشاء المورّد",
+  "suppliersPoValidationEmpty": "يرجى إضافة صنف واحد على الأقل",
+  "suppliersPoValidationItemDetails": "يرجى ملء تفاصيل جميع الأصناف بشكل صحيح",
+  "suppliersPoValidationInvalidSupplier": "المورّد المحدد غير صحيح",
+  "suppliersPoCreateSuccess": "تم إنشاء أمر الشراء بنجاح",
+  "suppliersPoCreateError": "فشل إنشاء أمر الشراء",
+  "settingsTitle": "الإعدادات",
+  "settingsRoleLabel": "مالك الورشة",
+  "settingsMultiBranchBadge": "صلاحية الفروع المتعددة",
+  "settingsSectionNotifications": "الإشعارات",
+  "settingsSectionSecurity": "الأمان",
+  "settingsSectionBusiness": "الأعمال",
+  "settingsSectionSupport": "الدعم",
+  "settingsTogglePushNotif": "الإشعارات الفورية",
+  "settingsTogglePushNotifSub": "استقبال الإشعارات داخل التطبيق",
+  "settingsToggleEmailAlerts": "تنبيهات البريد الإلكتروني",
+  "settingsToggleEmailAlertsSub": "استقبال التنبيهات الحرجة عبر البريد",
+  "settingsToggleStockAlerts": "تنبيهات المخزون",
+  "settingsToggleStockAlertsSub": "تنبيه عند وصول المخزون للحد الحرج",
+  "settingsToggleLockerAlerts": "تنبيهات فوارق الخزينة",
+  "settingsToggleLockerAlertsSub": "تنبيه عند وجود فارق في الخزينة عند نهاية اليوم",
+  "settingsToggleBiometric": "تسجيل الدخول البيومتري",
+  "settingsToggleBiometricSub": "استخدام بصمة الإصبع أو التعرف على الوجه",
+  "settingsNavChangePassword": "تغيير كلمة المرور",
+  "settingsNavTwoFactor": "المصادقة الثنائية",
+  "settingsNavWorkshopProfile": "ملف الورشة",
+  "settingsNavBranchMgmt": "إدارة الفروع",
+  "settingsNavCommissionRules": "قواعد العمولة",
+  "settingsNavVatSettings": "إعدادات ضريبة القيمة المضافة",
+  "settingsNavHelp": "المساعدة والوثائق",
+  "settingsNavContactSupport": "التواصل مع الدعم",
+  "settingsNavReportIssue": "الإبلاغ عن مشكلة",
+  "settingsLogout": "تسجيل الخروج",
+  "settingsLogoutDialogTitle": "تسجيل الخروج",
+  "settingsLogoutDialogBody": "هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟",
+  "settingsLogoutDialogCancel": "إلغاء",
+  "settingsLogoutDialogConfirm": "تسجيل الخروج",
+  "settingsVersionLabel": "Filter Workshop OS • الإصدار 1.0.0",
+  "settingsLanguageSection": "اللغة",
+  "settingsLanguageLabel": "لغة التطبيق",
+  "settingsLanguageEnglish": "الإنجليزية",
+  "settingsLanguageArabic": "العربية",
+  "posCommonAll": "الكل",
+  "posCommonProducts": "المنتجات",
+  "posCommonServices": "الخدمات",
+  "posCommonRetry": "إعادة المحاولة",
+  "posCommonSave": "حفظ",
+  "posCommonSar": "ر.س",
+  "posCommonPending": "قيد الانتظار",
+  "posCommonApproved": "معتمد",
+  "posCommonRejected": "مرفوض",
+  "posPettyCashTitle": "المصروفات النثرية",
+  "posPettyCashExpenseTab": "مصروف",
+  "posPettyCashFundTab": "تمويل",
+  "posPettyCashHistoryTab": "السجل",
+  "posPettyCashSecureWallet": "محفظة آمنة",
+  "posPettyCashAvailable": "الرصيد النثري المتاح",
+  "posPettyCashLowBalanceMessage": "رصيد المصروفات النثرية منخفض. يرجى طلب تمويل.",
+  "posPettyCashRequestFund": "طلب تمويل",
+  "posPettyCashExpenseDetails": "تفاصيل المصروف",
+  "posPettyCashAmountSar": "المبلغ (ر.س)",
+  "posPettyCashExpenseCategory": "فئة المصروف",
+  "posPettyCashEmployeeSalaryAdvance": "الموظف (سلفة راتب)",
+  "posPettyCashDescriptionNotes": "الوصف / الملاحظات",
+  "posPettyCashEnterDetailsHint": "أدخل التفاصيل...",
+  "posPettyCashProofOfExpense": "إثبات المصروف",
+  "posPettyCashExpenseSubmitted": "تم إرسال المصروف – بانتظار الموافقة",
+  "posPettyCashSubmitExpense": "إرسال المصروف",
+  "posPettyCashFundRequest": "طلب تمويل",
+  "posPettyCashRequestedAmountSar": "المبلغ المطلوب (ر.س)",
+  "posPettyCashReasonForRequest": "سبب الطلب",
+  "posPettyCashReasonHint": "اشرح لماذا تحتاج إلى تمويل إضافي...",
+  "posPettyCashFundRequestSubmitted": "تم إرسال طلب التمويل – بانتظار الموافقة",
+  "posPettyCashSubmitRequest": "إرسال الطلب",
+  "posPettyCashSelectCategory": "اختر الفئة",
+  "posPettyCashNoEmployees": "لا يوجد موظفون مسجلون",
+  "posPettyCashSelectEmployee": "اختر الموظف",
+  "posPettyCashSelectDate": "اختر التاريخ",
+  "posPettyCashFrom": "من:",
+  "posPettyCashTo": "إلى:",
+  "posPettyCashAllCategories": "كل الفئات",
+  "posPettyCashReset": "إعادة ضبط",
+  "posPettyCashHistoryTitle": "سجل المصروفات والتمويل",
+  "posPettyCashNoHistory": "لا يوجد سجل لهذا الفلتر.",
+  "posPettyCashLoadMore": "تحميل المزيد",
+  "posPettyCashEmployeePrefix": "الموظف: {name}",
+  "@posPettyCashEmployeePrefix": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "posPettyCashRejectionPrefix": "سبب الرفض: {reason}",
+  "@posPettyCashRejectionPrefix": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "posPettyCashTapUploadReceipt": "اضغط لرفع الإيصال",
+  "posPettyCashRequestStatus": "حالة الطلب",
+  "posPettyCashPendingUpper": "قيد الانتظار",
+  "posPettyCashRequestedAmount": "المبلغ المطلوب",
+  "posPettyCashReason": "السبب",
+  "posPettyCashRequestDate": "تاريخ الطلب",
+  "posPettyCashPendingReviewMessage": "طلبك قيد المراجعة حالياً من الإدارة. سيتم إشعارك عند الموافقة عليه.",
+  "posPettyCashSubmitNewRequest": "إرسال طلب جديد",
+  "posPettyCashValidAmountError": "يرجى إدخال مبلغ صحيح",
+  "posPettyCashSelectCategoryError": "يرجى اختيار فئة",
+  "posPettyCashSelectEmployeeError": "يرجى اختيار موظف لسلفة الراتب",
+  "posPettyCashSubmitExpenseError": "فشل إرسال المصروف. تحقق من الرصيد أو حاول مرة أخرى.",
+  "posPettyCashReasonError": "يرجى إدخال السبب",
+  "posPettyCashSubmitRequestError": "فشل إرسال طلب التمويل",
+  "posPettyCashTokenNotFound": "لم يتم العثور على رمز الجلسة",
+  "posPettyCashLowBalanceError": "الرصيد منخفض - اطلب تمويلاً أولاً",
+  "posProductAddTechnician": "إضافة فني",
+  "posProductAddProducts": "إضافة منتجات",
+  "posProductItemsCount": "{count} عناصر",
+  "@posProductItemsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posProductGrandTotal": "الإجمالي الكلي",
+  "posProductViewInvoice": "عرض الفاتورة",
+  "posProductOrderItems": "عناصر الطلب",
+  "posProductNoItemsInvoice": "لا توجد عناصر في الفاتورة",
+  "posProductGrossAmountExclVat": "المبلغ الإجمالي (بدون ضريبة)",
+  "posProductLineDiscount": "خصم السطر",
+  "posProductPriceAfterLineDiscount": "السعر بعد خصم السطر",
+  "posProductTotalDiscountApplied": "إجمالي الخصم المطبق",
+  "posProductPriceAfterTotalDiscount": "السعر بعد إجمالي الخصم",
+  "posProductAddPromoCode": "إضافة رمز عرض",
+  "posProductPromoLabel": "العرض: {code}",
+  "@posProductPromoLabel": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "posProductPromoDiscount": "خصم العرض",
+  "posProductPriceAfterPromo": "السعر بعد العرض",
+  "posProductVat15": "ضريبة القيمة المضافة (15%)",
+  "posProductTotal": "الإجمالي",
+  "posProductTotalAmount": "المبلغ الإجمالي",
+  "posProductEmployeesUpper": "الموظفون",
+  "posProductSelectEmployeePayment": "اختر موظفاً واحداً لدفع الموظفين (يظهر مع النوع). سيتم حفظه مع الطلب.",
+  "posProductSelectEmployeePaymentShort": "اختر موظفاً واحداً لدفع الموظفين (مع النوع).",
+  "posProductNewOrderId": "#طلب-جديد",
+  "posProductWalkInCustomer": "عميل مباشر",
+  "posProductNoVehicleDetails": "لا توجد تفاصيل مركبة",
+  "posProductNoPhone": "لا يوجد هاتف",
+  "posProductDraft": "مسودة",
+  "posProductNoItemsAdded": "لم تتم إضافة عناصر",
+  "posProductPendingAssignment": "بانتظار التعيين",
+  "posProductCompleteSuccess": "تم تحديد الطلب كمكتمل بنجاح",
+  "posProductCompleteError": "فشل إكمال المهمة",
+  "posProductMarkComplete": "تحديد كمكتمل",
+  "posProductSaveDraft": "حفظ المسودة",
+  "posProductForwardTechnician": "إرسال إلى الفني",
+  "posProductSearchHint": "ابحث عن المنتجات والخدمات...",
+  "posProductNoSearchMatch": "لا توجد منتجات تطابق البحث.",
+  "posProductDepartmentNotFound": "لم يتم العثور على القسم",
+  "posProductAddDepartment": "إضافة قسم",
+  "posProductNoServicesFound": "لا توجد خدمات",
+  "posProductNoProductsFound": "لا توجد منتجات",
+  "posProductUnitLabel": "الوحدة: {unit}",
+  "@posProductUnitLabel": {
+    "placeholders": {
+      "unit": {}
+    }
+  },
+  "posProductDiscountShort": "خصم",
+  "posProductTotalDiscount": "إجمالي الخصم",
+  "posProductCouldNotLoadEmployees": "تعذر تحميل الموظفين.",
+  "posProductNoBranchEmployees": "لا يوجد موظفو فرع.",
+  "posProductsFailedLoad": "فشل تحميل المنتجات",
+  "posProductsBranchLabel": "الفرع: {branch}",
+  "@posProductsBranchLabel": {
+    "placeholders": {
+      "branch": {}
+    }
+  },
+  "posHomeTitleWorkshop": "ورشة ",
+  "posHomeTitlePos": "نقطة البيع",
+  "posHomeSubtitle": "ابحث برقم العميل أو رقم المركبة\nأو رقم الهاتف أو اسم العميل",
+  "posHomeSearchHint": "ابحث برقم العميل / المركبة / الهاتف / اللوحة...",
+  "posHomeNewWalkIn": "عميل جديد",
+  "posHomeCorporateBooking": "حجز مؤسسي",
+  "posHomeBranchPrefix": "الفرع: {branch}",
+  "@posHomeBranchPrefix": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "posHomeRecentSearches": "عمليات البحث الأخيرة",
+  "posHomeNoVehicle": "لا توجد مركبة",
+  "posHomeNoResults": "لا توجد نتائج",
+  "posHomeNoResultsHint": "حاول البحث باسم أو رقم مختلف",
+  "posDeptSelectTitle": "اختر القسم",
+  "posDeptAddTitle": "إضافة قسم",
+  "posDeptNoneFound": "لا توجد أقسام",
+  "posDeptAlreadyOnOrder": "هذا القسم موجود بالفعل في هذا الطلب.",
+  "posDeptSelectedCount": "{count} أقسام محددة",
+  "@posDeptSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posDeptAddToOrder": "إضافة للطلب",
+  "posDeptOrderPlaced": "تم تقديم الطلب",
+  "posDeptSelectAtLeastOne": "اختر قسمًا واحدًا على الأقل للإضافة.",
+  "posDeptVehicleRequired": "الرجاء إضافة رقم المركبة أولاً (إضافة عميل)",
+  "posDeptChangeDeptTitle": "تغيير القسم؟",
+  "posDeptChangeDeptBody": "هل تريد فعلاً تغيير القسم؟",
+  "posDeptChangeDeptRefresh": "سيتم تحديث بيانات الفاتورة.",
+  "posDeptChangeDeptCancel": "إلغاء",
+  "posDeptChangeDeptContinue": "متابعة",
+  "posDeptRetry": "إعادة المحاولة",
+  "posCustomerHistoryTitle": "سجل العميل",
+  "posCustomerPastOrders": "الطلبات السابقة",
+  "posCustomerNoHistory": "لا يوجد سجل طلبات لهذا العميل.",
+  "posCustomerVat": "ضريبة القيمة المضافة: {vat}",
+  "@posCustomerVat": {
+    "placeholders": {
+      "vat": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerOrderId": "طلب #{id}",
+  "@posCustomerOrderId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerInvoice": "فاتورة: {no}",
+  "@posCustomerInvoice": {
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerVin": "رقم الهيكل {vin}",
+  "@posCustomerVin": {
+    "placeholders": {
+      "vin": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerMoreItems": "+{count} عناصر أخرى",
+  "@posCustomerMoreItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posCustomerAmountSar": "{amount} ر.س",
+  "@posCustomerAmountSar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerTypeRegular": "عادي",
+  "posCustomerTypeCorporate": "مؤسسي",
+  "posProductStockInStock": "متوفر ({count})",
+  "@posProductStockInStock": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posProductStockLow": "منخفض ({count})",
+  "@posProductStockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posProductStockOut": "نفد من المخزن",
+  "posProductStockService": "خدمة",
+  "posOrderStatusInvoiced": "مفوتر",
+  "posOrderStatusCompleted": "مكتمل",
+  "posOrderStatusPending": "قيد الانتظار",
+  "posOrderStatusWaiting": "في الانتظار",
+  "posOrderStatusDraft": "مسودة",
+  "posOrderStatusInProgress": "قيد التنفيذ",
+  "posOrderStatusAccepted": "مقبول",
+  "posSearchHistoryNoVehicle": "لا توجد مركبة",
+  "posSearchHistoryNa": "غ/م",
+  "posSearchHistoryContinue": "متابعة الطلب",
+  "posSearchHistoryHistory": "السجل",
+  "posSearchHistorySalesReturn": "مرتجع مبيعات",
+  "posNavHome": "الرئيسية",
+  "posNavProducts": "المنتجات",
+  "posNavOrders": "الطلبات",
+  "posNavStoreClosing": "إغلاق المتجر",
+  "posPromoViewTitle": "رمز الخصم",
+  "posPromoViewEntryTitle": "تطبيق رمز الخصم",
+  "posPromoViewEntrySubtitle": "تحقق من صلاحية الرمز المقدم من العميل.",
+  "posPromoViewCheckValidity": "تحقق من الصلاحية",
+  "posPromoViewAvailableTitle": "العروض المتاحة",
+  "posPromoViewNoPromos": "لا توجد عروض متاحة",
+  "posPromoViewCheckConditions": "تحقق من الشروط",
+  "posPromoViewRemoveTooltip": "إزالة العرض",
+  "posPromoResultStore": "الفرع: {value}",
+  "@posPromoResultStore": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoResultProducts": "المنتجات: {value}",
+  "@posPromoResultProducts": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoResultPeriod": "الفترة: {value}",
+  "@posPromoResultPeriod": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoDialogTitle": "تطبيق رمز الخصم",
+  "posPromoDialogSubtitle": "اختر أي رمز خصم أدناه لتطبيق الخصم فوراً.",
+  "posPromoDialogNoCodesAvailable": "لا تتوفر رموز خصم.",
+  "posPromoDialogOrEnterManually": "أو أدخل الرمز يدوياً",
+  "posPromoDialogHintText": "مثال: SAVE10",
+  "posPromoDialogRemovePromo": "إزالة العرض",
+  "posPromoDialogValidCode": "رمز الخصم صالح",
+  "posPromoDialogLabelDiscount": "الخصم:",
+  "posPromoDialogLabelStore": "الفرع:",
+  "posPromoDialogLabelProducts": "المنتجات:",
+  "posPromoDialogLabelValidity": "الصلاحية:",
+  "posPromoDialogCancel": "إلغاء",
+  "posPromoDialogCheckCode": "التحقق من الرمز",
+  "posPromoDialogApplyDiscount": "تطبيق الخصم",
+  "posPromoDiscountPercent": "خصم {value}%",
+  "@posPromoDiscountPercent": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoDiscountSar": "خصم {value} ريال",
+  "@posPromoDiscountSar": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoAllBranches": "جميع الفروع",
+  "posPromoAllProducts": "جميع المنتجات",
+  "posPromoNoExpiry": "بدون انتهاء",
+  "posPromoInvalidCode": "رمز الخصم غير صالح",
+  "posPromoInvalidExpired": "رمز الخصم غير صالح أو منتهي الصلاحية",
+  "posTechAssignTitle": "تعيين الفنيين",
+  "posTechAssignSearchHint": "ابحث عن فني...",
+  "posTechAssignShowAll": "عرض الكل",
+  "posTechAssignOnlineOnly": "المتصلون فقط",
+  "posTechAssignLoading": "جارٍ تحميل الفنيين…",
+  "posTechAssignNoResults": "لا يوجد فنيون",
+  "posTechAssignErrorPrefix": "خطأ: {message}",
+  "@posTechAssignErrorPrefix": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "posTechAssignRetry": "إعادة المحاولة",
+  "posTechAssignStatusOnline": "متصل",
+  "posTechAssignStatusLastSeen": "آخر ظهور: {time}",
+  "@posTechAssignStatusLastSeen": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "posTechAssignSlots": "المهام: {used}/{total}",
+  "@posTechAssignSlots": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "posTechAssignBroadcast": "إذاعة",
+  "posTechAssignWait": "انتظر {label}",
+  "@posTechAssignWait": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "posTechAssignSave": "حفظ الفنيين",
+  "posTechAssignSuccessEmpty": "تمت إزالة جميع الفنيين من هذا الطلب",
+  "posTechAssignSuccess": "تم تعيين الفنيين بنجاح",
+  "posTechAssignFailNoJob": "لم يُعثر على الطلب لهذا التعيين.",
+  "posTechAssignFailGetId": "فشل في الحصول على معرّف الطلب",
+  "posTechAssignFailEditId": "فشل في الحصول على معرّف الطلب للتعديل",
+  "posTechAssignFailGeneric": "فشل في تعيين الفنيين",
+  "posTechAssignUnlockFail": "تعذّر فتح الطلب لتغيير الفنيين. حاول مرة أخرى.",
+  "posTechLastSeenNever": "لم يُرَ قط",
+  "posTechLastSeenJustNow": "الآن",
+  "posTechLastSeenMinutes": "منذ {count} د",
+  "@posTechLastSeenMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posTechLastSeenHours": "منذ {count} س",
+  "@posTechLastSeenHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posTechLastSeenDays": "منذ {count} ي",
+  "@posTechLastSeenDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posTechViewTitle": "الفنيون",
+  "posTechViewSearchHint": "ابحث عن فني...",
+  "posTechViewTabAll": "الكل",
+  "posTechViewTabOffline": "غير متصل",
+  "posTechViewTabOnline": "متصل",
+  "posTechViewNoTechnicians": "لا يوجد فنيون",
+  "posTechViewNoOnline": "لا يوجد فنيون متصلون",
+  "posTechViewNoOffline": "لا يوجد فنيون غير متصلين",
+  "posTechViewErrorRetry": "إعادة المحاولة",
+  "posTechViewErrorPrefix": "خطأ: {message}",
+  "@posTechViewErrorPrefix": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "posTechCardOnlineNow": "متصل الآن",
+  "posTechCardLastSeen": "آخر ظهور: {time}",
+  "@posTechCardLastSeen": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "posTechCardNoDepartment": "لا يوجد قسم",
+  "posTechCardSlots": "المهام {used}/{total}",
+  "@posTechCardSlots": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "posTechPresenceOnline": "تم تعيين الفني كمتصل",
+  "posTechPresenceOffline": "تم تعيين الفني كغير متصل",
+  "storeClosingPhysicalDrawerCount": "عدد الأدراج الفعلي",
+  "storeClosingEnterAmounts": "أدخل المبالغ الفعلية التي قمت بعدها لكل فئة دفع.",
+  "storeClosingLabelPhysicalCash": "المبلغ النقدي الفعلي",
+  "storeClosingLabelBankCard": "إيصالات البنك / البطاقة",
+  "storeClosingLabelCorporate": "فواتير الشركات",
+  "storeClosingLabelTamara": "رصيد تمارا",
+  "storeClosingLabelTabby": "رصيد تابي",
+  "storeClosingLabelNotes": "ملاحظات (اختياري)",
+  "storeClosingTotalPhysical": "إجمالي المبلغ الفعلي",
+  "storeClosingExpectedSar": "المتوقع: {sar} {amount}",
+  "storeClosingShiftBalanced": "الوردية متوازنة",
+  "storeClosingDiscrepancy": "تم اكتشاف تعارض",
+  "storeClosingShiftClosedOk": "تم إغلاق الوردية بنجاح.",
+  "storeClosingPositiveDiff": "الفرق الموجب = النظام > الفعلي.",
+  "storeClosingClosingId": "معرّف الإغلاق",
+  "storeClosingTotalDiff": "إجمالي الفرق",
+  "storeClosingSystemTotalSales": "إجمالي مبيعات النظام",
+  "posOrdersTotalInclVat": "الإجمالي (شامل ضريبة القيمة المضافة)",
+  "currencySymbol": "ر.س",
+  "currencySymbolAr": "ر.س",
+  "@storeClosingExpectedSar": {
+    "placeholders": {
+      "sar": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "toastSuccess": "تم بنجاح",
+  "toastError": "خطأ",
+  "toastInfo": "معلومة"
+}
