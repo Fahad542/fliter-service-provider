@@ -10,9 +10,9 @@ class LockerRepository {
   final BaseApiService _apiService = BaseApiService();
 
   Map<String, String> _auth(String token) => {
-    'Authorization': 'Bearer $token',
-    'Content-Type': 'application/json',
-  };
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      };
 
   Map<String, dynamic> _asJsonMap(dynamic raw) {
     if (raw is Map<String, dynamic>) return raw;
@@ -203,7 +203,7 @@ class LockerRepository {
     final list = _extractList(raw);
     return list
         .map((e) =>
-        LockerVarianceApproval.fromJson(e as Map<String, dynamic>))
+            LockerVarianceApproval.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 

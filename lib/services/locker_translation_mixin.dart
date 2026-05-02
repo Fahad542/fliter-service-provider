@@ -1,34 +1,19 @@
-import 'package:flutter/foundation.dart';
 import 'package:translator/translator.dart';
 import 'session_service.dart';
-import '../models/workshop_owner_models.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // lib/services/locker_translation_mixin.dart
 //
-// App-wide dynamic translation service — v2 (locale-safe rewrite)
+// App-wide dynamic translation service.
 //
-// Static UI strings  → AppLocalizations (ARB / gen-l10n).
+// Static UI strings → AppLocalizations (ARB / gen-l10n).
 // Dynamic strings (names, notes, status labels from the DB/API) come back in
 // English and are translated on the fly when the app locale is Arabic.
 //
-// KEY FIXES vs v1
-// ───────────────
-// 1. localizedTextForLanguage() now takes the language code directly from the
-//    widget tree (Localizations.localeOf(context).languageCode) — no async
-//    SessionService.getLocale() call that could return a stale value mid-flight.
-//
-// 2. _shouldKeepRaw: removed the rule that blocked strings starting with
-//    "SAR <number>" — those come in notification messages ("SAR 450 for
-//    approval") and must be translated to Arabic. Only bare numeric strings,
-//    reference codes, URLs, emails, and phone numbers stay untouched.
-//
-// 3. Generation counter pattern documented for callers: always store a
-//    generation int, bump it on every locale change, and discard results from
-//    previous generations.
-//
 // Used by ALL modules: Locker, Owner, Accounting, Approvals, POS, etc.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ── Core translation service ──────────────────────────────────────────────────
 
 class AppTranslationService {
   AppTranslationService._();
@@ -81,11 +66,6 @@ class AppTranslationService {
     'fund'              : 'شحن رصيد',
     'all'               : 'الكل',
     'FUND'              : 'شحن رصيد',
-    'fund_request'      : 'طلب تمويل',
-    'FUND REQUEST'      : 'طلب تمويل',
-    'cashier expense'   : 'مصروف أمين الصندوق',
-    'CASHIER EXPENSE'   : 'مصروف أمين الصندوق',
-    'Petty cash request': 'طلب عهدة نقدية',
     // ── Employee / POS statuses ───────────────────────────────────────────
     'active'            : 'نشط',
     'inactive'          : 'غير نشط',
@@ -106,31 +86,6 @@ class AppTranslationService {
     'Overdue'           : 'متأخر',
     'paid'              : 'مدفوع',
     'partially paid'    : 'مدفوع جزئياً',
-    'submitted'         : 'مرسل',
-    'SUBMITTED'         : 'مرسل',
-    'waiting approval'  : 'في انتظار الموافقة',
-    'Waiting Approval'  : 'في انتظار الموافقة',
-    'complete'          : 'مكتمل',
-    'completed'         : 'مكتمل',
-    'invoiced'          : 'تم إصدار الفاتورة',
-    'cancelled'         : 'ملغي',
-    'canceled'          : 'ملغي',
-    'cash'              : 'نقداً',
-    'Cash'              : 'نقداً',
-    'card'              : 'بطاقة',
-    'Card'              : 'بطاقة',
-    'bank transfer'     : 'تحويل بنكي',
-    'Bank Transfer'     : 'تحويل بنكي',
-    'wallet'            : 'محفظة',
-    'Wallet'            : 'محفظة',
-    'All'               : 'الكل',
-    'Today'             : 'اليوم',
-    'general'           : 'عام',
-    'General'           : 'عام',
-    'service'           : 'خدمة',
-    'Service'           : 'خدمة',
-    'product'           : 'منتج',
-    'Product'           : 'منتج',
   };
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -139,14 +94,14 @@ class AppTranslationService {
   /// Returns the original on error, empty input, numeric input, or if the
   /// text is already in the target script.
   static Future<String> translate(
-    String text, {
-    String targetLang = 'ar',
-    String sourceLang = 'en',
-  }) async {
+      String text, {
+        String targetLang = 'ar',
+        String sourceLang = 'en',
+      }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return text;
-    if (_shouldKeepRaw(trimmed)) return text;
-    if (_containsArabic(trimmed)) return text; // already Arabic
+    if (double.tryParse(trimmed) != null) return text; // numbers unchanged
+    if (_containsArabic(trimmed)) return text;          // already Arabic
 
     // Status fast-path — no network call needed.
     if (targetLang == 'ar' && _statusMapAr.containsKey(trimmed)) {
@@ -178,29 +133,8 @@ class AppTranslationService {
   }
 
   /// Translates only when the current session locale is Arabic.
-  ///
-  /// ⚠ PREFER [localizedTextForLanguage] in widgets — it reads locale directly
-  /// from the widget tree and avoids the async SessionService round-trip.
   static Future<String> localizedText(String text) async {
-    if (!await _isArabicFromSession()) return text;
-    return translate(text);
-  }
-
-  /// Context/locale-safe variant for widgets.
-  ///
-  /// Pass [languageCode] from `Localizations.localeOf(context).languageCode`
-  /// so the translation decision is based on the current live locale — not on
-  /// SessionService which may lag by one frame after a locale switch.
-  ///
-  /// This avoids the "API data not re-translated on locale switch" bug: when
-  /// the user switches language, didChangeDependencies fires with the new
-  /// locale, you pass its languageCode here, and you always get the correct
-  /// translation regardless of whether SessionService has flushed yet.
-  static Future<String> localizedTextForLanguage(
-    String text,
-    String languageCode,
-  ) async {
-    if (languageCode != 'ar') return text;
+    if (!await _isArabic()) return text;
     return translate(text);
   }
 
@@ -210,83 +144,23 @@ class AppTranslationService {
     return localizedText(text);
   }
 
-  /// Nullable variant using widget-tree language code (preferred in widgets).
-  static Future<String?> localizedTextNullableForLanguage(
-    String? text,
-    String languageCode,
-  ) async {
-    if (text == null) return null;
-    return localizedTextForLanguage(text, languageCode);
-  }
-
   /// Translates a list of strings, returning originals on non-Arabic locale.
   static Future<List<String>> localizedAll(List<String> texts) async {
-    if (!await _isArabicFromSession()) return texts;
-    return Future.wait(texts.map(translate));
-  }
-
-  /// Translates a list of strings using widget-tree locale (preferred).
-  static Future<List<String>> localizedAllForLanguage(
-    List<String> texts,
-    String languageCode,
-  ) async {
-    if (languageCode != 'ar') return texts;
+    if (!await _isArabic()) return texts;
     return Future.wait(texts.map(translate));
   }
 
   /// Translates a status string using the fast-path map first.
   static Future<String> localizedStatus(String status) async {
-    if (!await _isArabicFromSession()) return status;
-    return _statusMapAr[status] ?? translate(status);
-  }
-
-  /// Translates a status string using widget-tree locale (preferred).
-  static Future<String> localizedStatusForLanguage(
-    String status,
-    String languageCode,
-  ) async {
-    if (languageCode != 'ar') return status;
+    if (!await _isArabic()) return status;
     return _statusMapAr[status] ?? translate(status);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  /// Reads locale from SessionService. Use only in non-widget contexts
-  /// (ViewModels, background tasks). In widgets, prefer [localizedTextForLanguage].
-  static Future<bool> _isArabicFromSession() async {
+  static Future<bool> _isArabic() async {
     final locale = await SessionService.getLocale();
     return locale == 'ar';
-  }
-
-  /// Strings that should NEVER be sent to the translation API:
-  ///  • Pure numbers / decimals
-  ///  • URLs
-  ///  • Email addresses
-  ///  • Phone numbers
-  ///  • Reference codes like INV-001, PO-002, #REF2024
-  ///  • Date strings like 01/05/2024
-  ///
-  /// NOTE: "SAR 450" embedded inside a sentence IS NOT blocked — we want
-  /// the full sentence (e.g. "submitted an expense of SAR 450") to be
-  /// translated. The translator preserves currency codes in context.
-  /// Standalone "SAR" symbol is handled via l10n.ownerCurrencySar, not here.
-  static bool _shouldKeepRaw(String text) {
-    final v = text.trim();
-    if (v.isEmpty) return true;
-    // Pure number (integer or decimal) — keep as-is
-    if (double.tryParse(v) != null) return true;
-    // URL
-    if (RegExp(r'^https?://', caseSensitive: false).hasMatch(v)) return true;
-    // Email
-    if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) return true;
-    // Phone number (7+ digits with optional +, spaces, dashes, parens)
-    if (RegExp(r'^[+]?\d[\d\s().-]{5,}$').hasMatch(v)) return true;
-    // Short uppercase reference codes: INV-001, PO-002, REF#2024
-    if (RegExp(r'^#?[A-Z]{1,6}[-_/]?[A-Z0-9]{2,}$').hasMatch(v)) return true;
-    if (RegExp(r'^[A-Z0-9]{2,}[-_/][A-Z0-9\-_/]{2,}$').hasMatch(v)) return true;
-    // Date strings
-    if (RegExp(r'^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}').hasMatch(v)) return true;
-    return false;
   }
 
   static bool _containsArabic(String text) =>
@@ -322,68 +196,19 @@ typedef LockerRequestTranslated = RequestTranslated;
 ///
 /// Module-agnostic — use in Locker, Accounting, Approvals, Owner, POS, etc.
 ///
-/// LOCALE SWITCH PATTERN
-/// ─────────────────────
-/// ViewModels must store raw API data and re-translate on locale change.
-/// Do NOT overwrite raw fields. Pattern:
+/// Usage:
 ///
-///   class MyViewModel extends ChangeNotifier with TranslatableMixin {
-///     // Raw (always English from API)
-///     List<MyItem> _rawItems = [];
-///     // Display (translated)
-///     List<MyItem> _items = [];
-///     List<MyItem> get items => _items;
+///   class AccountingViewModel extends ChangeNotifier
+///       with TranslatableMixin {
 ///
 ///     Future<void> load() async {
-///       _rawItems = await repo.fetchItems();
-///       await _applyTranslations();
-///     }
-///
-///     // Called by bindLocaleRetranslation on every locale change
-///     Future<void> retranslate() => _applyTranslations();
-///
-///     Future<void> _applyTranslations() async {
-///       _items = await Future.wait(_rawItems.map(_translateItem));
+///       final raw = await repo.fetchEntries();
+///       _party = await t(raw.party);
 ///       notifyListeners();
 ///     }
 ///   }
-///
-/// In initState (or ViewModel constructor):
-///   viewModel.bindLocaleRetranslation(settingsViewModel, viewModel.retranslate);
 mixin TranslatableMixin {
-  Listenable? _localeListenable;
-  VoidCallback? _localeListener;
-
-  /// Bind this ViewModel to SettingsViewModel (or any Listenable that notifies
-  /// when locale changes). Call once from the ViewModel constructor or initState.
-  ///
-  /// [retranslate] should:
-  ///   1. Clear the translation cache (AppTranslationService.clearCache())
-  ///   2. Re-translate all raw API data
-  ///   3. Call notifyListeners()
-  void bindLocaleRetranslation(
-    Listenable settingsViewModel,
-    Future<void> Function() retranslate,
-  ) {
-    unbindLocaleRetranslation();
-    _localeListenable = settingsViewModel;
-    _localeListener = () async {
-      AppTranslationService.clearCache();
-      await retranslate();
-    };
-    settingsViewModel.addListener(_localeListener!);
-  }
-
-  /// Call this from the ViewModel dispose() method.
-  void unbindLocaleRetranslation() {
-    if (_localeListenable != null && _localeListener != null) {
-      _localeListenable!.removeListener(_localeListener!);
-    }
-    _localeListenable = null;
-    _localeListener = null;
-  }
-
-  // ── Core wrappers (SessionService locale — for ViewModels) ────────────────
+  // ── Core wrappers ─────────────────────────────────────────────────────────
 
   Future<String> t(String text) =>
       AppTranslationService.localizedText(text);
@@ -397,29 +222,12 @@ mixin TranslatableMixin {
   Future<List<String>> tAll(List<String> texts) =>
       AppTranslationService.localizedAll(texts);
 
-  // ── Widget-tree locale wrappers (preferred in didChangeDependencies) ───────
-
-  /// Use these "ForLang" variants when you have the language code from
-  /// `Localizations.localeOf(context).languageCode` — they skip the async
-  /// SessionService call and always reflect the current live locale.
-  Future<String> tForLang(String text, String languageCode) =>
-      AppTranslationService.localizedTextForLanguage(text, languageCode);
-
-  Future<String?> tNullableForLang(String? text, String languageCode) =>
-      AppTranslationService.localizedTextNullableForLanguage(text, languageCode);
-
-  Future<String> tStatusForLang(String status, String languageCode) =>
-      AppTranslationService.localizedStatusForLanguage(status, languageCode);
-
-  Future<List<String>> tAllForLang(List<String> texts, String languageCode) =>
-      AppTranslationService.localizedAllForLanguage(texts, languageCode);
-
   // ── Domain helpers ────────────────────────────────────────────────────────
 
   /// Translates branch / cashier / officer fields of a dynamic request list.
   Future<List<RequestTranslated>> translateRequests(
-    List<dynamic> rawRequests,
-  ) async {
+      List<dynamic> rawRequests,
+      ) async {
     return Future.wait(rawRequests.map((r) => _translateRequest(r)));
   }
 
@@ -429,9 +237,9 @@ mixin TranslatableMixin {
     final officerName = await tNullable(req.assignedOfficerName as String?);
 
     return RequestTranslated(
-      branchName:           branchName,
-      cashierName:          cashierName,
-      assignedOfficerName:  officerName,
+      branchName          : branchName,
+      cashierName         : cashierName,
+      assignedOfficerName : officerName,
     );
   }
 
@@ -469,42 +277,6 @@ mixin TranslatableMixin {
     final isCode = RegExp(r'^[A-Z0-9#\-_/]+$').hasMatch(ref.trim());
     if (isCode) return ref;
     return t(ref);
-  }
-
-  /// Translates branch name/location returned by API/database.
-  Future<Branch> translateBranch(Branch branch) async {
-    return branch.copyWith(
-      translatedName:     await tBranch(branch.name),
-      translatedLocation: await t(branch.location),
-    );
-  }
-
-  /// Translates a list of branches without mutating raw API data.
-  Future<List<Branch>> translateBranches(List<Branch> branches) async {
-    return Future.wait(branches.map(translateBranch));
-  }
-
-  /// Translates all dynamic display fields on a petty-cash request.
-  Future<PettyCashRequestItem> translatePettyCashRequest(
-    PettyCashRequestItem request,
-  ) async {
-    return request.copyWith(
-      translatedPartyName:       await tNullable(request.partyName),
-      translatedBranchName:      await tBranch(request.branchName),
-      translatedCashierName:     await tPerson(request.cashierName),
-      translatedStatus:          await tUiStatus(request.status),
-      translatedReason:          await tNotes(request.reason),
-      translatedCategoryLabel:   await tNullable(request.categoryLabel),
-      translatedEmployeeName:    await tNullable(request.employeeName),
-      translatedRejectionReason: await tNullable(request.rejectionReason),
-    );
-  }
-
-  /// Translates a list of petty-cash requests without mutating raw API data.
-  Future<List<PettyCashRequestItem>> translatePettyCashRequests(
-    List<PettyCashRequestItem> requests,
-  ) async {
-    return Future.wait(requests.map(translatePettyCashRequest));
   }
 }
 

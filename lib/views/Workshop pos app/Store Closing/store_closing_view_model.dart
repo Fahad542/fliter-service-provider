@@ -17,6 +17,7 @@ class StoreClosingViewModel extends ChangeNotifier {
   final corporateController = TextEditingController();
   final tamaraController = TextEditingController();
   final tabbyController = TextEditingController();
+  final othersController = TextEditingController();
   final notesController = TextEditingController();
 
   bool _isReconciled = false;
@@ -46,7 +47,8 @@ class StoreClosingViewModel extends ChangeNotifier {
     final corporate = double.tryParse(corporateController.text) ?? 0;
     final tamara = double.tryParse(tamaraController.text) ?? 0;
     final tabby = double.tryParse(tabbyController.text) ?? 0;
-    return cash + bank + corporate + tamara + tabby;
+    final others = double.tryParse(othersController.text) ?? 0;
+    return cash + bank + corporate + tamara + tabby + others;
   }
 
   void updatePhysicalCount() {
@@ -85,6 +87,7 @@ class StoreClosingViewModel extends ChangeNotifier {
 
       final body = <String, dynamic>{
         'physicalCash': double.tryParse(cashController.text) ?? 0,
+        'clientClosedAt': DateTime.now().toIso8601String(),
         if (bankController.text.isNotEmpty)
           'physicalBank': double.tryParse(bankController.text) ?? 0,
         if (corporateController.text.isNotEmpty)
@@ -93,6 +96,8 @@ class StoreClosingViewModel extends ChangeNotifier {
           'physicalTamara': double.tryParse(tamaraController.text) ?? 0,
         if (tabbyController.text.isNotEmpty)
           'physicalTabby': double.tryParse(tabbyController.text) ?? 0,
+        if (othersController.text.isNotEmpty)
+          'physicalOthers': double.tryParse(othersController.text) ?? 0,
         if (notesController.text.trim().isNotEmpty)
           'notes': notesController.text.trim(),
       };
@@ -180,6 +185,7 @@ class StoreClosingViewModel extends ChangeNotifier {
                 _buildPdfRow('Corporate', _report!.systemCorporate, _report!.physicalCorporate, _report!.corporateDiff),
                 _buildPdfRow('Tamara', _report!.systemTamara, _report!.physicalTamara, _report!.tamaraDiff),
                 _buildPdfRow('Tabby', _report!.systemTabby, _report!.physicalTabby, _report!.tabbyDiff),
+                _buildPdfRow('Others (Employees)', _report!.systemOthers, _report!.physicalOthers, _report!.othersDiff),
                 pw.SizedBox(height: 20),
                 pw.Divider(),
                 pw.SizedBox(height: 10),
@@ -196,10 +202,32 @@ class StoreClosingViewModel extends ChangeNotifier {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('System Total Sales (net, after returns):',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                    pw.Text('Total Sales Return:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
                     pw.Text(
-                        'SAR ${_report!.systemPaymentsTotalShown.toStringAsFixed(2)}',
+                        _report!.salesReturnsTotal > 0
+                            ? '- SAR ${_report!.salesReturnsTotal.toStringAsFixed(2)}'
+                            : 'SAR ${_report!.salesReturnsTotal.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+                pw.SizedBox(height: 6),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('System Total Sales (before returns):',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                    pw.Text('SAR ${_report!.grossSystemSales.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+                pw.SizedBox(height: 6),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Grand Total (net):',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                    pw.Text('SAR ${_report!.systemSales.toStringAsFixed(2)}',
                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
                   ],
                 ),
@@ -246,11 +274,13 @@ class StoreClosingViewModel extends ChangeNotifier {
     _isReconciled = false;
     _report = null;
     _closingId = null;
+    _summary = null;
     cashController.clear();
     bankController.clear();
     corporateController.clear();
     tamaraController.clear();
     tabbyController.clear();
+    othersController.clear();
     notesController.clear();
     notifyListeners();
   }
@@ -262,6 +292,7 @@ class StoreClosingViewModel extends ChangeNotifier {
     corporateController.dispose();
     tamaraController.dispose();
     tabbyController.dispose();
+    othersController.dispose();
     notesController.dispose();
     super.dispose();
   }

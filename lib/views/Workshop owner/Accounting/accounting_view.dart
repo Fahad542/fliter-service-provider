@@ -149,21 +149,21 @@ class _AccountingViewState extends State<AccountingView>
         children: [
           _buildSumCard(
             l10n.accountingPayables,
-            l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, (payables.toInt()).toString()),
+            '$currency ${payables.toInt()}',
             Icons.arrow_upward_rounded,
             Colors.orange,
           ),
           const SizedBox(width: 12),
           _buildSumCard(
             l10n.accountingReceivables,
-            l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, (receivables.toInt()).toString()),
+            '$currency ${receivables.toInt()}',
             Icons.arrow_downward_rounded,
             Colors.green,
           ),
           const SizedBox(width: 12),
           _buildSumCard(
             l10n.accountingOverdue,
-            l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, (overdue.toInt()).toString()),
+            '$currency ${overdue.toInt()}',
             Icons.warning_rounded,
             Colors.red,
           ),
@@ -440,7 +440,7 @@ class _AccountingViewState extends State<AccountingView>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, entry.amount.toInt().toString()),
+                'SAR ${entry.amount.toInt()}',
                 style: AppTextStyles.h2
                     .copyWith(fontSize: 15, color: AppColors.secondaryLight),
               ),

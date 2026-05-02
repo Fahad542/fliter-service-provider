@@ -1,7 +1,7 @@
 class ReconciliationBucket {
   final double system;
   final double physical;
-  final double difference;
+  final double difference; // system - physical (positive = system > physical)
 
   ReconciliationBucket({
     required this.system,
@@ -24,7 +24,10 @@ class StoreClosingReport {
   final String branch;
   final String cashierName;
 
-  // System Totals
+  // System totals (payments before returns scaledown; aligned with cashier counter-closing POST)
+  final double grossSystemSales;
+  final double salesReturnsTotal;
+  /// Net headline after returns (= payment buckets net of returns; authoritative for reconciliation).
   final double systemSales;
   final double systemCash;
   final double systemBank;
@@ -39,6 +42,7 @@ class StoreClosingReport {
   final double physicalCorporate;
   final double physicalTamara;
   final double physicalTabby;
+  final double physicalOthers;
 
   // API-provided differences (system - physical)
   final double? apiCashDiff;
@@ -46,6 +50,7 @@ class StoreClosingReport {
   final double? apiCorporateDiff;
   final double? apiTamaraDiff;
   final double? apiTabbyDiff;
+  final double? apiOthersDiff;
   final double? apiTotalDifference;
 
   StoreClosingReport({
@@ -53,43 +58,48 @@ class StoreClosingReport {
     required this.timestamp,
     required this.branch,
     required this.cashierName,
+    required this.grossSystemSales,
+    required this.salesReturnsTotal,
     required this.systemSales,
     required this.systemCash,
     required this.systemBank,
     required this.systemCorporate,
     required this.systemTamara,
     required this.systemTabby,
-    this.systemOthers = 0,
+    required this.systemOthers,
     required this.physicalCash,
     required this.physicalBank,
     required this.physicalCorporate,
     required this.physicalTamara,
     required this.physicalTabby,
+    required this.physicalOthers,
     this.apiCashDiff,
     this.apiBankDiff,
     this.apiCorporateDiff,
     this.apiTamaraDiff,
     this.apiTabbyDiff,
+    this.apiOthersDiff,
     this.apiTotalDifference,
   });
 
+  // Uses API-provided diffs if available, otherwise calculates locally
   double get cashDiff => apiCashDiff ?? (systemCash - physicalCash);
   double get bankDiff => apiBankDiff ?? (systemBank - physicalBank);
   double get corporateDiff => apiCorporateDiff ?? (systemCorporate - physicalCorporate);
   double get tamaraDiff => apiTamaraDiff ?? (systemTamara - physicalTamara);
   double get tabbyDiff => apiTabbyDiff ?? (systemTabby - physicalTabby);
-  double get netDifference => apiTotalDifference ?? (cashDiff + bankDiff + corporateDiff + tamaraDiff + tabbyDiff);
+  double get othersDiff => apiOthersDiff ?? (systemOthers - physicalOthers);
+  double get netDifference =>
+      apiTotalDifference ??
+      (cashDiff + bankDiff + corporateDiff + tamaraDiff + tabbyDiff + othersDiff);
 
   double get physicalTotal =>
-      physicalCash + physicalBank + physicalCorporate + physicalTamara + physicalTabby;
-
-  double get systemPaymentsTotalShown =>
-      systemCash +
-          systemBank +
-          systemCorporate +
-          systemTamara +
-          systemTabby +
-          systemOthers;
+      physicalCash +
+      physicalBank +
+      physicalCorporate +
+      physicalTamara +
+      physicalTabby +
+      physicalOthers;
 
   factory StoreClosingReport.fromApiResponse({
     required String closingId,
@@ -110,29 +120,41 @@ class StoreClosingReport {
     final corp = bucket('corporateInvoice');
     final tamara = bucket('tamaraCredits');
     final tabby = bucket('tabbyCredits');
+    final others = bucket('others');
+
+    final netFromApi =
+        (json['systemTotalSales'] ?? json['totalAmount'] ?? 0).toDouble();
+    final grossFromApi =
+        (json['grossSystemSales'] ?? netFromApi).toDouble();
+    final returnsFromApi =
+        (json['salesReturnsTotal'] ?? 0).toDouble();
 
     return StoreClosingReport(
       id: closingId,
       timestamp: DateTime.now(),
       branch: branch,
       cashierName: cashierName,
-      systemSales: (json['systemTotalSales'] ?? 0).toDouble(),
+      grossSystemSales: grossFromApi,
+      salesReturnsTotal: returnsFromApi,
+      systemSales: netFromApi,
       systemCash: cash.system,
       systemBank: bank.system,
       systemCorporate: corp.system,
       systemTamara: tamara.system,
       systemTabby: tabby.system,
-      systemOthers: (json['othersAmount'] ?? 0).toDouble(),
+      systemOthers: others.system,
       physicalCash: cash.physical,
       physicalBank: bank.physical,
       physicalCorporate: corp.physical,
       physicalTamara: tamara.physical,
       physicalTabby: tabby.physical,
+      physicalOthers: others.physical,
       apiCashDiff: cash.difference,
       apiBankDiff: bank.difference,
       apiCorporateDiff: corp.difference,
       apiTamaraDiff: tamara.difference,
       apiTabbyDiff: tabby.difference,
+      apiOthersDiff: others.difference,
       apiTotalDifference: (json['totalDifference'] ?? 0).toDouble(),
     );
   }
@@ -148,8 +170,6 @@ class StoreClosingSummary {
   final double systemOthers;
   final double totalAmount;
   final int totalInvoices;
-  final double? grossInvoiceTotal;
-  final double? salesReturnsTotal;
 
   StoreClosingSummary({
     required this.systemCash,
@@ -160,38 +180,19 @@ class StoreClosingSummary {
     required this.systemOthers,
     required this.totalAmount,
     required this.totalInvoices,
-    this.grossInvoiceTotal,
-    this.salesReturnsTotal,
   });
-
-  double get netPaymentsTotalShown =>
-      systemCash +
-          systemBank +
-          systemCorporate +
-          systemTamara +
-          systemTabby +
-          systemOthers;
 
   factory StoreClosingSummary.fromJson(Map<String, dynamic> json) {
     final totals = json['paymentCategoryTotals'] as Map<String, dynamic>? ?? {};
-    double? optionalDouble(dynamic v) =>
-        v == null ? null : (v is num ? v.toDouble() : double.tryParse('$v'));
-
     return StoreClosingSummary(
       systemCash: (totals['cash'] ?? json['cashAmount'] ?? 0).toDouble(),
       systemBank: (totals['bankCardSlips'] ?? json['bankAmount'] ?? 0).toDouble(),
       systemCorporate: (totals['corporateInvoice'] ?? json['corporateAmount'] ?? 0).toDouble(),
       systemTamara: (totals['tamaraCredits'] ?? 0).toDouble(),
       systemTabby: (totals['tabbyCredits'] ?? 0).toDouble(),
-      systemOthers: (totals['others'] ?? json['othersAmount'] ?? 0).toDouble(),
+      systemOthers: (totals['others'] ?? 0).toDouble(),
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-      totalInvoices: switch (json['totalInvoices']) {
-        final int x => x,
-        final num x => x.toInt(),
-        _ => int.tryParse('${json['totalInvoices']}') ?? 0,
-      },
-      grossInvoiceTotal: optionalDouble(json['grossInvoiceTotal']),
-      salesReturnsTotal: optionalDouble(json['salesReturnsTotal']),
+      totalInvoices: (json['totalInvoices'] ?? 0),
     );
   }
 }

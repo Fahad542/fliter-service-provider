@@ -2,14 +2,15 @@ import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 
-import '../../../data/repositories/pos_repository.dart';
-import '../../../models/cashier_expense_models.dart';
 import '../../../models/pos_payment_method.dart';
-import '../../../services/session_service.dart';
 import '../../../utils/app_colors.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../utils/toast_service.dart';
+
+/// Optional handler to persist PAY draft to `PATCH …/payment-method` before closing.
+typedef InvoicePaymentDraftPersistFn = Future<String?> Function(
+  InvoicePaymentChoiceResult proposal,
+);
 
 /// Result of [showInvoicePaymentChoiceDialog].
 class InvoicePaymentChoiceResult {
@@ -17,7 +18,7 @@ class InvoicePaymentChoiceResult {
   final Set<PaymentMethod> payments;
   /// Per-method amounts when multiple methods are selected (individual or corporate).
   final Map<PaymentMethod, double> paymentAmounts;
-  /// Branch employee IDs when [PaymentMethod.employees] is selected.
+  /// Legacy field — always empty (Employees payment removed from cashier UI).
   final Set<String> employeeIds;
 
   const InvoicePaymentChoiceResult({
@@ -36,6 +37,12 @@ Future<InvoicePaymentChoiceResult?> showInvoicePaymentChoiceDialog(
   Set<String>? initialEmployeeIds,
   /// Order grand total for split validation; defaults to 0 if omitted (e.g. hot-reload edge cases).
   double totalAmount = 0,
+
+  /// When set (cashier Orders flow): Save calls PATCH draft first; on failure dialog stays open.
+  InvoicePaymentDraftPersistFn? persistDraftFn,
+
+  /// When set with [persistDraftFn]: clears server draft and closes modal (caller gets `null`).
+  Future<String?> Function()? clearPersistedDraftFn,
 }) {
   return showDialog<InvoicePaymentChoiceResult>(
     context: context,
@@ -47,6 +54,8 @@ Future<InvoicePaymentChoiceResult?> showInvoicePaymentChoiceDialog(
       initialPaymentAmounts: initialPaymentAmounts,
       initialEmployeeIds: initialEmployeeIds,
       totalAmount: totalAmount,
+      persistDraftFn: persistDraftFn,
+      clearPersistedDraftFn: clearPersistedDraftFn,
     ),
   );
 }
@@ -58,6 +67,8 @@ class _InvoicePaymentChoiceDialog extends StatefulWidget {
   /// Prefill from cashier order-summary flow when reopening dialog.
   final Set<String>? initialEmployeeIds;
   final double totalAmount;
+  final InvoicePaymentDraftPersistFn? persistDraftFn;
+  final Future<String?> Function()? clearPersistedDraftFn;
 
   const _InvoicePaymentChoiceDialog({
     this.initialIsCorporate,
@@ -65,6 +76,8 @@ class _InvoicePaymentChoiceDialog extends StatefulWidget {
     this.initialPaymentAmounts,
     this.initialEmployeeIds,
     this.totalAmount = 0,
+    this.persistDraftFn,
+    this.clearPersistedDraftFn,
   });
 
   @override
@@ -77,6 +90,9 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
   late Set<PaymentMethod> _selected;
   final Map<PaymentMethod, TextEditingController> _amountControllers = {};
 
+  bool _draftSaving = false;
+  bool _draftClearing = false;
+
   static const _corporateMethods = <PaymentMethod>[
     PaymentMethod.monthlyBilling,
     PaymentMethod.bankTransfer,
@@ -85,27 +101,16 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     PaymentMethod.wallet,
   ];
 
-  /// Retail methods shown left-to-right, top-to-bottom — [employees] sits early so it is visible without scrolling.
   static const _retailDisplayOrder = <PaymentMethod>[
     PaymentMethod.cash,
     PaymentMethod.card,
     PaymentMethod.bankTransfer,
-    PaymentMethod.employees,
     PaymentMethod.tabby,
     PaymentMethod.tamara,
   ];
 
-  List<BranchEmployee> _branchEmployees = [];
-  bool _branchEmployeesLoading = false;
-  bool _branchEmployeesLoadFailed = false;
-  String? _selectedEmployeeId;
-
   bool get _isSplitMode => _selected.length > 1;
   double get _safeTotal => widget.totalAmount > 0 ? widget.totalAmount : 0.0;
-
-  bool get _employeesPaymentNeedsStaff =>
-      _isCorporate == false &&
-      _selected.contains(PaymentMethod.employees);
 
   @override
   void initState() {
@@ -113,47 +118,12 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     _isCorporate = widget.initialIsCorporate;
     final initial = widget.initialPayments;
     if (initial != null && initial.isNotEmpty) {
-      _selected = Set<PaymentMethod>.from(initial);
-    } else if (_isCorporate == true) {
-      _selected = {PaymentMethod.monthlyBilling};
+      _selected = Set<PaymentMethod>.from(initial)
+        ..remove(PaymentMethod.employees);
     } else {
       _selected = {};
     }
-    if (widget.initialEmployeeIds != null &&
-        widget.initialEmployeeIds!.isNotEmpty) {
-      _selectedEmployeeId = widget.initialEmployeeIds!.first;
-    }
     _syncAmountControllers(seedFromInitial: true);
-    if (_employeesPaymentNeedsStaff) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _ensureBranchEmployeesLoaded());
-    }
-  }
-
-  Future<void> _ensureBranchEmployeesLoaded() async {
-    if (_branchEmployees.isNotEmpty || _branchEmployeesLoading) return;
-    setState(() {
-      _branchEmployeesLoading = true;
-      _branchEmployeesLoadFailed = false;
-    });
-    try {
-      final session = Provider.of<SessionService>(context, listen: false);
-      final repo = Provider.of<PosRepository>(context, listen: false);
-      final token = await session.getToken(role: 'cashier');
-      if (!mounted) return;
-      if (token == null) throw Exception('Session');
-      final res = await repo.getCashierEmployees(token);
-      if (!mounted) return;
-      setState(() {
-        _branchEmployees = res.employees;
-        _branchEmployeesLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _branchEmployeesLoading = false;
-        _branchEmployeesLoadFailed = true;
-      });
-    }
   }
 
   @override
@@ -164,20 +134,87 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     super.dispose();
   }
 
-  void _setCorporate(bool value) {
-    setState(() {
-      _isCorporate = value;
-      if (value) {
-        _selectedEmployeeId = null;
-        _selected = _selected.where((p) => _corporateMethods.contains(p)).toSet();
-        if (_selected.isEmpty) {
-          _selected = {PaymentMethod.monthlyBilling};
-        }
-      } else {
-        _selected.removeWhere(
-          (p) => p == PaymentMethod.monthlyBilling || p == PaymentMethod.wallet,
-        );
+  void _clearAllControllers() {
+    for (final c in _amountControllers.values) {
+      c.dispose();
+    }
+    _amountControllers.clear();
+  }
+
+  /// Changing Individual ↔ Corporate resets payment selections; confirm when there is something to lose.
+  bool _shouldConfirmCustomerTypeSwitch() {
+    if (_selected.isEmpty) return false;
+    if (_isCorporate == true) {
+      if (_selected.length > 1) return true;
+      if (_selected.length == 1) {
+        return _selected.single != PaymentMethod.monthlyBilling;
       }
+    }
+    return true;
+  }
+
+  Future<void> _onCustomerTypeTapped(bool wantCorporate) async {
+    if (_isCorporate == wantCorporate) return;
+
+    final firstPick = _isCorporate == null;
+    if (!firstPick &&
+        _shouldConfirmCustomerTypeSwitch() &&
+        wantCorporate != _isCorporate) {
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          final maxW = min(340.0, MediaQuery.sizeOf(ctx).width - 56);
+          return AlertDialog(
+            constraints: BoxConstraints(maxWidth: maxW),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: Text(
+              'Change customer',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: AppColors.secondaryLight,
+                fontSize: 17,
+              ),
+            ),
+            content: const Text(
+              'Do you really want to change the customer? Your payment choices for '
+              'this customer type will be cleared.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.secondaryLight.withValues(alpha: 0.85),
+                  ),
+                ),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryLight,
+                  foregroundColor: AppColors.onPrimaryLight,
+                ),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text(
+                  'Change customer',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+      if (go != true) return;
+    }
+    if (!mounted) return;
+
+    setState(() {
+      _clearAllControllers();
+      _isCorporate = wantCorporate;
+      _selected = {};
       _syncAmountControllers();
     });
   }
@@ -188,14 +225,8 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     setState(() {
       if (isSelected) {
         _selected.remove(pm);
-        if (pm == PaymentMethod.employees) {
-          _selectedEmployeeId = null;
-        }
       } else {
         _selected.add(pm);
-        if (pm == PaymentMethod.employees) {
-          _ensureBranchEmployeesLoaded();
-        }
       }
       final newLen = _isCorporate == false ? _selected.length : 0;
       final oneToMany =
@@ -286,10 +317,6 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
 
   bool get _canSave {
     if (_isCorporate == null || _selected.isEmpty) return false;
-    if (_employeesPaymentNeedsStaff &&
-        (_selectedEmployeeId == null || _selectedEmployeeId!.isEmpty)) {
-      return false;
-    }
     if (!_isSplitMode) return true;
     for (final pm in _selected) {
       final c = _amountControllers[pm];
@@ -316,9 +343,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primaryLight.withValues(alpha: 0.55)
-                : const Color(0xFFF8F9FC),
+            color: isSelected ? Colors.white : const Color(0xFFF8F9FC),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? AppColors.primaryLight : const Color(0xFFE2E8F0),
@@ -327,7 +352,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.primaryLight.withValues(alpha: 0.22),
+                      color: AppColors.secondaryLight.withValues(alpha: 0.06),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -336,19 +361,6 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
           ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withValues(alpha: 0.7) : Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  pm.icon,
-                  size: 17,
-                  color: isSelected ? AppColors.secondaryLight : Colors.grey.shade500,
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   pm.label,
@@ -356,15 +368,25 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
                     height: 1.2,
-                    color: isSelected ? AppColors.secondaryLight : Colors.grey.shade600,
+                    color:
+                        isSelected ? AppColors.secondaryLight : Colors.grey.shade600,
                   ),
                 ),
               ),
               if (isSelected)
-                Icon(
-                  Icons.check_circle_rounded,
-                  size: 18,
-                  color: AppColors.secondaryLight,
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 14,
+                    color: AppColors.onPrimaryLight,
+                  ),
                 ),
             ],
           ),
@@ -377,45 +399,57 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     required List<PaymentMethod> methods,
     required bool isCorporateMode,
   }) {
+    const spacing = 8.0;
+    const cols = 3;
     final rows = <Widget>[];
-    for (var i = 0; i < methods.length; i += 2) {
-      final a = methods[i];
-      final b = i + 1 < methods.length ? methods[i + 1] : null;
-      rows.add(
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: _paymentTile(a, isCorporateMode: isCorporateMode)),
-            const SizedBox(width: 8),
+    for (var i = 0; i < methods.length; i += cols) {
+      final rowTiles = <Widget>[];
+      for (var k = 0; k < cols; k++) {
+        if (k > 0) rowTiles.add(const SizedBox(width: spacing));
+        final idx = i + k;
+        if (idx < methods.length) {
+          rowTiles.add(
             Expanded(
-              child: b != null
-                  ? _paymentTile(b, isCorporateMode: isCorporateMode)
-                  : const SizedBox(),
+              child: _paymentTile(
+                methods[idx],
+                isCorporateMode: isCorporateMode,
+              ),
             ),
-          ],
-        ),
-      );
-      if (i + 2 < methods.length) rows.add(const SizedBox(height: 8));
+          );
+        } else {
+          rowTiles.add(const Expanded(child: SizedBox()));
+        }
+      }
+      rows.add(Row(crossAxisAlignment: CrossAxisAlignment.start, children: rowTiles));
+      if (i + cols < methods.length) {
+        rows.add(const SizedBox(height: spacing));
+      }
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
   }
 
   Widget _splitAmountsEditor() {
     final methods = _selected.toList();
+    const spacing = 8.0;
+    const cols = 3;
     final rows = <Widget>[];
-    for (var i = 0; i < methods.length; i += 2) {
-      final a = methods[i];
-      final b = i + 1 < methods.length ? methods[i + 1] : null;
-      rows.add(
-        Row(
-          children: [
-            Expanded(child: _amountField(a)),
-            const SizedBox(width: 8),
-            Expanded(child: b != null ? _amountField(b) : const SizedBox()),
-          ],
-        ),
-      );
-      if (i + 2 < methods.length) rows.add(const SizedBox(height: 8));
+    for (var i = 0; i < methods.length; i += cols) {
+      final rowChildren = <Widget>[];
+      for (var k = 0; k < cols; k++) {
+        if (k > 0) rowChildren.add(const SizedBox(width: spacing));
+        final idx = i + k;
+        rowChildren.add(
+          Expanded(
+            child: idx < methods.length
+                ? _amountField(methods[idx])
+                : const SizedBox(),
+          ),
+        );
+      }
+      rows.add(Row(children: rowChildren));
+      if (i + cols < methods.length) {
+        rows.add(const SizedBox(height: spacing));
+      }
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -456,7 +490,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Remaining: \${_remainingAmount.toStringAsFixed(2)} \${AppLocalizations.of(context)!.currencySymbol}',
+                  'Remaining: ${_remainingAmount.toStringAsFixed(2)} SAR',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
@@ -484,7 +518,22 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
       onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
         labelText: '${pm.label} amount',
-        suffixText: AppLocalizations.of(context)!.currencySymbol,
+        labelStyle: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey.shade600,
+        ),
+        floatingLabelStyle: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: AppColors.secondaryLight,
+        ),
+        suffixText: 'SAR',
+        suffixStyle: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey.shade600,
+        ),
         isDense: true,
         filled: true,
         fillColor: Colors.white,
@@ -529,133 +578,63 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     return out;
   }
 
-  Widget _buildEmployeesPicker() {
-    if (_branchEmployeesLoading && _branchEmployees.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (_branchEmployeesLoadFailed && _branchEmployees.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Could not load employees.',
-              style: TextStyle(fontSize: 11.5, color: Colors.red.shade700, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  _branchEmployees.clear();
-                  _branchEmployeesLoadFailed = false;
-                });
-                _ensureBranchEmployeesLoaded();
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-    if (_branchEmployees.isEmpty) {
-      return Text(
-        'No branch employees listed.',
-        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-      );
-    }
-
-    return SizedBox(
-      height: 108,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        itemCount: _branchEmployees.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final e = _branchEmployees[i];
-          final name = e.name.trim().isNotEmpty ? e.name.trim() : e.id;
-          final typeLabel = e.employeeTypeDisplay;
-          final selected = _selectedEmployeeId == e.id;
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedEmployeeId = selected ? null : e.id;
-                });
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 138,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.primaryLight.withValues(alpha: 0.5)
-                      : const Color(0xFFF8F9FC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected ? AppColors.primaryLight : const Color(0xFFE2E8F0),
-                    width: selected ? 2 : 1,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                          size: 16,
-                          color: selected ? AppColors.secondaryLight : Colors.grey.shade400,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                              color: selected ? AppColors.secondaryLight : Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      typeLabel.isNotEmpty ? typeLabel : '—',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w600,
-                        color: typeLabel.isNotEmpty
-                            ? Colors.grey.shade600
-                            : Colors.grey.shade400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+  Future<void> _submitSaveDraft() async {
+    if (!_canSave || _draftSaving || _draftClearing) return;
+    final proposal = InvoicePaymentChoiceResult(
+      isCorporate: _isCorporate!,
+      payments: Set<PaymentMethod>.from(_selected),
+      paymentAmounts: _buildPaymentAmounts(),
+      employeeIds: const <String>{},
     );
+    if (widget.persistDraftFn != null) {
+      setState(() => _draftSaving = true);
+      try {
+        final err = await widget.persistDraftFn!(proposal);
+        if (!mounted) return;
+        setState(() => _draftSaving = false);
+        if (err != null) {
+          ToastService.showError(context, err);
+          return;
+        }
+      } catch (e, st) {
+        if (mounted) {
+          setState(() => _draftSaving = false);
+          ToastService.showError(context, e.toString());
+          debugPrint('persistDraftFn: $e\n$st');
+        }
+        return;
+      }
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop(proposal);
+  }
+
+  Future<void> _submitClearPersistedDraft() async {
+    if (widget.clearPersistedDraftFn == null || _draftSaving || _draftClearing) {
+      return;
+    }
+    setState(() => _draftClearing = true);
+    try {
+      final err = await widget.clearPersistedDraftFn!();
+      if (!mounted) return;
+      setState(() => _draftClearing = false);
+      if (err != null) {
+        ToastService.showError(context, err);
+        return;
+      }
+      Navigator.of(context).pop();
+    } catch (e, st) {
+      if (!mounted) return;
+      setState(() => _draftClearing = false);
+      ToastService.showError(context, e.toString());
+      debugPrint('clearPersistedDraft: $e\n$st');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.sizeOf(context);
-    final maxW = _isSplitMode ? min(760.0, mq.width - 32) : min(520.0, mq.width - 40);
+    final maxW = min(560.0, mq.width - 40);
     final maxH = min(600.0, mq.height * 0.85);
     final retailMethods = _retailDisplayOrder
         .where((pm) => pm.isRetailSelectable)
@@ -677,33 +656,14 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.payments_rounded,
-                          size: 20,
-                          color: AppColors.secondaryLight,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Payment method',
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            height: 1.2,
-                            color: AppColors.secondaryLight,
-                          ),
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    'Payment method',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                      color: AppColors.secondaryLight,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -733,7 +693,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                             label: 'Individual',
                             icon: Icons.person_outline_rounded,
                             selected: _isCorporate == false,
-                            onTap: () => _setCorporate(false),
+                            onTap: () => _onCustomerTypeTapped(false),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -742,7 +702,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                             label: 'Corporate',
                             icon: Icons.business_rounded,
                             selected: _isCorporate == true,
-                            onTap: () => _setCorporate(true),
+                            onTap: () => _onCustomerTypeTapped(true),
                           ),
                         ),
                       ],
@@ -750,7 +710,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                     if (_isCorporate == null) ...[
                       const SizedBox(height: 12),
                       Text(
-                        'Tap Individual or Corporate first. Then choose Cash, Card, Employees, etc.',
+                        'Tap Individual or Corporate first. Then choose Cash, Card, Tabby, etc.',
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
@@ -804,21 +764,6 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                               const SizedBox(height: 12),
                               _splitAmountsEditor(),
                             ],
-                            if (_employeesPaymentNeedsStaff) ...[
-                              const SizedBox(height: 14),
-                              _sectionLabel('Employees'),
-                              Text(
-                                'Select one employee for Employees payment (name & type). Tap again to clear.',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey.shade600,
-                                  height: 1.35,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              _buildEmployeesPicker(),
-                            ],
                           ],
                         ),
                       ),
@@ -832,13 +777,38 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (widget.clearPersistedDraftFn != null)
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      ),
+                      onPressed:
+                          _draftSaving || _draftClearing ? null : _submitClearPersistedDraft,
+                      child: _draftClearing
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              'Clear saved payment',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color:
+                                    Colors.orange.shade800.withValues(alpha: 0.9),
+                              ),
+                            ),
+                    ),
+                  const Spacer(),
                   TextButton(
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     ),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed:
+                        (_draftSaving || _draftClearing) ? null : () => Navigator.of(context).pop(),
                     child: Text(
                       'Cancel',
                       style: TextStyle(
@@ -861,26 +831,23 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: _canSave
-                        ? () {
-                            Navigator.of(context).pop(
-                              InvoicePaymentChoiceResult(
-                                isCorporate: _isCorporate!,
-                                payments: Set<PaymentMethod>.from(_selected),
-                                paymentAmounts: _buildPaymentAmounts(),
-                                employeeIds:
-                                    _selectedEmployeeId != null &&
-                                            _selectedEmployeeId!.isNotEmpty
-                                        ? {_selectedEmployeeId!}
-                                        : <String>{},
-                              ),
-                            );
-                          }
-                        : null,
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-                    ),
+                    onPressed:
+                        (_draftSaving ||
+                                _draftClearing ||
+                                !_canSave)
+                            ? null
+                            : _submitSaveDraft,
+                    child: _draftSaving
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text(
+                            'Save',
+                            style:
+                                TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                          ),
                   ),
                 ],
               ),
@@ -916,16 +883,16 @@ class _CustomerTypeCard extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryLight.withValues(alpha: 0.45) : Colors.white,
+            color: selected ? AppColors.secondaryLight : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.primaryLight : const Color(0xFFE2E8F0),
+              color: selected ? AppColors.secondaryLight : const Color(0xFFE2E8F0),
               width: selected ? 2 : 1,
             ),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: AppColors.primaryLight.withValues(alpha: 0.18),
+                      color: AppColors.secondaryLight.withValues(alpha: 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -943,7 +910,7 @@ class _CustomerTypeCard extends StatelessWidget {
               Icon(
                 icon,
                 size: 22,
-                color: selected ? AppColors.secondaryLight : Colors.grey.shade500,
+                color: selected ? AppColors.onSecondaryLight : Colors.grey.shade500,
               ),
               const SizedBox(height: 6),
               Text(
@@ -952,7 +919,8 @@ class _CustomerTypeCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: selected ? AppColors.secondaryLight : Colors.grey.shade600,
+                  color:
+                      selected ? AppColors.onSecondaryLight : Colors.grey.shade600,
                 ),
               ),
             ],

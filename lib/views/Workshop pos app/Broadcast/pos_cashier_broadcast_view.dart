@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../l10n/app_localizations.dart';
 import '../../../models/cashier_active_broadcasts_model.dart';
 import '../../../utils/app_colors.dart';
-import '../../../services/localized_api_text.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../Technician App/Notifications/notifications_view.dart';
 import 'cashier_broadcast_view_model.dart';
@@ -17,18 +15,10 @@ class PosCashierBroadcastView extends StatefulWidget {
 }
 
 class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<CashierBroadcastViewModel>().fetchActive();
-    });
-  }
-
   double _gridChildAspectRatio(double gridInnerWidth) {
     const crossGap = 12.0;
     final cellW = (gridInnerWidth - crossGap) / 2;
+    // Enough height for badge + subtitle + countdown + progress (avoids tiny bottom overflows).
     const targetCellHeight = 136.0;
     return (cellW / targetCellHeight).clamp(2.0, 4.5);
   }
@@ -40,22 +30,18 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
     return '$m:$s';
   }
 
-  /// Builds a localised window label e.g. "05:00 window" / "05:00 نافذة"
-  String _windowLabel(int seconds, AppLocalizations l10n) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return l10n.posBroadcastWindow(m, s);
+  String _windowLabel(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')} window';
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final vm = context.watch<CashierBroadcastViewModel>();
     final list = vm.broadcasts;
     final window = vm.windowSeconds;
     final displayCount = vm.activeCountMeta > 0 ? vm.activeCountMeta : list.length;
-    final windowLabel = _windowLabel(window, l10n);
-    final errorText = vm.resolveError(l10n);
 
     final scroll = CustomScrollView(
       physics: const BouncingScrollPhysics(),
@@ -102,9 +88,9 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l10n.posBroadcastHeading,
-                          style: const TextStyle(
+                        const Text(
+                          'Technician broadcasts',
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
@@ -114,8 +100,8 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                         const SizedBox(height: 6),
                         Text(
                           list.isEmpty && !vm.isLoading
-                              ? l10n.posBroadcastNoActive
-                              : l10n.posBroadcastCountActive(displayCount, windowLabel),
+                              ? 'No active broadcasts'
+                              : '$displayCount active · ${_windowLabel(window)} per item',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.72),
                             fontSize: 13,
@@ -136,7 +122,7 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
             hasScrollBody: false,
             child: Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
           )
-        else if (errorText != null && list.isEmpty)
+        else if (vm.errorMessage != null && list.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
@@ -146,14 +132,14 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      errorText,
+                      vm.errorMessage!,
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
                     ),
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: () => vm.fetchActive(),
-                      child: Text(l10n.posBroadcastRetry),
+                      child: const Text('Retry'),
                     ),
                   ],
                 ),
@@ -161,48 +147,48 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
             ),
           )
         else if (list.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Text(
-                  l10n.posBroadcastNoActive,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                'No active broadcasts',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-              sliver: SliverLayoutBuilder(
-                builder: (context, constraints) {
-                  final aspect = _gridChildAspectRatio(constraints.crossAxisExtent);
-                  return SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: aspect,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                        final e = list[index];
-                        return _BroadcastCard(
-                          item: e,
-                          vm: vm,
-                          windowLabel: windowLabel,
-                          formatCountdown: _formatCountdown,
-                        );
-                      },
-                      childCount: list.length,
-                    ),
-                  );
-                },
-              ),
             ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            sliver: SliverLayoutBuilder(
+              builder: (context, constraints) {
+                final aspect = _gridChildAspectRatio(constraints.crossAxisExtent);
+                return SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: aspect,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final e = list[index];
+                      return _BroadcastCard(
+                        item: e,
+                        vm: vm,
+                        windowLabel: _windowLabel(window),
+                        formatCountdown: _formatCountdown,
+                      );
+                    },
+                    childCount: list.length,
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
 
@@ -238,9 +224,9 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
         ),
-        title: Text(
-          l10n.posBroadcastTitle,
-          style: const TextStyle(
+        title: const Text(
+          'BROADCAST',
+          style: TextStyle(
             color: AppColors.secondaryLight,
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -287,13 +273,14 @@ class _BroadcastCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final left = vm.remainingFor(item);
     final expired = vm.isExpired(item);
     final urgent = vm.showSoon(item);
     final progress = vm.progressRemaining(item);
-    // Badge resolved in view so it picks up locale on every rebuild.
-    final badge = vm.resolveBadge(item.broadcastType, l10n);
+    final type = item.broadcastType.trim().toLowerCase();
+    final badge = type.isEmpty
+        ? null
+        : (type == 'on_call' ? 'On call' : type == 'workshop' ? 'Workshop' : item.broadcastType);
 
     return Material(
       color: Colors.white,
@@ -307,8 +294,8 @@ class _BroadcastCard extends StatelessWidget {
             color: expired
                 ? Colors.grey.shade200
                 : urgent
-                ? const Color(0xFFFFB74D).withOpacity(0.55)
-                : Colors.grey.shade200,
+                    ? const Color(0xFFFFB74D).withOpacity(0.55)
+                    : Colors.grey.shade200,
             width: urgent && !expired ? 1.5 : 1,
           ),
           boxShadow: [
@@ -326,153 +313,153 @@ class _BroadcastCard extends StatelessWidget {
             physics: const ClampingScrollPhysics(),
             clipBehavior: Clip.hardEdge,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: expired ? Colors.grey.shade300 : AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.campaign_outlined,
-                        color: expired ? Colors.grey.shade600 : AppColors.secondaryLight,
-                        size: 19,
-                      ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: expired ? Colors.grey.shade300 : AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: LocalizedApiText(
-                                  item.title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: expired ? Colors.grey.shade500 : const Color(0xFF1B1E24),
-                                    height: 1.15,
-                                  ),
+                    child: Icon(
+                      Icons.campaign_outlined,
+                      color: expired ? Colors.grey.shade600 : AppColors.secondaryLight,
+                      size: 19,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.displayTitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: expired ? Colors.grey.shade500 : const Color(0xFF1B1E24),
+                                  height: 1.15,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (!expired && urgent)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                      margin: const EdgeInsets.only(bottom: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF3E0),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Text(
-                                        l10n.posBroadcastLabelSoon,
-                                        style: const TextStyle(
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w800,
-                                          color: Color(0xFFE65100),
-                                          letterSpacing: 0.2,
-                                        ),
-                                      ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (!expired && urgent)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    margin: const EdgeInsets.only(bottom: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFF3E0),
+                                      borderRadius: BorderRadius.circular(5),
                                     ),
-                                  Text(
-                                    formatCountdown(left),
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.35,
-                                      height: 1.05,
-                                      fontFeatures: const [FontFeature.tabularFigures()],
-                                      color: expired
-                                          ? Colors.grey.shade400
-                                          : urgent
-                                          ? const Color(0xFFE65100)
-                                          : AppColors.secondaryLight,
+                                    child: const Text(
+                                      'Soon',
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFFE65100),
+                                        letterSpacing: 0.2,
+                                      ),
                                     ),
                                   ),
-                                  Text(
-                                    expired ? l10n.posBroadcastLabelClosed : l10n.posBroadcastLabelRemaining,
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey.shade500,
-                                      height: 1,
-                                    ),
+                                Text(
+                                  formatCountdown(left),
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.35,
+                                    height: 1.05,
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                    color: expired
+                                        ? Colors.grey.shade400
+                                        : urgent
+                                            ? const Color(0xFFE65100)
+                                            : AppColors.secondaryLight,
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          if (badge != null) ...[
-                            const SizedBox(height: 3),
-                            Text(
-                              badge,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.grey.shade700,
-                                height: 1.05,
-                              ),
+                                ),
+                                Text(
+                                  expired ? 'Closed' : 'remaining',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade500,
+                                    height: 1,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                          const SizedBox(height: 2),
-                          LocalizedApiText(
-                            item.subtitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            badge,
                             style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade600,
-                              height: 1.2,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.grey.shade700,
+                              height: 1.05,
                             ),
                           ),
                         ],
-                      ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: expired ? 0 : progress,
-                    minHeight: 3,
-                    backgroundColor: Colors.grey.shade200,
-                    color: expired
-                        ? Colors.grey.shade300
-                        : urgent
-                        ? const Color(0xFFFF9800)
-                        : AppColors.primaryLight,
                   ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: expired ? 0 : progress,
+                  minHeight: 3,
+                  backgroundColor: Colors.grey.shade200,
+                  color: expired
+                      ? Colors.grey.shade300
+                      : urgent
+                          ? const Color(0xFFFF9800)
+                          : AppColors.primaryLight,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  expired ? l10n.posBroadcastLabelExpired : windowLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
-                  ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                expired ? 'Expired' : windowLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
+              ),
+            ],
             ),
           ),
         ),

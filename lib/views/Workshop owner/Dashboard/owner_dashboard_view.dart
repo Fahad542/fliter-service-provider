@@ -18,20 +18,6 @@ class OwnerDashboardView extends StatefulWidget {
 }
 
 class _OwnerDashboardViewState extends State<OwnerDashboardView> {
-  Locale? _lastLocale;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final locale = Localizations.localeOf(context);
-    if (_lastLocale != null && _lastLocale != locale) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.read<OwnerDashboardViewModel>().onLocaleChanged();
-      });
-    }
-    _lastLocale = locale;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -47,9 +33,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           backgroundColor: const Color(0xFFF8F9FD),
           appBar: OwnerAppBar(
             title: OwnerDashboardTitle(
-              subtitle: vm.selectedBranch != null
-                ? vm.branchDisplayName(vm.selectedBranch!)
-                : l10n.dashboardAllBranches,
+              subtitle: vm.selectedBranch?.name ?? l10n.dashboardAllBranches,
             ),
             showBackButton: false,
             showNotification: true,
@@ -104,12 +88,12 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
         ? <({String title, String value, IconData icon})>[
       (
       title: l10n.dashboardKpiTotalSalesToday,
-      value: l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, vm.totalSalesToday.toStringAsFixed(0)),
+      value: 'SAR ${vm.totalSalesToday.toStringAsFixed(0)}',
       icon: Icons.payments_rounded,
       ),
       (
       title: l10n.dashboardKpiThisMonth,
-      value: l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, vm.totalSalesMonth.toStringAsFixed(0)),
+      value: 'SAR ${vm.totalSalesMonth.toStringAsFixed(0)}',
       icon: Icons.calendar_today_rounded,
       ),
       (
@@ -126,7 +110,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
         : <({String title, String value, IconData icon})>[
       (
       title: l10n.dashboardKpiTodaysSales,
-      value: l10n.ownerCurrencyAmount(l10n.ownerCurrencySar, vm.totalSalesToday.toStringAsFixed(0)),
+      value: 'SAR ${vm.totalSalesToday.toStringAsFixed(0)}',
       icon: Icons.payments_rounded,
       ),
       (
@@ -387,9 +371,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    vm.selectedBranch != null
-                        ? vm.branchDisplayName(vm.selectedBranch!)
-                        : l10n.dashboardAllBranchesAggregated,
+                    vm.selectedBranch?.name ?? l10n.dashboardAllBranchesAggregated,
                     style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.secondaryLight),
                   ),
                 ],
@@ -437,8 +419,8 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                     ),
                     ...vm.branches.map((b) => _buildPickerItem(
                       context,
-                      vm.branchDisplayName(b),
-                      vm.branchDisplayLocation(b),
+                      b.name,
+                      b.location,
                       vm.selectedBranch?.id == b.id,
                           () => vm.setSelectedBranch(b),
                     )),

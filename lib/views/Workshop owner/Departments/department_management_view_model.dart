@@ -4,17 +4,14 @@ import '../../../../models/department_model.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../../services/owner_data_service.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../../../services/locker_translation_mixin.dart';
 
-class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixin {
+class DepartmentManagementViewModel extends ChangeNotifier {
   final OwnerRepository ownerRepository;
   final SessionService sessionService;
   final OwnerDataService ownerDataService;
-
-  final TextEditingController departmentNameController =
-  TextEditingController();
-
+  
+  final TextEditingController departmentNameController = TextEditingController();
+  
   bool _isActive = true;
   bool get isActive => _isActive;
 
@@ -22,13 +19,12 @@ class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixi
     _isActive = value;
     notifyListeners();
   }
-
+  
   String? _editingDepartmentId;
   bool get isEditing => _editingDepartmentId != null;
 
   bool _isLoading = false;
-  bool get isLoading =>
-      _isLoading || ownerDataService.isLoadingDepartments;
+  bool get isLoading => _isLoading || ownerDataService.isLoadingDepartments;
 
   bool _isActionLoading = false;
   bool get isActionLoading => _isActionLoading;
@@ -36,20 +32,13 @@ class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixi
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
-  final Map<String, String> _translatedDepartmentNames = {};
-
-  String departmentDisplayName(Department department) =>
-      _translatedDepartmentNames[department.id] ?? department.name;
-
   List<Department> get departments {
     if (_searchQuery.isEmpty) {
       return ownerDataService.departments;
     }
-    return ownerDataService.departments
-        .where((d) =>
-        d.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        departmentDisplayName(d).toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
+    return ownerDataService.departments.where((d) => 
+      d.name.toLowerCase().contains(_searchQuery.toLowerCase())
+    ).toList();
   }
 
   void updateSearchQuery(String query) {
@@ -74,21 +63,6 @@ class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixi
 
   Future<void> fetchDepartments({bool silent = false}) async {
     await ownerDataService.fetchDepartments(silent: silent);
-    await _translateDepartments();
-    notifyListeners();
-  }
-
-  Future<void> _translateDepartments() async {
-    _translatedDepartmentNames.clear();
-    for (final department in ownerDataService.departments) {
-      if (department.name.trim().isNotEmpty) {
-        _translatedDepartmentNames[department.id] = await t(department.name);
-      }
-    }
-  }
-
-  Future<void> onLocaleChanged() async {
-    await _translateDepartments();
     notifyListeners();
   }
 
@@ -111,10 +85,8 @@ class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixi
   }
 
   Future<void> submitDepartmentForm(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
-
     if (departmentNameController.text.trim().isEmpty) {
-      ToastService.showError(context, l10n.deptMgmtValidationNameRequired);
+      ToastService.showError(context, 'Department Name is required');
       return;
     }
 
@@ -132,25 +104,20 @@ class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixi
 
       if (_editingDepartmentId == null) {
         await ownerRepository.createDepartment(data, token);
-        if (context.mounted) {
-          ToastService.showSuccess(context, l10n.deptMgmtCreateSuccess);
-        }
+        if (context.mounted) ToastService.showSuccess(context, 'Department Created Successfully');
       } else {
-        await ownerRepository.updateDepartment(
-            token, _editingDepartmentId!, data);
-        if (context.mounted) {
-          ToastService.showSuccess(context, l10n.deptMgmtUpdateSuccess);
-        }
+        await ownerRepository.updateDepartment(token, _editingDepartmentId!, data);
+        if (context.mounted) ToastService.showSuccess(context, 'Department Updated Successfully');
       }
 
       if (context.mounted) {
         clearForm();
-        Navigator.pop(context);
-        await fetchDepartments(silent: true);
+        Navigator.pop(context); // Close the sheet
+        await fetchDepartments(silent: true); // Refresh global departments
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, l10n.deptMgmtSaveError);
+        ToastService.showError(context, 'Failed to save department');
       }
     } finally {
       _isActionLoading = false;
@@ -159,8 +126,6 @@ class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixi
   }
 
   Future<void> deleteDepartment(BuildContext context, String id) async {
-    final l10n = AppLocalizations.of(context)!;
-
     _isActionLoading = true;
     notifyListeners();
 
@@ -169,24 +134,19 @@ class DepartmentManagementViewModel extends ChangeNotifier with TranslatableMixi
       if (token == null) return;
 
       final response = await ownerRepository.deleteDepartment(token, id);
-
-      // Prefer the server message if meaningful, otherwise fall back to l10n.
-      final serverMsg = (response is Map<String, dynamic> &&
-          response['message'] != null &&
-          response['message'].toString().trim().isNotEmpty)
+      final successMessage = (response is Map<String, dynamic> &&
+              response['message'] != null &&
+              response['message'].toString().trim().isNotEmpty)
           ? response['message'].toString()
-          : null;
+          : 'Department Deleted Successfully';
 
+      // Force a fresh departments API call so list updates immediately.
       await fetchDepartments(silent: false);
-
       if (context.mounted) {
-        ToastService.showSuccess(
-            context, serverMsg ?? l10n.deptMgmtDeleteSuccess);
+        ToastService.showSuccess(context, successMessage);
       }
     } catch (e) {
-      if (context.mounted) {
-        ToastService.showError(context, l10n.deptMgmtDeleteError);
-      }
+      if (context.mounted) ToastService.showError(context, 'Failed to delete department');
     } finally {
       _isActionLoading = false;
       notifyListeners();

@@ -10,7 +10,7 @@ import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Login/login_view_model.dart';
 import 'package:filter_service_providers/utils/restart_widget.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../models/store_closing_model.dart';
 import 'store_closing_view_model.dart';
 
 class PosStoreClosingView extends StatefulWidget {
@@ -32,13 +32,13 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
       if (!vm.isReconciled) {
         vm.reset();
       }
-      vm.loadSummary();
+      // Store-closing GET summary is not called on enter — only [reconcile] hits
+      // the API when the user taps Close Shift (submit counter closing).
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final isTablet = MediaQuery.of(context).size.width > 600;
     final isReconciled = context.watch<StoreClosingViewModel>().isReconciled;
 
@@ -47,62 +47,62 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: isReconciled
           ? AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: AppColors.primaryLight,
-        elevation: 0,
-        centerTitle: true,
-        toolbarHeight: PosTabletLayout.appBarHeight,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(PosTabletLayout.appBarBottomRadius),
-          ),
-        ),
-        title: Text(
-          'Store Closing',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: isTablet ? PosTabletLayout.appBarTitleSize : 19,
-          ),
-        ),
-      )
+              automaticallyImplyLeading: false,
+              backgroundColor: AppColors.primaryLight,
+              elevation: 0,
+              centerTitle: true,
+              toolbarHeight: PosTabletLayout.appBarHeight,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(PosTabletLayout.appBarBottomRadius),
+                ),
+              ),
+              title: Text(
+                'Store Closing',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: isTablet ? PosTabletLayout.appBarTitleSize : 19,
+                ),
+              ),
+            )
           : const PosScreenAppBar(
-        title: 'Store Closing',
-        showBackButton: false,
-      ),
+              title: 'Store Closing',
+              showBackButton: false,
+            ),
       body: wrapPosShellRailBody(
         context,
         Consumer2<StoreClosingViewModel, PosViewModel>(
-          builder: (context, closingVm, posVm, _) {
-            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + keyboardHeight),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildReconciliationSummary(isTablet, posVm),
+        builder: (context, closingVm, posVm, _) {
+          final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + keyboardHeight),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildReconciliationSummary(isTablet, posVm),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Counter Reconciliation', Icons.account_balance_rounded),
+                const SizedBox(height: 16),
+                if (!closingVm.isReconciled)
+                  _buildPhysicalCountForm(isTablet, closingVm)
+                else ...[
+                  _buildReconciliationResult(isTablet, closingVm),
                   const SizedBox(height: 24),
-                  _buildSectionTitle('Counter Reconciliation', Icons.account_balance_rounded),
-                  const SizedBox(height: 16),
-                  if (!closingVm.isReconciled)
-                    _buildPhysicalCountForm(context, isTablet, closingVm)
-                  else ...[
-                    _buildReconciliationResult(context, isTablet, closingVm),
-                    const SizedBox(height: 24),
-                    _buildBottomActions(isTablet, posVm, closingVm),
-                  ],
+                  _buildBottomActions(isTablet, posVm, closingVm),
                 ],
-              ),
-            );
-          },
-        ),
+              ],
+            ),
+          );
+        },
+      ),
       ),
       bottomNavigationBar: isReconciled
           ? const SizedBox.shrink()
           : Consumer2<PosViewModel, StoreClosingViewModel>(
-        builder: (context, posVm, closingVm, _) =>
-            _buildBottomActions(isTablet, posVm, closingVm),
-      ),
+              builder: (context, posVm, closingVm, _) =>
+                  _buildBottomActions(isTablet, posVm, closingVm),
+            ),
     );
   }
 
@@ -239,8 +239,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
     );
   }
 
-  Widget _buildPhysicalCountForm(BuildContext context, bool isTablet, StoreClosingViewModel closingVm) {
-    final l10n = AppLocalizations.of(context)!;
+  Widget _buildPhysicalCountForm(bool isTablet, StoreClosingViewModel closingVm) {
     final summary = closingVm.summary;
 
     return Container(
@@ -261,12 +260,12 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.storeClosingPhysicalDrawerCount,
+            'Physical Drawer Count',
             style: AppTextStyles.h3.copyWith(fontSize: 15, color: const Color(0xFF1E2124)),
           ),
           const SizedBox(height: 6),
           Text(
-            l10n.storeClosingEnterAmounts,
+            'Enter the physical amounts you have counted for each payment category.',
             style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: 12),
           ),
 
@@ -276,23 +275,35 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             children: [
               Expanded(
                 child: _buildInputField(
-                  label: l10n.storeClosingLabelPhysicalCash,
+                  label: 'Physical Cash Amount',
                   controller: closingVm.cashController,
                   icon: Icons.payments_outlined,
                   hint: summary != null
-                      ? l10n.storeClosingExpectedSar(l10n.currencySymbol, summary.systemCash.toStringAsFixed(2))
+                      ? 'Expected: SAR ${summary.systemCash.toStringAsFixed(2)}'
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildInputField(
-                  label: l10n.storeClosingLabelBankCard,
+                  label: 'Bank / Card Slips',
                   controller: closingVm.bankController,
                   icon: Icons.credit_card_outlined,
                   hint: summary != null
-                      ? l10n.storeClosingExpectedSar(l10n.currencySymbol, summary.systemBank.toStringAsFixed(2))
+                      ? 'Expected: SAR ${summary.systemBank.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInputField(
+                  label: 'Corporate Invoices',
+                  controller: closingVm.corporateController,
+                  icon: Icons.business_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemCorporate.toStringAsFixed(2)}'
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -305,23 +316,34 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             children: [
               Expanded(
                 child: _buildInputField(
-                  label: l10n.storeClosingLabelCorporate,
-                  controller: closingVm.corporateController,
-                  icon: Icons.business_outlined,
+                  label: 'Tamara Credits',
+                  controller: closingVm.tamaraController,
+                  icon: Icons.receipt_long_outlined,
                   hint: summary != null
-                      ? l10n.storeClosingExpectedSar(l10n.currencySymbol, summary.systemCorporate.toStringAsFixed(2))
+                      ? 'Expected: SAR ${summary.systemTamara.toStringAsFixed(2)}'
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildInputField(
-                  label: l10n.storeClosingLabelTamara,
-                  controller: closingVm.tamaraController,
+                  label: 'Tabby Credits',
+                  controller: closingVm.tabbyController,
                   icon: Icons.receipt_long_outlined,
                   hint: summary != null
-                      ? l10n.storeClosingExpectedSar(l10n.currencySymbol, summary.systemTamara.toStringAsFixed(2))
+                      ? 'Expected: SAR ${summary.systemTabby.toStringAsFixed(2)}'
+                      : null,
+                  onChanged: (_) => closingVm.updatePhysicalCount(),
+                ),
+              ),
+              Expanded(
+                child: _buildInputField(
+                  label: 'Others (Employee sales)',
+                  controller: closingVm.othersController,
+                  icon: Icons.groups_outlined,
+                  hint: summary != null
+                      ? 'Expected: SAR ${summary.systemOthers.toStringAsFixed(2)}'
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -330,17 +352,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           ),
           const SizedBox(height: 16),
           _buildInputField(
-            label: l10n.storeClosingLabelTabby,
-            controller: closingVm.tabbyController,
-            icon: Icons.receipt_long_outlined,
-            hint: summary != null
-                ? l10n.storeClosingExpectedSar(l10n.currencySymbol, summary.systemTabby.toStringAsFixed(2))
-                : null,
-            onChanged: (_) => closingVm.updatePhysicalCount(),
-          ),
-          const SizedBox(height: 16),
-          _buildInputField(
-            label: l10n.storeClosingLabelNotes,
+            label: 'Notes (Optional)',
             controller: closingVm.notesController,
             icon: Icons.notes_rounded,
             isNumeric: false,
@@ -358,15 +370,15 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.storeClosingTotalPhysical,
-                  style: const TextStyle(
+                const Text(
+                  'Total Physical Sum',
+                  style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                       color: AppColors.secondaryLight),
                 ),
                 Text(
-                  '${l10n.currencySymbol} \${closingVm.physicalTotal.toStringAsFixed(2)}',
+                  'SAR ${closingVm.physicalTotal.toStringAsFixed(2)}',
                   style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -380,8 +392,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
     );
   }
 
-  Widget _buildSummaryHintRow(BuildContext context, String label, double amount, {bool bold = false}) {
-    final l10n = AppLocalizations.of(context)!;
+  Widget _buildSummaryHintRow(String label, double amount, {bool bold = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -396,7 +407,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             ),
           ),
           Text(
-'${l10n.currencySymbol} \${amount.toStringAsFixed(2)}',
+            'SAR ${amount.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 12,
               color: bold ? AppColors.secondaryLight : Colors.grey.shade700,
@@ -455,10 +466,10 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                  const BorderSide(color: AppColors.primaryLight, width: 2)),
+                      const BorderSide(color: AppColors.primaryLight, width: 2)),
               isDense: true,
               contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
           ),
         ),
@@ -466,8 +477,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
     );
   }
 
-  Widget _buildReconciliationResult(BuildContext context, bool isTablet, StoreClosingViewModel closingVm) {
-    final l10n = AppLocalizations.of(context)!;
+  Widget _buildReconciliationResult(bool isTablet, StoreClosingViewModel closingVm) {
     final report = closingVm.report;
     if (report == null) return const SizedBox();
 
@@ -512,8 +522,8 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                     children: [
                       Text(
                         report.netDifference == 0
-                            ? l10n.storeClosingShiftBalanced
-                            : l10n.storeClosingDiscrepancy,
+                            ? 'Shift Balanced'
+                            : 'Discrepancy Detected',
                         style: TextStyle(
                           color: report.netDifference == 0
                               ? Colors.green.shade800
@@ -525,8 +535,8 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                       const SizedBox(height: 2),
                       Text(
                         report.netDifference == 0
-                            ? l10n.storeClosingShiftClosedOk
-                            : l10n.storeClosingPositiveDiff,
+                            ? 'Shift closed successfully.'
+                            : 'Positive diff = system > physical.',
                         style: TextStyle(
                           color: report.netDifference == 0
                               ? Colors.green.shade700
@@ -555,7 +565,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(l10n.storeClosingClosingId,
+                  Text('Closing ID',
                       style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade500,
@@ -586,10 +596,10 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
           _buildResultRow('Tamara', report.systemTamara, report.physicalTamara, report.tamaraDiff),
           const SizedBox(height: 12),
           _buildResultRow('Tabby', report.systemTabby, report.physicalTabby, report.tabbyDiff),
-          const Divider(height: 32),
-          _buildTotalDifferenceRow(context, closingVm),
           const SizedBox(height: 12),
-          _buildSystemSalesRow(context, report.systemSales),
+          _buildResultRow('Others', report.systemOthers, report.physicalOthers, report.othersDiff),
+          const Divider(height: 32),
+          _buildSummaryTotalsTable(report),
         ],
       ),
     );
@@ -629,7 +639,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
       String label, double system, double physical, double diff) {
     // diff = system - physical: positive = cashier short (red), negative = cashier excess (green)
     final diffColor =
-    diff == 0 ? Colors.green : (diff > 0 ? Colors.red : Colors.green);
+        diff == 0 ? Colors.green : (diff > 0 ? Colors.red : Colors.green);
     return Row(
       children: [
         Expanded(
@@ -674,45 +684,151 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
     );
   }
 
-  Widget _buildTotalDifferenceRow(BuildContext context, StoreClosingViewModel closingVm) {
-    final l10n = AppLocalizations.of(context)!;
-    if (closingVm.report == null) return const SizedBox();
-    final netDiff = closingVm.report!.netDifference;
-
-    // netDiff = system - physical
-    // positive → system > physical → cashier is SHORT (owes money) → red, show as −
-    // negative → physical > system → cashier has EXCESS → green, show as +
-    // zero → balanced → green
+  /// Total Difference through Grand Total in a bordered 2‑column grid.
+  Widget _buildSummaryTotalsTable(StoreClosingReport report) {
+    final netDiff = report.netDifference;
     final isShort = netDiff > 0;
     final isExcess = netDiff < 0;
     final diffColor =
-    netDiff == 0 ? Colors.green : (isShort ? Colors.red : Colors.green);
+        netDiff == 0 ? Colors.green : (isShort ? Colors.red : Colors.green);
     final statusLabel =
-    netDiff == 0 ? 'BALANCED' : (isShort ? 'SHORT' : 'EXCESS');
+        netDiff == 0 ? 'BALANCED' : (isShort ? 'SHORT' : 'EXCESS');
     final displayAmount = netDiff.abs();
     final displaySign = isShort ? '−' : (isExcess ? '+' : '');
+    final borderColor = Colors.grey.shade300;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: diffColor.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: diffColor.withOpacity(0.2)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
+    final hdrStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w800,
+      color: Colors.grey.shade600,
+      letterSpacing: 0.4,
+    );
+
+    TableCell hdrLeft(String text) {
+      return TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          color: Colors.grey.shade100,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(text.toUpperCase(), style: hdrStyle),
+        ),
+      );
+    }
+
+    TableCell hdrRight(String text) {
+      return TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          color: Colors.grey.shade100,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          alignment: AlignmentDirectional.centerEnd,
+          child: Text(text.toUpperCase(), style: hdrStyle),
+        ),
+      );
+    }
+
+    TableCell lbl({
+      required String title,
+      String? subtitle,
+      Widget? trailing,
+      Color? rowTint,
+      FontWeight titleWeight = FontWeight.w700,
+    }) {
+      return TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          color: rowTint,
+          padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(l10n.storeClosingTotalDiff,
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              Container(
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: titleWeight,
+                  fontSize: 13,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(height: 4),
+                trailing,
+              ],
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    TableCell amt({
+      required String amount,
+      FontWeight weight = FontWeight.w800,
+      double size = 15,
+      Color? color,
+      Color? rowTint,
+    }) {
+      return TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          color: rowTint,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          alignment: AlignmentDirectional.centerEnd,
+          child: Text(
+            amount,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontWeight: weight,
+              fontSize: size,
+              color: color ?? AppColors.secondaryLight.withOpacity(0.85),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final returnsAmt = report.salesReturnsTotal > 0
+        ? '− SAR ${report.salesReturnsTotal.toStringAsFixed(2)}'
+        : 'SAR ${report.salesReturnsTotal.toStringAsFixed(2)}';
+
+    final diffTint = diffColor.withOpacity(0.06);
+    final returnTint = Colors.orange.withOpacity(0.05);
+    final grandTint = AppColors.secondaryLight.withOpacity(0.08);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Table(
+        border: TableBorder.all(color: borderColor, width: 1),
+        columnWidths: const {
+          0: FlexColumnWidth(2.2),
+          1: FlexColumnWidth(1.35),
+        },
+        children: [
+          TableRow(children: [
+            hdrLeft('Summary'),
+            hdrRight('Amount'),
+          ]),
+          TableRow(children: [
+            lbl(
+              title: 'Total Difference',
+              rowTint: diffTint,
+              trailing: Container(
                 padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: diffColor.withOpacity(0.12),
+                  color: diffColor.withOpacity(0.14),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -725,39 +841,50 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   ),
                 ),
               ),
-            ],
-          ),
-          Text(
-'$displaySign \${l10n.currencySymbol} \${displayAmount.toStringAsFixed(2)}',
-            style: TextStyle(
-                fontWeight: FontWeight.w800, fontSize: 18, color: diffColor),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSystemSalesRow(BuildContext context, double systemSales) {
-    final l10n = AppLocalizations.of(context)!;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.secondaryLight.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.secondaryLight.withOpacity(0.1)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(l10n.storeClosingSystemTotalSales,
-              style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.secondaryLight)),
-          Text(
-            '${l10n.currencySymbol} \${systemSales.toStringAsFixed(2)}',
-            style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-                color: AppColors.secondaryLight),
-          ),
+            ),
+            amt(
+              amount: '$displaySign SAR ${displayAmount.toStringAsFixed(2)}',
+              weight: FontWeight.w800,
+              size: 17,
+              color: diffColor,
+              rowTint: diffTint,
+            ),
+          ]),
+          TableRow(children: [
+            lbl(
+              title: 'Total Sales Return',
+              rowTint: returnTint,
+            ),
+            amt(
+              amount: returnsAmt,
+              color: Colors.orange.shade800,
+              rowTint: returnTint,
+            ),
+          ]),
+          TableRow(children: [
+            lbl(
+              title: 'System Total Sales',
+              subtitle: 'before returns',
+            ),
+            amt(
+              amount:
+                  'SAR ${report.grossSystemSales.toStringAsFixed(2)}',
+            ),
+          ]),
+          TableRow(children: [
+            lbl(
+              title: 'Grand Total',
+              titleWeight: FontWeight.w900,
+              rowTint: grandTint,
+            ),
+            amt(
+              amount: 'SAR ${report.systemSales.toStringAsFixed(2)}',
+              weight: FontWeight.w900,
+              size: 17,
+              rowTint: grandTint,
+              color: AppColors.secondaryLight,
+            ),
+          ]),
         ],
       ),
     );
@@ -782,10 +909,10 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
               child: ElevatedButton(
                 onPressed: (!closingVm.isReconciling)
                     ? () => closingVm.reconcile(
-                  posVm.branchName,
-                  posVm.cashierName,
-                  context,
-                )
+                          posVm.branchName,
+                          posVm.cashierName,
+                          context,
+                        )
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
@@ -798,23 +925,23 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                 ),
                 child: closingVm.isReconciling
                     ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.secondaryLight))
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.secondaryLight))
                     : const Text('Close Shift',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5)),
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5)),
               ),
             )
           else ...[
             Expanded(
               child: ElevatedButton(
                 onPressed:
-                closingVm.isGeneratingReport ? null : () => closingVm.buildReport(context),
+                    closingVm.isGeneratingReport ? null : () => closingVm.buildReport(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
                   foregroundColor: AppColors.secondaryLight,
@@ -824,13 +951,13 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                 ),
                 child: closingVm.isGeneratingReport
                     ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.secondaryLight))
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.secondaryLight))
                     : const Text('Generate Report',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
+                        style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(width: 16),

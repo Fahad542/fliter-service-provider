@@ -36,8 +36,10 @@ class TechnicianAssignmentViewModel extends ChangeNotifier {
   final Set<String> _selectedTechnicianIds = {};
   final List<String> _selectedTechnicianNames = [];
   String? _departmentName;
-  /// When true, only [PosTechnician.isOnline] technicians are listed (default).
-  bool _onlineOnly = true;
+  /// When false (default), catalog lists only workshop-floor technicians
+  /// ([PosTechnician.isEligibleWorkshopAssignmentRow]): online, workshop duty, active.
+  /// When true, all technicians are listed (per department filter).
+  bool _showAllTechnicians = false;
   /// After any user toggle/clear, do not let late [applyInitialSelectionFromJob] overwrite picks.
   bool _userChangedSelection = false;
 
@@ -45,17 +47,30 @@ class TechnicianAssignmentViewModel extends ChangeNotifier {
   Set<String> get selectedTechnicianIds => _selectedTechnicianIds;
   List<String> get selectedTechnicianNames => _selectedTechnicianNames;
   String? get departmentName => _departmentName;
-  bool get onlineOnly => _onlineOnly;
+  bool get showAllTechnicians => _showAllTechnicians;
+
+  /// True when the list is restricted to presence-online technicians (default).
+  bool get onlineOnly => !_showAllTechnicians;
 
   void setDepartmentName(String? name) {
     _departmentName = name;
-    _onlineOnly = true;
+    _showAllTechnicians = false;
+    notifyListeners();
+  }
+
+  void setShowAllTechnicians(bool value) {
+    if (_showAllTechnicians == value) return;
+    _showAllTechnicians = value;
+    notifyListeners();
+  }
+
+  void toggleShowAllTechnicians() {
+    _showAllTechnicians = !_showAllTechnicians;
     notifyListeners();
   }
 
   void setOnlineOnly(bool value) {
-    _onlineOnly = value;
-    notifyListeners();
+    setShowAllTechnicians(!value);
   }
 
   void setSearchQuery(String query) {
@@ -69,6 +84,7 @@ class TechnicianAssignmentViewModel extends ChangeNotifier {
       _selectedTechnicianIds.remove(tech.id);
       _selectedTechnicianNames.remove(tech.name);
     } else {
+      if (!tech.isEligibleWorkshopAssignmentRow) return;
       _selectedTechnicianIds.add(tech.id);
       _selectedTechnicianNames.add(tech.name);
     }
