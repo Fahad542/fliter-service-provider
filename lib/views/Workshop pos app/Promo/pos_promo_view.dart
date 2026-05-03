@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../services/currency_helper.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -568,7 +570,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                     child: Text(
                       promo.isPercent
                           ? '${promo.discount.toStringAsFixed(0)}% OFF'
-                          : 'SAR ${promo.discount.toStringAsFixed(0)} OFF',
+                          : '${CurrencyHelper.symbolForLang(Localizations.localeOf(context).languageCode)} ${promo.discount.toStringAsFixed(0)} OFF',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         color: Colors.green,

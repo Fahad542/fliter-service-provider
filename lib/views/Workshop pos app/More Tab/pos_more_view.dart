@@ -4,10 +4,8 @@ import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/app_text_styles.dart';
 import 'package:provider/provider.dart';
 import '../Home Screen/pos_view_model.dart';
-import '../Promo/pos_promo_view.dart';
-import '../Petty Cash/pos_petty_cash_view.dart';
-import '../Store Closing/pos_store_closing_view.dart';
 import '../Petty Cash/petty_cash_view_model.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PosMoreView extends StatelessWidget {
   final Function(int)? onSelect;
@@ -15,10 +13,8 @@ class PosMoreView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = MediaQuery
-        .of(context)
-        .size
-        .width > 600;
+    final l10n = AppLocalizations.of(context)!;
+    final isTablet = MediaQuery.of(context).size.width > 600;
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: PosTabletLayout.textScaler(context),
@@ -26,9 +22,9 @@ class PosMoreView extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          width: isTablet ? 180 : 120, // Further reduced from 200/150
+          width: isTablet ? 180 : 120,
           decoration: BoxDecoration(
-            color: const Color(0xFFFBF9F6), // Matches app scaffold background
+            color: const Color(0xFFFBF9F6),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -60,14 +56,18 @@ class PosMoreView extends StatelessWidget {
                           Icon(
                             Icons.account_balance_wallet,
                             size: isTablet ? 20 : 16,
-                            color: context.watch<PettyCashViewModel>().isLowPettyCashBalance ? Colors.red : AppColors.secondaryLight.withOpacity(0.7),
+                            color: context.watch<PettyCashViewModel>().isLowPettyCashBalance
+                                ? Colors.red
+                                : AppColors.secondaryLight.withOpacity(0.7),
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'Petty Cash',
+                            l10n.moreMenuPettyCash,
                             style: TextStyle(
                               fontSize: isTablet ? 12 : 10,
-                              color: context.watch<PettyCashViewModel>().isLowPettyCashBalance ? Colors.red : AppColors.secondaryLight,
+                              color: context.watch<PettyCashViewModel>().isLowPettyCashBalance
+                                  ? Colors.red
+                                  : AppColors.secondaryLight,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -77,7 +77,7 @@ class PosMoreView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _buildMenuItem(
-                    label: 'Promo Code',
+                    label: l10n.moreMenuPromoCode,
                     icon: Icons.local_offer,
                     onTap: () {
                       Navigator.pop(context);
@@ -89,7 +89,7 @@ class PosMoreView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _buildMenuItem(
-                    label: 'Store Closing',
+                    label: l10n.moreMenuStoreClosing,
                     icon: Icons.door_front_door_outlined,
                     onTap: () {
                       Navigator.pop(context);
@@ -101,7 +101,7 @@ class PosMoreView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _buildMenuItem(
-                    label: 'Sales Return',
+                    label: l10n.moreMenuSalesReturn,
                     icon: Icons.assignment_return_outlined,
                     onTap: () {
                       Navigator.pop(context);
@@ -132,8 +132,8 @@ class PosMoreView extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 16 : 12, // Reduced from 24/16
-          vertical: 8, // Reduced vertical padding
+          horizontal: isTablet ? 16 : 12,
+          vertical: 8,
         ),
         child: Row(
           children: [

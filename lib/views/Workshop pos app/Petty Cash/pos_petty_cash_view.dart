@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../services/currency_helper.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -264,7 +266,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    'SAR',
+                    CurrencyHelper.symbol(context),
                     style: TextStyle(
                       color: AppColors.primaryLight,
                       fontSize: isTablet ? 18 : 14,
@@ -367,7 +369,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildLabel('Amount (SAR)'),
+                        _buildLabel(AppLocalizations.of(context)!.posPettyCashAmountSar),
                         _buildTextField(
                           vm.amountController,
                           '0.00',
@@ -483,7 +485,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel('Requested Amount (SAR)'),
+              _buildLabel(AppLocalizations.of(context)!.posPettyCashRequestedAmountSar),
               _buildTextField(vm.requestAmountController, '0.00', Icons.add_card, TextInputType.number),
               const SizedBox(height: 16),
 
@@ -638,7 +640,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
       child: DropdownButtonHideUnderline(
         child: DropdownButton<ExpenseCategory>(
           value: vm.selectedCategory,
-          hint: Text('Select category', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+          hint: Text(AppLocalizations.of(context)!.posPettyCashSelectCategory, style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
           isExpanded: true,
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.secondaryLight.withOpacity(0.5)),
           style: const TextStyle(color: AppColors.secondaryLight, fontSize: 14, fontWeight: FontWeight.w600),
@@ -846,7 +848,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               items: [
                 DropdownMenuItem<String?>(
                   value: null,
-                  child: Text('All categories', style: filterDropdownTextStyle),
+                  child: Text(AppLocalizations.of(context)!.posPettyCashAllCategories, style: filterDropdownTextStyle),
                 ),
                 ...vm.expenseCategories.map(
                   (c) => DropdownMenuItem<String?>(
@@ -965,7 +967,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                                           height: 20,
                                           child: CircularProgressIndicator(strokeWidth: 2),
                                         )
-                                      : const Text('Load more'),
+                                      : Text(AppLocalizations.of(context)!.posPettyCashLoadMore),
                                 ),
                               ),
                             );
@@ -1076,7 +1078,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 ),
               ),
               Text(
-                'SAR ${e.amount.toStringAsFixed(2)}',
+                CurrencyHelper.format(context, e.amount),
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ],
@@ -1218,7 +1220,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
             ],
           ),
           const SizedBox(height: 24),
-          _buildInfoRow(Icons.account_balance_wallet_outlined, 'Requested Amount', 'SAR ${request.amount.toStringAsFixed(2)}'),
+          _buildInfoRow(Icons.account_balance_wallet_outlined, 'Requested Amount', CurrencyHelper.format(context, request.amount)),
           const SizedBox(height: 16),
           _buildInfoRow(Icons.help_outline, 'Reason', request.reason),
           const SizedBox(height: 16),

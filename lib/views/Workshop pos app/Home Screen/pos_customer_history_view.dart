@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../services/currency_helper.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../../models/customer_search_model.dart';
 import '../../../models/invoiced_orders_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../widgets/pos_widgets.dart';
-import '../Home Screen/pos_view_model.dart';
+import 'pos_view_model.dart';
 import 'package:provider/provider.dart';
 
 class PosCustomerHistoryView extends StatefulWidget {
@@ -75,10 +78,10 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 }
                 final orders = snapshot.data?.orders ?? [];
                 if (orders.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Text('No order history found for this customer.'),
+                      padding: const EdgeInsets.all(32.0),
+                      child: Text(AppLocalizations.of(context)!.posCustomerNoHistory),
                     ),
                   );
                 }
@@ -354,7 +357,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
               ),
               const SizedBox(width: 8),
               Text(
-                'SAR ${order.totalAmount.toStringAsFixed(2)}',
+                CurrencyHelper.format(context, order.totalAmount),
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: totalFs,
@@ -439,7 +442,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     ),
                     SizedBox(width: compact ? 4 : 8),
                     Text(
-                      'SAR ${item.lineTotal.toStringAsFixed(2)}',
+                      CurrencyHelper.format(context, item.lineTotal),
                       style: TextStyle(
                         fontSize: lineTotalFs,
                         color: const Color(0xFF1E2124),

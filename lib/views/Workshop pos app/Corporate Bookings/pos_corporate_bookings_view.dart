@@ -9,6 +9,8 @@ import '../../../models/pos_order_model.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Navbar/pos_shell.dart';
 import 'corporate_booking_view_model.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../services/LocalizedApiText.dart';
 
 class PosCorporateBookingsView extends StatefulWidget {
   const PosCorporateBookingsView({super.key});
@@ -75,6 +77,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
 
   @override
   Widget build(BuildContext context) {
+    _stateContext = context;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     return MediaQuery(
@@ -83,7 +86,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
       ).copyWith(textScaler: PosTabletLayout.textScaler(context)),
       child: Scaffold(
         backgroundColor: const Color(0xFFFBF9F6),
-        appBar: PosScreenAppBar(title: 'Corporate Bookings'),
+        appBar: PosScreenAppBar(title: AppLocalizations.of(context)!.posCorporateBookingsTitle),
         body: Consumer<CorporateBookingViewModel>(
           builder: (context, vm, child) {
             final bookings = vm.filteredBookings;
@@ -107,6 +110,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       children: [
                         _buildFilterChip(
                           'All',
+                          AppLocalizations.of(context)!.posCorporateFilterAll,
                           vm.currentFilter == 'All',
                           vm,
                           isTablet,
@@ -114,6 +118,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         const SizedBox(width: 12),
                         _buildFilterChip(
                           'Today',
+                          AppLocalizations.of(context)!.posCorporateFilterToday,
                           vm.currentFilter == 'Today',
                           vm,
                           isTablet,
@@ -121,6 +126,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         const SizedBox(width: 12),
                         _buildFilterChip(
                           'Pending',
+                          AppLocalizations.of(context)!.posCorporateFilterPending,
                           vm.currentFilter == 'Pending',
                           vm,
                           isTablet,
@@ -180,7 +186,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
           ),
           const SizedBox(height: 24),
           Text(
-            'No Bookings Found',
+            AppLocalizations.of(context)!.posCorporateNoBookingsTitle,
             style: TextStyle(
               fontSize: isTablet ? 22 : 18,
               fontWeight: FontWeight.w800,
@@ -189,7 +195,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
           ),
           const SizedBox(height: 8),
           Text(
-            'There are no corporate bookings for the selected filter.',
+            AppLocalizations.of(context)!.posCorporateNoBookingsSubtitle,
             style: TextStyle(
               fontSize: isTablet ? 15 : 14,
               color: Colors.grey.shade500,
@@ -203,13 +209,14 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   }
 
   Widget _buildFilterChip(
+    String filterKey,
     String label,
     bool isSelected,
     CorporateBookingViewModel vm,
     bool isTablet,
   ) {
     return GestureDetector(
-      onTap: () => vm.setFilter(label),
+      onTap: () => vm.setFilter(filterKey),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOutBack,
@@ -304,8 +311,8 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          booking.companyName,
+                        LocalizedApiText(
+                          booking.companyName?.toString() ?? '',
                           style: TextStyle(
                             fontSize: isTablet ? 18 : 16,
                             fontWeight: FontWeight.w800,
@@ -350,16 +357,17 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     children: [
                       Expanded(
                         child: _buildInfoTag(
-                          'Vehicle',
-                          booking.vehicleName,
+                          AppLocalizations.of(context)!.posCorporateCardLabelVehicle,
+                          booking.vehicleName?.toString() ?? '',
                           Icons.directions_car_rounded,
                           isTablet,
+                          translateValue: true,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildInfoTag(
-                          'Plate',
+                          AppLocalizations.of(context)!.posCorporateCardLabelPlate,
                           booking.vehiclePlate,
                           Icons.pin_outlined,
                           isTablet,
@@ -372,16 +380,17 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     children: [
                       Expanded(
                         child: _buildInfoTag(
-                          'Department',
-                          booking.department,
+                          AppLocalizations.of(context)!.posCorporateCardLabelDepartment,
+                          booking.department?.toString() ?? '',
                           Icons.category_rounded,
                           isTablet,
+                          translateValue: true,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildInfoTag(
-                          'Date',
+                          AppLocalizations.of(context)!.posCorporateCardLabelDate,
                           DateFormat(
                             'MMM dd, hh:mm a',
                           ).format(booking.bookedDateTime),
@@ -432,7 +441,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         ),
                       ),
                       child: Text(
-                        'Details',
+                        AppLocalizations.of(context)!.posCorporateActionDetails,
                         style: TextStyle(
                           fontSize: isTablet ? 13 : 12,
                           fontWeight: FontWeight.w700,
@@ -449,7 +458,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         onPressed: () => _showReasonDialog(
                           context,
                           booking,
-                          'Reject',
+                          AppLocalizations.of(context)!.posCorporateActionReject,
                           isTablet,
                         ),
                         style: ElevatedButton.styleFrom(
@@ -464,7 +473,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                           ),
                         ),
                         child: Text(
-                          'Reject',
+                          AppLocalizations.of(context)!.posCorporateActionReject,
                           style: TextStyle(
                             fontSize: isTablet ? 13 : 12,
                             fontWeight: FontWeight.w700,
@@ -489,7 +498,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                 SnackBar(
                                   content: Text(
                                     vm.errorMessage ??
-                                        'Failed to approve booking',
+                                        AppLocalizations.of(context)!.posCorporateApproveError,
                                   ),
                                   backgroundColor: Colors.red,
                                 ),
@@ -512,7 +521,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                           ),
                         ),
                         child: Text(
-                          'Approve',
+                          AppLocalizations.of(context)!.posCorporateActionApprove,
                           style: TextStyle(
                             color: AppColors.secondaryLight,
                             fontSize: isTablet ? 14 : 13,
@@ -553,7 +562,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Continue',
+                                    AppLocalizations.of(context)!.posCorporateActionContinue,
                                     style: TextStyle(
                                       fontSize: isTablet ? 14 : 13,
                                       fontWeight: FontWeight.w800,
@@ -585,8 +594,9 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
     String label,
     String value,
     IconData icon,
-    bool isTablet,
-  ) {
+    bool isTablet, {
+    bool translateValue = false,
+  }) {
     return Container(
       padding: EdgeInsets.all(isTablet ? 12 : 10),
       decoration: BoxDecoration(
@@ -632,16 +642,27 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                   ),
                 ),
                 const SizedBox(height: 1),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: isTablet ? 12 : 11,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1E2124),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                translateValue
+                    ? LocalizedApiText(
+                        value,
+                        style: TextStyle(
+                          fontSize: isTablet ? 12 : 11,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1E2124),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: isTablet ? 12 : 11,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1E2124),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
               ],
             ),
           ),
@@ -668,6 +689,28 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
       textColor = Colors.grey.shade700;
     }
 
+    // Translate status display string for UI
+    final l10n = AppLocalizations.of(_scaffoldContext)!;
+    String displayStatus;
+    final s = status.toLowerCase();
+    if (s.contains('cancelled') || s.contains('canceled')) {
+      displayStatus = l10n.posCorporateStatusCancelled;
+    } else if (s.contains('rejected')) {
+      displayStatus = l10n.posCorporateStatusRejected;
+    } else if (s.contains('approved')) {
+      displayStatus = l10n.posCorporateStatusApproved;
+    } else if (s.contains('in progress')) {
+      displayStatus = l10n.posCorporateStatusInProgress;
+    } else if (s.contains('completed')) {
+      displayStatus = l10n.posCorporateStatusCompleted;
+    } else if (s.contains('waiting')) {
+      displayStatus = l10n.posCorporateStatusWaitingApproval;
+    } else if (s.contains('pending')) {
+      displayStatus = l10n.posCorporateStatusPending;
+    } else {
+      displayStatus = status;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -675,15 +718,21 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        status,
+        displayStatus,
         style: TextStyle(
           color: textColor,
           fontWeight: FontWeight.w700,
           fontSize: isTablet ? 11 : 9,
         ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
       ),
     );
   }
+
+  // Helper — holds current build context for widgets that need l10n outside build()
+  BuildContext get _scaffoldContext => _stateContext!;
+  BuildContext? _stateContext;
 
   void _viewDetails(BuildContext context, booking, bool isTablet) {
     showDialog(
@@ -731,7 +780,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Corporate Booking Details',
+                            AppLocalizations.of(context)!.posCorporateDialogDetailsTitle,
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: isTablet ? 14 : 12,
@@ -740,8 +789,8 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            booking.companyName,
+                          LocalizedApiText(
+                            booking.companyName?.toString() ?? '',
                             style: TextStyle(
                               color: const Color(0xFF1E2124),
                               fontSize: isTablet ? 24 : 20,
@@ -765,28 +814,28 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildDetailSectionHeading(
-                        'Booking Details',
+                        AppLocalizations.of(context)!.posCorporateDetailsSectionBooking,
                         Icons.receipt_long_rounded,
                         isTablet,
                       ),
                       const SizedBox(height: 16),
-                      _buildDetailRow('Booking ID', booking.id, isTablet),
+                      _buildDetailRow(AppLocalizations.of(context)!.posCorporateDetailsBookingId, booking.id, isTablet),
                       _buildDetailRow(
-                        'Scheduled Time',
+                        AppLocalizations.of(context)!.posCorporateDetailsScheduledTime,
                         DateFormat(
                           'MMM dd, yyyy - hh:mm a',
                         ).format(booking.bookedDateTime),
                         isTablet,
                       ),
-                      _buildDetailRow(
-                        'Department',
-                        booking.department,
+                      _buildDetailRowApi(
+                        AppLocalizations.of(context)!.posCorporateDetailsDepartment,
+                        booking.department?.toString() ?? '',
                         isTablet,
                       ),
                       if (_isRejected(booking) &&
                           (booking.rejectionReason?.trim().isNotEmpty ?? false))
                         _buildDetailRow(
-                          'Rejection reason',
+                          AppLocalizations.of(context)!.posCorporateDetailsRejectionReason,
                           booking.rejectionReason!.trim(),
                           isTablet,
                         ),
@@ -796,18 +845,18 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       const SizedBox(height: 24),
 
                       _buildDetailSectionHeading(
-                        'Vehicle Information',
+                        AppLocalizations.of(context)!.posCorporateDetailsSectionVehicle,
                         Icons.directions_car_rounded,
                         isTablet,
                       ),
                       const SizedBox(height: 16),
-                      _buildDetailRow(
-                        'Vehicle Name',
-                        booking.vehicleName,
+                      _buildDetailRowApi(
+                        AppLocalizations.of(context)!.posCorporateDetailsVehicleName,
+                        booking.vehicleName?.toString() ?? '',
                         isTablet,
                       ),
                       _buildDetailRow(
-                        'License Plate',
+                        AppLocalizations.of(context)!.posCorporateDetailsLicensePlate,
                         booking.vehiclePlate,
                         isTablet,
                       ),
@@ -817,7 +866,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       const SizedBox(height: 24),
 
                       _buildDetailSectionHeading(
-                        'Requested Products',
+                        AppLocalizations.of(context)!.posCorporateDetailsSectionProducts,
                         Icons.inventory_2_rounded,
                         isTablet,
                       ),
@@ -842,7 +891,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'No specific products requested. Open matching department.',
+                                  AppLocalizations.of(context)!.posCorporateDetailsNoProducts,
                                   style: TextStyle(
                                     fontSize: isTablet ? 15 : 13,
                                     color: Colors.grey.shade600,
@@ -872,7 +921,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                               final itemName =
                                   item['serviceName'] ??
                                   item['productName'] ??
-                                  'Service package';
+                                  AppLocalizations.of(context)!.posCorporateDetailsSectionProducts;
                               final qty = item['qty'] ?? 1;
 
                               return Padding(
@@ -893,7 +942,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(
+                                          LocalizedApiText(
                                             itemName.toString(),
                                             style: TextStyle(
                                               fontSize: isTablet ? 15 : 14,
@@ -904,7 +953,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            'Qty: $qty',
+                                            AppLocalizations.of(context)!.posCorporateDetailsQty(qty.toString()),
                                             style: TextStyle(
                                               fontSize: isTablet ? 13 : 12,
                                               fontWeight: FontWeight.w600,
@@ -949,7 +998,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Text(
-                                        'Product ID: ${booking.preSelectedProducts[index]}',
+                                        AppLocalizations.of(context)!.posCorporateDetailsProductId(booking.preSelectedProducts[index].toString()),
                                         style: TextStyle(
                                           fontSize: isTablet ? 15 : 14,
                                           fontWeight: FontWeight.w700,
@@ -993,7 +1042,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                           foregroundColor: Colors.grey.shade600,
                         ),
                         child: Text(
-                          'Close',
+                          AppLocalizations.of(context)!.posCorporateActionClose,
                           style: TextStyle(
                             fontSize: isTablet ? 15 : 14,
                             fontWeight: FontWeight.w700,
@@ -1018,7 +1067,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                   SnackBar(
                                     content: Text(
                                       vm.errorMessage ??
-                                          'Failed to approve booking',
+                                          AppLocalizations.of(context)!.posCorporateApproveError,
                                     ),
                                     backgroundColor: Colors.red,
                                   ),
@@ -1040,7 +1089,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                             ),
                           ),
                           child: Text(
-                            'Approve Booking',
+                            AppLocalizations.of(context)!.posCorporateActionApproveBooking,
                             style: TextStyle(
                               color: AppColors.secondaryLight,
                               fontSize: isTablet ? 15 : 14,
@@ -1085,7 +1134,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      'Continue',
+                                      AppLocalizations.of(context)!.posCorporateActionContinue,
                                       style: TextStyle(
                                         fontSize: isTablet ? 15 : 14,
                                         fontWeight: FontWeight.w800,
@@ -1178,7 +1227,8 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
     bool isTablet,
   ) {
     final TextEditingController reasonController = TextEditingController();
-    final bool isReject = action == 'Reject';
+    // action is already localised, use color based on heuristic
+    final bool isReject = true; // Reject dialog only opens via Reject button
     final Color themeColor = isReject
         ? Colors.red.shade600
         : Colors.orange.shade600;
@@ -1225,7 +1275,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Booking Details',
+                        AppLocalizations.of(context)!.posCorporateDialogRejectTitle,
                         style: TextStyle(
                           color: const Color(0xFF1E2124),
                           fontSize: isTablet ? 22 : 18,
@@ -1245,7 +1295,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Please provide a reason to $action this booking for ${booking.companyName}. This information will be sent back to the corporate portal.',
+                      AppLocalizations.of(context)!.posCorporateDialogRejectBody(action, booking.companyName?.toString() ?? ''),
                       style: TextStyle(
                         fontSize: isTablet ? 15 : 14,
                         color: Colors.grey.shade600,
@@ -1255,7 +1305,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Reason',
+                      AppLocalizations.of(context)!.posCorporateDialogReasonLabel,
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: isTablet ? 14 : 13,
@@ -1272,7 +1322,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Enter your reason here...',
+                        hintText: AppLocalizations.of(context)!.posCorporateDialogReasonHint,
                         hintStyle: TextStyle(
                           color: Colors.grey.shade400,
                           fontWeight: FontWeight.w400,
@@ -1322,7 +1372,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                           foregroundColor: Colors.grey.shade600,
                         ),
                         child: Text(
-                          'Cancel',
+                          AppLocalizations.of(context)!.posCorporateActionCancel,
                           style: TextStyle(
                             fontSize: isTablet ? 15 : 14,
                             fontWeight: FontWeight.w700,
@@ -1345,7 +1395,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                       color: Colors.white,
                                     ),
                                     const SizedBox(width: 8),
-                                    Text('Please provide a reason to $action.'),
+                                    Text(AppLocalizations.of(context)!.posCorporateDialogReasonRequired(action)),
                                   ],
                                 ),
                                 behavior: SnackBarBehavior.floating,
@@ -1380,7 +1430,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                       color: Colors.white,
                                     ),
                                     const SizedBox(width: 8),
-                                    Text('Booking Rejected. Portal updated.'),
+                                    Text(AppLocalizations.of(context)!.posCorporateRejectSuccess),
                                   ],
                                 ),
                                 behavior: SnackBarBehavior.floating,
@@ -1394,7 +1444,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  vm.errorMessage ?? 'Failed to reject booking',
+                                  vm.errorMessage ?? AppLocalizations.of(context)!.posCorporateRejectError,
                                 ),
                                 backgroundColor: Colors.red,
                               ),
@@ -1411,7 +1461,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                           ),
                         ),
                         child: Text(
-                          'Submit Reason',
+                          AppLocalizations.of(context)!.posCorporateActionSubmitReason,
                           style: TextStyle(
                             fontSize: isTablet ? 15 : 14,
                             fontWeight: FontWeight.w800,
@@ -1466,9 +1516,9 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
     if (matchedOrder == null) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'No matching order found for this booking yet. Please refresh and try again.',
+            AppLocalizations.of(context)!.posCorporateNoMatchingOrder,
           ),
           backgroundColor: Colors.orange,
         ),
@@ -1549,5 +1599,40 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
         '${booking.statusDisplay?.toString() ?? ''} ${booking.status?.toString() ?? ''}'
             .toLowerCase();
     return statusRaw.contains('complete') || statusRaw.contains('invoiced');
+  }
+
+  /// Detail row variant for API data — uses LocalizedApiText for the value.
+  Widget _buildDetailRowApi(String label, String value, bool isTablet) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: isTablet ? 14 : 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: LocalizedApiText(
+              value,
+              style: TextStyle(
+                color: AppColors.secondaryLight,
+                fontSize: isTablet ? 14 : 13,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
+import '../services/LocalizedApiText.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
 import '../models/pos_order_model.dart';
@@ -11,7 +13,6 @@ import '../models/create_invoice_model.dart';
 import '../models/pos_technician_model.dart'; // Added import for TechnicianCard
 import '../models/pos_product_model.dart'; // Added import for ProductCard
 import 'package:intl/intl.dart' hide TextDirection;
-import 'package:share_plus/share_plus.dart';
 import '../utils/toast_service.dart';
 import '../utils/pos_tablet_layout.dart';
 import '../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
@@ -56,9 +57,9 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     final double iconContainerSize =
-        isTablet ? PosTabletLayout.appBarIconBox : 32;
+    isTablet ? PosTabletLayout.appBarIconBox : 32;
     final double iconSize =
-        isTablet ? PosTabletLayout.appBarIconGlyph : 16;
+    isTablet ? PosTabletLayout.appBarIconGlyph : 16;
     final double currentToolbarHeight = PosTabletLayout.appBarHeight;
     final hideDrawerMenu = kPosHideDrawerMenuTabletLandscape(context) &&
         !showBackButton &&
@@ -83,96 +84,96 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
           leadingWidth: showBackButton
               ? (isTablet ? 56 : 48)
               : showGlobalLeft
-                  ? (isTablet ? 80 : 56)
-                  : showMenuLeading
-                      ? (isTablet ? 80 : 56)
-                      : (isTablet ? 18 : 12),
+              ? (isTablet ? 80 : 56)
+              : showMenuLeading
+              ? (isTablet ? 80 : 56)
+              : (isTablet ? 18 : 12),
           leading: showBackButton
               ? IconButton(
-                  icon: Icon(
-                    Icons.arrow_back,
-                    color: Colors.black,
-                    size: isTablet ? PosTabletLayout.appBarBackIcon : 28,
-                  ),
-                  onPressed: onBack ?? () => Navigator.pop(context),
-                )
+            icon: Icon(
+              Icons.arrow_back,
+              color: Colors.black,
+              size: isTablet ? PosTabletLayout.appBarBackIcon : 28,
+            ),
+            onPressed: onBack ?? () => Navigator.pop(context),
+          )
               : showGlobalLeft
-                  ? Padding(
-                      padding: EdgeInsets.only(left: isTablet ? 14 : 10),
-                      child: Consumer<SettingsViewModel>(
-                        builder: (context, settings, _) {
-                          return InkWell(
-                            onTap: () {
-                              final newLocale =
-                                  settings.locale.languageCode == 'en'
-                                      ? const Locale('ar')
-                                      : const Locale('en');
-                              settings.updateLocale(newLocale);
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              width: isTablet ? PosTabletLayout.appBarIconBox : 40,
-                              height: isTablet ? PosTabletLayout.appBarIconBox : 40,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.35),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Image.asset(
-                                  'assets/images/global.png',
-                                  width: isTablet ? 26 : 22,
-                                  color: Colors.black,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Icon(
-                                        Icons.language_rounded,
-                                        size: isTablet ? 26 : 22,
-                                        color: Colors.black,
-                                      ),
-                                ),
-                              ),
+              ? Padding(
+            padding: EdgeInsets.only(left: isTablet ? 14 : 10),
+            child: Consumer<SettingsViewModel>(
+              builder: (context, settings, _) {
+                return InkWell(
+                  onTap: () {
+                    final newLocale =
+                    settings.locale.languageCode == 'en'
+                        ? const Locale('ar')
+                        : const Locale('en');
+                    settings.updateLocale(newLocale);
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                    height: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/global.png',
+                        width: isTablet ? 26 : 22,
+                        color: Colors.black,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Icon(
+                              Icons.language_rounded,
+                              size: isTablet ? 26 : 22,
+                              color: Colors.black,
                             ),
-                          );
-                        },
                       ),
-                    )
-                  : showMenuLeading
-                      ? Padding(
-                          padding: EdgeInsets.only(left: isTablet ? 14 : 14),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: onMenuPressed ??
-                                  PosShellScaffoldRegistry.openDrawer,
-                              child: Container(
-                                width: iconContainerSize,
-                                height: iconContainerSize,
-                                decoration: BoxDecoration(
-                                  color: AppColors.secondaryLight,
-                                  borderRadius:
-                                      BorderRadius.circular(isTablet ? 16 : 14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.secondaryLight
-                                          .withOpacity(0.2),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.menu_rounded,
-                                  color: Colors.white,
-                                  size: iconSize,
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      : Padding(
-                          padding: EdgeInsets.only(left: isTablet ? 10 : 6),
-                          child: const SizedBox.shrink(),
-                        ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
+              : showMenuLeading
+              ? Padding(
+            padding: EdgeInsets.only(left: isTablet ? 14 : 14),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onMenuPressed ??
+                    PosShellScaffoldRegistry.openDrawer,
+                child: Container(
+                  width: iconContainerSize,
+                  height: iconContainerSize,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryLight,
+                    borderRadius:
+                    BorderRadius.circular(isTablet ? 16 : 14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.secondaryLight
+                            .withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.menu_rounded,
+                    color: Colors.white,
+                    size: iconSize,
+                  ),
+                ),
+              ),
+            ),
+          )
+              : Padding(
+            padding: EdgeInsets.only(left: isTablet ? 10 : 6),
+            child: const SizedBox.shrink(),
+          ),
           title: InkWell(
             onTap: PosShellScaffoldRegistry.openDrawer,
             borderRadius: BorderRadius.circular(8),
@@ -184,7 +185,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                   color: Colors.black,
                   fontWeight: titleFontWeight ?? FontWeight.bold,
                   fontSize:
-                      isTablet ? PosTabletLayout.appBarTitleSize : 19,
+                  isTablet ? PosTabletLayout.appBarTitleSize : 19,
                 ),
               ),
             ),
@@ -205,9 +206,9 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                           return InkWell(
                             onTap: () {
                               final newLocale =
-                                  settings.locale.languageCode == 'en'
-                                      ? const Locale('ar')
-                                      : const Locale('en');
+                              settings.locale.languageCode == 'en'
+                                  ? const Locale('ar')
+                                  : const Locale('en');
                               settings.updateLocale(newLocale);
                             },
                             borderRadius: BorderRadius.circular(20),
@@ -219,7 +220,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                                   ? PosTabletLayout.appBarIconBox
                                   : 40,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.35),
+                                color: Colors.white.withValues(alpha: 0.35),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
@@ -254,7 +255,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                       width: isTablet ? PosTabletLayout.appBarIconBox : 40,
                       height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.35),
+                        color: Colors.white.withValues(alpha: 0.35),
                         shape: BoxShape.circle,
                       ),
                       child: Stack(
@@ -266,10 +267,10 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                             color: Colors.black,
                             errorBuilder: (context, error, stackTrace) =>
                                 Icon(
-                              Icons.notifications_rounded,
-                              size: isTablet ? 26 : 22,
-                              color: Colors.black,
-                            ),
+                                  Icons.notifications_rounded,
+                                  size: isTablet ? 26 : 22,
+                                  color: Colors.black,
+                                ),
                           ),
                           Positioned(
                             top: isTablet ? 9 : 8,
@@ -331,9 +332,9 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     final double iconContainerSize =
-        isTablet ? PosTabletLayout.menuIconBox : 36;
+    isTablet ? PosTabletLayout.menuIconBox : 36;
     final double iconSize =
-        isTablet ? PosTabletLayout.menuIconGlyph : 18;
+    isTablet ? PosTabletLayout.menuIconGlyph : 18;
     final double currentToolbarHeight =
         customHeight ?? PosTabletLayout.appBarHeight;
     final hideDrawerMenu =
@@ -358,87 +359,87 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
       leadingWidth: showGlobalLeft
           ? (isTablet ? 74 : 64)
           : showDrawerLeading
-              ? (isTablet ? 74 : 64)
-              : hideDrawerMenu
-                  ? (isTablet ? 20 : 12)
-                  : 0,
+          ? (isTablet ? 74 : 64)
+          : hideDrawerMenu
+          ? (isTablet ? 20 : 12)
+          : 0,
       leading: showGlobalLeft
           ? Padding(
-              padding: EdgeInsets.only(
-                left: 10,
-                top: isTablet ? 8 : 8,
-                bottom: isTablet ? 8 : 8,
-              ),
-              child: Consumer<SettingsViewModel>(
-                builder: (context, settings, _) {
-                  return InkWell(
-                    onTap: () {
-                      final newLocale = settings.locale.languageCode == 'en'
-                          ? const Locale('ar')
-                          : const Locale('en');
-                      settings.updateLocale(newLocale);
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      width: isTablet ? PosTabletLayout.appBarIconBox : 40,
-                      height: isTablet ? PosTabletLayout.appBarIconBox : 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Image.asset(
-                          'assets/images/global.png',
-                          width: isTablet ? 26 : 22,
+        padding: EdgeInsets.only(
+          left: 10,
+          top: isTablet ? 8 : 8,
+          bottom: isTablet ? 8 : 8,
+        ),
+        child: Consumer<SettingsViewModel>(
+          builder: (context, settings, _) {
+            return InkWell(
+              onTap: () {
+                final newLocale = settings.locale.languageCode == 'en'
+                    ? const Locale('ar')
+                    : const Locale('en');
+                settings.updateLocale(newLocale);
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                height: isTablet ? PosTabletLayout.appBarIconBox : 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/global.png',
+                    width: isTablet ? 26 : 22,
+                    color: Colors.black,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(
+                          Icons.language_rounded,
+                          size: isTablet ? 26 : 22,
                           color: Colors.black,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Icon(
-                                Icons.language_rounded,
-                                size: isTablet ? 26 : 22,
-                                color: Colors.black,
-                              ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            )
-          : showDrawerLeading
-              ? Padding(
-                  padding: EdgeInsets.only(left: isTablet ? 14 : 14),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: onMenuPressed ??
-                          PosShellScaffoldRegistry.openDrawer,
-                      child: Container(
-                        width: iconContainerSize,
-                        height: iconContainerSize,
-                        decoration: BoxDecoration(
-                          color: AppColors.secondaryLight,
-                          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.secondaryLight.withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.menu_rounded,
-                          color: Colors.white,
-                          size: iconSize,
-                        ),
-                      ),
-                    ),
                   ),
-                )
-              : hideDrawerMenu
-                  ? const SizedBox.shrink()
-                  : null,
+                ),
+              ),
+            );
+          },
+        ),
+      )
+          : showDrawerLeading
+          ? Padding(
+        padding: EdgeInsets.only(left: isTablet ? 14 : 14),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onMenuPressed ??
+                PosShellScaffoldRegistry.openDrawer,
+            child: Container(
+              width: iconContainerSize,
+              height: iconContainerSize,
+              decoration: BoxDecoration(
+                color: AppColors.secondaryLight,
+                borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondaryLight.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.menu_rounded,
+                color: Colors.white,
+                size: iconSize,
+              ),
+            ),
+          ),
+        ),
+      )
+          : hideDrawerMenu
+          ? const SizedBox.shrink()
+          : null,
       title: Padding(
         padding: EdgeInsets.zero,
         child: Material(
@@ -452,41 +453,41 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child: customTitle != null
                   ? Text(
-                      customTitle!,
-                      style: AppTextStyles.h2.copyWith(
-                        color: Colors.black,
-                        fontSize: isTablet
-                            ? PosTabletLayout.appBarTitleSize
-                            : 18,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    )
+                customTitle!,
+                style: AppTextStyles.h2.copyWith(
+                  color: Colors.black,
+                  fontSize: isTablet
+                      ? PosTabletLayout.appBarTitleSize
+                      : 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              )
                   : SizedBox(
-                      height:
-                          isTablet ? PosTabletLayout.appBarLogoHeight : 28,
-                      child: Image.asset(
-                        'assets/images/icons.png',
+                height:
+                isTablet ? PosTabletLayout.appBarLogoHeight : 28,
+                child: Image.asset(
+                  'assets/images/icons.png',
+                  color: AppColors.secondaryLight,
+                  colorBlendMode: BlendMode.srcIn,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Image.asset(
+                        'assets/images/Icon.png',
                         color: AppColors.secondaryLight,
                         colorBlendMode: BlendMode.srcIn,
                         fit: BoxFit.contain,
                         alignment: Alignment.center,
                         filterQuality: FilterQuality.high,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Image.asset(
-                          'assets/images/Icon.png',
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.store,
                           color: AppColors.secondaryLight,
-                          colorBlendMode: BlendMode.srcIn,
-                          fit: BoxFit.contain,
-                          alignment: Alignment.center,
-                          filterQuality: FilterQuality.high,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Icons.store,
-                            color: AppColors.secondaryLight,
-                          ),
                         ),
                       ),
-                    ),
+                ),
+              ),
             ),
           ),
         ),
@@ -505,9 +506,9 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                       child: InkWell(
                         onTap: () {
                           final newLocale =
-                              settings.locale.languageCode == 'en'
-                                  ? const Locale('ar')
-                                  : const Locale('en');
+                          settings.locale.languageCode == 'en'
+                              ? const Locale('ar')
+                              : const Locale('en');
                           settings.updateLocale(newLocale);
                         },
                         borderRadius: BorderRadius.circular(20),
@@ -519,7 +520,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                               ? PosTabletLayout.appBarIconBox
                               : 40,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.35),
+                            color: Colors.white.withValues(alpha: 0.35),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -529,10 +530,10 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                               color: Colors.black,
                               errorBuilder: (context, error, stackTrace) =>
                                   Icon(
-                                Icons.language_rounded,
-                                size: isTablet ? 26 : 22,
-                                color: Colors.black,
-                              ),
+                                    Icons.language_rounded,
+                                    size: isTablet ? 26 : 22,
+                                    color: Colors.black,
+                                  ),
                             ),
                           ),
                         ),
@@ -554,7 +555,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                   width: isTablet ? PosTabletLayout.appBarIconBox : 40,
                   height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.35),
+                    color: Colors.white.withValues(alpha: 0.35),
                     shape: BoxShape.circle,
                   ),
                   child: Stack(
@@ -566,10 +567,10 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                         color: Colors.black,
                         errorBuilder: (context, error, stackTrace) =>
                             Icon(
-                          Icons.notifications_rounded,
-                          size: isTablet ? 26 : 22,
-                          color: Colors.black,
-                        ),
+                              Icons.notifications_rounded,
+                              size: isTablet ? 26 : 22,
+                              color: Colors.black,
+                            ),
                       ),
                       Positioned(
                         top: isTablet ? 9 : 8,
@@ -637,11 +638,11 @@ class PosInfoBar extends StatelessWidget {
   }
 
   Widget _buildInfoChip(
-    BuildContext context,
-    IconData? icon,
-    String text, {
-    bool isBlack = false,
-  }) {
+      BuildContext context,
+      IconData? icon,
+      String text, {
+        bool isBlack = false,
+      }) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     return Container(
       padding: EdgeInsets.symmetric(
@@ -651,11 +652,11 @@ class PosInfoBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: isBlack
             ? const Color(0xFF212529)
-            : Colors.white.withOpacity(0.5),
+            : Colors.white.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(30),
         border: isBlack
             ? null
-            : Border.all(color: Colors.white.withOpacity(0.3)),
+            : Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -698,7 +699,7 @@ class UserChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -806,7 +807,7 @@ class SearchHistoryItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -956,61 +957,61 @@ class SearchHistoryItem extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-              if (onContinue != null) ...[
+                if (onContinue != null) ...[
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onContinue,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryLight,
+                        foregroundColor: AppColors.secondaryLight,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        minimumSize: const Size(0, 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Continue Order',
+                        maxLines: 1,
+                        softWrap: false,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                          color: AppColors.secondaryLight,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: onContinue,
+                    onPressed: onSalesReturn ?? () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryLight,
-                      foregroundColor: AppColors.secondaryLight,
+                      backgroundColor: AppColors.secondaryLight,
+                      foregroundColor: AppColors.onSecondaryLight,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       minimumSize: const Size(0, 40),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: const Text(
-                      'Continue Order',
-                      maxLines: 1,
-                      softWrap: false,
+                      'Sales Return',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
-                        color: AppColors.secondaryLight,
+                        color: AppColors.onSecondaryLight,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onSalesReturn ?? () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondaryLight,
-                    foregroundColor: AppColors.onSecondaryLight,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    minimumSize: const Size(0, 40),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Sales Return',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
-                      color: AppColors.onSecondaryLight,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ),
               ],
             ),
           ],
@@ -1039,7 +1040,7 @@ class PosBottomBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, -2),
           ),
@@ -1063,11 +1064,11 @@ class PosBottomBar extends StatelessWidget {
   }
 
   Widget _buildNavItem(
-    BuildContext context,
-    int index,
-    IconData icon,
-    String label,
-  ) {
+      BuildContext context,
+      int index,
+      IconData icon,
+      String label,
+      ) {
     final isSelected = currentIndex == index;
     final isTablet = MediaQuery.of(context).size.width > 600;
 
@@ -1082,7 +1083,7 @@ class PosBottomBar extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryLight.withOpacity(0.15)
+              ? AppColors.primaryLight.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
@@ -1141,7 +1142,7 @@ class PosSearchBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -1212,7 +1213,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
     if (widget.order.jobs.isEmpty) return null;
     final sorted = List<PosOrderJob>.from(widget.order.jobs);
     sorted.sort(
-      (a, b) =>
+          (a, b) =>
           (int.tryParse(a.id) ?? 0).compareTo(int.tryParse(b.id) ?? 0),
     );
     return sorted.last;
@@ -1307,12 +1308,12 @@ class _OrderItemCardState extends State<OrderItemCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
         ],
-        border: Border.all(color: Colors.black.withOpacity(0.02)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -1320,12 +1321,12 @@ class _OrderItemCardState extends State<OrderItemCard> {
           onTap: isInvoiced
               ? null
               : () {
-                  _showOrderDetailsSheet(
-                    context,
-                    widget.order,
-                    widget.isTablet,
-                  );
-                },
+            _showOrderDetailsSheet(
+              context,
+              widget.order,
+              widget.isTablet,
+            );
+          },
           child: Align(
             alignment: Alignment.topCenter,
             child: Padding(
@@ -1336,651 +1337,450 @@ class _OrderItemCardState extends State<OrderItemCard> {
                 widget.isTablet ? 8 : 14,
               ),
               child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Order #${widget.order.id.split('-').last.toUpperCase()}',
+                                    style: TextStyle(
+                                      fontSize: widget.isTablet ? 10 : 8.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.layers_rounded,
+                                        size: widget.isTablet ? 13 : 9,
+                                        color: const Color(0xFF1E2124),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${widget.order.jobsCount} JOB',
+                                        style: TextStyle(
+                                          fontSize: widget.isTablet ? 8 : 7.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF1E2124),
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                _buildStatusPill(widget.order),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.order.plateNumber.trim().isNotEmpty
+                                  ? widget.order.plateNumber.toUpperCase()
+                                  : '—',
+                              style: TextStyle(
+                                fontSize: widget.isTablet ? 13 : 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1E2124),
+                                height: 1.1,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (posOrderCanCashierCancel(widget.order))
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => showCashierCancelOrderDialog(
+                                context,
+                                widget.order.id,
+                              ),
+                              customBorder: const CircleBorder(),
+                              child: Container(
+                                width: widget.isTablet ? 28 : 26,
+                                height: widget.isTablet ? 28 : 26,
+                                alignment: Alignment.center,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF1E2124),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  size: widget.isTablet ? 16 : 15,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: widget.isTablet ? 8 : 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: _buildPremiumDetailItem(
+                          widget.order.customerName == 'Unknown'
+                              ? (widget.order.carModel.isNotEmpty
+                              ? widget.order.carModel
+                              : '—')
+                              : widget.order.customerName,
+                          subtitle: widget.order.carModel.isNotEmpty &&
+                              widget.order.customerName != 'Unknown'
+                              ? widget.order.carModel
+                              : null,
+                          isTablet: widget.isTablet,
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: _buildPremiumDetailItem(
+                          DateFormat(
+                            'yyyy-MM-dd',
+                          ).format(DateTime.parse(widget.order.date)),
+                          subtitle: 'Odo: ${widget.order.odometerReading} km',
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          isTablet: widget.isTablet,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: widget.isTablet ? 5 : 4),
+                  if (widget.order.isCorporateWalkIn &&
+                      widget.order.selectedDepartmentNames.isNotEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: widget.isTablet ? 10 : 8,
+                        vertical: widget.isTablet ? 8 : 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
+                          Text(
+                            'Selected departments',
+                            style: TextStyle(
+                              fontSize: widget.isTablet ? 10 : 9,
+                              color: const Color(0xFF475569),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: widget.isTablet ? 6 : 5),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: widget.order.selectedDepartmentNames
+                                .map(
+                                  (name) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
                                 child: Text(
-                                  'Order #${widget.order.id.split('-').last.toUpperCase()}',
+                                  name,
                                   style: TextStyle(
-                                    fontSize: widget.isTablet ? 10 : 8.5,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade500,
+                                    fontSize: widget.isTablet ? 9.5 : 9,
+                                    color: const Color(0xFF1E3A8A),
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.layers_rounded,
-                                      size: widget.isTablet ? 13 : 9,
-                                      color: const Color(0xFF1E2124),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${widget.order.jobsCount} JOB',
-                                      style: TextStyle(
-                                        fontSize: widget.isTablet ? 8 : 7.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF1E2124),
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              _buildStatusPill(widget.order),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.order.plateNumber.trim().isNotEmpty
-                                ? widget.order.plateNumber.toUpperCase()
-                                : '—',
-                            style: TextStyle(
-                              fontSize: widget.isTablet ? 13 : 13,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1E2124),
-                              height: 1.1,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            )
+                                .toList(),
                           ),
                         ],
                       ),
                     ),
-                    if (posOrderCanCashierCancel(widget.order))
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => showCashierCancelOrderDialog(
-                              context,
-                              widget.order.id,
-                            ),
-                            customBorder: const CircleBorder(),
-                            child: Container(
-                              width: widget.isTablet ? 28 : 26,
-                              height: widget.isTablet ? 28 : 26,
-                              alignment: Alignment.center,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF1E2124),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.close_rounded,
-                                size: widget.isTablet ? 16 : 15,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    SizedBox(height: widget.isTablet ? 6 : 5),
                   ],
-                ),
-                SizedBox(height: widget.isTablet ? 8 : 10),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 6,
-                      child: _buildPremiumDetailItem(
-                        widget.order.customerName == 'Unknown'
-                            ? (widget.order.carModel.isNotEmpty
-                                ? widget.order.carModel
-                                : '—')
-                            : widget.order.customerName,
-                        subtitle: widget.order.carModel.isNotEmpty &&
-                                widget.order.customerName != 'Unknown'
-                            ? widget.order.carModel
-                            : null,
-                        isTablet: widget.isTablet,
+                  if (widget.order.isCorporateWalkIn &&
+                      widget.order.selectedDepartmentNames.isEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: widget.isTablet ? 10 : 8,
+                        vertical: widget.isTablet ? 8 : 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEFCE8),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFEF08A)),
+                      ),
+                      child: Text(
+                        'Departments not returned in order list payload.',
+                        style: TextStyle(
+                          fontSize: widget.isTablet ? 10 : 9,
+                          color: const Color(0xFF854D0E),
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                    Expanded(
-                      flex: 4,
-                      child: _buildPremiumDetailItem(
-                        DateFormat(
-                          'yyyy-MM-dd',
-                        ).format(DateTime.parse(widget.order.date)),
-                        subtitle: 'Odo: ${widget.order.odometerReading} km',
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        isTablet: widget.isTablet,
-                      ),
-                    ),
+                    SizedBox(height: widget.isTablet ? 6 : 5),
                   ],
-                ),
-                SizedBox(height: widget.isTablet ? 5 : 4),
-                if (widget.order.isCorporateWalkIn &&
-                    widget.order.selectedDepartmentNames.isNotEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: widget.isTablet ? 10 : 8,
-                      vertical: widget.isTablet ? 8 : 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Selected departments',
-                          style: TextStyle(
-                            fontSize: widget.isTablet ? 10 : 9,
-                            color: const Color(0xFF475569),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: widget.isTablet ? 6 : 5),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: widget.order.selectedDepartmentNames
-                              .map(
-                                (name) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEFF6FF),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    name,
-                                    style: TextStyle(
-                                      fontSize: widget.isTablet ? 9.5 : 9,
-                                      color: const Color(0xFF1E3A8A),
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: widget.isTablet ? 6 : 5),
-                ],
-                if (widget.order.isCorporateWalkIn &&
-                    widget.order.selectedDepartmentNames.isEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: widget.isTablet ? 10 : 8,
-                      vertical: widget.isTablet ? 8 : 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEFCE8),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFEF08A)),
-                    ),
-                    child: Text(
-                      'Departments not returned in order list payload.',
-                      style: TextStyle(
-                        fontSize: widget.isTablet ? 10 : 9,
-                        color: const Color(0xFF854D0E),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: widget.isTablet ? 6 : 5),
-                ],
-                Builder(
-                  builder: (_) {
-                    return Row(
-                      children: [
-                        Icon(
-                          Icons.engineering_rounded,
-                          size: widget.isTablet ? 11 : 11,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'Technician: ${widget.order.assignedTechnicianNames.trim().isEmpty ? 'None' : widget.order.assignedTechnicianNames}',
-                            style: TextStyle(
-                              fontSize: widget.isTablet ? 8.5 : 8,
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w600,
-                              height: 1.1,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                SizedBox(height: widget.isTablet ? 8 : 10),
-                Builder(
-                  builder: (context) {
-                    String displayStatus = widget.order.displayJobStatus
-                        .toLowerCase();
-                    final isCorporateOrder = widget.order.isCorporateWalkIn;
-                    final isCorporateUnapproved =
-                        isCorporateOrder && widget.order.isCorporateUnapproved;
-                    final isCorporateWaiting =
-                        isCorporateOrder && widget.order.isWaitingCorporateApproval;
-                    final isCorporateRejected =
-                        isCorporateOrder && widget.order.isRejectedByCorporate;
-                    final canShowCancelOrder =
-                        posOrderCanCashierCancel(widget.order);
-                    final canShowOrderDetails =
-                        displayStatus != 'completed' &&
-                        displayStatus != 'completed by technician' &&
-                        displayStatus != 'invoiced' &&
-                        displayStatus != 'pending assignment' &&
-                        displayStatus != 'cancelled';
-
-                    if (displayStatus == 'completed by technician') {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
+                  Builder(
+                    builder: (_) {
+                      return Row(
                         children: [
-                          SizedBox(height: widget.isTablet ? 5 : 4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Consumer<pvm.PosViewModel>(
-                                  builder: (context, posVm, child) {
-                                    final isCurrentOrderLoading =
-                                        posVm.isInvoiceLoading &&
-                                        posVm.loadingOrderId == widget.order.id;
-
-                                    return _buildActionButton(
-                                      onPressed: isCurrentOrderLoading
-                                          ? null
-                                          : () async {
-                                              if (context.mounted) {
-                                                // Get department info from items first, then Jobs, then fallback
-                                                String deptName = 'All';
-                                                String deptId = '1';
-
-                                                bool foundDept = false;
-
-                                                if (widget
-                                                    .order
-                                                    .jobs
-                                                    .isNotEmpty) {
-                                                  final job =
-                                                      _getHighestJobById()!;
-                                                  if (job
-                                                      .department
-                                                      .isNotEmpty) {
-                                                    deptName = job.department;
-                                                  }
-                                                  if (job.items.isNotEmpty &&
-                                                      job
-                                                          .items
-                                                          .first
-                                                          .departmentId
-                                                          .isNotEmpty) {
-                                                    deptId = job
-                                                        .items
-                                                        .first
-                                                        .departmentId;
-                                                    foundDept = true;
-                                                    if (job
-                                                        .items
-                                                        .first
-                                                        .departmentName
-                                                        .isNotEmpty) {
-                                                      deptName = job
-                                                          .items
-                                                          .first
-                                                          .departmentName;
-                                                    }
-                                                  }
-                                                }
-
-                                                if (!foundDept &&
-                                                    widget
-                                                        .order
-                                                        .items
-                                                        .isNotEmpty) {
-                                                  for (final item
-                                                      in widget.order.items) {
-                                                    if (item['departmentId'] !=
-                                                            null &&
-                                                        item['departmentId']
-                                                            .toString()
-                                                            .isNotEmpty) {
-                                                      deptId =
-                                                          item['departmentId']
-                                                              .toString();
-                                                      if (item['departmentName'] !=
-                                                          null) {
-                                                        deptName =
-                                                            item['departmentName']
-                                                                .toString();
-                                                      }
-                                                      foundDept = true;
-                                                      break;
-                                                    }
-                                                  }
-                                                }
-
-                                                if (!foundDept &&
-                                                    widget
-                                                        .order
-                                                        .jobs
-                                                        .isNotEmpty) {
-                                                  try {
-                                                    final matchedProduct = posVm
-                                                        .allProducts
-                                                        .firstWhere(
-                                                          (p) =>
-                                                              p.departmentName
-                                                                      ?.toLowerCase() ==
-                                                                  deptName
-                                                                      .toLowerCase() &&
-                                                              p.departmentId !=
-                                                                  null,
-                                                        );
-                                                    deptId = matchedProduct
-                                                        .departmentId!;
-                                                  } catch (e) {
-                                                    // Ensure valid fallback
-                                                  }
-                                                }
-
-                                                List<dynamic> preSelected = [];
-                                                if (widget
-                                                    .order
-                                                    .jobs
-                                                    .isNotEmpty) {
-                                                  final highestJob =
-                                                      _getHighestJobById()!;
-                                                  for (var item
-                                                      in highestJob.items) {
-                                                    preSelected.add({
-                                                      item.itemType == 'service'
-                                                          ? 'serviceId'
-                                                          : 'productId':
-                                                          item.productId,
-                                                      'quantity': item.qty,
-                                                      'discountType':
-                                                          item.discountType,
-                                                      'discountValue':
-                                                          item.discountValue ?? 0.0,
-                                                    });
-                                                  }
-                                                } else if (widget
-                                                    .order
-                                                    .items
-                                                    .isNotEmpty) {
-                                                  preSelected =
-                                                      widget.order.items;
-                                                }
-                                                posVm.clearCart();
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        PosProductGridView(
-                                                          departmentName:
-                                                              deptName,
-                                                          departmentId: deptId,
-                                                          preSelectedItems:
-                                                              preSelected,
-                                                          completingOrderId:
-                                                              widget
-                                                                  .order
-                                                                  .jobs
-                                                                  .isNotEmpty
-                                                              ? widget
-                                                                    .order
-                                                                    .jobs
-                                                                    .reduce((a, b) => (int.tryParse(a.id) ?? 0) > (int.tryParse(b.id) ?? 0) ? a : b)
-                                                                    .id
-                                                              : widget.order.id,
-                                                          completingOrder:
-                                                              widget.order,
-                                                        ),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                      isLoading: isCurrentOrderLoading,
-                                      icon: Icons.check_circle_outline_rounded,
-                                      label: 'Complete',
-                                      color: AppColors.secondaryLight,
-                                      isSecondary: true,
-                                    );
-                                  },
-                                ),
+                          Icon(
+                            Icons.engineering_rounded,
+                            size: widget.isTablet ? 11 : 11,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Technician: ${widget.order.assignedTechnicianNames.trim().isEmpty ? 'None' : widget.order.assignedTechnicianNames}',
+                              style: TextStyle(
+                                fontSize: widget.isTablet ? 8.5 : 8,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w600,
+                                height: 1.1,
                               ),
-                              SizedBox(width: widget.isTablet ? 10 : 8),
-                              Expanded(
-                                child: _buildActionButton(
-                                  onPressed: () {
-                                    _showOrderDetailsSheet(
-                                      context,
-                                      widget.order,
-                                      widget.isTablet,
-                                    );
-                                  },
-                                  icon: Icons.visibility_outlined,
-                                  label: 'Order Details',
-                                  color: AppColors.primaryLight,
-                                ),
-                              ),
-                            ],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       );
-                    }
+                    },
+                  ),
+                  SizedBox(height: widget.isTablet ? 8 : 10),
+                  Builder(
+                    builder: (context) {
+                      String displayStatus = widget.order.displayJobStatus
+                          .toLowerCase();
+                      final isCorporateOrder = widget.order.isCorporateWalkIn;
+                      final isCorporateUnapproved =
+                          isCorporateOrder && widget.order.isCorporateUnapproved;
+                      final isCorporateWaiting =
+                          isCorporateOrder && widget.order.isWaitingCorporateApproval;
+                      final isCorporateRejected =
+                          isCorporateOrder && widget.order.isRejectedByCorporate;
+                      final canShowCancelOrder =
+                      posOrderCanCashierCancel(widget.order);
+                      final canShowOrderDetails =
+                          displayStatus != 'completed' &&
+                              displayStatus != 'completed by technician' &&
+                              displayStatus != 'invoiced' &&
+                              displayStatus != 'pending assignment' &&
+                              displayStatus != 'cancelled';
 
-                    if (displayStatus == 'completed' ||
-                        displayStatus == 'invoiced' ||
-                        displayStatus.contains('pending') ||
-                        isCorporateUnapproved ||
-                        isCorporateWaiting ||
-                        isCorporateRejected) {
-                      final isInvoiced =
-                          widget.order.status.toLowerCase() == 'invoiced';
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(height: widget.isTablet ? 5 : 4),
-                          if (isCorporateWaiting)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                bottom: widget.isTablet ? 10 : 8,
-                              ),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                                ),
-                                child: const Text(
-                                  'Waiting corporate approval',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (isCorporateRejected)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                bottom: widget.isTablet ? 10 : 8,
-                              ),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF2F2),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFFECACA)),
-                                ),
-                                child: Text(
-                                  widget.order.corporateApprovalRejectionReason
-                                              ?.trim()
-                                              .isNotEmpty ==
-                                          true
-                                      ? 'Rejected by corporate: ${widget.order.corporateApprovalRejectionReason!.trim()}'
-                                      : 'Rejected by corporate',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF991B1B),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (isCorporateUnapproved)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                bottom: widget.isTablet ? 10 : 8,
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildActionButton(
-                                      onPressed: () => _openEditOrderFlow(context),
-                                      icon: Icons.edit_rounded,
-                                      label: 'Edit Order',
-                                      color: AppColors.primaryLight,
-                                      labelFontSize: 12,
-                                    ),
-                                  ),
-                                  SizedBox(width: widget.isTablet ? 10 : 8),
-                                  Expanded(
-                                    child: Consumer<pvm.PosViewModel>(
-                                      builder: (context, vm, _) {
-                                        return _buildActionButton(
-                                          onPressed: vm.isLoading
-                                              ? null
-                                              : () => vm.sendCorporateOrderForApproval(
-                                                    context,
-                                                    orderId: widget.order.id,
-                                                  ),
-                                          icon: Icons.send_rounded,
-                                          label: 'Send for Approval',
-                                          color: AppColors.secondaryLight,
-                                          isSecondary: true,
-                                          labelFontSize: 11,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          if ((displayStatus.contains('pending') ||
-                                  displayStatus.contains('draft')) &&
-                              !isCorporateWaiting &&
-                              !isCorporateRejected &&
-                              !isCorporateUnapproved)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                bottom: widget.isTablet ? 10 : 8,
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildActionButton(
-                                      onPressed: () {
-                                        if (displayStatus ==
-                                            'pending assignment') {
-                                          _openEditOrderFlow(context);
-                                          return;
-                                        }
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) {
-                                              final j = widget
-                                                      .order.jobs.isNotEmpty
-                                                  ? _getHighestJobById()
-                                                  : null;
-                                              return PosTechnicianAssignmentView(
-                                                jobId: j?.id ?? widget.order.id,
-                                                departmentName: j?.department ??
-                                                    widget.order.latestJob
-                                                        ?.department,
-                                                departmentId: j?.departmentId,
-                                                initialAssignedTechnicians:
-                                                    j?.distinctActiveTechnicians ??
-                                                        const [],
-                                              );
-                                            },
-                                          ),
-                                        );
-                                      },
-                                      icon: Icons.assignment_ind_rounded,
-                                      label: displayStatus == 'pending assignment'
-                                          ? 'Edit Order'
-                                          : 'Forward to Technician',
-                                      color: AppColors.primaryLight,
-                                      labelFontSize: 12,
-                                    ),
-                                  ),
-                                  if (canShowCancelOrder) ...[
-                                    SizedBox(width: widget.isTablet ? 10 : 8),
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        onPressed: () =>
-                                            showCashierCancelOrderDialog(
-                                          context,
-                                          widget.order.id,
-                                        ),
-                                        icon: Icons.cancel_outlined,
-                                        label: 'Cancel Order',
-                                        color: AppColors.secondaryLight,
-                                        isSecondary: true,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          if (canShowOrderDetails) ...[
-                            const SizedBox(height: 8),
+                      if (displayStatus == 'completed by technician') {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(height: widget.isTablet ? 5 : 4),
                             Row(
                               children: [
+                                Expanded(
+                                  child: Consumer<pvm.PosViewModel>(
+                                    builder: (context, posVm, child) {
+                                      final isCurrentOrderLoading =
+                                          posVm.isInvoiceLoading &&
+                                              posVm.loadingOrderId == widget.order.id;
+
+                                      return _buildActionButton(
+                                        onPressed: isCurrentOrderLoading
+                                            ? null
+                                            : () async {
+                                          if (context.mounted) {
+                                            // Get department info from items first, then Jobs, then fallback
+                                            String deptName = 'All';
+                                            String deptId = '1';
+
+                                            bool foundDept = false;
+
+                                            if (widget
+                                                .order
+                                                .jobs
+                                                .isNotEmpty) {
+                                              final job =
+                                              _getHighestJobById()!;
+                                              if (job
+                                                  .department
+                                                  .isNotEmpty) {
+                                                deptName = job.department;
+                                              }
+                                              if (job.items.isNotEmpty &&
+                                                  job
+                                                      .items
+                                                      .first
+                                                      .departmentId
+                                                      .isNotEmpty) {
+                                                deptId = job
+                                                    .items
+                                                    .first
+                                                    .departmentId;
+                                                foundDept = true;
+                                                if (job
+                                                    .items
+                                                    .first
+                                                    .departmentName
+                                                    .isNotEmpty) {
+                                                  deptName = job
+                                                      .items
+                                                      .first
+                                                      .departmentName;
+                                                }
+                                              }
+                                            }
+
+                                            if (!foundDept &&
+                                                widget
+                                                    .order
+                                                    .items
+                                                    .isNotEmpty) {
+                                              for (final item
+                                              in widget.order.items) {
+                                                if (item['departmentId'] !=
+                                                    null &&
+                                                    item['departmentId']
+                                                        .toString()
+                                                        .isNotEmpty) {
+                                                  deptId =
+                                                      item['departmentId']
+                                                          .toString();
+                                                  if (item['departmentName'] !=
+                                                      null) {
+                                                    deptName =
+                                                        item['departmentName']
+                                                            .toString();
+                                                  }
+                                                  foundDept = true;
+                                                  break;
+                                                }
+                                              }
+                                            }
+
+                                            if (!foundDept &&
+                                                widget
+                                                    .order
+                                                    .jobs
+                                                    .isNotEmpty) {
+                                              try {
+                                                final matchedProduct = posVm
+                                                    .allProducts
+                                                    .firstWhere(
+                                                      (p) =>
+                                                  p.departmentName
+                                                      ?.toLowerCase() ==
+                                                      deptName
+                                                          .toLowerCase() &&
+                                                      p.departmentId !=
+                                                          null,
+                                                );
+                                                deptId = matchedProduct
+                                                    .departmentId!;
+                                              } catch (e) {
+                                                // Ensure valid fallback
+                                              }
+                                            }
+
+                                            List<dynamic> preSelected = [];
+                                            if (widget
+                                                .order
+                                                .jobs
+                                                .isNotEmpty) {
+                                              final highestJob =
+                                              _getHighestJobById()!;
+                                              for (var item
+                                              in highestJob.items) {
+                                                preSelected.add({
+                                                  item.itemType == 'service'
+                                                      ? 'serviceId'
+                                                      : 'productId':
+                                                  item.productId,
+                                                  'quantity': item.qty,
+                                                  'discountType':
+                                                  item.discountType,
+                                                  'discountValue':
+                                                  item.discountValue ?? 0.0,
+                                                });
+                                              }
+                                            } else if (widget
+                                                .order
+                                                .items
+                                                .isNotEmpty) {
+                                              preSelected =
+                                                  widget.order.items;
+                                            }
+                                            posVm.clearCart();
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    PosProductGridView(
+                                                      departmentName:
+                                                      deptName,
+                                                      departmentId: deptId,
+                                                      preSelectedItems:
+                                                      preSelected,
+                                                      completingOrderId:
+                                                      widget
+                                                          .order
+                                                          .jobs
+                                                          .isNotEmpty
+                                                          ? widget
+                                                          .order
+                                                          .jobs
+                                                          .reduce((a, b) => (int.tryParse(a.id) ?? 0) > (int.tryParse(b.id) ?? 0) ? a : b)
+                                                          .id
+                                                          : widget.order.id,
+                                                      completingOrder:
+                                                      widget.order,
+                                                    ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        isLoading: isCurrentOrderLoading,
+                                        icon: Icons.check_circle_outline_rounded,
+                                        label: 'Complete',
+                                        color: AppColors.secondaryLight,
+                                        isSecondary: true,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                SizedBox(width: widget.isTablet ? 10 : 8),
                                 Expanded(
                                   child: _buildActionButton(
                                     onPressed: () {
@@ -1998,198 +1798,399 @@ class _OrderItemCardState extends State<OrderItemCard> {
                               ],
                             ),
                           ],
-                          if (!(displayStatus.contains('pending') ||
-                                  displayStatus.contains('draft')) &&
-                              !isCorporateWaiting &&
-                              !isCorporateRejected &&
-                              !isCorporateUnapproved)
-                            Row(
-                              children: [
-                              Expanded(
-                                child: Consumer<pvm.PosViewModel>(
-                                  builder: (context, posVm, child) {
-                                    final isCurrentOrderLoading =
-                                        posVm.isInvoiceLoading &&
-                                        posVm.loadingOrderId == widget.order.id;
+                        );
+                      }
 
-                                    return _buildActionButton(
-                                      onPressed: posVm.isInvoiceLoading
-                                          ? null
-                                          : () async {
-                                              if (isInvoiced) {
-                                                // Fetch and show existing invoice
-                                                final response = await posVm
-                                                    .fetchInvoiceByOrder(
-                                                      widget.order.id,
-                                                    );
-                                                if (response != null &&
-                                                    response.success &&
-                                                    response.invoice != null &&
-                                                    context.mounted) {
-                                                  await showDialog(
-                                                    context: context,
-                                                    builder: (ctx) =>
-                                                        InvoiceDialog(
-                                                          invoice:
-                                                              response.invoice!,
-                                                          maintenanceChecksFallback:
-                                                              widget.order
-                                                                  .maintenanceChecks,
-                                                        ),
-                                                  );
-                                                } else if (response != null &&
-                                                    !response.success &&
-                                                    context.mounted) {
-                                                  ToastService.showError(
-                                                    context,
-                                                    response.message,
-                                                  );
-                                                }
-                                              } else {
-                                                if (!widget.order
-                                                    .meetsCashierInvoicePrerequisites) {
-                                                  ToastService.showError(
-                                                    context,
-                                                    'Order is not ready for invoicing.',
-                                                  );
-                                                  return;
-                                                }
-                                                // Navigate to the Final Review Screen - no API call
-                                                if (context.mounted) {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (_) =>
-                                                          PosOrderReviewView(
-                                                            order: widget.order,
-                                                          ),
-                                                    ),
-                                                  );
-                                                }
-                                              }
-                                            },
-                                      isLoading: isCurrentOrderLoading,
-                                      icon: isInvoiced
-                                          ? Icons.receipt_long_rounded
-                                          : Icons.auto_awesome_rounded,
-                                      label: isInvoiced
-                                          ? 'Invoice'
-                                          : 'Gen. Invoice',
-                                      color: isInvoiced
-                                          ? AppColors.secondaryLight
-                                          : AppColors.primaryLight,
-                                    );
-                                  },
+                      if (displayStatus == 'completed' ||
+                          displayStatus == 'invoiced' ||
+                          displayStatus.contains('pending') ||
+                          isCorporateUnapproved ||
+                          isCorporateWaiting ||
+                          isCorporateRejected) {
+                        final isInvoiced =
+                            widget.order.status.toLowerCase() == 'invoiced';
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(height: widget.isTablet ? 5 : 4),
+                            if (isCorporateWaiting)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: widget.isTablet ? 10 : 8,
+                                ),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: const Text(
+                                    'Waiting corporate approval',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF475569),
+                                    ),
+                                  ),
                                 ),
                               ),
-                              if (!isInvoiced)
-                                SizedBox(width: widget.isTablet ? 10 : 8),
-                              if (!isInvoiced)
-                                Expanded(
-                                  child: Consumer<pvm.PosViewModel>(
-                                    builder: (context, posVm, child) {
-                                      return _buildActionButton(
-                                        onPressed: () {
-                                          posVm.clearCart();
-                                          posVm.setCustomerData(
-                                            name: widget.order.customerName,
-                                            vat:
-                                                widget.order.customer?.vatNumber ??
-                                                '',
-                                            mobile:
-                                                widget.order.customer?.mobile ??
-                                                '',
-                                            vehicleNumber:
-                                                widget.order.plateNumber,
-                                            vinNumber:
-                                                widget.order.vehicle?.vin ?? '',
-                                            make:
-                                                widget.order.vehicle?.make ??
-                                                '',
-                                            model:
-                                                widget.order.vehicle?.model ??
-                                                '',
-                                            odometer:
-                                                widget.order.odometerReading,
-                                            previousOrderId: widget.order.id,
-                                            vehicleYear:
-                                                widget.order.vehicle?.year ??
-                                                '',
-                                            vehicleColor:
-                                                widget.order.vehicle?.color ??
-                                                '',
+                            if (isCorporateRejected)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: widget.isTablet ? 10 : 8,
+                                ),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEF2F2),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFFFECACA)),
+                                  ),
+                                  child: Text(
+                                    widget.order.corporateApprovalRejectionReason
+                                        ?.trim()
+                                        .isNotEmpty ==
+                                        true
+                                        ? 'Rejected by corporate: ${widget.order.corporateApprovalRejectionReason!.trim()}'
+                                        : 'Rejected by corporate',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF991B1B),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (isCorporateUnapproved)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: widget.isTablet ? 10 : 8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildActionButton(
+                                        onPressed: () => _openEditOrderFlow(context),
+                                        icon: Icons.edit_rounded,
+                                        label: 'Edit Order',
+                                        color: AppColors.primaryLight,
+                                        labelFontSize: 12,
+                                      ),
+                                    ),
+                                    SizedBox(width: widget.isTablet ? 10 : 8),
+                                    Expanded(
+                                      child: Consumer<pvm.PosViewModel>(
+                                        builder: (context, vm, _) {
+                                          return _buildActionButton(
+                                            onPressed: vm.isLoading
+                                                ? null
+                                                : () => vm.sendCorporateOrderForApproval(
+                                              context,
+                                              orderId: widget.order.id,
+                                            ),
+                                            icon: Icons.send_rounded,
+                                            label: 'Send for Approval',
+                                            color: AppColors.secondaryLight,
+                                            isSecondary: true,
+                                            labelFontSize: 11,
                                           );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if ((displayStatus.contains('pending') ||
+                                displayStatus.contains('draft')) &&
+                                !isCorporateWaiting &&
+                                !isCorporateRejected &&
+                                !isCorporateUnapproved)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: widget.isTablet ? 10 : 8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildActionButton(
+                                        onPressed: () {
+                                          if (displayStatus ==
+                                              'pending assignment') {
+                                            _openEditOrderFlow(context);
+                                            return;
+                                          }
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const PosDepartmentView(),
+                                              builder: (_) {
+                                                final j = widget
+                                                    .order.jobs.isNotEmpty
+                                                    ? _getHighestJobById()
+                                                    : null;
+                                                return PosTechnicianAssignmentView(
+                                                  jobId: j?.id ?? widget.order.id,
+                                                  departmentName: j?.department ??
+                                                      widget.order.latestJob
+                                                          ?.department,
+                                                  departmentId: j?.departmentId,
+                                                  initialAssignedTechnicians:
+                                                  j?.distinctActiveTechnicians ??
+                                                      const [],
+                                                );
+                                              },
                                             ),
                                           );
                                         },
-                                        icon: Icons.add_business_rounded,
-                                        label: 'Add Dept.',
-                                        color: AppColors.secondaryLight,
-                                        isSecondary: true,
-                                      );
-                                    },
-                                  ),
+                                        icon: Icons.assignment_ind_rounded,
+                                        label: displayStatus == 'pending assignment'
+                                            ? 'Edit Order'
+                                            : 'Forward to Technician',
+                                        color: AppColors.primaryLight,
+                                        labelFontSize: 12,
+                                      ),
+                                    ),
+                                    if (canShowCancelOrder) ...[
+                                      SizedBox(width: widget.isTablet ? 10 : 8),
+                                      Expanded(
+                                        child: _buildActionButton(
+                                          onPressed: () =>
+                                              showCashierCancelOrderDialog(
+                                                context,
+                                                widget.order.id,
+                                              ),
+                                          icon: Icons.cancel_outlined,
+                                          label: 'Cancel Order',
+                                          color: AppColors.secondaryLight,
+                                          isSecondary: true,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
+                              ),
+                            if (canShowOrderDetails) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildActionButton(
+                                      onPressed: () {
+                                        _showOrderDetailsSheet(
+                                          context,
+                                          widget.order,
+                                          widget.isTablet,
+                                        );
+                                      },
+                                      icon: Icons.visibility_outlined,
+                                      label: 'Order Details',
+                                      color: AppColors.primaryLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
-                          ),
-                        ],
-                      );
-                    }
-                    if (canShowCancelOrder) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(height: widget.isTablet ? 5 : 4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildActionButton(
-                                  onPressed: canShowOrderDetails
-                                      ? () {
-                                          _showOrderDetailsSheet(
-                                            context,
-                                            widget.order,
-                                            widget.isTablet,
+                            if (!(displayStatus.contains('pending') ||
+                                displayStatus.contains('draft')) &&
+                                !isCorporateWaiting &&
+                                !isCorporateRejected &&
+                                !isCorporateUnapproved)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Consumer<pvm.PosViewModel>(
+                                      builder: (context, posVm, child) {
+                                        final isCurrentOrderLoading =
+                                            posVm.isInvoiceLoading &&
+                                                posVm.loadingOrderId == widget.order.id;
+
+                                        return _buildActionButton(
+                                          onPressed: posVm.isInvoiceLoading
+                                              ? null
+                                              : () async {
+                                            if (isInvoiced) {
+                                              // Fetch and show existing invoice
+                                              final response = await posVm
+                                                  .fetchInvoiceByOrder(
+                                                widget.order.id,
+                                              );
+                                              if (response != null &&
+                                                  response.success &&
+                                                  response.invoice != null &&
+                                                  context.mounted) {
+                                                await showDialog(
+                                                  context: context,
+                                                  builder: (ctx) =>
+                                                      InvoiceDialog(
+                                                        invoice:
+                                                        response.invoice!,
+                                                        maintenanceChecksFallback:
+                                                        widget.order
+                                                            .maintenanceChecks,
+                                                      ),
+                                                );
+                                              } else if (response != null &&
+                                                  !response.success &&
+                                                  context.mounted) {
+                                                ToastService.showError(
+                                                  context,
+                                                  response.message,
+                                                );
+                                              }
+                                            } else {
+                                              if (!widget.order
+                                                  .meetsCashierInvoicePrerequisites) {
+                                                ToastService.showError(
+                                                  context,
+                                                  'Order is not ready for invoicing.',
+                                                );
+                                                return;
+                                              }
+                                              // Navigate to the Final Review Screen - no API call
+                                              if (context.mounted) {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        PosOrderReviewView(
+                                                          order: widget.order,
+                                                        ),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          },
+                                          isLoading: isCurrentOrderLoading,
+                                          icon: isInvoiced
+                                              ? Icons.receipt_long_rounded
+                                              : Icons.auto_awesome_rounded,
+                                          label: isInvoiced
+                                              ? 'Invoice'
+                                              : 'Gen. Invoice',
+                                          color: isInvoiced
+                                              ? AppColors.secondaryLight
+                                              : AppColors.primaryLight,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  if (!isInvoiced)
+                                    SizedBox(width: widget.isTablet ? 10 : 8),
+                                  if (!isInvoiced)
+                                    Expanded(
+                                      child: Consumer<pvm.PosViewModel>(
+                                        builder: (context, posVm, child) {
+                                          return _buildActionButton(
+                                            onPressed: () {
+                                              posVm.clearCart();
+                                              posVm.setCustomerData(
+                                                name: widget.order.customerName,
+                                                vat:
+                                                widget.order.customer?.vatNumber ??
+                                                    '',
+                                                mobile:
+                                                widget.order.customer?.mobile ??
+                                                    '',
+                                                vehicleNumber:
+                                                widget.order.plateNumber,
+                                                vinNumber:
+                                                widget.order.vehicle?.vin ?? '',
+                                                make:
+                                                widget.order.vehicle?.make ??
+                                                    '',
+                                                model:
+                                                widget.order.vehicle?.model ??
+                                                    '',
+                                                odometer:
+                                                widget.order.odometerReading,
+                                                previousOrderId: widget.order.id,
+                                                vehicleYear:
+                                                widget.order.vehicle?.year ??
+                                                    '',
+                                                vehicleColor:
+                                                widget.order.vehicle?.color ??
+                                                    '',
+                                              );
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                  const PosDepartmentView(),
+                                                ),
+                                              );
+                                            },
+                                            icon: Icons.add_business_rounded,
+                                            label: 'Add Dept.',
+                                            color: AppColors.secondaryLight,
+                                            isSecondary: true,
                                           );
-                                        }
-                                      : null,
-                                  icon: Icons.visibility_outlined,
-                                  label: 'Order Details',
-                                  color: AppColors.primaryLight,
-                                ),
+                                        },
+                                      ),
+                                    ),
+                                ],
                               ),
-                              SizedBox(width: widget.isTablet ? 10 : 8),
-                              Expanded(
-                                child: _buildActionButton(
-                                  onPressed: () =>
-                                      showCashierCancelOrderDialog(
-                                    context,
-                                    widget.order.id,
+                          ],
+                        );
+                      }
+                      if (canShowCancelOrder) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(height: widget.isTablet ? 5 : 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildActionButton(
+                                    onPressed: canShowOrderDetails
+                                        ? () {
+                                      _showOrderDetailsSheet(
+                                        context,
+                                        widget.order,
+                                        widget.isTablet,
+                                      );
+                                    }
+                                        : null,
+                                    icon: Icons.visibility_outlined,
+                                    label: 'Order Details',
+                                    color: AppColors.primaryLight,
                                   ),
-                                  icon: Icons.cancel_outlined,
-                                  label: 'Cancel Order',
-                                  color: AppColors.secondaryLight,
-                                  isSecondary: true,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
+                                SizedBox(width: widget.isTablet ? 10 : 8),
+                                Expanded(
+                                  child: _buildActionButton(
+                                    onPressed: () =>
+                                        showCashierCancelOrderDialog(
+                                          context,
+                                          widget.order.id,
+                                        ),
+                                    icon: Icons.cancel_outlined,
+                                    label: 'Cancel Order',
+                                    color: AppColors.secondaryLight,
+                                    isSecondary: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -2230,16 +2231,16 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
             titlePadding: const EdgeInsets.fromLTRB(28, 28, 28, 8),
             contentPadding: const EdgeInsets.fromLTRB(28, 12, 28, 20),
             actionsPadding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
-            title: const Text(
-              'Cancel Order',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
+            title: Text(
+              AppLocalizations.of(ctx)!.posOrdersCancelOrderTitle,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Are you sure you want to cancel this order?',
+                  AppLocalizations.of(ctx)!.posOrdersCancelOrderBody,
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
                 ),
               ],
@@ -2257,7 +2258,7 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: const Text('Go Back', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                      child: Text(AppLocalizations.of(ctx)!.posCommonGoBack, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2266,20 +2267,20 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
                       onPressed: isLoading
                           ? null
                           : () async {
-                              setDialogState(() => isLoading = true);
-                              final vm = ctx.read<pvm.PosViewModel>();
-                              const defaultReason = 'Cancelled by cashier';
-                              final success = await vm.cancelOrder(
-                                context,
-                                orderId,
-                                defaultReason,
-                              );
-                              if (success && dialogContext.mounted) {
-                                Navigator.pop(dialogContext);
-                              } else {
-                                setDialogState(() => isLoading = false);
-                              }
-                            },
+                        setDialogState(() => isLoading = true);
+                        final vm = ctx.read<pvm.PosViewModel>();
+                        const defaultReason = 'Cancelled by cashier';
+                        final success = await vm.cancelOrder(
+                          context,
+                          orderId,
+                          defaultReason,
+                        );
+                        if (success && dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        } else {
+                          setDialogState(() => isLoading = false);
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryLight,
                         foregroundColor: AppColors.secondaryLight,
@@ -2289,14 +2290,14 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
                       ),
                       child: isLoading
                           ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : const Text('Confirm Cancel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                          : Text(AppLocalizations.of(ctx)!.posCommonConfirmCancel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     ),
                   ),
                 ],
@@ -2310,10 +2311,10 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
 }
 
 void _showOrderDetailsSheet(
-  BuildContext context,
-  PosOrder order,
-  bool isTablet,
-) {
+    BuildContext context,
+    PosOrder order,
+    bool isTablet,
+    ) {
   Widget buildStatusBadge(String status, {bool isPreviousCompleted = false}) {
     Color bgColor;
     Color textColor;
@@ -2385,7 +2386,7 @@ void _showOrderDetailsSheet(
       return Container(
         constraints: BoxConstraints(
           maxHeight:
-              MediaQuery.of(context).size.height * (isTablet ? 0.8 : 0.9),
+          MediaQuery.of(context).size.height * (isTablet ? 0.8 : 0.9),
         ),
         decoration: const BoxDecoration(
           color: Color(0xFFF8F9FA), // Soft beautiful light backdrop
@@ -2441,7 +2442,7 @@ void _showOrderDetailsSheet(
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -2468,10 +2469,10 @@ void _showOrderDetailsSheet(
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          () {
+                              () {
                             final model =
-                                '${order.vehicle?.make ?? ""} ${order.vehicle?.model ?? ""}'
-                                    .trim();
+                            '${order.vehicle?.make ?? ""} ${order.vehicle?.model ?? ""}'
+                                .trim();
                             final cust = order.customerName;
                             if (cust != 'Unknown' && cust.isNotEmpty) {
                               return model.isEmpty
@@ -2521,409 +2522,409 @@ void _showOrderDetailsSheet(
             Expanded(
               child: sortedJobs.isEmpty
                   ? Center(
-                      child: Text(
-                        'No departmental data found.',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    )
+                child: Text(
+                  'No departmental data found.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 30),
-                      itemCount: sortedJobs.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final job = sortedJobs[index];
-                        final hasItems = job.items.isNotEmpty;
-                        final isCompleted =
-                            job.status.toLowerCase().contains('completed') &&
-                            job.id != latestId;
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 30),
+                itemCount: sortedJobs.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  final job = sortedJobs[index];
+                  final hasItems = job.items.isNotEmpty;
+                  final isCompleted =
+                      job.status.toLowerCase().contains('completed') &&
+                          job.id != latestId;
 
-                        Widget jobCard = Stack(
-                          clipBehavior: Clip.none,
+                  Widget jobCard = Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Department Header Background Fill
                             Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.02),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Department Header Background Fill
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 14,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryLight.withOpacity(
-                                        0.05,
-                                      ),
-                                      borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(16),
-                                      ),
-                                      border: Border(
-                                        bottom: BorderSide(
-                                          color: Colors.grey.shade100,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                job.department,
-                                                style: AppTextStyles.bodyLarge
-                                                    .copyWith(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: AppColors
-                                                          .secondaryLight,
-                                                    ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'Job ID: ${job.id}',
-                                                style: AppTextStyles.bodySmall
-                                                    .copyWith(
-                                                      color:
-                                                          Colors.grey.shade600,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        buildStatusBadge(
-                                          job.status,
-                                          isPreviousCompleted: isCompleted,
-                                        ),
-                                      ],
-                                    ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight.withValues(alpha:
+                                0.05,
+                                ),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(16),
+                                ),
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Colors.grey.shade100,
                                   ),
-                                  // Items Body
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
                                     child: Column(
                                       crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      CrossAxisAlignment.start,
                                       children: [
-                                        if (!hasItems)
-                                          Center(
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 8,
-                                                  ),
-                                              child: Text(
-                                                'No items bound to this department.',
-                                                style: AppTextStyles.bodySmall
-                                                    .copyWith(
-                                                      color:
-                                                          Colors.grey.shade400,
-                                                    ),
-                                              ),
-                                            ),
-                                          )
-                                        else
-                                          ...job.items.map((item) {
-                                            final isLast =
-                                                job.items.last == item;
-                                            return Padding(
-                                              padding: EdgeInsets.only(
-                                                bottom: isLast ? 0 : 16,
-                                              ),
-                                              child: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  Container(
-                                                    width: 8,
-                                                    height: 8,
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          Colors.grey.shade300,
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          item.productName,
-                                                          style: AppTextStyles
-                                                              .bodyMedium
-                                                              .copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                color: AppColors
-                                                                    .secondaryLight,
-                                                              ),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 4,
-                                                        ),
-                                                        Row(
-                                                          children: [
-                                                            Container(
-                                                              padding:
-                                                                  const EdgeInsets.symmetric(
-                                                                    horizontal:
-                                                                        6,
-                                                                    vertical: 2,
-                                                                  ),
-                                                              decoration: BoxDecoration(
-                                                                color: Colors
-                                                                    .grey
-                                                                    .shade100,
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      4,
-                                                                    ),
-                                                              ),
-                                                              child: Text(
-                                                                "Qty: ${item.qty.toInt()}",
-                                                                style: AppTextStyles
-                                                                    .bodySmall
-                                                                    .copyWith(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w800,
-                                                                      color: Colors
-                                                                          .grey
-                                                                          .shade600,
-                                                                      fontSize:
-                                                                          10,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 8,
-                                                            ),
-                                                            Text(
-                                                              'SAR ${item.unitPrice.toStringAsFixed(2)} / ea',
-                                                              style: AppTextStyles
-                                                                  .bodySmall
-                                                                  .copyWith(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w600,
-                                                                    color: Colors
-                                                                        .grey
-                                                                        .shade500,
-                                                                  ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    'SAR ${item.lineTotal.toStringAsFixed(2)}',
-                                                    style: AppTextStyles
-                                                        .bodyMedium
-                                                        .copyWith(
-                                                          fontWeight:
-                                                              FontWeight.w800,
-                                                          color: AppColors
-                                                              .secondaryLight,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }),
-
-                                        // Render Technicians if any
-                                        if (job.distinctActiveTechnicians.isNotEmpty) ...[
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 12,
-                                            ),
-                                            child: Divider(
-                                              height: 1,
-                                              color: Color(0xFFEEEBE6),
-                                            ),
+                                        Text(
+                                          job.department,
+                                          style: AppTextStyles.bodyLarge
+                                              .copyWith(
+                                            fontWeight:
+                                            FontWeight.bold,
+                                            color: AppColors
+                                                .secondaryLight,
                                           ),
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.handyman_rounded,
-                                                size: 16,
-                                                color: Colors.grey,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                'Assigned Technicians',
-                                                style: AppTextStyles.bodySmall
-                                                    .copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      color:
-                                                          Colors.grey.shade600,
-                                                    ),
-                                              ),
-                                            ],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Job ID: ${job.id}',
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                            color:
+                                            Colors.grey.shade600,
+                                            fontWeight:
+                                            FontWeight.w600,
                                           ),
-                                          const SizedBox(height: 12),
-                                          ...job.distinctActiveTechnicians.map(
-                                            (tech) => Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 8,
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Container(
-                                                    width: 24,
-                                                    height: 24,
-                                                    decoration: BoxDecoration(
-                                                      color: AppColors
-                                                          .primaryLight
-                                                          .withOpacity(0.15),
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.person,
-                                                      size: 14,
-                                                      color: AppColors
-                                                          .primaryLight,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: Text(
-                                                      tech.name,
-                                                      style: AppTextStyles
-                                                          .bodyMedium
-                                                          .copyWith(
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            color: AppColors
-                                                                .secondaryLight,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                  Builder(
-                                                    builder: (context) {
-                                                      final s = tech.status?.toLowerCase() ?? '';
-                                                      Color bgColor = Colors.orange.withOpacity(0.1);
-                                                      Color textColor = Colors.orange.shade700;
-                                                      String displayText = s.isEmpty ? 'PENDING' : tech.status!.toUpperCase();
-
-                                                      if (displayText == 'ACCEPTED_BY_TECHNICIAN') {
-                                                        displayText = 'ACCEPTED';
-                                                      } else if (displayText == 'IN_PROGRESS' || displayText == 'IN PROGRESS') {
-                                                        displayText = 'IN PROGRESS';
-                                                      }
-
-                                                      if (s.contains('completed') || s.contains('accepted')) {
-                                                        bgColor = Colors.green.withOpacity(0.1);
-                                                        textColor = Colors.green.shade700;
-                                                      } else if (s.contains('progress')) {
-                                                        bgColor = Colors.purple.withOpacity(0.1);
-                                                        textColor = Colors.purple.shade700;
-                                                      }
-
-                                                      return Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4,
-                                                        ),
-                                                        decoration: BoxDecoration(
-                                                          color: bgColor,
-                                                          borderRadius: BorderRadius.circular(6),
-                                                        ),
-                                                        child: Text(
-                                                          displayText,
-                                                          style: AppTextStyles.bodySmall.copyWith(
-                                                            fontWeight: FontWeight.w800,
-                                                            color: textColor,
-                                                            fontSize: 10,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ],
                                     ),
+                                  ),
+                                  buildStatusBadge(
+                                    job.status,
+                                    isPreviousCompleted: isCompleted,
                                   ),
                                 ],
                               ),
                             ),
-                            if (latestId == job.id && !job.status.toLowerCase().contains('complete') && !job.status.toLowerCase().contains('invoice'))
-                              Positioned(
-                                top: -12,
-                                right: 16,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF27AE60),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(
-                                          0xFF27AE60,
-                                        ).withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'ACTIVE',
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 9,
-                                          letterSpacing: 0.5,
+                            // Items Body
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  if (!hasItems)
+                                    Center(
+                                      child: Padding(
+                                        padding:
+                                        const EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
+                                        child: Text(
+                                          'No items bound to this department.',
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                            color:
+                                            Colors.grey.shade400,
+                                          ),
                                         ),
                                       ),
-                                    ],
+                                    )
+                                  else
+                                    ...job.items.map((item) {
+                                      final isLast =
+                                          job.items.last == item;
+                                      return Padding(
+                                        padding: EdgeInsets.only(
+                                          bottom: isLast ? 0 : 16,
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                color:
+                                                Colors.grey.shade300,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                CrossAxisAlignment
+                                                    .start,
+                                                children: [
+                                                  Text(
+                                                    item.productName,
+                                                    style: AppTextStyles
+                                                        .bodyMedium
+                                                        .copyWith(
+                                                      fontWeight:
+                                                      FontWeight
+                                                          .w700,
+                                                      color: AppColors
+                                                          .secondaryLight,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(
+                                                    height: 4,
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal:
+                                                          6,
+                                                          vertical: 2,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors
+                                                              .grey
+                                                              .shade100,
+                                                          borderRadius:
+                                                          BorderRadius.circular(
+                                                            4,
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          "Qty: ${item.qty.toInt()}",
+                                                          style: AppTextStyles
+                                                              .bodySmall
+                                                              .copyWith(
+                                                            fontWeight:
+                                                            FontWeight
+                                                                .w800,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade600,
+                                                            fontSize:
+                                                            10,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(
+                                                        width: 8,
+                                                      ),
+                                                      Text(
+                                                        'SAR ${item.unitPrice.toStringAsFixed(2)} / ea',
+                                                        style: AppTextStyles
+                                                            .bodySmall
+                                                            .copyWith(
+                                                          fontWeight:
+                                                          FontWeight
+                                                              .w600,
+                                                          color: Colors
+                                                              .grey
+                                                              .shade500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Text(
+                                              'SAR ${item.lineTotal.toStringAsFixed(2)}',
+                                              style: AppTextStyles
+                                                  .bodyMedium
+                                                  .copyWith(
+                                                fontWeight:
+                                                FontWeight.w800,
+                                                color: AppColors
+                                                    .secondaryLight,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+
+                                  // Render Technicians if any
+                                  if (job.distinctActiveTechnicians.isNotEmpty) ...[
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      child: Divider(
+                                        height: 1,
+                                        color: Color(0xFFEEEBE6),
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.handyman_rounded,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Assigned Technicians',
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                            fontWeight:
+                                            FontWeight.w800,
+                                            color:
+                                            Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ...job.distinctActiveTechnicians.map(
+                                          (tech) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 24,
+                                              height: 24,
+                                              decoration: BoxDecoration(
+                                                color: AppColors
+                                                    .primaryLight
+                                                    .withValues(alpha: 0.15),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.person,
+                                                size: 14,
+                                                color: AppColors
+                                                    .primaryLight,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                tech.name,
+                                                style: AppTextStyles
+                                                    .bodyMedium
+                                                    .copyWith(
+                                                  fontWeight:
+                                                  FontWeight.w700,
+                                                  color: AppColors
+                                                      .secondaryLight,
+                                                ),
+                                              ),
+                                            ),
+                                            Builder(
+                                              builder: (context) {
+                                                final s = tech.status?.toLowerCase() ?? '';
+                                                Color bgColor = Colors.orange.withValues(alpha: 0.1);
+                                                Color textColor = Colors.orange.shade700;
+                                                String displayText = s.isEmpty ? 'PENDING' : tech.status!.toUpperCase();
+
+                                                if (displayText == 'ACCEPTED_BY_TECHNICIAN') {
+                                                  displayText = 'ACCEPTED';
+                                                } else if (displayText == 'IN_PROGRESS' || displayText == 'IN PROGRESS') {
+                                                  displayText = 'IN PROGRESS';
+                                                }
+
+                                                if (s.contains('completed') || s.contains('accepted')) {
+                                                  bgColor = Colors.green.withValues(alpha: 0.1);
+                                                  textColor = Colors.green.shade700;
+                                                } else if (s.contains('progress')) {
+                                                  bgColor = Colors.purple.withValues(alpha: 0.1);
+                                                  textColor = Colors.purple.shade700;
+                                                }
+
+                                                return Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: bgColor,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Text(
+                                                    displayText,
+                                                    style: AppTextStyles.bodySmall.copyWith(
+                                                      fontWeight: FontWeight.w800,
+                                                      color: textColor,
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (latestId == job.id && !job.status.toLowerCase().contains('complete') && !job.status.toLowerCase().contains('invoice'))
+                        Positioned(
+                          top: -12,
+                          right: 16,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF27AE60),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF27AE60,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'ACTIVE',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 9,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                              ),
-                          ],
-                        );
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
 
-                        return jobCard;
-                      },
-                    ),
+                  return jobCard;
+                },
+              ),
             ),
           ],
         ),
@@ -2933,16 +2934,16 @@ void _showOrderDetailsSheet(
 }
 
 void _showCompletionBottomSheet(
-  BuildContext context,
-  PosOrder order,
-  pvm.PosViewModel posVm,
-) {
+    BuildContext context,
+    PosOrder order,
+    pvm.PosViewModel posVm,
+    ) {
   final isTablet = MediaQuery.of(context).size.width > 600;
   PosOrderJob? highestJob;
   if (order.jobs.isNotEmpty) {
     final sorted = List<PosOrderJob>.from(order.jobs);
     sorted.sort(
-      (a, b) =>
+          (a, b) =>
           (int.tryParse(a.id) ?? 0).compareTo(int.tryParse(b.id) ?? 0),
     );
     highestJob = sorted.last;
@@ -2971,7 +2972,7 @@ void _showCompletionBottomSheet(
   }
 
   final String jobIdForComplete =
-      highestJob != null ? highestJob.id : order.id;
+  highestJob != null ? highestJob.id : order.id;
 
   showModalBottomSheet(
     context: context,
@@ -2987,7 +2988,7 @@ void _showCompletionBottomSheet(
             child: Container(
               constraints: BoxConstraints(
                 maxHeight:
-                    MediaQuery.of(context).size.height *
+                MediaQuery.of(context).size.height *
                     (isTablet ? 0.70 : 0.85),
               ),
               decoration: const BoxDecoration(
@@ -3070,7 +3071,7 @@ void _showCompletionBottomSheet(
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
+                                  color: Colors.blue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -3095,7 +3096,7 @@ void _showCompletionBottomSheet(
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  () {
+                                      () {
                                     final m = order.carModel.trim();
                                     final c = order.customerName;
                                     if (c != 'Unknown' && c.isNotEmpty) {
@@ -3200,7 +3201,7 @@ void _showCompletionBottomSheet(
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         item['name'] as String,
@@ -3274,57 +3275,57 @@ void _showCompletionBottomSheet(
                             child: Consumer<pvm.PosViewModel>(
                               builder: (context, vm, _) {
                                 final busy =
-                                    vm.isCashierCompletingJob(jobIdForComplete);
+                                vm.isCashierCompletingJob(jobIdForComplete);
                                 return ElevatedButton(
                                   onPressed: busy
                                       ? null
                                       : () async {
-                                          if (order.isCorporateWalkIn &&
-                                              !order.isCorporateBookingOrder &&
-                                              (order.isCorporateUnapproved ||
-                                                  order.isWaitingCorporateApproval ||
-                                                  order.isRejectedByCorporate)) {
-                                            if (ctx.mounted) {
-                                              ToastService.showError(
-                                                ctx,
-                                                'Corporate order must be approved before completing jobs.',
-                                              );
-                                            }
-                                            return;
-                                          }
-                                          try {
-                                            final response =
-                                                await vm.completeCashierJob(
-                                              jobIdForComplete,
-                                              sourceOrder: order,
-                                            );
-                                            if (response != null &&
-                                                response.success) {
-                                              if (ctx.mounted) {
-                                                Navigator.of(ctx).pop();
-                                                ToastService.showSuccess(
-                                                  ctx,
-                                                  'Order marked as completed successfully',
-                                                );
-                                              }
-                                            } else {
-                                              if (ctx.mounted) {
-                                                ToastService.showError(
-                                                  ctx,
-                                                  response?.message ??
-                                                      'Failed to complete job',
-                                                );
-                                              }
-                                            }
-                                          } catch (e) {
-                                            if (ctx.mounted) {
-                                              ToastService.showError(
-                                                ctx,
-                                                e.toString(),
-                                              );
-                                            }
-                                          }
-                                        },
+                                    if (order.isCorporateWalkIn &&
+                                        !order.isCorporateBookingOrder &&
+                                        (order.isCorporateUnapproved ||
+                                            order.isWaitingCorporateApproval ||
+                                            order.isRejectedByCorporate)) {
+                                      if (ctx.mounted) {
+                                        ToastService.showError(
+                                          ctx,
+                                          'Corporate order must be approved before completing jobs.',
+                                        );
+                                      }
+                                      return;
+                                    }
+                                    try {
+                                      final response =
+                                      await vm.completeCashierJob(
+                                        jobIdForComplete,
+                                        sourceOrder: order,
+                                      );
+                                      if (response != null &&
+                                          response.success) {
+                                        if (ctx.mounted) {
+                                          Navigator.of(ctx).pop();
+                                          ToastService.showSuccess(
+                                            ctx,
+                                            'Order marked as completed successfully',
+                                          );
+                                        }
+                                      } else {
+                                        if (ctx.mounted) {
+                                          ToastService.showError(
+                                            ctx,
+                                            response?.message ??
+                                                'Failed to complete job',
+                                          );
+                                        }
+                                      }
+                                    } catch (e) {
+                                      if (ctx.mounted) {
+                                        ToastService.showError(
+                                          ctx,
+                                          e.toString(),
+                                        );
+                                      }
+                                    }
+                                  },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFFFC145),
                                     foregroundColor: const Color(0xFF1E2124),
@@ -3335,20 +3336,20 @@ void _showCompletionBottomSheet(
                                   ),
                                   child: busy
                                       ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            color: Color(0xFF1E2124),
-                                          ),
-                                        )
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Color(0xFF1E2124),
+                                    ),
+                                  )
                                       : Text(
-                                          'Confirm Completion',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: isTablet ? 16 : 14,
-                                          ),
-                                        ),
+                                    'Confirm Completion',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: isTablet ? 16 : 14,
+                                    ),
+                                  ),
                                 );
                               },
                             ),
@@ -3412,18 +3413,18 @@ Widget _buildStatusPill(PosOrder order) {
       status.contains('waiting') ||
       status.contains('accepted')) {
     textColor = const Color(0xFFE67E22); // Orange for waiting
-    bgColor = const Color(0xFFE67E22).withOpacity(0.15);
+    bgColor = const Color(0xFFE67E22).withValues(alpha: 0.15);
   } else if (status == 'in progress' || status == 'ready for invoice') {
     textColor = AppColors.secondaryLight;
-    bgColor = const Color(0xFF2D9CDB).withOpacity(0.15);
+    bgColor = const Color(0xFF2D9CDB).withValues(alpha: 0.15);
   } else if (status.contains('completed') ||
       status == 'invoiced' ||
       status == 'delivered') {
     textColor = const Color(0xFF27AE60);
-    bgColor = const Color(0xFF27AE60).withOpacity(0.15);
+    bgColor = const Color(0xFF27AE60).withValues(alpha: 0.15);
   } else if (status.contains('rejected') || status.contains('cancelled')) {
     textColor = Colors.red.shade700;
-    bgColor = Colors.red.withOpacity(0.15);
+    bgColor = Colors.red.withValues(alpha: 0.15);
   } else {
     textColor = Colors.grey.shade700;
     bgColor = Colors.grey.shade200;
@@ -3448,11 +3449,11 @@ Widget _buildStatusPill(PosOrder order) {
 }
 
 Widget _buildPremiumDetailItem(
-  String title, {
-  String? subtitle,
-  CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
-  bool isTablet = false,
-}) {
+    String title, {
+      String? subtitle,
+      CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
+      bool isTablet = false,
+    }) {
   return Column(
     crossAxisAlignment: crossAxisAlignment,
     mainAxisSize: MainAxisSize.min,
@@ -3526,21 +3527,21 @@ Widget _buildActionButton({
       ),
       child: isLoading
           ? SizedBox(
-              height: 13,
-              width: 13,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: textColor,
-              ),
-            )
+        height: 13,
+        width: 13,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: textColor,
+        ),
+      )
           : Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: labelFontSize,
-                color: textColor,
-              ),
-            ),
+        label,
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: labelFontSize,
+          color: textColor,
+        ),
+      ),
     ),
   );
 }
@@ -3712,7 +3713,7 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
     await showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Thermal printer (Wi‑Fi)'),
+        title: Text(AppLocalizations.of(context)!.posThermalPrinterTitle),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -3720,17 +3721,17 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
             children: [
               TextField(
                 controller: ipCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Printer IP',
-                  hintText: 'e.g. 192.168.8.55',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.posThermalPrinterIpLabel,
+                  hintText: AppLocalizations.of(context)!.posThermalPrinterIpHint,
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: portCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Port',
-                  helperText: '9100 for most Epson network receipt printers',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.posThermalPrinterPortLabel,
+                  helperText: AppLocalizations.of(context)!.posThermalPrinterPortHelper,
                 ),
                 keyboardType: TextInputType.number,
               ),
@@ -3740,7 +3741,7 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.posCommonCancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -3749,9 +3750,9 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
               await ThermalPrinterSettings.save(ipCtrl.text.trim(), p);
               if (dialogCtx.mounted) Navigator.pop(dialogCtx);
               if (!mounted) return;
-              ToastService.showSuccess(context, 'Printer address saved.');
+              ToastService.showSuccess(context, AppLocalizations.of(context)!.posThermalPrinterSaved);
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.posCommonSave),
           ),
         ],
       ),
@@ -3791,7 +3792,7 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
           Expanded(
             child: Tooltip(
               message:
-                  'Tap: print to Wi‑Fi thermal printer. Long‑press: IP / port.',
+              'Tap: print to Wi‑Fi thermal printer. Long‑press: IP / port.',
               child: GestureDetector(
                 onLongPress: _printing ? null : _openThermalSettings,
                 child: ElevatedButton(
@@ -3807,20 +3808,20 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
                   ),
                   child: _printing
                       ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                       : const Text(
-                          'Print',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                          ),
-                        ),
+                    'Print',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -3831,17 +3832,17 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
               onPressed: _printing
                   ? null
                   : () {
-                      printThermalInvoicePreviewToStdout(
-                        invoice: widget.invoice,
-                        paymentMethodText: widget.paymentMethodText,
-                      );
-                      if (widget.onDone == null) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pop(context);
-                        widget.onDone!();
-                      }
-                    },
+                printThermalInvoicePreviewToStdout(
+                  invoice: widget.invoice,
+                  paymentMethodText: widget.paymentMethodText,
+                );
+                if (widget.onDone == null) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pop(context);
+                  widget.onDone!();
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryLight,
                 foregroundColor: AppColors.secondaryLight,
@@ -3904,7 +3905,7 @@ class InvoiceDialog extends StatelessWidget {
           border: Border.all(color: const Color(0xFF2B2B2B), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -4028,10 +4029,10 @@ class _CashierDutyToggle extends StatelessWidget {
                     color: !roleAllowsDuty
                         ? Colors.grey.shade400
                         : (!technicianOnline
-                            ? Colors.grey.shade500
-                            : (value
-                                ? Colors.green.shade700
-                                : Colors.grey.shade600)),
+                        ? Colors.grey.shade500
+                        : (value
+                        ? Colors.green.shade700
+                        : Colors.grey.shade600)),
                   ),
                 ),
               ],
@@ -4081,7 +4082,7 @@ class _CashierDutyToggle extends StatelessWidget {
                     return Colors.grey.shade500;
                   }),
                   trackOutlineColor:
-                      MaterialStateProperty.all(Colors.transparent),
+                  MaterialStateProperty.all(Colors.transparent),
                 ),
               ),
             ),
@@ -4134,18 +4135,18 @@ class TechnicianCard extends StatelessWidget {
   }
 
   /// Workshop → active floor; on-call only → **On call**; otherwise **Not available** (still not cashier-offline).
-  String _cashierPresenceHeadline(PosTechnician tech) {
+  String _cashierPresenceHeadline(PosTechnician tech, AppLocalizations l10n) {
     if (!tech.isOnline) {
-      return 'Last seen: ${tech.formattedLastSeen}';
+      return l10n.posTechCardLastSeen(tech.formattedLastSeen);
     }
     final dm = _effectiveDutyModeForCard(tech);
     if (dm == 'workshop') {
-      return 'Online now';
+      return l10n.posTechCardOnlineNow;
     }
     if (dm == 'on_call') {
-      return 'On call';
+      return l10n.posTechCardOnCall;
     }
-    return 'Not available';
+    return l10n.posTechCardNotAvailable;
   }
 
   Color _cashierPresenceHeadlineColor(PosTechnician tech) {
@@ -4164,10 +4165,11 @@ class TechnicianCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     final presenceDotColor = _cashierPresenceDotColor(tech);
+    final l10n = AppLocalizations.of(context)!;
     final departmentText = tech.departments.isNotEmpty
         ? tech.departments.map((d) => d.name).where((e) => e.isNotEmpty).join(', ')
-        : 'No department';
-    final presenceHeadline = _cashierPresenceHeadline(tech);
+        : l10n.posTechCardNoDepartment;
+    final presenceHeadline = _cashierPresenceHeadline(tech, l10n);
     final presenceHeadlineColor = _cashierPresenceHeadlineColor(tech);
     final slotsFull = tech.totalSlots > 0 && tech.slotsUsed >= tech.totalSlots;
 
@@ -4181,7 +4183,7 @@ class TechnicianCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -4249,61 +4251,61 @@ class TechnicianCard extends StatelessWidget {
                         width: presenceBusy ? (compact ? 36 : 40) : null,
                         child: presenceBusy
                             ? Center(
-                                child: SizedBox(
-                                  width: compact ? 20 : 22,
-                                  height: compact ? 20 : 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: AppColors.primaryLight,
-                                  ),
-                                ),
-                              )
+                          child: SizedBox(
+                            width: compact ? 20 : 22,
+                            height: compact ? 20 : 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: AppColors.primaryLight,
+                            ),
+                          ),
+                        )
                             : FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerRight,
-                                child: Switch(
-                                  value: tech.isOnline,
-                                  onChanged: onPresenceChanged,
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  thumbColor:
-                                      MaterialStateProperty.resolveWith(
-                                    (states) {
-                                      if (states
-                                          .contains(MaterialState.disabled)) {
-                                        return Colors.grey.shade400;
-                                      }
-                                      if (states
-                                          .contains(MaterialState.selected)) {
-                                        return Colors.white;
-                                      }
-                                      return Colors.grey.shade200;
-                                    },
-                                  ),
-                                  trackColor:
-                                      MaterialStateProperty.resolveWith(
-                                    (states) {
-                                      if (states
-                                          .contains(MaterialState.disabled)) {
-                                        return Colors.grey.shade300;
-                                      }
-                                      if (states
-                                          .contains(MaterialState.selected)) {
-                                        return Colors.green.shade600;
-                                      }
-                                      return Colors.grey.shade500;
-                                    },
-                                  ),
-                                  trackOutlineColor:
-                                      MaterialStateProperty.all(
-                                          Colors.transparent),
-                                ),
-                              ),
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Switch(
+                            value: tech.isOnline,
+                            onChanged: onPresenceChanged,
+                            materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                            thumbColor:
+                            MaterialStateProperty.resolveWith(
+                                  (states) {
+                                if (states
+                                    .contains(MaterialState.disabled)) {
+                                  return Colors.grey.shade400;
+                                }
+                                if (states
+                                    .contains(MaterialState.selected)) {
+                                  return Colors.white;
+                                }
+                                return Colors.grey.shade200;
+                              },
+                            ),
+                            trackColor:
+                            MaterialStateProperty.resolveWith(
+                                  (states) {
+                                if (states
+                                    .contains(MaterialState.disabled)) {
+                                  return Colors.grey.shade300;
+                                }
+                                if (states
+                                    .contains(MaterialState.selected)) {
+                                  return Colors.green.shade600;
+                                }
+                                return Colors.grey.shade500;
+                              },
+                            ),
+                            trackOutlineColor:
+                            MaterialStateProperty.all(
+                                Colors.transparent),
+                          ),
+                        ),
                       ),
                   ],
                 ),
                 SizedBox(height: isTablet ? 4 : 2),
-                Text(
+                LocalizedApiText(
                   tech.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -4324,7 +4326,7 @@ class TechnicianCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 3),
                       Expanded(
-                        child: Text(
+                        child: LocalizedApiText(
                           departmentText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -4350,7 +4352,7 @@ class TechnicianCard extends StatelessWidget {
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(
-                        'Slots ${tech.slotsUsed}/${tech.totalSlots}',
+                        l10n.posTechCardSlots(tech.slotsUsed, tech.totalSlots),
                         style: TextStyle(
                           fontSize: isTablet ? 10.0 : 9.0,
                           fontWeight: FontWeight.w700,
@@ -4367,11 +4369,11 @@ class TechnicianCard extends StatelessWidget {
                         onOnCallDutyChanged != null)) ...[
                   SizedBox(height: isTablet ? 6 : 5),
                   _CashierDutyToggle(
-                    label: 'Workshop Duty',
+                    label: l10n.posTechCardWorkshopDuty,
                     isTablet: isTablet,
                     compact: compact,
                     enabled:
-                        _techCanToggleWorkshop(tech) && tech.isOnline,
+                    _techCanToggleWorkshop(tech) && tech.isOnline,
                     value: tech.workshopDuty,
                     busy: dutyBusy,
                     technicianOnline: tech.isOnline,
@@ -4380,7 +4382,7 @@ class TechnicianCard extends StatelessWidget {
                   ),
                   SizedBox(height: isTablet ? 3 : 2),
                   _CashierDutyToggle(
-                    label: 'On Call Duty',
+                    label: l10n.posTechCardOnCallDuty,
                     isTablet: isTablet,
                     compact: compact,
                     enabled: _techCanToggleOnCall(tech) && tech.isOnline,
@@ -4433,12 +4435,12 @@ class StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: accentColor.withOpacity(0.04),
+            color: accentColor.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -4489,7 +4491,7 @@ class SearchBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PosSearchBar(
-      hintText: 'Search item or service',
+      hintText: AppLocalizations.of(context)!.posProductSearchHint,
       onChanged: (val) => context.read<pvm.PosViewModel>().setSearchQuery(val),
     );
   }
@@ -4570,7 +4572,7 @@ class ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -4595,7 +4597,7 @@ class ProductCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: stockColor.withOpacity(0.12),
+                  color: stockColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

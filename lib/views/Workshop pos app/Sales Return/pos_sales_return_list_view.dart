@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
@@ -92,7 +93,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
                 backgroundColor: AppColors.primaryLight,
                 foregroundColor: Colors.black,
               ),
-              child: const Text('Retry'),
+              child: Text(AppLocalizations.of(context)!.posCommonRetry),
             ),
           ],
         ),

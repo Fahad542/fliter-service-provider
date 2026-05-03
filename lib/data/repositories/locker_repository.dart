@@ -1,18 +1,18 @@
-import '../../models/locker_financial_models.dart';
-import '../../models/locker_models.dart';
+import '../../../../models/locker_financial_models.dart';
+import '../../../../models/locker_models.dart';
 import '../network/api_constants.dart';
 import '../network/base_api_service.dart';
 
-export '../../models/locker_models.dart' show LockerBranch, LockerVarianceApproval;
+export '../../../../models/locker_models.dart' show LockerBranch, LockerVarianceApproval;
 
 /// Locker portal API wrapper (dashboard, requests, financials, notifications).
 class LockerRepository {
   final BaseApiService _apiService = BaseApiService();
 
   Map<String, String> _auth(String token) => {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      };
+    'Authorization': 'Bearer $token',
+    'Content-Type': 'application/json',
+  };
 
   Map<String, dynamic> _asJsonMap(dynamic raw) {
     if (raw is Map<String, dynamic>) return raw;
@@ -203,7 +203,7 @@ class LockerRepository {
     final list = _extractList(raw);
     return list
         .map((e) =>
-            LockerVarianceApproval.fromJson(e as Map<String, dynamic>))
+        LockerVarianceApproval.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 

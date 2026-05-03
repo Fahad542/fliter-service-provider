@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../services/currency_helper.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/department_model.dart';
@@ -43,7 +46,7 @@ class _PosYourJobsViewState extends State<PosYourJobsView> {
       body: Consumer<PosViewModel>(
         builder: (context, vm, _) {
           if (_departments.isEmpty) {
-            return const Center(child: Text('No departments selected.'));
+            return Center(child: Text(AppLocalizations.of(context)!.posYourJobsNoDepartments));
           }
 
           if (isTablet) {
@@ -178,7 +181,7 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'SAR ${row.total.toStringAsFixed(2)}',
+                        CurrencyHelper.format(context, row.total),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -199,7 +202,7 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                'SAR ${vm.getTotalAmountValue(false).toStringAsFixed(2)}',
+                CurrencyHelper.format(context, vm.getTotalAmountValue(false)),
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ],

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../services/currency_helper.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -642,7 +644,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.posOrdersCancelBtn),
             ),
             FilledButton(
               onPressed: () => _applyDialogQuantity(
@@ -650,7 +652,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 product,
                 controller.text,
               ),
-              child: const Text('Apply'),
+              child: Text(AppLocalizations.of(context)!.lockerApplyFilter),
             ),
           ],
         );
@@ -822,9 +824,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Grand Total', style: TextStyle(fontSize: isTablet ? 12 : 10, color: Colors.grey, fontWeight: FontWeight.w500)),
+                        Text(AppLocalizations.of(context)!.posProductGrandTotal, style: TextStyle(fontSize: isTablet ? 12 : 10, color: Colors.grey, fontWeight: FontWeight.w500)),
                         Text(
-                          'SAR ${context.watch<PosViewModel>().getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}',
+                          CurrencyHelper.format(context, context.watch<PosViewModel>().getTotalAmountValue(widget.isMainTab)),
                           style: TextStyle(fontSize: isTablet ? 19 : 18, fontWeight: FontWeight.w800, color: const Color(0xFF1E2124)),
                         ),
                       ],
@@ -843,7 +845,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         _showInvoiceBottomSheet(context, useTabletSizing);
                       },
                       icon: Icon(Icons.receipt_long_outlined, size: isTablet ? 20 : 18),
-                      label: Text('View Invoice', style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 14 : 13)),
+                      label: Text(AppLocalizations.of(context)!.posProductViewInvoice, style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 14 : 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC145),
                         foregroundColor: const Color(0xFF1E2124),
@@ -1037,20 +1039,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               children: [
                                 _buildTotalRow(
                                   'Gross Amount (Excl. VAT)',
-                                  'SAR ${gross.toStringAsFixed(2)}',
+                                  CurrencyHelper.format(context, gross),
                                   false,
                                 ),
                 const SizedBox(height: 6),
                 _buildTotalRow(
                   'Line discount',
-                  '-SAR ${itemDiscount.toStringAsFixed(2)}',
+                  CurrencyHelper.formatNegative(context, itemDiscount),
                   false,
                   color: itemDiscount > 0 ? Colors.green : Colors.grey.shade600,
                 ),
                 const SizedBox(height: 6),
                 _buildTotalRow(
                   'Price after line discount',
-                  'SAR ${afterItemDiscount.toStringAsFixed(2)}',
+                  CurrencyHelper.format(context, afterItemDiscount),
                   false,
                 ),
                 const SizedBox(height: 8),
@@ -1059,7 +1061,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 if (globalDiscount > 0) ...[
                   _buildTotalRow(
                     'Total discount applied',
-                    '-SAR ${globalDiscount.toStringAsFixed(2)}',
+                    CurrencyHelper.formatNegative(context, globalDiscount),
                     false,
                     color: Colors.green,
                   ),
@@ -1067,7 +1069,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 ],
                 _buildTotalRow(
                   'Price after total discount',
-                  'SAR ${afterGlobal.toStringAsFixed(2)}',
+                  CurrencyHelper.format(context, afterGlobal),
                   false,
                 ),
                 const SizedBox(height: 8),
@@ -1166,7 +1168,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 if (promoDiscount > 0) ...[
                   _buildTotalRow(
                     'Promo discount',
-                    '-SAR ${promoDiscount.toStringAsFixed(2)}',
+                    CurrencyHelper.formatNegative(context, promoDiscount),
                     false,
                     color: Colors.green,
                   ),
@@ -1174,13 +1176,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 ],
                 _buildTotalRow(
                   'Price after promo',
-                  'SAR ${taxable.toStringAsFixed(2)}',
+                  CurrencyHelper.format(context, taxable),
                   false,
                 ),
                 const SizedBox(height: 6),
                 _buildTotalRow(
                   'VAT (15%)',
-                  'SAR ${vat.toStringAsFixed(2)}',
+                  CurrencyHelper.format(context, vat),
                   false,
                 ),
                 const SizedBox(height: 8),
@@ -1192,7 +1194,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     ),
                     const Spacer(),
                     Text(
-                      'SAR ${total.toStringAsFixed(2)}',
+                      CurrencyHelper.format(context, total),
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -1441,7 +1443,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         padding: EdgeInsets.fromLTRB(isTablet ? 24 : 16, isTablet ? 10 : 10, isTablet ? 24 : 16, isTablet ? 6 : 8),
                         child: Row(
                           children: [
-                            Text('Order Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 20 : 14, color: const Color(0xFF1E2124))),
+                            Text(AppLocalizations.of(context)!.posProductOrderItems, style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 20 : 14, color: const Color(0xFF1E2124))),
                             const Spacer(),
                             Consumer<PosViewModel>(
                               builder: (context, vm, _) {
@@ -1480,7 +1482,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                       children: [
                                         Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade300),
                                         const SizedBox(height: 8),
-                                        Text('No items added', style: TextStyle(fontSize: 15, color: Colors.grey.shade400)),
+                                        Text(AppLocalizations.of(context)!.posProductNoItemsAdded, style: TextStyle(fontSize: 15, color: Colors.grey.shade400)),
                                       ],
                                     ),
                                   )
@@ -1575,13 +1577,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                               children: [
                                 _buildTotalRow(
                                   'Gross Amount (Excl. VAT)',
-                                  'SAR ${vm.getSubtotalGross(widget.isMainTab).toStringAsFixed(2)}',
+                                  CurrencyHelper.format(context, vm.getSubtotalGross(widget.isMainTab)),
                                   isTablet,
                                 ),
                                 SizedBox(height: isTablet ? 8 : 6),
                                 _buildTotalRow(
                                   'Line discount',
-                                  '-SAR ${vm.getTotalIndividualDiscount(widget.isMainTab).toStringAsFixed(2)}',
+                                  CurrencyHelper.formatNegative(context, vm.getTotalIndividualDiscount(widget.isMainTab)),
                                   isTablet,
                                   color: vm.getTotalIndividualDiscount(widget.isMainTab) > 0
                                       ? Colors.green
@@ -1590,7 +1592,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 SizedBox(height: isTablet ? 8 : 6),
                                 _buildTotalRow(
                                   'Price after line discount',
-                                  'SAR ${vm.getPriceAfterItemDiscounts(widget.isMainTab).toStringAsFixed(2)}',
+                                  CurrencyHelper.format(context, vm.getPriceAfterItemDiscounts(widget.isMainTab)),
                                   isTablet,
                                 ),
                                 SizedBox(height: isTablet ? 10 : 8),
@@ -1599,7 +1601,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 if (vm.getTotalGlobalDiscountValue(widget.isMainTab) > 0) ...[
                                   _buildTotalRow(
                                     'Total discount applied',
-                                    '-SAR ${vm.getTotalGlobalDiscountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                    CurrencyHelper.formatNegative(context, vm.getTotalGlobalDiscountValue(widget.isMainTab)),
                                     isTablet,
                                     color: Colors.green,
                                   ),
@@ -1607,7 +1609,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 ],
                                 _buildTotalRow(
                                   'Price after total discount',
-                                  'SAR ${vm.getPriceAfterJobDiscount(widget.isMainTab).toStringAsFixed(2)}',
+                                  CurrencyHelper.format(context, vm.getPriceAfterJobDiscount(widget.isMainTab)),
                                   isTablet,
                                 ),
                                 SizedBox(height: isTablet ? 12 : 10),
@@ -1707,7 +1709,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     0) ...[
                                   _buildTotalRow(
                                     'Promo discount',
-                                    '-SAR ${vm.getTotalPromoDiscountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                    CurrencyHelper.formatNegative(context, vm.getTotalPromoDiscountValue(widget.isMainTab)),
                                     isTablet,
                                     color: Colors.green,
                                   ),
@@ -1715,14 +1717,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 ],
                                 _buildTotalRow(
                                   'Price after promo',
-                                  'SAR ${vm.getTotalTaxableAmountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                  CurrencyHelper.format(context, vm.getTotalTaxableAmountValue(widget.isMainTab)),
                                   isTablet,
                                 ),
                                 Divider(height: 1, color: Colors.grey.shade200),
                                 SizedBox(height: isTablet ? 10 : 8),
                                 _buildTotalRow(
                                   'VAT (15%)',
-                                  'SAR ${vm.getTotalTaxValue(widget.isMainTab).toStringAsFixed(2)}',
+                                  CurrencyHelper.format(context, vm.getTotalTaxValue(widget.isMainTab)),
                                   isTablet,
                                   color: Colors.grey,
                                 ),
@@ -1741,7 +1743,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     ),
                                     const Spacer(),
                                     Text(
-                                      'SAR ${vm.getTotalAmountValue(widget.isMainTab).toStringAsFixed(2)}',
+                                      CurrencyHelper.format(context, vm.getTotalAmountValue(widget.isMainTab)),
                                       style: TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: isLandscape
@@ -2358,7 +2360,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Add Department'),
+                child: Text(AppLocalizations.of(context)!.posProductAddDepartment),
               ),
             ),
           ],
@@ -2507,7 +2509,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'SAR ${product.price.toStringAsFixed(2)}',
+                            CurrencyHelper.format(context, product.price),
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w800,
                               fontSize: 14,
@@ -2646,7 +2648,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'SAR ${product.price.toStringAsFixed(2)}',
+                          CurrencyHelper.format(context, product.price),
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
@@ -2746,7 +2748,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           Padding(
             padding: const EdgeInsets.only(right: 2),
             child: Text(
-              'SAR ${item.lineSubtotalExclVat.toStringAsFixed(2)}',
+              CurrencyHelper.format(context, item.lineSubtotalExclVat),
               style: TextStyle(
                 fontSize: isTablet ? 14 : 11,
                 fontWeight: FontWeight.w600,
@@ -2762,7 +2764,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         Padding(
           padding: const EdgeInsets.only(right: 2),
           child: Text(
-            'SAR ${net.toStringAsFixed(2)}',
+            CurrencyHelper.format(context, net),
             style: TextStyle(
               fontSize: isTablet ? 18 : 13,
               fontWeight: FontWeight.w800,
@@ -2951,7 +2953,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('Dis.', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                            Text(AppLocalizations.of(context)!.posProductDiscountShort, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
                             const SizedBox(width: 3),
                             SizedBox(
                               width: 38,

@@ -8,6 +8,7 @@ import '../../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Navbar/pos_shell.dart';
 import 'department_view_model.dart';
+import '../../../l10n/app_localizations.dart';
 
 String _normalizeDeptKeyForExclude(String value) =>
     value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -91,11 +92,11 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Error: ${viewModel.errorMessage}'),
+                  Text(AppLocalizations.of(context)!.posDeptRetry),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => viewModel.fetchDepartments(),
-                    child: const Text('Retry'),
+                    child: Text(AppLocalizations.of(context)!.posDeptRetry),
                   ),
                 ],
               ),
@@ -109,7 +110,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                   context.read<PosViewModel>().editDepartmentId);
 
           if (departments.isEmpty) {
-            return const Center(child: Text('No departs found'));
+            return Center(child: Text(AppLocalizations.of(context)!.posDeptNoneFound));
           }
 
           if (!_autoSelectionDone &&

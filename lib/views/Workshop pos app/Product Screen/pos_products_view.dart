@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
@@ -142,7 +143,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () => vm.fetchProducts(),
-                        child: const Text('Retry'),
+                        child: Text(AppLocalizations.of(context)!.posCommonRetry),
                       ),
                     ],
                   ),

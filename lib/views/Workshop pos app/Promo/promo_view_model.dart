@@ -62,7 +62,7 @@ class PromoViewModel extends ChangeNotifier {
       if (response.success && response.promoCodes != null) {
         _availablePromotions = response.promoCodes!.map((code) => AvailablePromotion(
           code: code.code,
-          title: code.discountLabel ?? (code.isPercent ? '${code.discount}% Discount' : 'SAR ${code.discount} Discount'),
+          title: code.discountLabel ?? (code.isPercent ? '${code.discount}% Discount' : 'SAR ${code.discount} Discount'), // TODO: use CurrencyHelper when context available
           description: code.description ?? 'Promotional discount',
           discount: code.discount,
           isPercent: code.isPercent,

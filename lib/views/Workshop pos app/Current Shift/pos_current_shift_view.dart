@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -61,7 +62,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
                 backgroundColor: AppColors.secondaryLight,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+              child: Text(AppLocalizations.of(context)!.posCurrentShiftRetry, style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -70,7 +71,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
 
     final session = vm.currentSession;
     if (session == null) {
-      return const Center(child: Text('No active session.'));
+      return Center(child: Text(AppLocalizations.of(context)!.posCurrentShiftNoActiveSession));
     }
 
     // Attempt to format the date

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/cashier_active_broadcasts_model.dart';
@@ -18,7 +19,6 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
   double _gridChildAspectRatio(double gridInnerWidth) {
     const crossGap = 12.0;
     final cellW = (gridInnerWidth - crossGap) / 2;
-    // Enough height for badge + subtitle + countdown + progress (avoids tiny bottom overflows).
     const targetCellHeight = 136.0;
     return (cellW / targetCellHeight).clamp(2.0, 4.5);
   }
@@ -30,14 +30,17 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
     return '$m:$s';
   }
 
-  String _windowLabel(int seconds) {
+  /// Returns localised window label: e.g. "5:00 نافذة" in AR or "5:00 window" in EN.
+  String _windowLabel(int seconds, AppLocalizations l10n) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
-    return '$m:${s.toString().padLeft(2, '0')} window';
+    final time = '$m:${s.toString().padLeft(2, '0')}';
+    return l10n.posBroadcastWindow(time, s.toString().padLeft(2, '0'));
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final vm = context.watch<CashierBroadcastViewModel>();
     final list = vm.broadcasts;
     final window = vm.windowSeconds;
@@ -88,9 +91,9 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Technician broadcasts',
-                          style: TextStyle(
+                        Text(
+                          l10n.posBroadcastHeading,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
@@ -100,8 +103,11 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                         const SizedBox(height: 6),
                         Text(
                           list.isEmpty && !vm.isLoading
-                              ? 'No active broadcasts'
-                              : '$displayCount active · ${_windowLabel(window)} per item',
+                              ? l10n.posBroadcastNoActive
+                              : l10n.posBroadcastCountActive(
+                                  displayCount,
+                                  _windowLabel(window, l10n),
+                                ),
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.72),
                             fontSize: 13,
@@ -139,7 +145,7 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: () => vm.fetchActive(),
-                      child: const Text('Retry'),
+                      child: Text(l10n.posBroadcastRetry),
                     ),
                   ],
                 ),
@@ -151,7 +157,7 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
             hasScrollBody: false,
             child: Center(
               child: Text(
-                'No active broadcasts',
+                l10n.posBroadcastNoActive,
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: 15,
@@ -179,8 +185,9 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                       return _BroadcastCard(
                         item: e,
                         vm: vm,
-                        windowLabel: _windowLabel(window),
+                        windowLabel: _windowLabel(window, l10n),
                         formatCountdown: _formatCountdown,
+                        l10n: l10n,
                       );
                     },
                     childCount: list.length,
@@ -224,9 +231,9 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
         ),
-        title: const Text(
-          'BROADCAST',
-          style: TextStyle(
+        title: Text(
+          l10n.posBroadcastTitle,
+          style: const TextStyle(
             color: AppColors.secondaryLight,
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -264,12 +271,23 @@ class _BroadcastCard extends StatelessWidget {
     required this.vm,
     required this.windowLabel,
     required this.formatCountdown,
+    required this.l10n,
   });
 
   final CashierActiveBroadcastItem item;
   final CashierBroadcastViewModel vm;
   final String windowLabel;
   final String Function(Duration) formatCountdown;
+  final AppLocalizations l10n;
+
+  /// Translates broadcast type string to localised label.
+  String _typeBadge(String rawType) {
+    final type = rawType.trim().toLowerCase();
+    if (type == 'on_call') return l10n.posBroadcastTypeOnCall;
+    if (type == 'workshop') return l10n.posBroadcastTypeWorkshop;
+    if (type.isEmpty) return '';
+    return rawType; // unknown type — return as-is (API value)
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -277,10 +295,8 @@ class _BroadcastCard extends StatelessWidget {
     final expired = vm.isExpired(item);
     final urgent = vm.showSoon(item);
     final progress = vm.progressRemaining(item);
-    final type = item.broadcastType.trim().toLowerCase();
-    final badge = type.isEmpty
-        ? null
-        : (type == 'on_call' ? 'On call' : type == 'workshop' ? 'Workshop' : item.broadcastType);
+    final rawType = item.broadcastType.trim().toLowerCase();
+    final badge = rawType.isEmpty ? null : _typeBadge(rawType);
 
     return Material(
       color: Colors.white,
@@ -313,153 +329,155 @@ class _BroadcastCard extends StatelessWidget {
             physics: const ClampingScrollPhysics(),
             clipBehavior: Clip.hardEdge,
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: expired ? Colors.grey.shade300 : AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(10),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: expired ? Colors.grey.shade300 : AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.campaign_outlined,
+                        color: expired ? Colors.grey.shade600 : AppColors.secondaryLight,
+                        size: 19,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.campaign_outlined,
-                      color: expired ? Colors.grey.shade600 : AppColors.secondaryLight,
-                      size: 19,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.displayTitle,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: expired ? Colors.grey.shade500 : const Color(0xFF1B1E24),
-                                  height: 1.15,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.displayTitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: expired ? Colors.grey.shade500 : const Color(0xFF1B1E24),
+                                    height: 1.15,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (!expired && urgent)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                    margin: const EdgeInsets.only(bottom: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFF3E0),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    child: const Text(
-                                      'Soon',
-                                      style: TextStyle(
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFFE65100),
-                                        letterSpacing: 0.2,
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (!expired && urgent)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      margin: const EdgeInsets.only(bottom: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFF3E0),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Text(
+                                        l10n.posBroadcastLabelSoon,
+                                        style: const TextStyle(
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFFE65100),
+                                          letterSpacing: 0.2,
+                                        ),
                                       ),
                                     ),
+                                  Text(
+                                    formatCountdown(left),
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.35,
+                                      height: 1.05,
+                                      fontFeatures: const [FontFeature.tabularFigures()],
+                                      color: expired
+                                          ? Colors.grey.shade400
+                                          : urgent
+                                              ? const Color(0xFFE65100)
+                                              : AppColors.secondaryLight,
+                                    ),
                                   ),
-                                Text(
-                                  formatCountdown(left),
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.35,
-                                    height: 1.05,
-                                    fontFeatures: const [FontFeature.tabularFigures()],
-                                    color: expired
-                                        ? Colors.grey.shade400
-                                        : urgent
-                                            ? const Color(0xFFE65100)
-                                            : AppColors.secondaryLight,
+                                  Text(
+                                    // "Closed" vs "remaining" — both localised
+                                    expired ? l10n.posBroadcastLabelClosed : l10n.posBroadcastLabelRemaining,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade500,
+                                      height: 1,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  expired ? 'Closed' : 'remaining',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade500,
-                                    height: 1,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            ],
+                          ),
+                          if (badge != null && badge.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              badge,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade700,
+                                height: 1.05,
+                              ),
                             ),
                           ],
-                        ),
-                        if (badge != null) ...[
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 2),
                           Text(
-                            badge,
+                            item.subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.grey.shade700,
-                              height: 1.05,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
+                              height: 1.2,
                             ),
                           ),
                         ],
-                        const SizedBox(height: 2),
-                        Text(
-                          item.subtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade600,
-                            height: 1.2,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: expired ? 0 : progress,
+                    minHeight: 3,
+                    backgroundColor: Colors.grey.shade200,
+                    color: expired
+                        ? Colors.grey.shade300
+                        : urgent
+                            ? const Color(0xFFFF9800)
+                            : AppColors.primaryLight,
                   ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: expired ? 0 : progress,
-                  minHeight: 3,
-                  backgroundColor: Colors.grey.shade200,
-                  color: expired
-                      ? Colors.grey.shade300
-                      : urgent
-                          ? const Color(0xFFFF9800)
-                          : AppColors.primaryLight,
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                expired ? 'Expired' : windowLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 9,
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 2),
+                Text(
+                  // "Expired" vs window label — both localised
+                  expired ? l10n.posBroadcastLabelExpired : windowLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
             ),
           ),
         ),

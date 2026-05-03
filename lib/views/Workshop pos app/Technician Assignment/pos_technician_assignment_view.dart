@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../../utils/app_colors.dart';
@@ -516,7 +517,7 @@ class _PosTechnicianAssignmentViewState
                                 vm.fetchCashierTechnicians();
                               }
                             },
-                            child: const Text('Retry'),
+                            child: Text(AppLocalizations.of(context)!.posTechAssignRetry),
                           ),
                         ],
                       ),
@@ -673,8 +674,8 @@ class _PosTechnicianAssignmentViewState
                                 ),
                               )
                             : technicians.isEmpty
-                                ? const Center(
-                                    child: Text('No technicians found'),
+                                ? Center(
+                                    child: Text(AppLocalizations.of(context)!.posTechAssignNoResults),
                                   )
                                 : GridView.builder(
                                 padding: EdgeInsets.symmetric(
