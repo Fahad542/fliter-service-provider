@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/currency_helper.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/department_model.dart';
@@ -38,8 +38,8 @@ class _PosYourJobsViewState extends State<PosYourJobsView> {
     final isTablet = MediaQuery.of(context).size.width > 600;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3F0),
-      appBar: const PosScreenAppBar(
-        title: 'Your Jobs',
+      appBar: PosScreenAppBar(
+        title: AppLocalizations.of(context)!.posYourJobsTitle,
         showBackButton: true,
         showHamburger: false,
       ),
@@ -137,7 +137,7 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Department-wise Invoice',
+            AppLocalizations.of(context)!.posYourJobsDeptInvoiceTitle,
             style: AppTextStyles.bodyLarge.copyWith(
               fontWeight: FontWeight.w800,
               color: AppColors.secondaryLight,
@@ -162,7 +162,7 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LocalizedApiText(
                               row.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
@@ -171,7 +171,7 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${row.count} items',
+                              AppLocalizations.of(context)!.posYourJobsItems(row.count),
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 11,
@@ -196,9 +196,9 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
           const Divider(height: 16),
           Row(
             children: [
-              const Text(
-                'Grand Total',
-                style: TextStyle(fontWeight: FontWeight.w800),
+              Text(
+                AppLocalizations.of(context)!.posYourJobsGrandTotal,
+                style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               const Spacer(),
               Text(
@@ -222,9 +222,9 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text(
-                    'Save Draft',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  child: Text(
+                    AppLocalizations.of(context)!.posYourJobsSaveDraft,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -241,9 +241,9 @@ class _DepartmentWiseInvoicePanel extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text(
-                    'Place Order',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  child: Text(
+                    AppLocalizations.of(context)!.posYourJobsPlaceOrder,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -291,7 +291,7 @@ class _DepartmentJobsList extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedApiText(
                     dept.name,
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w800,
@@ -324,10 +324,10 @@ class _DepartmentJobsList extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: const FittedBox(
+                          child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              'Assign Technicians',
+                              AppLocalizations.of(context)!.posYourJobsAssignTechnicians,
                               maxLines: 1,
                               softWrap: false,
                             ),
@@ -358,10 +358,10 @@ class _DepartmentJobsList extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: const FittedBox(
+                          child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              'Add Inventory',
+                              AppLocalizations.of(context)!.posYourJobsAddInventory,
                               maxLines: 1,
                               softWrap: false,
                             ),

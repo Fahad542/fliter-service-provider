@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+// import '../../utils/app_colors.dart';
+// import '../../utils/app_text_styles.dart';
+// import '../../utils/toast_service.dart';
+// import '../../widgets/widgets.dart';
 import '../../../services/session_service.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -9,10 +13,13 @@ import '../../../widgets/custom_auth_header.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/custom_text_field.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/locker_translation_mixin.dart';
 
 import '../Navbar/pos_shell.dart';
 import 'login_view_model.dart';
-import '../Home Screen/pos_view_model.dart';
+import '../Home Screen/pos_view_model.dart'; // Add this import
+// import '../Navbar/pos_shell.dart';
+// import '../../services/session_service.dart';
 
 class LoginView extends StatefulWidget {
   final String appName;
@@ -44,9 +51,11 @@ class _LoginViewState extends State<LoginView> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final l10n = AppLocalizations.of(context)!;
     final loginViewModel = context.read<LoginViewModel>();
+    final l10n = AppLocalizations.of(context)!;
+    final langCode = Localizations.localeOf(context).languageCode;
 
+    // Proceed with login
     final success = await loginViewModel.login(
       _emailController.text.trim(),
       _passwordController.text,
@@ -77,11 +86,14 @@ class _LoginViewState extends State<LoginView> {
       if (mounted) {
         ToastService.showError(
           context,
-          loginViewModel.errorMessage ?? l10n.posLoginFailed,
+          loginViewModel.errorMessage != null
+              ? await AppTranslationService.localizedDynamicValueForLanguage(loginViewModel.errorMessage!, langCode)
+              : l10n.posLoginFailed,
         );
       }
     }
   }
+
 
   void _handleForgotPassword() {
     showModalBottomSheet(
@@ -91,8 +103,8 @@ class _LoginViewState extends State<LoginView> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        final l10n = AppLocalizations.of(context)!;
         final isTablet = MediaQuery.of(context).size.width > 600;
+        final l10n = AppLocalizations.of(context)!;
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: PosTabletLayout.textScaler(context),
@@ -148,10 +160,7 @@ class _LoginViewState extends State<LoginView> {
                     text: l10n.posLoginResetPasswordSendButton,
                     onPressed: () {
                       Navigator.pop(context);
-                      ToastService.showSuccess(
-                        context,
-                        l10n.posLoginResetPasswordSentSuccess,
-                      );
+                      ToastService.showSuccess(context, l10n.posLoginResetPasswordSentSuccess);
                     },
                   ),
                 ),
@@ -166,11 +175,11 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final horizontalPadding = isTablet ? screenWidth * 0.18 : 40.0;
-
+    final l10n = AppLocalizations.of(context)!;
+    
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: PosTabletLayout.textScaler(context),
@@ -267,7 +276,8 @@ class _LoginViewState extends State<LoginView> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 8),
+                            const SizedBox(height: 24),
                             Consumer<LoginViewModel>(
                               builder: (context, viewModel, child) {
                                 return SizedBox(
@@ -295,4 +305,6 @@ class _LoginViewState extends State<LoginView> {
       ),
     );
   }
+
+
 }

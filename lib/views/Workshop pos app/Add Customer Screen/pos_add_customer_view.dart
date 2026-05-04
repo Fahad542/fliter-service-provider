@@ -5,6 +5,8 @@ import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../utils/app_formatters.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 // import '../../Department/pos_department_view.dart';
 import 'package:provider/provider.dart';
 import '../Department/pos_department_view.dart';
@@ -20,6 +22,7 @@ class PosAddCustomerView extends StatefulWidget {
 }
 
 class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTickerProviderStateMixin {
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
   late TabController _tabController;
 
   // Form keys
@@ -46,9 +49,12 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
 
   void _fetchCorporateAccountsIfEmpty() {
     final posVm = context.read<PosViewModel>();
-    if (posVm.corporateAccounts.isEmpty && !posVm.isCorpAccountsLoading) {
-      posVm.fetchCorporateAccounts(silent: false);
-    }
+    if (posVm.isCorpAccountsLoading) return;
+    // Empty list + cached "loaded once" would skip GET in VM; force so newly added server accounts can appear.
+    posVm.fetchCorporateAccounts(
+      silent: false,
+      forceRefresh: posVm.corporateAccounts.isEmpty,
+    );
   }
 
   @override
@@ -69,7 +75,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           final vm = context.watch<AddCustomerViewModel>();
           return Scaffold(
             backgroundColor: const Color(0xFFFBF9F6),
-            appBar: PosScreenAppBar(title: 'Add New Customer'),
+            appBar: PosScreenAppBar(title: l10n.posAddCustomerTitle),
             body: Column(
               children: [
           SizedBox(height: isTablet ? 14 : 12),
@@ -105,9 +111,9 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 labelPadding: EdgeInsets.symmetric(vertical: isTablet ? 3 : 2),
                 overlayColor: MaterialStateProperty.all(Colors.transparent),
                 splashFactory: NoSplash.splashFactory,
-                tabs: const [
-                  Tab(text: 'Normal Customer'),
-                  Tab(text: 'Corporate Customer'),
+                tabs: [
+                  Tab(text: l10n.posAddCustomerTabNormal),
+                  Tab(text: l10n.posAddCustomerTabCorporate),
                 ],
               ),
             ),
@@ -144,20 +150,20 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Standard walk-in: customer name / VAT / mobile are collected before invoice (billing PATCH).
-            _buildSectionHeader('Vehicle Information', isTablet: isTablet),
+            _buildSectionHeader(l10n.posAddCustomerSectionVehicleInfo, isTablet: isTablet),
             SizedBox(height: isTablet ? 12.0 : 10.0),
             if (isTablet) ...[
               Row(
                 children: [
                   Expanded(
                     child: _buildTextField(
-                      'Vehicle Number',
+                      l10n.posAddCustomerFieldVehicleNumber,
                       vm.vehicleNumberController,
                       Icons.confirmation_number_outlined,
                       isTablet: isTablet,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter vehicle number';
+                          return l10n.posAddCustomerValidationVehicleRequired;
                         }
                         return null;
                       },
@@ -166,7 +172,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildTextField(
-                      'Make',
+                      l10n.posAddCustomerFieldMake,
                       vm.makeController,
                       Icons.directions_car_outlined,
                       isTablet: isTablet,
@@ -179,7 +185,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 children: [
                   Expanded(
                     child: _buildTextField(
-                      'VIN',
+                      l10n.posAddCustomerFieldVin,
                       vm.vinNumberController,
                       Icons.tag_outlined,
                       isTablet: isTablet,
@@ -195,7 +201,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                           return null;
                         }
                         if (value.trim().length > 17) {
-                          return 'Max 17 characters';
+                          return l10n.posAddCustomerValidationVinMax;
                         }
                         return null;
                       },
@@ -208,7 +214,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 children: [
                   Expanded(
                     child: _buildTextField(
-                      'Model',
+                      l10n.posAddCustomerFieldModel,
                       vm.modelController,
                       Icons.model_training_outlined,
                       isTablet: isTablet,
@@ -217,7 +223,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildTextField(
-                      'Odometer',
+                      l10n.posAddCustomerFieldOdometer,
                       vm.odoMeterController,
                       Icons.speed_outlined,
                       keyboardType: TextInputType.number,
@@ -228,7 +234,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return null;
                         if (!RegExp(r'^[0-9٠-٩۰-۹०-९]+$').hasMatch(value)) {
-                          return 'Invalid number';
+                          return l10n.posAddCustomerValidationInvalidNumberShort;
                         }
                         return null;
                       },
@@ -238,7 +244,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
             ] else ...[
               _buildTextField(
-                'Vehicle Number',
+                l10n.posAddCustomerFieldVehicleNumber,
                 vm.vehicleNumberController,
                 Icons.confirmation_number_outlined,
                 isTablet: isTablet,
@@ -246,14 +252,14 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 autocorrect: false,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter vehicle number';
+                    return l10n.posAddCustomerValidationVehicleRequired;
                   }
                   return null;
                 },
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
-                'VIN',
+                l10n.posAddCustomerFieldVin,
                 vm.vinNumberController,
                 Icons.tag_outlined,
                 isTablet: isTablet,
@@ -269,14 +275,14 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                     return null;
                   }
                   if (value.trim().length > 17) {
-                    return 'Max 17 characters';
+                    return l10n.posAddCustomerValidationVinMax;
                   }
                   return null;
                 },
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
-                'Make',
+                l10n.posAddCustomerFieldMake,
                 vm.makeController,
                 Icons.directions_car_outlined,
                 isTablet: isTablet,
@@ -285,7 +291,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
-                'Model',
+                l10n.posAddCustomerFieldModel,
                 vm.modelController,
                 Icons.model_training_outlined,
                 isTablet: isTablet,
@@ -294,7 +300,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
-                'Odometer',
+                l10n.posAddCustomerFieldOdometer,
                 vm.odoMeterController,
                 Icons.speed_outlined,
                 keyboardType: TextInputType.number,
@@ -304,7 +310,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return null;
                   if (int.tryParse(value) == null) {
-                    return 'Please enter a valid number';
+                    return l10n.posAddCustomerValidationInvalidNumber;
                   }
                   return null;
                 },
@@ -331,7 +337,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Corporate Dropdown
-            _buildSectionHeader('Corporate Account', isTablet: isTablet),
+            _buildSectionHeader(l10n.posAddCustomerSectionCorporateAccount, isTablet: isTablet),
             SizedBox(height: isTablet ? 12.0 : 10.0),
             Consumer<PosViewModel>(
               builder: (context, posVm, child) {
@@ -365,8 +371,8 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       value: vm.selectedCorporate,
                       hint: Text(
                         posVm.corporateAccounts.isEmpty 
-                            ? 'No Corporate Accounts Found' 
-                            : 'Select Corporate Account',
+                            ? l10n.posAddCustomerNoCorporateFound 
+                            : l10n.posAddCustomerSelectCorporate,
                         style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: isTablet ? 14 : 13),
                       ),
                       isExpanded: true,
@@ -374,12 +380,14 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       items: posVm.corporateAccounts.map((corp) {
                         return DropdownMenuItem<String>(
                           value: corp.companyName,
-                          child: Text(
+                          child: LocalizedApiText(
                             corp.companyName,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: isTablet ? 14 : 13,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         );
                       }).toList(),
@@ -401,30 +409,30 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
 
             // Auto-filled fields (read-only)
             if (vm.selectedCorporateData != null) ...[
-              _buildSectionHeader('Company Details (Auto-filled)', isTablet: isTablet),
+              _buildSectionHeader(l10n.posAddCustomerSectionCompanyDetails, isTablet: isTablet),
               SizedBox(height: isTablet ? 12.0 : 10.0),
-              _buildReadOnlyField('Company Name', vm.selectedCorporateData!.companyName, Icons.business, isTablet: isTablet),
+              _buildReadOnlyField(l10n.posAddCustomerFieldCompanyName, vm.selectedCorporateData!.companyName, Icons.business, isTablet: isTablet),
               SizedBox(height: fieldGap),
               _buildReadOnlyField(
-                'VAT Number',
-                vm.selectedCorporateData!.effectiveVatNumber ?? 'N/A',
+                l10n.posAddCustomerFieldVatNumber,
+                vm.selectedCorporateData!.effectiveVatNumber ?? l10n.posAddCustomerFieldNA,
                 Icons.receipt_long_outlined,
                 isTablet: isTablet,
               ),
               SizedBox(height: fieldGap),
-              _buildReadOnlyField('Billing Address', vm.selectedCorporateData!.billingAddress ?? vm.selectedCorporateData!.address ?? 'N/A', Icons.location_on_outlined, isTablet: isTablet),
+              _buildReadOnlyField(l10n.posAddCustomerFieldBillingAddress, vm.selectedCorporateData!.billingAddress ?? vm.selectedCorporateData!.address ?? l10n.posAddCustomerFieldNA, Icons.location_on_outlined, isTablet: isTablet),
               SizedBox(height: isTablet ? 18.0 : 14.0),
             ],
 
             // Vehicle Section
-            _buildSectionHeader('Vehicle Information', isTablet: isTablet),
+            _buildSectionHeader(l10n.posAddCustomerSectionVehicleInfo, isTablet: isTablet),
             SizedBox(height: isTablet ? 12.0 : 10.0),
             if (isTablet) ...[
               Row(
                 children: [
                   Expanded(
                     child: _buildTextField(
-                      'Vehicle Number',
+                      l10n.posAddCustomerFieldVehicleNumber,
                       vm.corpVehicleNumberController,
                       Icons.confirmation_number_outlined,
                       isTablet: isTablet,
@@ -432,7 +440,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       autocorrect: false,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Required';
+                          return l10n.posAddCustomerValidationRequired;
                         }
                         return null;
                       },
@@ -441,7 +449,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildTextField(
-                      'Make',
+                      l10n.posAddCustomerFieldMake,
                       vm.corpMakeController,
                       Icons.directions_car_outlined,
                       isTablet: isTablet,
@@ -456,7 +464,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 children: [
                   Expanded(
                     child: _buildTextField(
-                      'VIN',
+                      l10n.posAddCustomerFieldVin,
                       vm.corpVinNumberController,
                       Icons.tag_outlined,
                       isTablet: isTablet,
@@ -472,7 +480,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                           return null;
                         }
                         if (value.trim().length > 17) {
-                          return 'Max 17 characters';
+                          return l10n.posAddCustomerValidationVinMax;
                         }
                         return null;
                       },
@@ -485,7 +493,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 children: [
                   Expanded(
                     child: _buildTextField(
-                      'Model',
+                      l10n.posAddCustomerFieldModel,
                       vm.corpModelController,
                       Icons.model_training_outlined,
                       isTablet: isTablet,
@@ -496,7 +504,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildTextField(
-                      'Odometer',
+                      l10n.posAddCustomerFieldOdometer,
                       vm.corpOdoMeterController,
                       Icons.speed_outlined,
                       keyboardType: TextInputType.number,
@@ -508,7 +516,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                           return null;
                         }
                         if (int.tryParse(value) == null) {
-                          return 'Invalid number';
+                          return l10n.posAddCustomerValidationInvalidNumberShort;
                         }
                         return null;
                       },
@@ -518,7 +526,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
             ] else ...[
               _buildTextField(
-                'Vehicle Number',
+                l10n.posAddCustomerFieldVehicleNumber,
                 vm.corpVehicleNumberController,
                 Icons.confirmation_number_outlined,
                 isTablet: isTablet,
@@ -526,14 +534,14 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 autocorrect: false,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter vehicle number';
+                    return l10n.posAddCustomerValidationVehicleRequired;
                   }
                   return null;
                 },
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
-                'VIN',
+                l10n.posAddCustomerFieldVin,
                 vm.corpVinNumberController,
                 Icons.tag_outlined,
                 isTablet: isTablet,
@@ -549,14 +557,14 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                     return null;
                   }
                   if (value.trim().length > 17) {
-                    return 'Max 17 characters';
+                    return l10n.posAddCustomerValidationVinMax;
                   }
                   return null;
                 },
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
-                'Make',
+                l10n.posAddCustomerFieldMake,
                 vm.corpMakeController,
                 Icons.directions_car_outlined,
                 isTablet: isTablet,
@@ -565,7 +573,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
-                'Model',
+                l10n.posAddCustomerFieldModel,
                 vm.corpModelController,
                 Icons.model_training_outlined,
                 isTablet: isTablet,
@@ -574,7 +582,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
               SizedBox(height: fieldGap),
               _buildTextField(
-                'Odometer',
+                l10n.posAddCustomerFieldOdometer,
                 vm.corpOdoMeterController,
                 Icons.speed_outlined,
                 keyboardType: TextInputType.number,
@@ -586,7 +594,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                     return null;
                   }
                   if (int.tryParse(value) == null) {
-                    return 'Please enter a valid number';
+                    return l10n.posAddCustomerValidationInvalidNumber;
                   }
                   return null;
                 },
@@ -712,7 +720,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                   style: AppTextStyles.bodySmall.copyWith(color: Colors.grey, fontSize: isTablet ? 12 : 12),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LocalizedApiText(
                   value,
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
@@ -772,7 +780,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
           ),
         ),
         child: Text(
-          'Save & Proceed to Department',
+          l10n.posAddCustomerSaveButton,
           style: AppTextStyles.button.copyWith(
             fontWeight: FontWeight.w700,
             fontSize: isTablet ? 15 : 15,

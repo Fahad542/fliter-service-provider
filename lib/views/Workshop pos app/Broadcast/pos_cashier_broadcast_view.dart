@@ -7,6 +7,8 @@ import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../Technician App/Notifications/notifications_view.dart';
 import 'cashier_broadcast_view_model.dart';
+import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
 
 class PosCashierBroadcastView extends StatefulWidget {
   const PosCashierBroadcastView({super.key});
@@ -24,18 +26,23 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
   }
 
   String _formatCountdown(Duration d) {
-    if (d.isNegative) return '00:00';
+    final lang = Localizations.localeOf(context).languageCode;
+    if (d.isNegative) {
+      return AppTranslationService.localizeDigitsForLanguage('00:00', lang);
+    }
     final m = d.inMinutes.remainder(100).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
+    return AppTranslationService.localizeDigitsForLanguage('$m:$s', lang);
   }
 
   /// Returns localised window label: e.g. "5:00 نافذة" in AR or "5:00 window" in EN.
   String _windowLabel(int seconds, AppLocalizations l10n) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
-    final time = '$m:${s.toString().padLeft(2, '0')}';
-    return l10n.posBroadcastWindow(time, s.toString().padLeft(2, '0'));
+    final lang = Localizations.localeOf(context).languageCode;
+    final time = AppTranslationService.localizeDigitsForLanguage('$m:${s.toString().padLeft(2, '0')}', lang);
+    final secondsText = AppTranslationService.localizeDigitsForLanguage(s.toString().padLeft(2, '0'), lang);
+    return l10n.posBroadcastWindow(time, secondsText);
   }
 
   @override
@@ -358,7 +365,7 @@ class _BroadcastCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: Text(
+                                child: LocalizedApiText(
                                   item.displayTitle,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -424,7 +431,7 @@ class _BroadcastCard extends StatelessWidget {
                           ),
                           if (badge != null && badge.isNotEmpty) ...[
                             const SizedBox(height: 3),
-                            Text(
+                            LocalizedApiText(
                               badge,
                               style: TextStyle(
                                 fontSize: 10,
@@ -435,7 +442,7 @@ class _BroadcastCard extends StatelessWidget {
                             ),
                           ],
                           const SizedBox(height: 2),
-                          Text(
+                          LocalizedApiText(
                             item.subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

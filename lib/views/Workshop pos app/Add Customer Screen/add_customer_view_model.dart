@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../models/cashier_corporate_accounts_api_model.dart';
+import '../../../services/locker_translation_mixin.dart';
 
-class AddCustomerViewModel extends ChangeNotifier {
+class AddCustomerViewModel extends ChangeNotifier with TranslatableMixin {
   final BuildContext context;
 
   AddCustomerViewModel(this.context) {
@@ -34,6 +35,15 @@ class AddCustomerViewModel extends ChangeNotifier {
 
   String? get selectedCorporate => _selectedCorporate;
   CashierCorporateAccount? get selectedCorporateData => _selectedCorporateData;
+
+  Future<void> retranslate() async {
+    AppTranslationService.clearCache();
+    notifyListeners();
+  }
+
+  void bindSettingsViewModel(Listenable settingsViewModel) {
+    bindLocaleRetranslation(settingsViewModel, retranslate);
+  }
 
   void _hydrateFromSavedCustomer() {
     final vm = context.read<PosViewModel>();
@@ -128,6 +138,7 @@ class AddCustomerViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    unbindLocaleRetranslation();
     nameController.dispose();
     vatController.dispose();
     mobileController.dispose();

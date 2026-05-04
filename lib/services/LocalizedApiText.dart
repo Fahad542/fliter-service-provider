@@ -76,10 +76,10 @@ class LocalizedApiText extends StatelessWidget {
       // Key change on locale switch cancels the old future immediately and
       // shows initialData (the raw string) while the new translation loads.
       key: ValueKey<String>('$langCode::$raw::$uppercase'),
-      future: AppTranslationService.localizedTextForLanguage(raw, langCode),
-      initialData: raw,
+      future: AppTranslationService.localizedDynamicValueForLanguage(raw, langCode),
+      initialData: AppTranslationService.localizeDigitsForLanguage(raw, langCode),
       builder: (context, snapshot) {
-        final resolved = snapshot.data ?? raw;
+        final resolved = snapshot.data ?? AppTranslationService.localizeDigitsForLanguage(raw, langCode);
         // Never toUpperCase Arabic text — it has no casing.
         final display = (uppercase && langCode != 'ar')
             ? resolved.toUpperCase()

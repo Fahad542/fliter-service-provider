@@ -21,6 +21,8 @@ import '../../../models/cashier_complete_job_model.dart'; // Added
 import '../../../models/cashier_corporate_accounts_api_model.dart';
 import '../../../models/order_payment_method_draft.dart';
 import '../Navbar/pos_shell.dart' show navigateToPosShellBroadcastTab;
+import '../../../services/locker_translation_mixin.dart';
+import '../More Tab/settings_view_model.dart';
 
 class _DepartmentPromoState {
   final String code;
@@ -91,13 +93,25 @@ int? _parseYearForBillingApi(String raw) {
   return null;
 }
 
-class PosViewModel extends ChangeNotifier {
+class PosViewModel extends ChangeNotifier with TranslatableMixin {
   final PosRepository posRepository;
   final SessionService sessionService;
   final RealtimeService _realtimeService = RealtimeService();
 
-  PosViewModel({required this.posRepository, required this.sessionService}) {
+  PosViewModel({
+    required this.posRepository,
+    required this.sessionService,
+    SettingsViewModel? settingsViewModel,
+  }) {
+    if (settingsViewModel != null) {
+      bindLocaleRetranslation(settingsViewModel, retranslate);
+    }
     _loadUserInfo();
+  }
+
+  Future<void> retranslate() async {
+    await _applyHeaderTranslations();
+    notifyListeners();
   }
 
   Future<void> _loadUserInfo() async {
@@ -106,9 +120,10 @@ class PosViewModel extends ChangeNotifier {
     });
     final user = await sessionService.getUser();
     if (user != null) {
-      _cashierName = user.cashier?.cashierName ?? user.name;
-      _workshopName = user.workshopName;
-      _branchName = user.branchName;
+      _rawCashierName = user.cashier?.cashierName ?? user.name;
+      _rawWorkshopName = user.workshopName;
+      _rawBranchName = user.branchName;
+      await _applyHeaderTranslations();
       notifyListeners();
     }
     await _initSocket();
@@ -266,11 +281,23 @@ class PosViewModel extends ChangeNotifier {
 
   List<CashierCorporateAccount> _corporateAccounts = [];
   bool _isCorpAccountsLoading = false;
+  /// After one successful GET, do not auto-fetch again while accounts stay empty (avoids a hydrate↔fetch loop).
+  bool _corporateAccountsLoadedOnce = false;
+  bool _corporateAccountsFetchInFlight = false;
 
   List<CashierCorporateAccount> get corporateAccounts => _corporateAccounts;
   bool get isCorpAccountsLoading => _isCorpAccountsLoading;
 
-  Future<void> fetchCorporateAccounts({bool silent = true}) async {
+  /// Loads branch corporate accounts for corporate walk-in / booking payment defaults and Add Customer (Corporate tab).
+  /// [forceRefresh] bypasses the one-shot cache (e.g. user opened Corporate customer tab to pick up newly added accounts).
+  Future<void> fetchCorporateAccounts({
+    bool silent = true,
+    bool forceRefresh = false,
+  }) async {
+    if (_corporateAccountsFetchInFlight) return;
+    if (!forceRefresh && _corporateAccountsLoadedOnce) return;
+
+    _corporateAccountsFetchInFlight = true;
     if (!silent) {
       _isCorpAccountsLoading = true;
       _errorMessage = null;
@@ -282,12 +309,14 @@ class PosViewModel extends ChangeNotifier {
       final response = await posRepository.getCashierCorporateAccounts(token);
       if (response.success) {
         _corporateAccounts = response.accounts;
+        _corporateAccountsLoadedOnce = true;
         _hydrateInvoicePaymentDefaultsForSelectedOrder();
         notifyListeners();
       }
     } catch (e) {
       _errorMessage = _extractErrorMessage(e.toString());
     } finally {
+      _corporateAccountsFetchInFlight = false;
       if (!silent) {
         _isCorpAccountsLoading = false;
         notifyListeners();
@@ -398,6 +427,9 @@ class PosViewModel extends ChangeNotifier {
   bool _isSearchingCustomer = false;
   int _shellSelectedIndex = 0;
 
+  String? _rawCashierName;
+  String? _rawWorkshopName;
+  String? _rawBranchName;
   String? _cashierName;
   String? _workshopName;
   String? _branchName;
@@ -516,7 +548,7 @@ class PosViewModel extends ChangeNotifier {
     // Corporate walk-in + corporate booking: default invoice payment dialog to corporate
     // methods, prefilling from order/booking payload or corporate account when possible.
     if (o.isCorporateWalkIn || o.isCorporateBookingOrder) {
-      if (_corporateAccounts.isEmpty) {
+      if (_corporateAccounts.isEmpty && !_corporateAccountsLoadedOnce) {
         unawaited(fetchCorporateAccounts(silent: true));
       }
       final preferred = _preferredCorporatePaymentMethodForOrder(o);
@@ -918,7 +950,25 @@ class PosViewModel extends ChangeNotifier {
     _searchDebounce?.cancel();
     _ordersRealtimeDebounce?.cancel();
     _broadcastCooldownTicker?.cancel();
+    unbindLocaleRetranslation();
     super.dispose();
+  }
+
+
+  Future<void> _applyHeaderTranslations() async {
+    final langCode = await SessionService.getLocale();
+    _cashierName = await AppTranslationService.localizedDynamicValueForLanguage(
+      _rawCashierName ?? 'Cashier',
+      langCode,
+    );
+    _workshopName = await AppTranslationService.localizedDynamicValueForLanguage(
+      _rawWorkshopName ?? 'Loading...',
+      langCode,
+    );
+    _branchName = await AppTranslationService.localizedDynamicValueForLanguage(
+      _rawBranchName ?? '...',
+      langCode,
+    );
   }
 
   String get cashierName => _cashierName ?? 'Cashier';

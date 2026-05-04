@@ -5,6 +5,8 @@ import 'package:intl/intl.dart' hide TextDirection;
 import 'dart:math' as math;
 import 'dart:ui';
 import '../../../utils/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 import '../../../utils/invoice_maintenance_checklist.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
@@ -228,15 +230,15 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
 }
 
 /// Detail panel when this tab has no orders but other tabs do.
-String _ordersTabDetailEmptyMessage(String tab) {
+String _ordersTabDetailEmptyMessage(AppLocalizations l10n, String tab) {
   switch (tab) {
     case 'Pending':
-      return 'No pending orders found';
+      return l10n.posOrdersNoPendingOrders;
     case 'Completed':
-      return 'No completed orders found';
+      return l10n.posOrdersNoCompletedOrders;
     case 'All':
     default:
-      return 'No orders found';
+      return l10n.posOrdersNoOrdersFound;
   }
 }
 
@@ -982,7 +984,7 @@ class _OrderDetailPanel extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              _ordersTabDetailEmptyMessage(selectedTab),
+              _ordersTabDetailEmptyMessage(AppLocalizations.of(context)!, selectedTab),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -2620,12 +2622,13 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
       currentSum += double.tryParse(c.text.trim()) ?? 0.0;
     }
     final remaining = widget.invoiceTotal - currentSum;
+    final l10n = AppLocalizations.of(context)!;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       backgroundColor: AppColors.surfaceLight,
       title: Text(
-        widget.methods.length > 1 ? 'Split Payment' : 'Payment',
+        widget.methods.length > 1 ? l10n.posOrdersSplitPayment : l10n.posOrdersPayment,
         style: AppTextStyles.h3.copyWith(color: AppColors.secondaryLight),
       ),
       content: SizedBox(
@@ -2642,9 +2645,9 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Invoice Total', style: AppTextStyles.bodyMedium),
+                  Text(l10n.posOrdersInvoiceTotal, style: AppTextStyles.bodyMedium),
                   Text(
-                    '${widget.invoiceTotal.toStringAsFixed(2)} SAR',
+                    '${widget.invoiceTotal.toStringAsFixed(2)} ${l10n.posCommonSar}',
                     style: AppTextStyles.bodyLarge
                         .copyWith(fontWeight: FontWeight.w700),
                   ),
@@ -2677,7 +2680,7 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
                             const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
                           isDense: true,
-                          labelText: 'Amount (SAR)',
+                          labelText: l10n.posOrdersAmountSar,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -2698,7 +2701,7 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   remaining > 0
-                      ? 'Remaining: ${remaining.toStringAsFixed(2)} SAR'
+                      ? '${l10n.posOrdersAmountSar}: ${remaining.toStringAsFixed(2)} ${l10n.posCommonSar}'
                       : 'Exceeds total by ${remaining.abs().toStringAsFixed(2)} SAR',
                   style: TextStyle(
                     color: remaining > 0 ? Colors.orange.shade700 : Colors.red,
@@ -2713,7 +2716,7 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context, null),
           child: Text(
-            'Cancel',
+            l10n.posOrdersCancelDialog,
             style: AppTextStyles.button.copyWith(color: AppColors.secondaryLight),
           ),
         ),
@@ -2738,7 +2741,7 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text('Confirm amounts'),
+          child: Text(l10n.posOrdersConfirmAmounts),
         ),
       ],
     );
@@ -2757,12 +2760,12 @@ Future<void> _generateInvoiceFromOrdersSummary(
           order.isRejectedByCorporate)) {
     ToastService.showError(
       context,
-      'Corporate order must be approved before invoicing.',
+      AppLocalizations.of(context)!.posReviewCorporateMustBeApproved,
     );
     return;
   }
   if (!order.meetsCashierInvoicePrerequisites) {
-    ToastService.showError(context, 'Order is not ready for invoicing.');
+    ToastService.showError(context, AppLocalizations.of(context)!.posReviewOrderNotReadyForInvoicing);
     return;
   }
 
@@ -2778,7 +2781,7 @@ Future<void> _generateInvoiceFromOrdersSummary(
     if (eid == null || eid.isEmpty) {
       ToastService.showError(
         context,
-        'Select the branch employee customer first.',
+        AppLocalizations.of(context)!.posOrdersSelectBranchEmployeeCustomer,
       );
       return;
     }
@@ -2797,7 +2800,7 @@ Future<void> _generateInvoiceFromOrdersSummary(
     if (isCorporate == null || methods.isEmpty) {
       ToastService.showError(
         context,
-        'Select customer type and payment method first.',
+        AppLocalizations.of(context)!.posOrdersSelectCustomerAndPayment,
       );
       return;
     }
@@ -2827,7 +2830,7 @@ Future<void> _generateInvoiceFromOrdersSummary(
       if ((splitSum - totalAmount).abs() > 0.05) {
         ToastService.showError(
           context,
-          'Split amounts must equal total (${totalAmount.toStringAsFixed(2)} SAR).',
+          AppLocalizations.of(context)!.posOrdersSplitAmountsMustEqualTotal(totalAmount.toStringAsFixed(2)),
         );
         return;
       }
@@ -2872,8 +2875,7 @@ Future<void> _generateInvoiceFromOrdersSummary(
       } else {
         ToastService.showSuccess(
           context,
-          'Invoice was saved, but receipt details were not returned. '
-          'The order should appear as invoiced after refresh.',
+          AppLocalizations.of(context)!.posOrdersInvoiceSavedNoReceipt,
         );
       }
     } else {

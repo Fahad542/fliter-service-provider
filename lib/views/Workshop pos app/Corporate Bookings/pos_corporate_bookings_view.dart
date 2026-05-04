@@ -11,6 +11,7 @@ import '../Navbar/pos_shell.dart';
 import 'corporate_booking_view_model.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/LocalizedApiText.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
 class PosCorporateBookingsView extends StatefulWidget {
   const PosCorporateBookingsView({super.key});
@@ -23,6 +24,22 @@ class PosCorporateBookingsView extends StatefulWidget {
 class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   CorporateBookingViewModel? _vmRef;
   String? _redirectingBookingId;
+
+  String _localizedDigits(String value) {
+    return AppTranslationService.localizeDigitsForLanguage(
+      value,
+      Localizations.localeOf(context).languageCode,
+    );
+  }
+
+  String _formatDate(DateTime date, String pattern) {
+    final locale = Localizations.localeOf(context).languageCode;
+    try {
+      return DateFormat(pattern, locale).format(date);
+    } catch (_) {
+      return DateFormat(pattern).format(date);
+    }
+  }
   String _statusText(dynamic booking) {
     final orderRaw = booking.orderStatus?.toString().trim() ?? '';
     final statusRaw = booking.status?.toString().trim() ?? '';
@@ -329,8 +346,8 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                               color: Colors.grey.shade400,
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              booking.id,
+                            LocalizedApiText(
+                              booking.id.toString(),
                               style: TextStyle(
                                 fontSize: isTablet ? 12 : 11,
                                 color: Colors.grey.shade600,
@@ -391,9 +408,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       Expanded(
                         child: _buildInfoTag(
                           AppLocalizations.of(context)!.posCorporateCardLabelDate,
-                          DateFormat(
-                            'MMM dd, hh:mm a',
-                          ).format(booking.bookedDateTime),
+                          _formatDate(booking.bookedDateTime, 'MMM dd, hh:mm a'),
                           Icons.event_available_rounded,
                           isTablet,
                         ),
@@ -653,7 +668,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       )
-                    : Text(
+                    : LocalizedApiText(
                         value,
                         style: TextStyle(
                           fontSize: isTablet ? 12 : 11,
@@ -822,9 +837,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       _buildDetailRow(AppLocalizations.of(context)!.posCorporateDetailsBookingId, booking.id, isTablet),
                       _buildDetailRow(
                         AppLocalizations.of(context)!.posCorporateDetailsScheduledTime,
-                        DateFormat(
-                          'MMM dd, yyyy - hh:mm a',
-                        ).format(booking.bookedDateTime),
+                        _formatDate(booking.bookedDateTime, 'MMM dd, yyyy - hh:mm a'),
                         isTablet,
                       ),
                       _buildDetailRowApi(
@@ -953,7 +966,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            AppLocalizations.of(context)!.posCorporateDetailsQty(qty.toString()),
+                                            AppLocalizations.of(context)!.posCorporateDetailsQty(_localizedDigits(qty.toString())),
                                             style: TextStyle(
                                               fontSize: isTablet ? 13 : 12,
                                               fontWeight: FontWeight.w600,
@@ -998,7 +1011,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Text(
-                                        AppLocalizations.of(context)!.posCorporateDetailsProductId(booking.preSelectedProducts[index].toString()),
+                                        AppLocalizations.of(context)!.posCorporateDetailsProductId(_localizedDigits(booking.preSelectedProducts[index].toString())),
                                         style: TextStyle(
                                           fontSize: isTablet ? 15 : 14,
                                           fontWeight: FontWeight.w700,
@@ -1205,7 +1218,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
           ),
           Expanded(
             flex: 3,
-            child: Text(
+            child: LocalizedApiText(
               value,
               style: TextStyle(
                 color: AppColors.secondaryLight,

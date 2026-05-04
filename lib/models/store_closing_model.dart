@@ -1,17 +1,23 @@
 class ReconciliationBucket {
+  /// Net-of-sales-returns system amount (used for [difference] vs physical).
   final double system;
+  /// POS payment total for this bucket before sales-return scale-down (display).
+  final double systemGross;
   final double physical;
   final double difference; // system - physical (positive = system > physical)
 
   ReconciliationBucket({
     required this.system,
+    required this.systemGross,
     required this.physical,
     required this.difference,
   });
 
   factory ReconciliationBucket.fromJson(Map<String, dynamic> json) {
+    final system = (json['system'] ?? 0).toDouble();
     return ReconciliationBucket(
-      system: (json['system'] ?? 0).toDouble(),
+      system: system,
+      systemGross: (json['systemGross'] ?? system).toDouble(),
       physical: (json['physical'] ?? 0).toDouble(),
       difference: (json['difference'] ?? 0).toDouble(),
     );
@@ -29,12 +35,20 @@ class StoreClosingReport {
   final double salesReturnsTotal;
   /// Net headline after returns (= payment buckets net of returns; authoritative for reconciliation).
   final double systemSales;
+  /// Per-bucket system amounts **after** sales-return allocation (matches DB / diff logic).
   final double systemCash;
   final double systemBank;
   final double systemCorporate;
   final double systemTamara;
   final double systemTabby;
   final double systemOthers;
+  /// Same buckets **before** sales-return scale-down (shown in System column).
+  final double systemCashGross;
+  final double systemBankGross;
+  final double systemCorporateGross;
+  final double systemTamaraGross;
+  final double systemTabbyGross;
+  final double systemOthersGross;
 
   // Physical Counts
   final double physicalCash;
@@ -67,6 +81,12 @@ class StoreClosingReport {
     required this.systemTamara,
     required this.systemTabby,
     required this.systemOthers,
+    required this.systemCashGross,
+    required this.systemBankGross,
+    required this.systemCorporateGross,
+    required this.systemTamaraGross,
+    required this.systemTabbyGross,
+    required this.systemOthersGross,
     required this.physicalCash,
     required this.physicalBank,
     required this.physicalCorporate,
@@ -101,6 +121,28 @@ class StoreClosingReport {
       physicalTabby +
       physicalOthers;
 
+  /// Sum of net system buckets (after returns).
+  double get systemBucketsSum =>
+      systemCash +
+      systemBank +
+      systemCorporate +
+      systemTamara +
+      systemTabby +
+      systemOthers;
+
+  /// Sum of gross system buckets (pre–sales-return; reconciliation table System column).
+  double get systemBucketsSumGross =>
+      systemCashGross +
+      systemBankGross +
+      systemCorporateGross +
+      systemTamaraGross +
+      systemTabbyGross +
+      systemOthersGross;
+
+  /// Sum of bucket differences (equals [netDifference] when API diffs are consistent).
+  double get diffBucketsSum =>
+      cashDiff + bankDiff + corporateDiff + tamaraDiff + tabbyDiff + othersDiff;
+
   factory StoreClosingReport.fromApiResponse({
     required String closingId,
     required String branch,
@@ -112,7 +154,8 @@ class StoreClosingReport {
     ReconciliationBucket bucket(String key) {
       final raw = rec[key];
       if (raw is Map<String, dynamic>) return ReconciliationBucket.fromJson(raw);
-      return ReconciliationBucket(system: 0, physical: 0, difference: 0);
+      return ReconciliationBucket(
+          system: 0, systemGross: 0, physical: 0, difference: 0);
     }
 
     final cash = bucket('physicalCash');
@@ -143,6 +186,12 @@ class StoreClosingReport {
       systemTamara: tamara.system,
       systemTabby: tabby.system,
       systemOthers: others.system,
+      systemCashGross: cash.systemGross,
+      systemBankGross: bank.systemGross,
+      systemCorporateGross: corp.systemGross,
+      systemTamaraGross: tamara.systemGross,
+      systemTabbyGross: tabby.systemGross,
+      systemOthersGross: others.systemGross,
       physicalCash: cash.physical,
       physicalBank: bank.physical,
       physicalCorporate: corp.physical,
@@ -168,6 +217,12 @@ class StoreClosingSummary {
   final double systemTamara;
   final double systemTabby;
   final double systemOthers;
+  final double systemCashGross;
+  final double systemBankGross;
+  final double systemCorporateGross;
+  final double systemTamaraGross;
+  final double systemTabbyGross;
+  final double systemOthersGross;
   final double totalAmount;
   final int totalInvoices;
 
@@ -178,21 +233,46 @@ class StoreClosingSummary {
     required this.systemTamara,
     required this.systemTabby,
     required this.systemOthers,
+    required this.systemCashGross,
+    required this.systemBankGross,
+    required this.systemCorporateGross,
+    required this.systemTamaraGross,
+    required this.systemTabbyGross,
+    required this.systemOthersGross,
     required this.totalAmount,
     required this.totalInvoices,
   });
 
   factory StoreClosingSummary.fromJson(Map<String, dynamic> json) {
+    double toD(dynamic v, [double alt = 0]) {
+      if (v == null) return alt;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? alt;
+    }
+
     final totals = json['paymentCategoryTotals'] as Map<String, dynamic>? ?? {};
+    final gross =
+        json['paymentCategoryTotalsGross'] as Map<String, dynamic>? ?? totals;
+
     return StoreClosingSummary(
-      systemCash: (totals['cash'] ?? json['cashAmount'] ?? 0).toDouble(),
-      systemBank: (totals['bankCardSlips'] ?? json['bankAmount'] ?? 0).toDouble(),
-      systemCorporate: (totals['corporateInvoice'] ?? json['corporateAmount'] ?? 0).toDouble(),
-      systemTamara: (totals['tamaraCredits'] ?? 0).toDouble(),
-      systemTabby: (totals['tabbyCredits'] ?? 0).toDouble(),
-      systemOthers: (totals['others'] ?? 0).toDouble(),
-      totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-      totalInvoices: (json['totalInvoices'] ?? 0),
+      systemCash: toD(totals['cash'] ?? json['cashAmount']),
+      systemBank: toD(totals['bankCardSlips'] ?? json['bankAmount']),
+      systemCorporate:
+          toD(totals['corporateInvoice'] ?? json['corporateAmount']),
+      systemTamara: toD(totals['tamaraCredits']),
+      systemTabby: toD(totals['tabbyCredits']),
+      systemOthers: toD(totals['others']),
+      systemCashGross: toD(gross['cash'] ?? json['cashAmount']),
+      systemBankGross: toD(gross['bankCardSlips'] ?? json['bankAmount']),
+      systemCorporateGross:
+          toD(gross['corporateInvoice'] ?? json['corporateAmount']),
+      systemTamaraGross: toD(gross['tamaraCredits']),
+      systemTabbyGross: toD(gross['tabbyCredits']),
+      systemOthersGross: toD(gross['others']),
+      totalAmount: toD(json['totalAmount']),
+      totalInvoices: (json['totalInvoices'] is int)
+          ? json['totalInvoices'] as int
+          : int.tryParse(json['totalInvoices']?.toString() ?? '') ?? 0,
     );
   }
 }

@@ -4,6 +4,8 @@ import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../Home Screen/pos_view_model.dart';
 import 'promo_view_model.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 
 class PromoCodeDialog extends StatefulWidget {
   final bool isMainTab;
@@ -102,14 +104,14 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Apply Promo Code',
+                    AppLocalizations.of(context)!.posPromoApplyPromoCode,
                     style: AppTextStyles.h3.copyWith(fontSize: isTablet ? 22 : 20),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               Text(
-                'Select any promo code below to apply discount instantly.',
+                AppLocalizations.of(context)!.posPromoSelectPromoBelow,
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: Colors.grey,
                   fontSize: isTablet ? 15 : 13,
@@ -125,7 +127,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                     if (promoVm.availablePromotions.isEmpty) {
                       return Center(
                         child: Text(
-                          'No promo codes available.',
+                          AppLocalizations.of(context)!.posPromoNoPromoCodesAvailable,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Colors.grey.shade500,
                           ),
@@ -221,7 +223,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Or enter code manually',
+                AppLocalizations.of(context)!.posPromoEnterCodeManually,
                 style: AppTextStyles.bodySmall.copyWith(color: Colors.grey),
               ),
               const SizedBox(height: 8),
@@ -232,7 +234,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                 readOnly: shouldLockInput,
                 style: TextStyle(fontSize: isTablet ? 17 : 15),
                 decoration: InputDecoration(
-                  hintText: 'e.g. SAVE10',
+                  hintText: AppLocalizations.of(context)!.posPromoExampleSave10,
                   hintStyle: TextStyle(fontSize: isTablet ? 16 : 14),
                   filled: true,
                   fillColor:
@@ -254,8 +256,8 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                       Icons.delete_outline_rounded,
                       color: Colors.red,
                     ),
-                    label: const Text(
-                      'Remove Promo',
+                    label: Text(
+                      AppLocalizations.of(context)!.posPromoRemovePromo,
                       style: TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.w700,
@@ -288,18 +290,18 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                         children: [
                           const Icon(Icons.check_circle, color: Colors.green, size: 20),
                           const SizedBox(width: 8),
-                          Text('Valid Promo Code', style: AppTextStyles.bodyMedium.copyWith(color: Colors.green, fontWeight: FontWeight.bold)),
+                          Text(AppLocalizations.of(context)!.posPromoValidPromoCode, style: AppTextStyles.bodyMedium.copyWith(color: Colors.green, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _buildResultRow('Discount:', promoVm.validResult!['message']),
+                      _buildResultRow(AppLocalizations.of(context)!.posPromoDiscountLabel, promoVm.validResult!['message']),
                       const SizedBox(height: 6),
-                      _buildResultRow('Store:', promoVm.validResult!['store']),
+                      _buildResultRow(AppLocalizations.of(context)!.posPromoStoreLabel, promoVm.validResult!['store']),
                       const SizedBox(height: 6),
-                      _buildResultRow('Products:', promoVm.validResult!['products']),
+                      _buildResultRow(AppLocalizations.of(context)!.posPromoProductsLabel, promoVm.validResult!['products']),
                       const SizedBox(height: 6),
                       if (promoVm.validResult!['period'] != null)
-                        _buildResultRow('Validity:', promoVm.validResult!['period']),
+                        _buildResultRow(AppLocalizations.of(context)!.posPromoValidityLabel, promoVm.validResult!['period']),
                     ],
                   ),
                 ),
@@ -322,7 +324,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: Text('Cancel', style: TextStyle(fontSize: isTablet ? 16 : 14)),
+                      child: Text(AppLocalizations.of(context)!.posCommonCancel, style: TextStyle(fontSize: isTablet ? 16 : 14)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -353,7 +355,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                       child: promoVm.isLoading
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                           : Text(
-                              promoVm.validResult == null ? 'Check Code' : 'Apply Discount',
+                              promoVm.validResult == null ? AppLocalizations.of(context)!.posPromoCheckCode : AppLocalizations.of(context)!.posPromoApplyDiscount,
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: isTablet ? 16 : 14,

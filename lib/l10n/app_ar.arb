@@ -1147,6 +1147,8 @@
   "posCorporateRejectSuccess": "تم رفض الحجز. تم تحديث البوابة.",
   "posCorporateRejectError": "فشل في رفض الحجز",
   "posCorporateNoMatchingOrder": "لم يتم العثور على طلب مطابق لهذا الحجز. يرجى التحديث والمحاولة مجدداً.",
+  "posCorporateLoadError": "فشل تحميل الحجوزات",
+  "posCorporateAuthTokenNotFound": "لم يتم العثور على رمز المصادقة",
   "posCorporateStatusCancelled": "ملغى",
   "posCorporateStatusRejected": "مرفوض",
   "posCorporateStatusPending": "قيد الانتظار",
@@ -1746,7 +1748,7 @@
       "branch": {}
     }
   },
-  "posHomeTitleWorkshop": "ورشة ",
+  "posHomeTitleFilter": "فلتر",
   "posHomeTitlePos": "نقطة البيع",
   "posHomeSubtitle": "ابحث برقم العميل أو رقم المركبة\nأو رقم الهاتف أو اسم العميل",
   "posHomeSearchHint": "ابحث برقم العميل / المركبة / الهاتف / اللوحة...",
@@ -2068,16 +2070,6 @@
   "storeClosingLabelNotes": "ملاحظات (اختياري)",
   "storeClosingTotalPhysical": "إجمالي المبلغ الفعلي",
   "storeClosingExpectedSar": "المتوقع: {sar} {amount}",
-  "storeClosingShiftBalanced": "الوردية متوازنة",
-  "storeClosingDiscrepancy": "تم اكتشاف تعارض",
-  "storeClosingShiftClosedOk": "تم إغلاق الوردية بنجاح.",
-  "storeClosingPositiveDiff": "الفرق الموجب = النظام > الفعلي.",
-  "storeClosingClosingId": "معرّف الإغلاق",
-  "storeClosingTotalDiff": "إجمالي الفرق",
-  "storeClosingSystemTotalSales": "إجمالي مبيعات النظام",
-  "posOrdersTotalInclVat": "الإجمالي (شامل ضريبة القيمة المضافة)",
-  "currencySymbol": "ر.س",
-  "currencySymbolAr": "ر.س",
   "@storeClosingExpectedSar": {
     "placeholders": {
       "sar": {
@@ -2088,6 +2080,16 @@
       }
     }
   },
+  "storeClosingShiftBalanced": "الوردية متوازنة",
+  "storeClosingDiscrepancy": "تم اكتشاف تعارض",
+  "storeClosingShiftClosedOk": "تم إغلاق الوردية بنجاح.",
+  "storeClosingPositiveDiff": "الفرق الموجب = النظام > الفعلي.",
+  "storeClosingClosingId": "معرّف الإغلاق",
+  "storeClosingTotalDiff": "إجمالي الفرق",
+  "storeClosingSystemTotalSales": "إجمالي مبيعات النظام",
+  "posOrdersTotalInclVat": "الإجمالي (شامل ضريبة القيمة المضافة)",
+  "currencySymbol": "ر.س",
+  "currencySymbolAr": "ر.س",
   "toastSuccess": "تم بنجاح",
   "toastError": "خطأ",
   "toastInfo": "معلومة",
@@ -2139,7 +2141,739 @@
   "posHomeTabletRequired": "مطلوب جهاز لوحي",
   "posHomeLandscapeRequired": "يرجى تدوير جهازك إلى الوضع الأفقي لاستخدام نظام نقاط البيع.",
   "posNavOrdersHub": "مركز الطلبات",
-  "posNavBroadcastTechnician": "البث",
+  "posNavBroadcastTechnician": "بث الفنيين",
   "posNavInventorySales": "مبيعات المخزون",
-  "posNavTakeaway": "تيك أواي"
+  "posNavTakeaway": "تيك أواي",
+  "posCustomerInvoiceLoadError": "تعذر تحميل الفاتورة",
+  "posCustomerLoading": "جارٍ التحميل…",
+  "posCustomerPrintInvoice": "طباعة الفاتورة",
+  "posCommonNotAvailable": "غير متاح",
+  "posCommonDash": "—",
+  "posCurrentShiftDefaultCashier": "أمين الصندوق",
+  "posCurrentShiftDefaultStatus": "نشط",
+  "posCurrentShiftCredentialsError": "بيانات اعتماد المستخدم أو الرمز مفقودة.",
+  "posDeptAuthError": "لم يتم العثور على رمز المصادقة",
+  "posDeptLoadError": "فشل تحميل الأقسام",
+  "posPaymentsChooseMethod": "اختر طريقة دفع واحدة على الأقل.",
+  "posPaymentsLineMinimum": "يجب ألا يقل كل سطر دفع عن 0.01 ر.س.",
+  "posPaymentsSplitMismatch": "يجب أن يساوي إجمالي التقسيم مبلغ الطلب المستحق ({payable} ر.س). الحالي: {current} ر.س.",
+  "@posPaymentsSplitMismatch": {
+    "placeholders": {
+      "payable": {
+        "type": "String"
+      },
+      "current": {
+        "type": "String"
+      }
+    }
+  },
+  "posSessionExpiredSignIn": "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.",
+  "posPaymentSelectionSaveError": "تعذر حفظ اختيار الدفع.",
+  "posPaymentSelectionClearError": "تعذر مسح الدفع المحفوظ.",
+  "posBillingEditLocked": "لا يمكن تعديل بيانات الفوترة بعد وجود فاتورة.",
+  "posBillingCustomerMobileRequired": "اسم العميل ورقم الجوال مطلوبان.",
+  "posBillingSaveError": "فشل تحديث بيانات الفوترة",
+  "posBillingClearEmployeePaymentError": "تعذر مسح الدفع المحفوظ لعميل الموظف.",
+  "posCorporateAccountRequired": "يرجى اختيار حساب شركة",
+  "posDepartmentSelectAtLeastOne": "اختر قسمًا واحدًا على الأقل",
+  "posAuthTokenMissing": "لم يتم العثور على رمز المصادقة",
+  "posVehiclePlateRequired": "رقم لوحة المركبة مطلوب",
+  "posOrderCreated": "تم إنشاء الطلب",
+  "posCorporateAccountMissing": "حساب الشركة مفقود لهذه المسودة المؤسسية.",
+  "posCorporateContactRequired": "اسم جهة الاتصال مطلوب لعرض سعر الشركة",
+  "posUnitPriceInvalid": "أدخل سعر وحدة صالحًا لـ {name}",
+  "@posUnitPriceInvalid": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "posLineDepartmentRequired": "كل سطر يحتاج إلى قسم",
+  "posNoLineItemsToSave": "لا توجد بنود للحفظ",
+  "posDepartmentJobMissing": "لا توجد مهمة للقسم {departmentId}. استخدم “إضافة أقسام” أو حدّث الطلبات.",
+  "@posDepartmentJobMissing": {
+    "placeholders": {
+      "departmentId": {
+        "type": "String"
+      }
+    }
+  },
+  "posPricingSaveFailed": "فشل حفظ التسعير للقسم {departmentId}",
+  "@posPricingSaveFailed": {
+    "placeholders": {
+      "departmentId": {
+        "type": "String"
+      }
+    }
+  },
+  "posEditContextMissing": "سياق التعديل مفقود. يرجى المحاولة مرة أخرى.",
+  "posNoChangesToSave": "لا توجد تغييرات للحفظ",
+  "posUnlockJobFailed": "تعذر فتح هذه المهمة للتعديل",
+  "posUnlockJobFailedRetry": "تعذر فتح هذه المهمة للتعديل. يرجى المحاولة مرة أخرى.",
+  "posOrderUpdateSuccess": "تم تحديث الطلب بنجاح",
+  "posOrderUpdateFailed": "فشل تحديث الطلب",
+  "posAuthInfoMissing": "معلومات المصادقة مفقودة",
+  "posProductsFetchFailed": "فشل جلب المنتجات",
+  "posServiceOnlyOnce": "يمكن حجز الخدمات مرة واحدة فقط لكل طلب.",
+  "posStockLimitExceeded": "لا يمكن تجاوز حد المخزون المتاح ({stock})",
+  "@posStockLimitExceeded": {
+    "placeholders": {
+      "stock": {
+        "type": "String"
+      }
+    }
+  },
+  "posOrdersFetchFailed": "فشل جلب الطلبات",
+  "posDepartmentStarted": "تم بدء القسم",
+  "posDepartmentStartFailed": "فشل بدء القسم",
+  "posOrderDetailsMissing": "تفاصيل الطلب غير موجودة",
+  "posCorporateApprovalSent": "تم الإرسال لموافقة الشركة",
+  "posCorporateApprovalFailed": "فشل الإرسال للموافقة",
+  "posVehicleNumberRequiredForBilling": "رقم المركبة مطلوب عند إرسال بيانات المركبة. أضف اللوحة من إضافة عميل.",
+  "posInvoiceJobNotReady": "المهمة غير جاهزة للفوترة. أضف البنود القابلة للفوترة والفنيين أولاً.",
+  "posFinalizeEditedJobFailed": "تعذر إنهاء المهمة المعدلة قبل الفاتورة.",
+  "posInvoiceCustomerRequired": "اسم العميل ورقم الجوال مطلوبان قبل الفاتورة. أكمل نافذة الفوترة أو حدّث العميل",
+  "posInvoiceVehiclePlateRequired": "رقم لوحة المركبة مطلوب قبل الفاتورة. أضفه من إضافة عميل (الفوترة)، ثم حاول مرة أخرى.",
+  "posInvoicePaymentRequired": "طريقة الدفع مطلوبة قبل إنشاء الفاتورة.",
+  "posInvoicePaymentSaveFailed": "تم إنشاء الفاتورة، لكن فشل حفظ الدفع.",
+  "posInvoiceSaved": "تم حفظ الفاتورة",
+  "posJobProductsRequired": "يرجى إضافة منتجات/خدمات قبل إكمال المهمة.",
+  "posBroadcastSaveOrderFirst": "احفظ الطلب أولاً قبل البث.",
+  "posBroadcastWait": "يرجى الانتظار {wait} قبل بث هذا القسم مرة أخرى.",
+  "@posBroadcastWait": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "posBroadcastFailed": "فشل البث",
+  "posBroadcastSent": "تم إرسال البث إلى الفنيين",
+  "posBroadcastCancelFailed": "فشل إلغاء البث",
+  "posBroadcastCancelled": "تم إلغاء البث",
+  "posOrderCancelSuccess": "تم إلغاء الطلب بنجاح",
+  "posCancelReasonRequired": "سبب الإلغاء مطلوب",
+  "posCancelOrderFailed": "فشل إلغاء الطلب",
+  "posCancelledByCashier": "أُلغي بواسطة أمين الصندوق",
+  "posJobCancelled": "تم إلغاء المهمة",
+  "posJobCancelFailed": "فشل إلغاء المهمة",
+  "posDepartmentsAdded": "تمت إضافة الأقسام",
+  "posDepartmentsAddFailed": "فشل إضافة الأقسام",
+  "posDetailsCreated": "تاريخ الإنشاء: {date}",
+  "@posDetailsCreated": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "posDetailsOrderNo": "طلب #{id}",
+  "@posDetailsOrderNo": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "posShellTabletRequired": "يتطلب جهازاً لوحياً",
+  "posShellTabletMessage": "نظام نقاط بيع الورشة يعمل على الأجهزة اللوحية فقط.",
+  "posShellLandscapeTitle": "الوضع الأفقي مطلوب",
+  "posShellLandscapeMessage": "قم بتدوير الجهاز اللوحي إلى الوضع الأفقي لاستخدام نقاط بيع الورشة.",
+  "posOrdersInvoiceSavedNoReceipt": "تم حفظ الفاتورة، لكن لم يتم إرجاع تفاصيل الإيصال. يجب أن يظهر الطلب كمفوتر بعد التحديث.",
+  "posOrdersSelectBranchEmployeeCustomer": "اختر عميل موظف الفرع أولاً.",
+  "posOrdersSplitAmountsMustEqualTotal": "يجب أن تساوي مبالغ التقسيم الإجمالي ({total} ريال).",
+  "@posOrdersSplitAmountsMustEqualTotal": {
+    "placeholders": {
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "posHomeTitleWorkshop": "ورشة ",
+  "posInvSalesStatDistinctItems": "عناصر مميزة",
+  "posInvSalesStatUniqueServices": "خدمات فريدة",
+  "posInvSalesStartDate": "تاريخ البدء",
+  "posInvSalesEndDate": "تاريخ الانتهاء",
+  "posInvSalesStartTime": "وقت البدء",
+  "posInvSalesEndTime": "وقت الانتهاء",
+  "posInvSalesClear": "مسح",
+  "posInvSalesApply": "تطبيق",
+  "posInvSalesNoSalesSubtitleFriendly": "جرّب اختيار نطاق تاريخ مختلف لعرض النشاط.",
+  "posInvSalesByItemPeriod": "المبيعات حسب العنصر (الفترة)",
+  "posInvSalesItemsCount": "{count} عنصر",
+  "@posInvSalesItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posInvSalesColItemName": "اسم العنصر",
+  "posInvSalesColDepartment": "القسم",
+  "posInvSalesColType": "النوع",
+  "posInvSalesColSkuShort": "SKU",
+  "posInvSalesColQtyShort": "الكمية",
+  "posInvSalesErrStartTimeBeforeEndSameRange": "يجب أن يكون وقت البدء قبل وقت الانتهاء أو مساوياً له (لنفس نطاق التقويم).",
+  "posInvSalesErrEndTimeAfterStartSameRange": "يجب أن يكون وقت الانتهاء بعد وقت البدء أو مساوياً له (لنفس نطاق التقويم).",
+  "posInvSalesErrStartTimeBeforeEndRange": "يجب أن يكون وقت البدء قبل وقت الانتهاء أو مساوياً له لهذا النطاق الزمني.",
+  "moreMenuBarrierLabel": "قائمة المزيد",
+  "posSalesReturnTitle": "مرتجع المبيعات",
+  "posSalesReturnMobileTitle": "مرتجع - {invoiceNo}",
+  "@posSalesReturnMobileTitle": {
+    "placeholders": {
+      "invoiceNo": {
+        "type": "String"
+      }
+    }
+  },
+  "posSalesReturnResults": "النتائج",
+  "posSalesReturnSearchHint": "مثال: INV-123 أو الاسم/الهاتف",
+  "posSalesReturnNoInvoicesFound": "لم يتم العثور على فواتير لـ \"{query}\"",
+  "@posSalesReturnNoInvoicesFound": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "posSalesReturnSelectInvoiceTitle": "اختر فاتورة",
+  "posSalesReturnSelectInvoiceBody": "ابحث واختر فاتورة من اليسار\nلبدء عملية مرتجع المبيعات.",
+  "posSalesReturnWalkInCustomer": "عميل مباشر",
+  "posSalesReturnTotal": "الإجمالي",
+  "posSalesReturnSelectItems": "اختر العناصر للإرجاع",
+  "posSalesReturnSelectedCount": "تم اختيار {count}",
+  "@posSalesReturnSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posSalesReturnProof": "إثبات المرتجع",
+  "posSalesReturnOptional": "اختياري",
+  "posSalesReturnCancel": "إلغاء",
+  "posSalesReturnSubmit": "إرسال المرتجع",
+  "posSalesReturnQty": "كمية المرتجع",
+  "posSalesReturnReasonHint": "اختر سبب المرتجع",
+  "posSalesReturnUploadProof": "اضغط لرفع صورة الإثبات",
+  "posSalesReturnUploadFormats": "JPG و PNG حتى 5MB",
+  "posSalesReturnLinePrice": "{qty} × بسعر {price} ر.س",
+  "@posSalesReturnLinePrice": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "posSalesReturnSarAmount": "{amount} ر.س",
+  "@posSalesReturnSarAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posSalesReturnReasonDefective": "منتج/خدمة معيبة",
+  "posSalesReturnReasonCancellation": "إلغاء من العميل",
+  "posSalesReturnReasonWrongItem": "عنصر / خدمة غير صحيحة",
+  "posSalesReturnReasonOther": "أخرى",
+  "posSalesReturnErrorFetchInvoices": "حدث خطأ أثناء جلب الفواتير. تأكد من صحة رقم العميل.",
+  "posSalesReturnErrorSelectItem": "يرجى اختيار عنصر واحد على الأقل للإرجاع",
+  "posSalesReturnErrorQty": "أدخل كمية المرتجع (واحدة على الأقل) لكل عنصر محدد قبل الإرسال.",
+  "posSalesReturnSuccessSubmitted": "تم إرسال طلب المرتجع بنجاح",
+  "posSalesReturnErrorSubmit": "فشل إرسال الطلب: {error}",
+  "@posSalesReturnErrorSubmit": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "posSalesReturnErrorNoValidLines": "لا توجد بنود مرتجع صالحة",
+  "posSalesReturnTokenNotFound": "لم يتم العثور على رمز الدخول",
+  "posSalesReturnAuthTokenNotFound": "لم يتم العثور على رمز المصادقة",
+  "posSalesReturnListTitle": "قائمة المرتجعات",
+  "posSalesReturnListFailedLoad": "فشل تحميل المرتجعات",
+  "posSalesReturnListNoReturns": "لم يتم العثور على مرتجعات مبيعات",
+  "posSalesReturnListInvoiceLabel": "الفاتورة: {invoiceNo}",
+  "@posSalesReturnListInvoiceLabel": {
+    "placeholders": {
+      "invoiceNo": {
+        "type": "String"
+      }
+    }
+  },
+  "posSalesReturnRefundAmount": "مبلغ الاسترداد",
+  "posSalesReturnDetailsTitle": "تفاصيل المرتجع",
+  "posSalesReturnDetailsSubtitle": "ملخص كامل للمعاملة",
+  "posSalesReturnItemsReturned": "العناصر المرتجعة",
+  "posSalesReturnCloseDetails": "إغلاق التفاصيل",
+  "posSalesReturnNoLabel": "رقم المرتجع",
+  "posSalesReturnInvoiceNoLabel": "رقم الفاتورة",
+  "posSalesReturnOrderIdLabel": "رقم الطلب",
+  "posSalesReturnCustomerLabel": "العميل",
+  "posSalesReturnTotalRefund": "إجمالي الاسترداد",
+  "posSalesReturnReasonLabel": "سبب المرتجع",
+  "posSalesReturnItemId": "رقم العنصر: {itemId}",
+  "@posSalesReturnItemId": {
+    "placeholders": {
+      "itemId": {
+        "type": "String"
+      }
+    }
+  },
+  "posSalesReturnItemQty": "الكمية: {qty}",
+  "@posSalesReturnItemQty": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "posSalesReturnListVmFailedFetch": "فشل جلب المرتجعات",
+  "posStoreClosingTitle": "إغلاق المتجر",
+  "posStoreClosingCounterReconciliation": "مطابقة الصندوق",
+  "posStoreClosingSummaryTitle": "ملخص المطابقة",
+  "posStoreClosingShiftStatus": "حالة إغلاق الوردية",
+  "posStoreClosingCashier": "الكاشير",
+  "posStoreClosingBranch": "الفرع",
+  "posStoreClosingMainBranch": "الفرع الرئيسي",
+  "posStoreClosingPhysicalDrawerCount": "عدّ الصندوق الفعلي",
+  "posStoreClosingPhysicalDrawerHint": "أدخل المبالغ الفعلية التي قمت بعدها لكل فئة دفع.",
+  "posStoreClosingPhysicalCashAmount": "مبلغ النقد الفعلي",
+  "posStoreClosingBankCardSlips": "إيصالات البنك / البطاقات",
+  "posStoreClosingCorporateInvoices": "فواتير الشركات",
+  "posStoreClosingTamaraCredits": "رصيد تمارا",
+  "posStoreClosingTabbyCredits": "رصيد تابي",
+  "posStoreClosingOthersEmployeeSales": "أخرى (مبيعات الموظفين)",
+  "posStoreClosingNotesOptional": "ملاحظات (اختياري)",
+  "posStoreClosingTotalPhysicalSum": "إجمالي المبلغ الفعلي",
+  "posStoreClosingExpectedAmount": "المتوقع: {amount} ر.س",
+  "@posStoreClosingExpectedAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posStoreClosingAddNotesHint": "أضف الملاحظات هنا...",
+  "posStoreClosingShiftBalanced": "الوردية متوازنة",
+  "posStoreClosingDiscrepancyDetected": "تم اكتشاف فرق",
+  "posStoreClosingShiftClosedSuccessfully": "تم إغلاق الوردية بنجاح.",
+  "posStoreClosingGrossNetExplanation": "عمود النظام يعرض إجمالي مبالغ نقاط البيع المسواة. يقارن الفرق صافي كل فئة المتوقع (بعد مرتجعات المبيعات) بالمبلغ الفعلي، وليس (الإجمالي − الفعلي). الفرق الموجب يعني أن النظام أعلى من الفعلي.",
+  "posStoreClosingPositiveDiff": "الفرق الموجب = النظام > الفعلي.",
+  "posStoreClosingClosingId": "رقم الإغلاق",
+  "posStoreClosingCashAccount": "حساب النقد",
+  "posStoreClosingBankCards": "البنك / البطاقات",
+  "posStoreClosingCorporate": "الشركات",
+  "posStoreClosingTamara": "تمارا",
+  "posStoreClosingTabby": "تابي",
+  "posStoreClosingOthers": "أخرى",
+  "posStoreClosingCategory": "الفئة",
+  "posStoreClosingSystem": "النظام",
+  "posStoreClosingGross": "(إجمالي)",
+  "posStoreClosingPhysical": "الفعلي",
+  "posStoreClosingDiff": "الفرق",
+  "posStoreClosingNet": "(صافي)",
+  "posStoreClosingLessSalesReturn": "خصم: إجمالي مرتجعات المبيعات",
+  "posStoreClosingGrandTotal": "الإجمالي الكلي",
+  "posStoreClosingCloseShift": "إغلاق الوردية",
+  "posStoreClosingPrinterHint": "اضغط: طباعة حرارية عبر Wi‑Fi. ضغطة مطولة: عنوان IP / منفذ الطابعة.",
+  "posStoreClosingSaveSuccess": "تم الحفظ بنجاح",
+  "posStoreClosingReceiptSent": "تم إرسال الإيصال إلى طابعة Wi‑Fi.",
+  "posStoreClosingPrint": "طباعة",
+  "posStoreClosingFinalLogout": "تسجيل الخروج النهائي",
+  "posStoreClosingLogout": "تسجيل الخروج",
+  "posStoreClosingLogoutConfirm": "هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟",
+  "posStoreClosingCancel": "إلغاء",
+  "posStoreClosingVmSuccess": "تم إغلاق الوردية بنجاح!",
+  "posStoreClosingVmFailed": "فشل إغلاق الوردية: {error}",
+  "@posStoreClosingVmFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "posStoreClosingVmCounterFailed": "فشل إغلاق الصندوق",
+  "posStoreClosingPdfTitle": "تقرير إغلاق المتجر",
+  "posStoreClosingPdfCategory": "الفئة",
+  "posStoreClosingPdfSystem": "النظام",
+  "posStoreClosingPdfPhysical": "الفعلي",
+  "posStoreClosingPdfDifference": "الفرق",
+  "posTechnicianTitle": "الفنيون",
+  "posTechnicianAssignmentTitle": "تعيين الفنيين",
+  "posTechnicianSearchHint": "ابحث عن الفنيين...",
+  "posTechnicianErrorPrefix": "خطأ: {message}",
+  "@posTechnicianErrorPrefix": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "posTechnicianOnlineOnly": "المتصلون فقط",
+  "posTechnicianShowAll": "عرض الكل",
+  "posTechnicianLoading": "جارٍ تحميل الفنيين…",
+  "posTechnicianLastSeen": "آخر ظهور: {time}",
+  "@posTechnicianLastSeen": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "posTechnicianSlots": "الخانات: {used}/{total}",
+  "@posTechnicianSlots": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "posTechnicianWait": "انتظر {duration}",
+  "@posTechnicianWait": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "posTechnicianBroadcast": "بث",
+  "posTechnicianSave": "حفظ الفنيين",
+  "posTechnicianAssignSuccess": "تم تعيين الفنيين بنجاح",
+  "posTechnicianRemoveSuccess": "تمت إزالة جميع الفنيين من هذه المهمة",
+  "posTechnicianAssignFailed": "فشل تعيين الفنيين",
+  "posTechnicianFailedJobEdit": "فشل الحصول على رقم المهمة للتعديل",
+  "posTechnicianFailedOrderId": "فشل الحصول على رقم الطلب",
+  "posTechnicianJobNotFound": "لم يتم العثور على المهمة لهذا التعيين.",
+  "posTechnicianUnlockFailed": "تعذر فتح المهمة لتغيير الفنيين. حاول مرة أخرى.",
+  "posTechnicianGeneral": "عام",
+  "posTechnicianTokenNotFound": "لم يتم العثور على رمز الدخول",
+  "posTechnicianFetchFailed": "فشل تحميل الفنيين",
+  "posTechnicianOldAssignWarning": "لم يتم تعيين الفني. قد يستمر الخادم في احتساب التعيينات القديمة على هذه المهمة.",
+  "posTechnicianAddOnlyWarning": "لا يمكن تطبيق الإزالات: الخادم يتعامل مع التعيين كإضافة فقط. يجب على الخلفية مزامنة employeeIds مع القائمة المطلوبة بالكامل (أو احترام sync: true).",
+  "posTechnicianNoneAssignedWarning": "لم يتم تعيين أي فنيين. قد يستمر الخادم في احتساب التعيينات الملغاة على هذه المهمة.",
+  "posTechnicianOnlineFirst": "اجعل هذا الفني متصلاً قبل تغيير واجب الورشة أو واجب الطلب.",
+  "posTechnicianNotSignedIn": "لم يتم تسجيل الدخول",
+  "posTechnicianDutyFailed": "فشل تحديث الواجب",
+  "posTechnicianDutyUpdated": "تم تحديث الواجب",
+  "posTechnicianStatusFailed": "فشل تحديث الحالة",
+  "posTechnicianMarkedOnline": "تم وضع الفني كمتصل",
+  "posTechnicianMarkedOffline": "تم وضع الفني كغير متصل",
+  "posTakeawayTitle": "طلبات خارجية",
+  "posTakeawayRetry": "إعادة المحاولة",
+  "posTakeawaySearchHint": "ابحث عن المنتجات والخدمات...",
+  "posTakeawayRefresh": "تحديث",
+  "posTakeawayAll": "الكل",
+  "posTakeawayOrderItems": "عناصر الطلب",
+  "posTakeawayNoItems": "لا توجد عناصر في الفاتورة",
+  "posTakeawayGrossExVat": "الإجمالي قبل الضريبة",
+  "posTakeawayLineDiscount": "خصم السطر",
+  "posTakeawayPriceAfterLineDiscount": "السعر بعد خصم السطر",
+  "posTakeawayTotalDiscount": "إجمالي الخصم",
+  "posTakeawayAmount": "مبلغ",
+  "posTakeawayPercent": "نسبة",
+  "posTakeawayTotalDiscountApplied": "تم تطبيق إجمالي الخصم",
+  "posTakeawayPriceAfterTotalDiscount": "السعر بعد إجمالي الخصم",
+  "posTakeawayAddPromoCode": "إضافة رمز عرض",
+  "posTakeawayPromoApplied": "العرض: {code}",
+  "@posTakeawayPromoApplied": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "posTakeawayPromoDiscount": "خصم العرض",
+  "posTakeawayPriceAfterPromo": "السعر بعد العرض",
+  "posTakeawayVat15": "ضريبة القيمة المضافة (15%)",
+  "posTakeawayTotal": "الإجمالي",
+  "posTakeawayAddCustomerDetails": "إضافة بيانات العميل",
+  "posTakeawaySelectPayment": "اختر طريقة الدفع",
+  "posTakeawayGenerateInvoice": "إنشاء فاتورة",
+  "posTakeawayNoProductsFound": "لم يتم العثور على منتجات",
+  "posTakeawayNoProductsMatch": "لا توجد منتجات تطابق بحثك.",
+  "posTakeawayUnit": "الوحدة: {unit}",
+  "@posTakeawayUnit": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "posTakeawayItemsCount": "{count} عنصر",
+  "@posTakeawayItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posTakeawayGrandTotal": "الإجمالي الكلي",
+  "posTakeawayCustomerSaved": "تم حفظ بيانات العميل",
+  "posTakeawayPaymentSaved": "تم حفظ طريقة الدفع",
+  "posTakeawayCustomerRequired": "اسم العميل ورقم الجوال مطلوبان.",
+  "posTakeawaySelectPaymentFirst": "اختر طريقة الدفع أولاً.",
+  "posTakeawayValidPaymentAmounts": "أضف مبالغ دفع صحيحة للمتابعة.",
+  "posTakeawayInvoiceFailed": "فشل إنشاء الفاتورة",
+  "posTakeawayInactive": "غير نشط",
+  "posTakeawayInStock": "متوفر ({qty})",
+  "@posTakeawayInStock": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "posTakeawayLowStock": "منخفض ({qty})",
+  "@posTakeawayLowStock": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "posTakeawayOutOfStock": "غير متوفر",
+  "posTakeawayDis": "خصم",
+  "posTakeawayNotLoggedIn": "لم يتم تسجيل الدخول",
+  "posTakeawayCartEmpty": "السلة فارغة.",
+  "posTakeawayWalkInCustomer": "عميل مباشر",
+  "posTakeawayNoInvoiceResponse": "لا توجد فاتورة في الاستجابة",
+  "posTakeawayCheckoutFailed": "فشل إتمام الطلب",
+  "posCommonSarAmount": "{amount} ر.س",
+  "@posCommonSarAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "posCommonQtyX": "×{qty}",
+  "@posCommonQtyX": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "posPromoTitle": "رمز العرض",
+  "@posPromoTitle": {
+    "description": "POS UI translation key."
+  },
+  "posPromoAvailablePromotions": "العروض المتاحة",
+  "@posPromoAvailablePromotions": {
+    "description": "POS UI translation key."
+  },
+  "posPromoNoPromotionsAvailable": "لا توجد عروض متاحة",
+  "@posPromoNoPromotionsAvailable": {
+    "description": "POS UI translation key."
+  },
+  "posPromoApplyPromoCode": "تطبيق رمز العرض",
+  "@posPromoApplyPromoCode": {
+    "description": "POS UI translation key."
+  },
+  "posPromoSelectPromoBelow": "اختر عرضاً أدناه",
+  "@posPromoSelectPromoBelow": {
+    "description": "POS UI translation key."
+  },
+  "posPromoNoPromoCodesAvailable": "لا توجد رموز عروض متاحة",
+  "@posPromoNoPromoCodesAvailable": {
+    "description": "POS UI translation key."
+  },
+  "posPromoEnterCodeManually": "أدخل الرمز يدوياً",
+  "@posPromoEnterCodeManually": {
+    "description": "POS UI translation key."
+  },
+  "posPromoExampleSave10": "مثال: SAVE10",
+  "@posPromoExampleSave10": {
+    "description": "POS UI translation key."
+  },
+  "posPromoRemovePromo": "إزالة العرض",
+  "@posPromoRemovePromo": {
+    "description": "POS UI translation key."
+  },
+  "posPromoRemovePromoLower": "إزالة العرض",
+  "@posPromoRemovePromoLower": {
+    "description": "POS UI translation key."
+  },
+  "posPromoValidPromoCode": "رمز عرض صالح",
+  "@posPromoValidPromoCode": {
+    "description": "POS UI translation key."
+  },
+  "posPromoDiscountLabel": "الخصم",
+  "@posPromoDiscountLabel": {
+    "description": "POS UI translation key."
+  },
+  "posPromoStoreLabel": "الفرع",
+  "@posPromoStoreLabel": {
+    "description": "POS UI translation key."
+  },
+  "posPromoProductsLabel": "المنتجات",
+  "@posPromoProductsLabel": {
+    "description": "POS UI translation key."
+  },
+  "posPromoValidityLabel": "الصلاحية",
+  "@posPromoValidityLabel": {
+    "description": "POS UI translation key."
+  },
+  "posPromoCheckCode": "تحقق من الرمز",
+  "@posPromoCheckCode": {
+    "description": "POS UI translation key."
+  },
+  "posPromoApplyDiscount": "تطبيق الخصم",
+  "@posPromoApplyDiscount": {
+    "description": "POS UI translation key."
+  },
+  "posPromoCheckDescription": "تحقق من تفاصيل وشروط رمز العرض.",
+  "@posPromoCheckDescription": {
+    "description": "POS UI translation key."
+  },
+  "posPromoCheckValidity": "تحقق من الصلاحية",
+  "@posPromoCheckValidity": {
+    "description": "POS UI translation key."
+  },
+  "posPromoCheckConditions": "تحقق من الشروط",
+  "@posPromoCheckConditions": {
+    "description": "POS UI translation key."
+  },
+  "posProductInvalidQuantity": "كمية غير صالحة",
+  "@posProductInvalidQuantity": {
+    "description": "POS UI translation key."
+  },
+  "posProductQuantity": "الكمية",
+  "@posProductQuantity": {
+    "description": "POS UI translation key."
+  },
+  "posProductInventory": "المخزون",
+  "@posProductInventory": {
+    "description": "POS UI translation key."
+  },
+  "posProductItems": "العناصر",
+  "@posProductItems": {
+    "description": "POS UI translation key."
+  },
+  "posProductNoItemsInInvoice": "لا توجد عناصر في الفاتورة",
+  "@posProductNoItemsInInvoice": {
+    "description": "POS UI translation key."
+  },
+  "posProductGrossExclVat": "الإجمالي بدون ضريبة القيمة المضافة",
+  "@posProductGrossExclVat": {
+    "description": "POS UI translation key."
+  },
+  "posProductPromoPrefix": "عرض:",
+  "@posProductPromoPrefix": {
+    "description": "POS UI translation key."
+  },
+  "posProductSave": "حفظ",
+  "@posProductSave": {
+    "description": "POS UI translation key."
+  },
+  "posProductOrderCompletedSuccess": "تم إكمال الطلب بنجاح",
+  "@posProductOrderCompletedSuccess": {
+    "description": "POS UI translation key."
+  },
+  "posProductFailedCompleteJob": "فشل إكمال المهمة",
+  "@posProductFailedCompleteJob": {
+    "description": "POS UI translation key."
+  },
+  "posProductNoProductsMatch": "لا توجد منتجات تطابق البحث",
+  "@posProductNoProductsMatch": {
+    "description": "POS UI translation key."
+  },
+  "posProductProductsTitle": "المنتجات",
+  "@posProductProductsTitle": {
+    "description": "POS UI translation key."
+  },
+  "posProductServicesTitle": "الخدمات",
+  "@posProductServicesTitle": {
+    "description": "POS UI translation key."
+  },
+  "posProductUnitPrefix": "وحدة",
+  "@posProductUnitPrefix": {
+    "description": "POS UI translation key."
+  },
+  "posProductDiscountAbbrev": "خصم",
+  "@posProductDiscountAbbrev": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashTabExpense": "مصروف",
+  "@posPettyCashTabExpense": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashTabFund": "تمويل",
+  "@posPettyCashTabFund": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashTabHistory": "السجل",
+  "@posPettyCashTabHistory": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashAvailablePettyCash": "العهدة النقدية المتاحة",
+  "@posPettyCashAvailablePettyCash": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashLowBalanceWarning": "تحذير انخفاض الرصيد",
+  "@posPettyCashLowBalanceWarning": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashExpenseSubmittedPending": "تم إرسال المصروف بانتظار الموافقة.",
+  "@posPettyCashExpenseSubmittedPending": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashFundRequestSubmittedPending": "تم إرسال طلب التمويل بانتظار الموافقة.",
+  "@posPettyCashFundRequestSubmittedPending": {
+    "description": "POS UI translation key."
+  },
+  "posCommonSelectDate": "اختر التاريخ",
+  "@posCommonSelectDate": {
+    "description": "POS UI translation key."
+  },
+  "posCommonFrom": "من",
+  "@posCommonFrom": {
+    "description": "POS UI translation key."
+  },
+  "posCommonTo": "إلى",
+  "@posCommonTo": {
+    "description": "POS UI translation key."
+  },
+  "posCommonReset": "إعادة تعيين",
+  "@posCommonReset": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashExpenseFundHistory": "سجل المصروفات والتمويل",
+  "@posPettyCashExpenseFundHistory": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashNoHistoryForFilter": "لا يوجد سجل لهذا الفلتر",
+  "@posPettyCashNoHistoryForFilter": {
+    "description": "POS UI translation key."
+  },
+  "posPettyCashPendingExplanation": "هذا الطلب قيد الانتظار حتى تتم الموافقة عليه.",
+  "@posPettyCashPendingExplanation": {
+    "description": "POS UI translation key."
+  },
+  "posProductsBranchPrefix": "الفرع:",
+  "@posProductsBranchPrefix": {
+    "description": "No description provided for @posProductsBranchPrefix."
+  },
+  "posProductsFailedLoadProducts": "فشل تحميل المنتجات",
+  "@posProductsFailedLoadProducts": {
+    "description": "No description provided for @posProductsFailedLoadProducts."
+  },
+  "posNavInventory": "المخزون",
+  "posNavSalesReturn": "مرتجع المبيعات",
+  "posNavReturnsList": "قائمة المرتجعات",
+  "posNavPettyCash": "العهدة النقدية",
+  "posNavPromoCodes": "رموز العروض",
+  "posNavTechnicians": "الفنيون",
+  "posNavCurrentShift": "الوردية الحالية",
+  "posShellVersion": "الإصدار 1.0.0"
 }

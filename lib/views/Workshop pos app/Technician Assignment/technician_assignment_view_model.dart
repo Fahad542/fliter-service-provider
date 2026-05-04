@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../models/pos_order_model.dart';
 import '../../../../models/pos_technician_model.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
 /// Maps a job row to the cashier catalog row. Job payloads may use [JobTechnician.employeeId]
 /// or assignment [id] while [PosTechnician.id] vs [PosTechnician.userId] can differ.
@@ -31,7 +32,7 @@ Set<String> catalogIdsForJobTechnicians(
   return out;
 }
 
-class TechnicianAssignmentViewModel extends ChangeNotifier {
+class TechnicianAssignmentViewModel extends ChangeNotifier with TranslatableMixin {
   String _searchQuery = '';
   final Set<String> _selectedTechnicianIds = {};
   final List<String> _selectedTechnicianNames = [];
@@ -115,4 +116,18 @@ class TechnicianAssignmentViewModel extends ChangeNotifier {
     }
     notifyListeners();
   }
+  void bindSettingsViewModel(Listenable settingsViewModel) {
+    bindLocaleRetranslation(settingsViewModel, retranslate);
+  }
+
+  Future<void> retranslate() async {
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unbindLocaleRetranslation();
+    super.dispose();
+  }
+
 }

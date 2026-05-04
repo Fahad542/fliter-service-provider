@@ -6,6 +6,7 @@ import '../utils/app_colors.dart';
 import '../utils/app_formatters.dart';
 import '../utils/invoice_maintenance_checklist.dart';
 import '../utils/thermal_invoice_totals.dart';
+import 'thermal_invoice_pdf_ar_constants.dart';
 
 String _workshopHeaderSingleLine(String? workshopName) {
   final s = (workshopName ?? '').trim();
@@ -460,7 +461,21 @@ class CashierInvoicePreview extends StatelessWidget {
                   'Gross Amount (Excluding VAT)',
                   _sar(t.grossAmountExclVat),
                 ),
-                _amountRow('Item Discounts', _sar(t.itemDiscountsTotal)),
+                _amountRowBilingual(
+                  ThermalInvoicePdfLabels.itemDiscountEn,
+                  ThermalInvoicePdfLabels.itemDiscountAr,
+                  _sar(thermalR2(t.itemDiscountsTotal)),
+                ),
+                _amountRowBilingual(
+                  ThermalInvoicePdfLabels.invoiceDiscountEn,
+                  ThermalInvoicePdfLabels.invoiceDiscountAr,
+                  _sar(thermalR2(t.invoiceDiscount)),
+                ),
+                _amountRowBilingual(
+                  ThermalInvoicePdfLabels.promoDiscountEn,
+                  ThermalInvoicePdfLabels.promoDiscountAr,
+                  _sar(thermalR2(t.promoDiscount)),
+                ),
                 _amountRow('Total Taxable Amount', _sar(t.totalTaxableAmount)),
                 _amountRow('VAT 15%', _sar(t.vatAmount)),
                 const Divider(height: 18),
@@ -696,6 +711,55 @@ class CashierInvoicePreview extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(child: Text(label, style: baseStyle)),
+          Text(amount, style: amtStyle),
+        ],
+      ),
+    );
+  }
+
+  /// English + Arabic label (RTL) with amount; matches thermal PDF discount labels.
+  Widget _amountRowBilingual(
+    String labelEn,
+    String labelAr,
+    String amount, {
+    bool emphasized = false,
+  }) {
+    final baseStyle = TextStyle(
+      fontSize: emphasized ? 15 : 13,
+      fontWeight: emphasized ? FontWeight.w900 : FontWeight.w600,
+      color: emphasized ? AppColors.secondaryLight : Colors.grey.shade800,
+    );
+    final arStyle = baseStyle.copyWith(
+      fontSize: (emphasized ? 15.0 : 13.0) * 0.82,
+      fontWeight: FontWeight.w500,
+      color: Colors.grey.shade700,
+      height: 1.2,
+    );
+    final amtStyle = TextStyle(
+      fontSize: emphasized ? 15.5 : 13,
+      fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
+      color: emphasized ? AppColors.secondaryLight : Colors.grey.shade900,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(labelEn, style: baseStyle),
+                Text(
+                  labelAr,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.left,
+                  style: arStyle,
+                ),
+              ],
+            ),
+          ),
           Text(amount, style: amtStyle),
         ],
       ),

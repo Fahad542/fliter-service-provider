@@ -17,6 +17,7 @@ import '../../services/session_service.dart';
 
 import 'widgets/super_admin_bottom_bar.dart';
 import '../../utils/restart_widget.dart';
+import '../../widgets/app_brand_logo.dart';
 
 class SuperAdminShell extends StatefulWidget {
   const SuperAdminShell({super.key});
@@ -323,11 +324,13 @@ class SuperAdminShellState extends State<SuperAdminShell> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset(
-                'assets/images/icon.png',
-                height: 36, // slightly larger logo
-                color: AppColors.primaryLight, // Ensure it's visible on secondaryLight bg
+              const AppBrandLogo(
+                height: 36,
+                color: AppColors.primaryLight,
                 fit: BoxFit.contain,
+                colorBlendMode: BlendMode.srcIn,
+                fallbackIcon: Icons.store_mall_directory_rounded,
+                fallbackSize: 36,
               ),
               const SizedBox(height: 20),
               Row(

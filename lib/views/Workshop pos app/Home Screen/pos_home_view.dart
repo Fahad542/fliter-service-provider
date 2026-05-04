@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
 import '../../../utils/app_text_styles.dart';
 import '../More Tab/settings_view_model.dart';
 import '../../../widgets/pos_widgets.dart';
@@ -25,6 +28,8 @@ class PosHomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final langCode = Localizations.localeOf(context).languageCode;
     final isTablet = MediaQuery.of(context).size.width > 600;
     final vm = context.watch<PosViewModel>();
 
@@ -38,8 +43,8 @@ class PosHomeView extends StatelessWidget {
         appBar: PosAppBar(
           userName: vm.cashierName,
           infoTitle: vm.workshopName,
-          infoBranch: 'Branch: ${vm.branchName}',
-          infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
+          infoBranch: l10n.posHomeBranchPrefix(vm.branchName),
+          infoTime: AppTranslationService.localizeDigitsForLanguage(DateFormat('dd MMM yyyy · hh:mm a', langCode).format(DateTime.now()), langCode),
           onMenuPressed: () => PosShellScaffoldRegistry.openDrawer(),
         ),
         body: wrapPosShellRailBody(
@@ -66,7 +71,7 @@ class PosHomeView extends StatelessWidget {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Workshop ',
+                            text: l10n.posHomeTitleFilter,
                             style: AppTextStyles.h1.copyWith(
                               color: AppColors.primaryLight,
                               fontSize: isTablet ? 36 : 34,
@@ -74,7 +79,7 @@ class PosHomeView extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: 'POS',
+                            text: l10n.posHomeTitlePos,
                             style: AppTextStyles.h1.copyWith(
                               color: AppColors.secondaryLight,
                               fontSize: isTablet ? 36 : 34,
@@ -86,7 +91,7 @@ class PosHomeView extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Search by customer number, vehicle number,\nphone number or customer name',
+                      l10n.posHomeSubtitle,
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Colors.grey,
                         fontSize: 15,
@@ -100,7 +105,7 @@ class PosHomeView extends StatelessWidget {
                       controller: vm.homeSearchController,
                       focusNode: vm.homeSearchFocusNode,
                       hintText:
-                          'Search customer no / vehicle / mobile / plate...',
+                          l10n.posHomeSearchHint,
                       onChanged: (val) => vm.handleSearchDebounce(val),
                     ),
 
@@ -112,7 +117,7 @@ class PosHomeView extends StatelessWidget {
                         _buildActionChip(
                           context: context,
                           icon: Icons.add,
-                          label: 'New walk-in',
+                          label: l10n.posHomeNewWalkIn,
                           onTap: () {
                             context.read<PosViewModel>().clearCustomerData();
                             Navigator.push(
@@ -128,7 +133,7 @@ class PosHomeView extends StatelessWidget {
                         _buildActionChip(
                           context: context,
                           icon: Icons.business,
-                          label: 'Corporate booking',
+                          label: l10n.posHomeCorporateBooking,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -163,6 +168,7 @@ class PosHomeView extends StatelessWidget {
   }
 
   Widget _buildSearchResults(BuildContext context, bool isTablet) {
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<PosViewModel>(
       builder: (context, vm, child) {
         if (vm.isSearchingCustomer) {
@@ -179,7 +185,7 @@ class PosHomeView extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(6, 10, 6, 14),
                 child: Text(
-                  'Recent Searches',
+                  l10n.posHomeRecentSearches,
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontSize: isTablet ? 16 : 14,
                     fontWeight: FontWeight.w600,
@@ -205,14 +211,14 @@ class PosHomeView extends StatelessWidget {
                         vehicle: vehicle != null
                             ? '${vehicle.make} ${vehicle.model}'
                                 '${(vehicle.year != null && vehicle.year!.isNotEmpty) ? ' · ${vehicle.year}' : ''}'
-                            : 'No Vehicle',
-                        plate: vehicle?.plateNo ?? 'N/A',
+                            : l10n.posHomeNoVehicle,
+                        plate: vehicle?.plateNo ?? l10n.posCommonNotAvailable,
                         customer: customer.name,
                         phone: customer.mobile,
                         lastVisit: latestOrder != null
                             ? vm.formatDate(latestOrder.createdAt)
-                            : 'N/A',
-                        lastService: latestOrder?.status.toUpperCase() ?? 'N/A',
+                            : l10n.posCommonNotAvailable,
+                        lastService: latestOrder?.status.toUpperCase() ?? l10n.posCommonNotAvailable,
                         orderNumber: latestOrder?.id,
                         isCorporate:
                             customer.customerType.toLowerCase() == 'corporate',
@@ -325,7 +331,7 @@ class PosHomeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'No results found',
+                  l10n.posHomeNoResults,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey.shade400,
                     fontWeight: FontWeight.w600,
@@ -333,7 +339,7 @@ class PosHomeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Try searching with a different name or number',
+                  l10n.posHomeNoResultsHint,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: Colors.grey.shade400,
                   ),

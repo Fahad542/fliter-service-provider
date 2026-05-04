@@ -1,44 +1,78 @@
-String _invoicePickVin(
-  Map<String, dynamic> vehicle,
-  Map<String, dynamic> salesOrder,
-  Map<String, dynamic> root,
+import 'order_payment_method_draft.dart';
+import 'pos_payment_method.dart';
+
+bool _invoiceAsBool(dynamic value) {
+  if (value == true || value == 1) return true;
+  final s = value?.toString().trim().toLowerCase() ?? '';
+  return s == 'true' || s == '1' || s == 'yes';
+}
+
+int? _invoiceOptionalInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.round();
+  return int.tryParse(value.toString().trim());
+}
+
+String? _invoicePickFirstNonEmpty(Iterable<dynamic> candidates) {
+  for (final v in candidates) {
+    final s = v?.toString().trim() ?? '';
+    if (s.isNotEmpty) return s;
+  }
+  return null;
+}
+
+String _invoiceFirstStringAcross(
+  List<Map<String, dynamic>> buckets,
+  Iterable<String> keys,
 ) {
+  for (final k in keys) {
+    for (final m in buckets) {
+      final s = m[k]?.toString().trim() ?? '';
+      if (s.isNotEmpty) return s;
+    }
+  }
+  return '';
+}
+
+List<Map<String, dynamic>> _invoiceLookupBuckets({
+  required Map<String, dynamic> vehicle,
+  required Map<String, dynamic> salesOrder,
+  required Map<String, dynamic> root,
+  required Map<String, dynamic> customer,
+}) {
+  final custV = customer['vehicle'] is Map
+      ? Map<String, dynamic>.from(customer['vehicle'] as Map)
+      : <String, dynamic>{};
+  return [vehicle, custV, salesOrder, customer, root];
+}
+
+String _invoicePickVinBuckets(List<Map<String, dynamic>> buckets) {
   const keys = [
     'vin',
     'VIN',
-    'carNo', // legacy DB field; PATCH stores VIN here
+    'carNo',
     'vinNumber',
     'chassisNumber',
     'chassisNo',
     'chassis',
   ];
-  for (final k in keys) {
-    final v = vehicle[k] ?? salesOrder[k] ?? root[k];
-    final s = v?.toString().trim() ?? '';
-    if (s.isNotEmpty) return s;
-  }
-  return '';
+  return _invoiceFirstStringAcross(buckets, keys);
 }
 
-String _invoicePickYear(
-  Map<String, dynamic> vehicle,
-  Map<String, dynamic> salesOrder,
-  Map<String, dynamic> root,
-) {
-  const keys = ['year', 'modelYear', 'vehicleYear', 'carYear', 'yr'];
-  for (final k in keys) {
-    final v = vehicle[k] ?? salesOrder[k] ?? root[k];
-    final s = v?.toString().trim() ?? '';
-    if (s.isNotEmpty) return s;
-  }
-  return '';
+String _invoicePickYearBuckets(List<Map<String, dynamic>> buckets) {
+  const keys = [
+    'year',
+    'Year',
+    'modelYear',
+    'vehicleYear',
+    'carYear',
+    'yr',
+  ];
+  return _invoiceFirstStringAcross(buckets, keys);
 }
 
-int? _invoicePickOdometer(
-  Map<String, dynamic> vehicle,
-  Map<String, dynamic> salesOrder,
-  Map<String, dynamic> root,
-) {
+int? _invoicePickOdometerBuckets(List<Map<String, dynamic>> buckets) {
   const keys = [
     'odometerReading',
     'odometer',
@@ -48,12 +82,14 @@ int? _invoicePickOdometer(
     'odometer_reading',
   ];
   for (final k in keys) {
-    final raw = vehicle[k] ?? salesOrder[k] ?? root[k];
-    if (raw == null) continue;
-    final n = raw is num
-        ? raw.toInt()
-        : int.tryParse(raw.toString().replaceAll(RegExp(r'[^0-9-]'), ''));
-    if (n != null && n > 0) return n;
+    for (final b in buckets) {
+      final raw = b[k];
+      if (raw == null) continue;
+      final n = raw is num
+          ? raw.toInt()
+          : int.tryParse(raw.toString().replaceAll(RegExp(r'[^0-9-]'), ''));
+      if (n != null && n > 0) return n;
+    }
   }
   return null;
 }
@@ -68,17 +104,42 @@ List<bool>? _invoiceParseMaintenanceChecksMap(dynamic raw) {
   });
 }
 
-/// Root invoice envelope or nested `data.invoice` (success wrapper).
-List<bool>? _invoiceMaintenanceChecksFromEnvelope(Map<String, dynamic> json) {
-  List<bool>? a = _invoiceParseMaintenanceChecksMap(json['maintenanceChecklist']);
-  if (a != null) return a;
-  final data = json['data'];
-  if (data is Map && data['invoice'] is Map) {
-    a = _invoiceParseMaintenanceChecksMap(
-      (data['invoice'] as Map)['maintenanceChecklist'],
-    );
-  }
-  return a;
+List<bool>? _invoiceParseMaintenanceChecksList(dynamic raw) {
+  if (raw == null || raw is! List || raw.length != 6) return null;
+  return List<bool>.generate(6, (i) {
+    final v = raw[i];
+    return v == true || v == 1 || '${v}' == '1' || '${v}'.toLowerCase() == 'true';
+  });
+}
+
+/// Invoice root, nested `data.invoice`, or `salesOrder` maintenance payloads.
+List<bool>? _invoiceMaintenanceChecksFromPayload(
+  Map<String, dynamic> json,
+  Map<String, dynamic> salesOrder,
+) {
+  List<bool>? fromAny(dynamic raw) =>
+      _invoiceParseMaintenanceChecksMap(raw) ??
+      _invoiceParseMaintenanceChecksList(raw);
+
+  final rootData = json['data'];
+  final Map<String, dynamic>? dataInvoice =
+      rootData is Map && (rootData['invoice'] ?? rootData['Invoice']) is Map
+          ? Map<String, dynamic>.from(
+              (rootData['invoice'] ?? rootData['Invoice']) as Map)
+          : null;
+
+  return fromAny(json['maintenanceChecklist']) ??
+      fromAny(json['maintenance_checklist']) ??
+      fromAny(json['maintenanceChecks']) ??
+      fromAny(json['maintenance_checks']) ??
+      fromAny(salesOrder['maintenanceChecklist']) ??
+      fromAny(salesOrder['maintenance_checklist']) ??
+      fromAny(salesOrder['maintenanceChecks']) ??
+      fromAny(salesOrder['maintenance_checks']) ??
+      (dataInvoice == null
+          ? null
+          : (fromAny(dataInvoice['maintenanceChecklist']) ??
+              fromAny(dataInvoice['maintenanceChecks'])));
 }
 
 class CreateInvoiceRequest {
@@ -173,6 +234,8 @@ class Invoice {
   final String? customerMobile;
   final String? customerTaxId;
   final int? odometerReading;
+  /// Entered odometer + oil product `kmTypeValue` (km); full invoice customer block only.
+  final int? nextOilChangeKm;
   final String vehicleInfo;
   final String vehicleMake;
   final String vehicleModel;
@@ -200,6 +263,15 @@ class Invoice {
   /// Six booleans for bilingual maintenance checklist (invoice print).
   final List<bool>? maintenanceChecklistChecks;
 
+  /// Cashier PAYMENT‑METHOD PATCH draft hint (`individual` vs `corporate`, or `employee` when sent).
+  final String? posCustomerKind;
+  /// Corporate account / order linkage when present on invoice or nested sales order.
+  final String? orderCorporateAccountId;
+  final String? corporateOrderId;
+  final String? corporateCompanyName;
+  /// Explicit `isCorporate` on invoice or sales order payloads.
+  final bool isCorporateInvoiceFlag;
+
   Invoice({
     required this.id,
     required this.invoiceNo,
@@ -220,6 +292,7 @@ class Invoice {
     this.customerMobile,
     this.customerTaxId,
     this.odometerReading,
+    this.nextOilChangeKm,
     required this.vehicleInfo,
     this.vehicleMake = '',
     this.vehicleModel = '',
@@ -241,6 +314,11 @@ class Invoice {
     this.salesOrderCreatedAt = '',
     this.customerId = '',
     this.maintenanceChecklistChecks,
+    this.posCustomerKind,
+    this.orderCorporateAccountId,
+    this.corporateOrderId,
+    this.corporateCompanyName,
+    this.isCorporateInvoiceFlag = false,
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
@@ -253,7 +331,43 @@ class Invoice {
     final workshopMap = workshopRaw is Map
         ? Map<String, dynamic>.from(workshopRaw)
         : <String, dynamic>{};
-    var customer = salesOrder['customer'] ?? {};
+    final customer = salesOrder['customer'] is Map
+        ? Map<String, dynamic>.from(salesOrder['customer'] as Map)
+        : <String, dynamic>{};
+    final corporateMap = json['corporate'] is Map
+        ? Map<String, dynamic>.from(json['corporate'] as Map)
+        : <String, dynamic>{};
+
+    final posCustomerKindParsed = _invoicePickFirstNonEmpty([
+      json['posCustomerKind'],
+      json['pos_customer_kind'],
+      salesOrder['posCustomerKind'],
+      salesOrder['pos_customer_kind'],
+      customer['posCustomerKind'],
+      customer['pos_customer_kind'],
+      customer['customerKind'],
+      salesOrder['customerKind'],
+    ]);
+    final orderCorporateAccountId = _invoicePickFirstNonEmpty([
+      json['corporateAccountId'],
+      json['corporate_account_id'],
+      corporateMap['accountId'],
+      salesOrder['corporateAccountId'],
+      salesOrder['corporate_account_id'],
+    ]);
+    final corporateCompanyName = _invoicePickFirstNonEmpty([
+      json['corporateCompanyName'],
+      corporateMap['companyName'],
+      salesOrder['corporateCompanyName'],
+    ]);
+    final corporateOrderId = _invoicePickFirstNonEmpty([
+      json['corporateOrderId'],
+      json['corporate_order_id'],
+      salesOrder['corporateOrderId'],
+      salesOrder['corporate_order_id'],
+    ]);
+    final isCorporateInvoiceFlag = _invoiceAsBool(json['isCorporate']) ||
+        _invoiceAsBool(salesOrder['isCorporate']);
     var vehicle = salesOrder['vehicle'] is Map
         ? Map<String, dynamic>.from(salesOrder['vehicle'] as Map)
         : <String, dynamic>{};
@@ -264,6 +378,36 @@ class Invoice {
       };
     }
 
+    final lookupBuckets = _invoiceLookupBuckets(
+      vehicle: vehicle,
+      salesOrder: salesOrder,
+      root: json,
+      customer: customer,
+    );
+
+    final vehicleMake = _invoiceFirstStringAcross(lookupBuckets, const [
+      'make',
+      'Make',
+      'carMake',
+      'vehicleMake',
+      'brand',
+      'carBrand',
+    ]);
+    final vehicleModel = _invoiceFirstStringAcross(lookupBuckets, const [
+      'model',
+      'Model',
+      'carModel',
+      'vehicleModel',
+    ]);
+    final plateNo = _invoiceFirstStringAcross(lookupBuckets, const [
+      'plateNo',
+      'plate',
+      'Plate',
+      'vehicleNumber',
+      'vehicle_registration',
+      'registrationNumber',
+    ]);
+    final mergedVehicleInfo = '${vehicleMake} ${vehicleModel}'.trim();
     // Parse Departments from jobs array or fallback to departments
     var departmentsList =
         salesOrder['jobs'] as List? ?? salesOrder['departments'] as List? ?? [];
@@ -332,18 +476,16 @@ class Invoice {
           'Individual',
       customerMobile: customer['mobile']?.toString(),
       customerTaxId: customer['taxId']?.toString(),
-      odometerReading: _invoicePickOdometer(vehicle, salesOrder, json),
-      vehicleInfo: '${vehicle['make'] ?? ""} ${vehicle['model'] ?? ""}'.trim(),
-      vehicleMake: vehicle['make']?.toString() ?? '',
-      vehicleModel: vehicle['model']?.toString() ?? '',
-      plateNo: (vehicle['plateNo'] ??
-              vehicle['plate'] ??
-              vehicle['vehicleNumber'] ??
-              salesOrder['vehicleNumber'] ??
-              '')
-          .toString(),
-      vehicleVin: _invoicePickVin(vehicle, salesOrder, json),
-      vehicleYear: _invoicePickYear(vehicle, salesOrder, json),
+      odometerReading: _invoicePickOdometerBuckets(lookupBuckets),
+      nextOilChangeKm: _invoiceOptionalInt(
+        salesOrder['nextOilChangeKm'] ?? json['nextOilChangeKm'],
+      ),
+      vehicleInfo: mergedVehicleInfo,
+      vehicleMake: vehicleMake,
+      vehicleModel: vehicleModel,
+      plateNo: plateNo,
+      vehicleVin: _invoicePickVinBuckets(lookupBuckets),
+      vehicleYear: _invoicePickYearBuckets(lookupBuckets),
       branchName: branch['name'],
       branchAddress: branch['address']?.toString(),
       branchVatId: branch['vatId']?.toString(),
@@ -358,9 +500,77 @@ class Invoice {
       workshopName: workshopMap['name']?.toString(),
       workshopTaxId: workshopMap['taxId']?.toString(),
       workshopAddress: workshopMap['address']?.toString(),
-      maintenanceChecklistChecks: _invoiceMaintenanceChecksFromEnvelope(json),
+      maintenanceChecklistChecks: _invoiceMaintenanceChecksFromPayload(json, salesOrder),
+      posCustomerKind: posCustomerKindParsed,
+      orderCorporateAccountId: orderCorporateAccountId,
+      corporateOrderId: corporateOrderId,
+      corporateCompanyName: corporateCompanyName,
+      isCorporateInvoiceFlag: isCorporateInvoiceFlag,
     );
   }
+}
+
+/// Thermal receipt: manual walk‑in → Normal; payroll / employee tender → Employee; corporate → Corporate.
+String resolveThermalInvoiceCustomerTypeLabel(Invoice invoice) {
+  if (_thermalInvoiceTreatsAsCorporateCustomer(invoice)) return 'Corporate';
+  if (_thermalInvoiceTreatsAsEmployeeCustomer(invoice)) return 'Employee';
+  return 'Normal';
+}
+
+extension InvoiceThermalCustomerTypeLabels on Invoice {
+  String get thermalDisplayedCustomerType =>
+      resolveThermalInvoiceCustomerTypeLabel(this);
+}
+
+bool _thermalInvoiceTreatsAsCorporateCustomer(Invoice invoice) {
+  if (invoice.isCorporateInvoiceFlag) return true;
+  final kind = invoice.posCustomerKind?.trim().toLowerCase() ?? '';
+  if (kind == 'corporate') return true;
+  if ((invoice.orderCorporateAccountId ?? '').trim().isNotEmpty) return true;
+  if ((invoice.corporateOrderId ?? '').trim().isNotEmpty) return true;
+  if ((invoice.corporateCompanyName ?? '').trim().isNotEmpty) return true;
+
+  final src = invoice.salesOrderSource.toLowerCase().replaceAll('_', '').trim();
+  if (src.contains('corporate')) return true;
+
+  final ctApi = invoice.customerType.toLowerCase().trim();
+  if (ctApi.contains('corporate') || ctApi == 'company') return true;
+
+  if (invoice.paymentMethod != null && invoice.paymentMethod!.trim().isNotEmpty) {
+    if (parsePaymentMethodFromDraftApiLabel(invoice.paymentMethod!) ==
+        PaymentMethod.monthlyBilling) {
+      return true;
+    }
+  }
+  for (final p in invoice.payments) {
+    if (parsePaymentMethodFromDraftApiLabel(p.method) ==
+        PaymentMethod.monthlyBilling) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool _thermalInvoiceTreatsAsEmployeeCustomer(Invoice invoice) {
+  final kind = invoice.posCustomerKind?.trim().toLowerCase() ?? '';
+  if (kind.contains('employee')) return true;
+
+  final ctApi = invoice.customerType.toLowerCase().trim();
+  if (ctApi.contains('employee')) return true;
+
+  if (invoice.paymentMethod != null && invoice.paymentMethod!.trim().isNotEmpty) {
+    if (parsePaymentMethodFromDraftApiLabel(invoice.paymentMethod!) ==
+        PaymentMethod.employees) {
+      return true;
+    }
+  }
+  for (final p in invoice.payments) {
+    if (parsePaymentMethodFromDraftApiLabel(p.method) ==
+        PaymentMethod.employees) {
+      return true;
+    }
+  }
+  return false;
 }
 
 class InvoiceItem {
@@ -375,12 +585,15 @@ class InvoiceItem {
   final double? discountValue;
   final double beforeDiscountPrice;
   final double afterDiscountPrice;
+  /// Arabic product/service title for bilingual thermal receipts when API sends it.
+  final String? productNameArabic;
 
   InvoiceItem({
     required this.id,
     this.itemType = '',
     this.productId = '',
     required this.productName,
+    this.productNameArabic,
     required this.qty,
     required this.unitPrice,
     required this.lineTotal,
@@ -396,6 +609,11 @@ class InvoiceItem {
       itemType: json['itemType']?.toString() ?? '',
       productId: json['productId']?.toString() ?? json['serviceId']?.toString() ?? '',
       productName: json['productName'] ?? json['name'] ?? '',
+      productNameArabic:
+          json['productNameArabic']?.toString() ??
+          json['nameAr']?.toString() ??
+          json['arabicName']?.toString() ??
+          json['name_ar']?.toString(),
       qty: double.tryParse(json['qty']?.toString() ?? '0') ?? 0,
       unitPrice: double.tryParse(json['unitPrice']?.toString() ?? '0') ?? 0,
       lineTotal: double.tryParse(json['lineTotal']?.toString() ?? '0') ?? 0,

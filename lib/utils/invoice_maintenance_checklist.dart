@@ -1,3 +1,5 @@
+import '../models/create_invoice_model.dart';
+
 /// Same 6 bilingual items as printed on cashier [InvoiceDialog] checklist table
 /// (`pos_widgets` PDF-style layout — left lane = rows `0–2`, right = `3–5`).
 abstract final class InvoiceMaintenanceChecklist {
@@ -16,4 +18,18 @@ abstract final class InvoiceMaintenanceChecklist {
 
   static ({String en, String ar}) cell(int tableRowIndex, {required bool leftColumn}) =>
       rows[tableRowIndex + (leftColumn ? 0 : 3)];
+
+  /// From API [invoice.maintenanceChecklistChecks] when valid; else valid [fallback].
+  /// Otherwise `null` (caller should treat as “no checklist payload”).
+  static List<bool>? resolvedChecks(
+    Invoice invoice, [
+    List<bool>? fallback,
+  ]) {
+    final m = invoice.maintenanceChecklistChecks;
+    if (m != null && m.length == rows.length) return List<bool>.from(m);
+    if (fallback != null && fallback.length == rows.length) {
+      return List<bool>.from(fallback);
+    }
+    return null;
+  }
 }

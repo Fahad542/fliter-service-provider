@@ -1,17 +1,34 @@
 import 'package:flutter/material.dart';
 import '../../../../data/repositories/auth_repository.dart';
 import '../../../../services/session_service.dart';
+import '../../../../services/locker_translation_mixin.dart';
+import '../More Tab/settings_view_model.dart';
 import '../../../../models/current_session_model.dart';
 
-class CurrentShiftViewModel extends ChangeNotifier {
+class CurrentShiftViewModel extends ChangeNotifier with TranslatableMixin {
   final AuthRepository _authRepository;
   final SessionService _sessionService;
 
   CurrentShiftViewModel({
     required AuthRepository authRepository,
     required SessionService sessionService,
+    SettingsViewModel? settingsViewModel,
   })  : _authRepository = authRepository,
-        _sessionService = sessionService;
+        _sessionService = sessionService {
+    if (settingsViewModel != null) {
+      bindLocaleRetranslation(settingsViewModel, retranslate);
+    }
+  }
+
+  Future<void> retranslate() async {
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unbindLocaleRetranslation();
+    super.dispose();
+  }
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;

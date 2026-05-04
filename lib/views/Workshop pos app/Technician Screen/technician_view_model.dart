@@ -7,8 +7,9 @@ import '../../../services/realtime_service.dart';
 import '../../../models/pos_order_model.dart';
 import '../../../models/pos_technician_model.dart';
 import '../../../utils/toast_service.dart';
+import '../../../services/locker_translation_mixin.dart';
 
-class TechnicianViewModel extends ChangeNotifier {
+class TechnicianViewModel extends ChangeNotifier with TranslatableMixin {
   final PosRepository _posRepository;
   final SessionService _sessionService;
   final RealtimeService _realtime = RealtimeService();
@@ -35,6 +36,7 @@ class TechnicianViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    unbindLocaleRetranslation();
     _technicianCatalogSocketDebounce?.cancel();
     _realtime.off(
       RealtimeService.eventCashierTechniciansUpdated,
@@ -446,4 +448,13 @@ class TechnicianViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void bindSettingsViewModel(Listenable settingsViewModel) {
+    bindLocaleRetranslation(settingsViewModel, retranslate);
+  }
+
+  Future<void> retranslate() async {
+    notifyListeners();
+  }
+
 }

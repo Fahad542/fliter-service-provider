@@ -7,6 +7,7 @@ import '../../../../models/create_invoice_model.dart';
 import '../../../../models/pos_payment_method.dart';
 import '../../../../models/takeaway_models.dart';
 import '../../../../services/session_service.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
 class TakeawayCartLine {
   TakeawayCartLine({
@@ -29,7 +30,7 @@ class TakeawayCartLine {
       ((unitPrice / 1.15) * 100).roundToDouble() / 100;
 }
 
-class TakeawayViewModel extends ChangeNotifier {
+class TakeawayViewModel extends ChangeNotifier with TranslatableMixin {
   /// Matches [PosProductGridView] live invoice panel (15% VAT on taxable amount).
   static const double liveInvoiceVatRate = 0.15;
 
@@ -772,6 +773,7 @@ class TakeawayViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    unbindLocaleRetranslation();
     vatController.removeListener(_onPreviewInputChanged);
     orderDiscountValueController.removeListener(_onPreviewInputChanged);
     promoCodeController.removeListener(_onPreviewInputChanged);
@@ -804,5 +806,13 @@ class TakeawayViewModel extends ChangeNotifier {
     discountAmountController.dispose();
     orderDiscountValueController.dispose();
     super.dispose();
+  }
+
+  void bindSettingsViewModel(Listenable settingsViewModel) {
+    bindLocaleRetranslation(settingsViewModel, retranslate);
+  }
+
+  Future<void> retranslate() async {
+    notifyListeners();
   }
 }

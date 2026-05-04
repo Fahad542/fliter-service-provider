@@ -5,6 +5,8 @@ import '../../../models/pos_order_model.dart';
 import '../../../models/pos_payment_method.dart';
 import '../../../models/create_invoice_model.dart';
 import '../../../utils/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
 import '../../../utils/pos_tablet_layout.dart';
@@ -503,7 +505,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _walkInInvoiceSectionHeader(
-              'Billing',
+              AppLocalizations.of(context)!.posReviewBilling,
               Icons.person_outline_rounded,
               compact: true,
             ),
@@ -668,7 +670,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
             if (widget.showVehicleSection) ...[
               const SizedBox(height: 14),
               _walkInInvoiceSectionHeader(
-                'Vehicle',
+                AppLocalizations.of(context)!.posReviewVehicle,
                 Icons.directions_car_outlined,
                 compact: true,
               ),
@@ -850,7 +852,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     ),
                     child: Text(
-                      'Cancel',
+                      AppLocalizations.of(context)!.posReviewCancelBtn,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -880,9 +882,9 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                               color: AppColors.onPrimaryLight,
                             ),
                           )
-                        : const Text(
-                            'Continue',
-                            style: TextStyle(
+                        : Text(
+                            AppLocalizations.of(context)!.posReviewContinueBtn,
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
                             ),
@@ -1304,7 +1306,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 onPressed: savingRef[0]
                     ? null
                     : () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
+                child: Text(AppLocalizations.of(context)!.posReviewCancelBtn),
               ),
               FilledButton(
                 onPressed: savingRef[0]
@@ -1752,7 +1754,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, null),
-                  child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.secondaryLight)),
+                  child: Text(AppLocalizations.of(context)!.posReviewCancelBtn, style: AppTextStyles.button.copyWith(color: AppColors.secondaryLight)),
                 ),
                 FilledButton(
                   onPressed: remaining.abs() > 0.05
@@ -1907,7 +1909,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _walkInInvoiceSectionHeader('Billing', Icons.person_outline_rounded),
+            _walkInInvoiceSectionHeader(AppLocalizations.of(context)!.posReviewBilling, Icons.person_outline_rounded),
             const SizedBox(height: 12),
             if (!billingContactLocked) ...[
               SwitchListTile(
@@ -2048,7 +2050,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
               ],
             ),
             const SizedBox(height: 22),
-            _walkInInvoiceSectionHeader('Vehicle', Icons.directions_car_outlined),
+            _walkInInvoiceSectionHeader(AppLocalizations.of(context)!.posReviewVehicle, Icons.directions_car_outlined),
             const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2786,7 +2788,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F6FA),
         appBar: PosScreenAppBar(
-          title: _isGenerated ? 'Invoice Ready' : 'Final Review',
+          title: _isGenerated ? AppLocalizations.of(context)!.posReviewInvoiceReady : AppLocalizations.of(context)!.posReviewFinalReview,
           showBackButton: true,
           showHamburger: false,
         ),
@@ -3225,7 +3227,7 @@ class _ItemRow extends StatelessWidget {
                 ],
                 const SizedBox(height: 2),
                 Row(children: [
-                  Expanded(child: Text('VAT (15%)', style: labelStyle)),
+                  Expanded(child: Text(AppLocalizations.of(context)!.posReviewVat15, style: labelStyle)),
                   Text('SAR ${item.vatOnLine.toStringAsFixed(2)}', style: valStyle),
                 ]),
                 if (item.technicianName.isNotEmpty) ...[
@@ -3306,7 +3308,7 @@ class _VatBreakdownWidget extends StatelessWidget {
       children: [
         if (showDetailedBreakdown) ...[
           _PriceRow(
-            label: 'Gross Amount (Excl. VAT)',
+            label: AppLocalizations.of(context)!.posReviewGrossAmountExclVat,
             value: 'SAR ${currencyFormat.format(subtotalExclusive)}',
             valueColor: const Color(0xFF1E2124),
           ),
@@ -3314,7 +3316,7 @@ class _VatBreakdownWidget extends StatelessWidget {
 
           if (itemDiscountAmount > 0) ...[
             _PriceRow(
-              label: 'Item Discounts',
+              label: AppLocalizations.of(context)!.posReviewItemDiscounts,
               value: '-SAR ${currencyFormat.format(itemDiscountAmount)}',
               valueColor: Colors.green.shade600,
               labelColor: Colors.green.shade600,
@@ -3382,7 +3384,7 @@ class _VatBreakdownWidget extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _PriceRow(
-              label: 'Price after discount',
+              label: AppLocalizations.of(context)!.posReviewPriceAfterDiscount,
               value: 'SAR ${currencyFormat.format(priceAfterGlobal)}',
             ),
             const SizedBox(height: 8),
@@ -3425,7 +3427,7 @@ class _VatBreakdownWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total amount',
+                AppLocalizations.of(context)!.posReviewTotalAmount,
                 style: TextStyle(
                   fontSize: isTablet ? 17 : 15,
                   fontWeight: FontWeight.w900,
@@ -4063,9 +4065,9 @@ class _MockInvoicePrintDialog extends StatelessWidget {
                     : '—',
               ),
               _DialogRow(label: 'Customer', value: order.customerName),
-              _DialogRow(label: 'Vehicle', value: order.carModel),
+              _DialogRow(label: AppLocalizations.of(context)!.posReviewVehicle, value: order.carModel),
               _DialogRow(
-                label: 'Billing',
+                label: AppLocalizations.of(context)!.posReviewBilling,
                 value: isCorporate
                     ? 'Corporate (Monthly)'
                     : paymentMethod?.label ?? '—',
@@ -4185,7 +4187,7 @@ class _MockInvoicePrintDialog extends StatelessWidget {
                     'SAR ${currencyFormat.format(total - vatAmount + discountAmount)}',
               ),
               _DialogRow(
-                label: 'VAT (15%)',
+                label: AppLocalizations.of(context)!.posReviewVat15,
                 value: 'SAR ${currencyFormat.format(vatAmount)}',
               ),
               if (discountAmount > 0)
@@ -4204,9 +4206,9 @@ class _MockInvoicePrintDialog extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'TOTAL',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.posReviewTotal,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
@@ -4234,9 +4236,9 @@ class _MockInvoicePrintDialog extends StatelessWidget {
                     size: 18,
                     color: Colors.black,
                   ),
-                  label: const Text(
-                    'Done',
-                    style: TextStyle(
+                  label: Text(
+                    AppLocalizations.of(context)!.posReviewDone,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.w800,
                     ),
@@ -4339,7 +4341,7 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'ORDER SUMMARY',
+            AppLocalizations.of(context)!.posReviewOrderSummary,
             style: TextStyle(
               fontSize: isTablet ? 13 : 12,
               fontWeight: FontWeight.w900,
@@ -4348,12 +4350,12 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          line('Gross Amount (Excl. VAT)', grossSubtotal.toStringAsFixed(2)),
-          line('Item Discounts', '- ${itemDiscountsTotal.toStringAsFixed(2)}', negative: true),
-          line('Invoice Discount', '- ${invoiceDiscountTotal.toStringAsFixed(2)}', negative: true),
+          line(AppLocalizations.of(context)!.posReviewGrossAmountExclVat, grossSubtotal.toStringAsFixed(2)),
+          line(AppLocalizations.of(context)!.posReviewItemDiscounts, '- ${itemDiscountsTotal.toStringAsFixed(2)}', negative: true),
+          line(AppLocalizations.of(context)!.posReviewInvoiceDiscount, '- ${invoiceDiscountTotal.toStringAsFixed(2)}', negative: true),
           line('Promo Discount', '- ${promoDiscountTotal.toStringAsFixed(2)}', negative: true),
           line('Total Taxable Amount', netSubtotal.toStringAsFixed(2)),
-          line('VAT (15%)', vatAmount.toStringAsFixed(2)),
+          line(AppLocalizations.of(context)!.posReviewVat15, vatAmount.toStringAsFixed(2)),
           if (showFinalReviewHints) ...[
             const SizedBox(height: 10),
             Text(
@@ -4396,7 +4398,7 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'TOTAL',
+                  AppLocalizations.of(context)!.posReviewTotal,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: isTablet ? 14 : 13,

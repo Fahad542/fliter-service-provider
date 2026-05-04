@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/toast_service.dart';
@@ -87,8 +89,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F3F0),
-        appBar: const PosScreenAppBar(
-          title: 'Takeaway',
+        appBar: PosScreenAppBar(
+          title: AppLocalizations.of(context)!.posTakeawayTitle,
           showBackButton: false,
         ),
         body: wrapPosShellRailBody(
@@ -126,7 +128,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 backgroundColor: AppColors.primaryLight,
                 foregroundColor: AppColors.secondaryLight,
               ),
-              child: const Text('Retry'),
+              child: Text(AppLocalizations.of(context)!.posTakeawayRetry),
             ),
           ],
         ),
@@ -175,14 +177,14 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                             child: PosSearchBar(
                               controller: vm.searchController,
                               onChanged: vm.setSearchQuery,
-                              hintText: 'Search products & services...',
+                              hintText: AppLocalizations.of(context)!.posTakeawaySearchHint,
                             ),
                           ),
                           const SizedBox(width: 10),
                           IconButton.filledTonal(
                             onPressed: () => vm.loadCatalog(),
                             icon: const Icon(Icons.refresh_rounded),
-                            tooltip: 'Refresh',
+                            tooltip: AppLocalizations.of(context)!.posTakeawayRefresh,
                           ),
                         ],
                       ),
@@ -213,7 +215,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                   _buildDeptTab(
                                     context,
                                     vm,
-                                    label: 'All',
+                                    label: AppLocalizations.of(context)!.posTakeawayAll,
                                     departmentId: null,
                                     isTablet: true,
                                     minWidth: 88,
@@ -265,7 +267,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                   child: PosSearchBar(
                     controller: vm.searchController,
                     onChanged: vm.setSearchQuery,
-                    hintText: 'Search products & services...',
+                    hintText: AppLocalizations.of(context)!.posTakeawaySearchHint,
                   ),
                 ),
                 IconButton(
@@ -293,7 +295,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                       _buildDeptTab(
                         context,
                         vm,
-                        label: 'All',
+                        label: AppLocalizations.of(context)!.posTakeawayAll,
                         departmentId: null,
                         isTablet: false,
                         minWidth: 72,
@@ -389,7 +391,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
               children: [
                 Expanded(
                   child: Text(
-                    'Order Items',
+                    AppLocalizations.of(context)!.posTakeawayOrderItems,
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w800,
                       color: AppColors.secondaryLight,
@@ -419,7 +421,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
             child: vm.cart.isEmpty
                 ? Center(
                     child: Text(
-                      'No items in invoice',
+                      AppLocalizations.of(context)!.posTakeawayNoItems,
                       style: TextStyle(color: Colors.grey.shade500),
                     ),
                   )
@@ -442,16 +444,16 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                buildRow('Gross Amount (Excl. VAT)', '$currency ${gross.toStringAsFixed(2)}'),
+                buildRow(AppLocalizations.of(context)!.posTakeawayGrossExVat, '$currency ${gross.toStringAsFixed(2)}'),
                 const SizedBox(height: 6),
                 buildRow(
-                  'Line discount',
+                  AppLocalizations.of(context)!.posTakeawayLineDiscount,
                   '-$currency ${lineDiscount.toStringAsFixed(2)}',
                   color: lineDiscount > 0 ? Colors.green.shade700 : Colors.grey.shade600,
                 ),
                 const SizedBox(height: 6),
                 buildRow(
-                  'Price after line discount',
+                  AppLocalizations.of(context)!.posTakeawayPriceAfterLineDiscount,
                   '$currency ${subtotal.toStringAsFixed(2)}',
                 ),
                 const SizedBox(height: 8),
@@ -459,8 +461,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 // Interactive order-level discount (same control as Products tab)
                 Row(
                   children: [
-                    const Text(
-                      'Total discount',
+                    Text(
+                      AppLocalizations.of(context)!.posTakeawayTotalDiscount,
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.green,
@@ -500,7 +502,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                     GestureDetector(
                       onTap: () {
                         vm.setOrderDiscountType(
-                          isOrderDiscPercent ? 'amount' : 'percent',
+                          isOrderDiscPercent ? AppLocalizations.of(context)!.posTakeawayAmount : AppLocalizations.of(context)!.posTakeawayPercent,
                         );
                       },
                       child: Container(
@@ -526,13 +528,13 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 const SizedBox(height: 6),
                 if (orderDisc > 0) ...[
                   buildRow(
-                    'Total discount applied',
+                    AppLocalizations.of(context)!.posTakeawayTotalDiscountApplied,
                     '-$currency ${orderDisc.toStringAsFixed(2)}',
                     color: Colors.green.shade700,
                   ),
                   const SizedBox(height: 6),
                 ],
-                buildRow('Price after total discount', '$currency ${afterOrderDiscount.toStringAsFixed(2)}'),
+                buildRow(AppLocalizations.of(context)!.posTakeawayPriceAfterTotalDiscount, '$currency ${afterOrderDiscount.toStringAsFixed(2)}'),
                 const SizedBox(height: 8),
                 
                 Container(
@@ -601,20 +603,20 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 ),
                 const SizedBox(height: 6),
                 if (promoDiscount > 0) ...[
-                  buildRow('Promo discount', '-$currency ${promoDiscount.toStringAsFixed(2)}', color: Colors.green),
+                  buildRow(AppLocalizations.of(context)!.posTakeawayPromoDiscount, '-$currency ${promoDiscount.toStringAsFixed(2)}', color: Colors.green),
                   const SizedBox(height: 6),
                 ],
-                buildRow('Price after promo', '$currency ${taxable.toStringAsFixed(2)}'),
+                buildRow(AppLocalizations.of(context)!.posTakeawayPriceAfterPromo, '$currency ${taxable.toStringAsFixed(2)}'),
                 const SizedBox(height: 6),
                 buildRow(
-                  'VAT (15%)',
+                  AppLocalizations.of(context)!.posTakeawayVat15,
                   '$currency ${vatAmount.toStringAsFixed(2)}',
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Text(
-                      'Total',
+                    Text(
+                      AppLocalizations.of(context)!.posTakeawayTotal,
                       style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                     ),
                     const Spacer(),
@@ -643,8 +645,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
-                        child: const Text(
-                          'Add customer details',
+                        child: Text(
+                          AppLocalizations.of(context)!.posTakeawayAddCustomerDetails,
                           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                         ),
                       ),
@@ -667,8 +669,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
-                          child: const Text(
-                            'Select payment',
+                          child: Text(
+                            AppLocalizations.of(context)!.posTakeawaySelectPayment,
                             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                           ),
                         ),
@@ -692,8 +694,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      'Generate Invoice',
+                    child: Text(
+                      AppLocalizations.of(context)!.posTakeawayGenerateInvoice,
                       style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                     ),
                   ),
@@ -842,7 +844,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Text(
-              'No products found',
+              AppLocalizations.of(context)!.posTakeawayNoProductsFound,
               textAlign: TextAlign.center,
               style: _takeawayCatalogEmptyMessageTextStyle(),
             ),
@@ -873,7 +875,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 28),
                   child: Text(
-                    'No products match your search.',
+                    AppLocalizations.of(context)!.posTakeawayNoProductsMatch,
                     textAlign: TextAlign.center,
                     style: _takeawayCatalogEmptyMessageTextStyle(),
                   ),
@@ -1015,7 +1017,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                           if (product.unit != null &&
                               product.unit!.isNotEmpty) ...[
                             Text(
-                              'Unit: ${product.unit}',
+                              AppLocalizations.of(context)!.posTakeawayUnit(product.unit.toString()),
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.grey.shade600,
@@ -1209,7 +1211,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                             child: (product.unit != null &&
                                     product.unit!.isNotEmpty)
                                 ? Text(
-                                    'Unit: ${product.unit}',
+                                    AppLocalizations.of(context)!.posTakeawayUnit(product.unit.toString()),
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: Colors.grey.shade600,
@@ -1409,7 +1411,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${vm.cartItemCountDisplay} items',
+                  AppLocalizations.of(context)!.posTakeawayItemsCount(vm.cartItemCountDisplay),
                   style: TextStyle(
                     fontSize: isTablet ? 14 : 12,
                     fontWeight: FontWeight.w700,
@@ -1426,7 +1428,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Grand Total',
+                  AppLocalizations.of(context)!.posTakeawayGrandTotal,
                   style: TextStyle(
                     fontSize: isTablet ? 12 : 10,
                     color: Colors.grey,
@@ -1464,7 +1466,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                       ),
                     ),
                     child: Text(
-                      'Select payment',
+                      AppLocalizations.of(context)!.posTakeawaySelectPayment,
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -1490,7 +1492,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                     size: isTablet ? 20 : 18,
                   ),
                   label: Text(
-                    'Generate Invoice',
+                    AppLocalizations.of(context)!.posTakeawayGenerateInvoice,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: isTablet ? 14 : 13,
@@ -1554,7 +1556,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     vm.odometerController.text =
         result.odometer != 0 ? '${result.odometer}' : '';
     vm.refreshPreview();
-    ToastService.showSuccess(context, 'Customer details saved');
+    ToastService.showSuccess(context, AppLocalizations.of(context)!.posTakeawayCustomerSaved);
   }
 
   Future<void> _openTakeawayPaymentDialog(BuildContext context) async {
@@ -1573,7 +1575,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         methods: result.payments,
         amounts: result.paymentAmounts,
       );
-      ToastService.showSuccess(context, 'Payment method saved');
+      ToastService.showSuccess(context, AppLocalizations.of(context)!.posTakeawayPaymentSaved);
     }
   }
 
@@ -1587,7 +1589,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
       if (!vm.hasRequiredTakeawayBillingFields) {
         ToastService.showError(
           context,
-          'Customer name and mobile number are required.',
+          AppLocalizations.of(context)!.posTakeawayCustomerRequired,
         );
         return;
       }
@@ -1597,7 +1599,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
       await _openTakeawayPaymentDialog(context);
       if (!context.mounted) return;
       if (!vm.paymentSelectionReady) {
-        ToastService.showError(context, 'Select payment method first.');
+        ToastService.showError(context, AppLocalizations.of(context)!.posTakeawaySelectPaymentFirst);
         return;
       }
     }
@@ -1607,7 +1609,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     final pm = pay['paymentMethod'] as String?;
     final payments = pay['payments'] as List<Map<String, dynamic>>?;
     if (payments == null || payments.isEmpty) {
-      ToastService.showError(context, 'Add valid payment amounts to continue.');
+      ToastService.showError(context, AppLocalizations.of(context)!.posTakeawayValidPaymentAmounts);
       return;
     }
     if (pm != null && pm.isNotEmpty) {
@@ -1621,7 +1623,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     if (res == null || !res.success || vm.lastInvoice == null) {
       ToastService.showError(
         context,
-        vm.checkoutError ?? res?.message ?? 'Failed to generate invoice',
+        vm.checkoutError ?? res?.message ?? AppLocalizations.of(context)!.posTakeawayInvoiceFailed,
       );
       return;
     }
@@ -1824,8 +1826,8 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                     ),
                   ),
                   const Spacer(),
-                  const Text(
-                    'Dis.',
+                  Text(
+                    AppLocalizations.of(context)!.posTakeawayDis,
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(width: 8),

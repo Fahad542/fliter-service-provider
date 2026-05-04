@@ -14,6 +14,7 @@ import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../More Tab/pos_more_view.dart'; // Added
 import 'promo_code_dialog.dart'; // Added (same folder)
 import 'promo_view_model.dart';
+import '../../../services/LocalizedApiText.dart';
 
 class PosPromoView extends StatefulWidget {
   const PosPromoView({super.key});
@@ -40,7 +41,7 @@ class _PosPromoViewState extends State<PosPromoView> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: false,
       appBar: PosScreenAppBar(
-        title: 'Promo Code',
+        title: AppLocalizations.of(context)!.posPromoTitle,
         showBackButton: false,
         showHamburger: true,
         onMenuPressed: () =>
@@ -58,7 +59,7 @@ class _PosPromoViewState extends State<PosPromoView> {
           children: [
             _buildEntrySection(isTablet),
             SizedBox(height: isTablet ? 10 : 20),
-            _buildSectionTitle('Available Promotions', Icons.stars_outlined),
+            _buildSectionTitle(AppLocalizations.of(context)!.posPromoAvailablePromotions, Icons.stars_outlined),
             SizedBox(height: isTablet ? 8 : 14),
             if (promoVm.isLoadingPromos)
               const Center(
@@ -72,7 +73,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: Text(
-                    'No promotions available',
+                    AppLocalizations.of(context)!.posPromoNoPromotionsAvailable,
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                   ),
                 ),
@@ -143,12 +144,12 @@ class _PosPromoViewState extends State<PosPromoView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionTitle(
-            'Apply Promo Code',
+            AppLocalizations.of(context)!.posPromoApplyPromoCode,
             Icons.local_offer_outlined,
           ),
           SizedBox(height: isTablet ? 8 : 16),
           Text(
-            'Check the validity of a customer provided code.',
+            AppLocalizations.of(context)!.posPromoCheckDescription,
             style: AppTextStyles.bodyMedium.copyWith(
               color: Colors.grey,
               fontSize: 13,
@@ -176,7 +177,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                       ),
                       inputFormatters: [EnglishNumberFormatter()],
                       decoration: InputDecoration(
-                        hintText: 'e.g. SAVE10',
+                        hintText: AppLocalizations.of(context)!.posPromoExampleSave10,
                         hintStyle: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 13,
@@ -243,8 +244,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Check Validity',
+                        : Text(
+                            AppLocalizations.of(context)!.posPromoCheckValidity,
                             style: TextStyle(fontWeight: FontWeight.w700),
                           ),
                   ),
@@ -274,7 +275,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                           ),
                           inputFormatters: [EnglishNumberFormatter()],
                           decoration: InputDecoration(
-                            hintText: 'e.g. SAVE10',
+                            hintText: AppLocalizations.of(context)!.posPromoExampleSave10,
                             hintStyle: TextStyle(
                               color: Colors.grey.shade400,
                               fontSize: 13,
@@ -339,8 +340,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                'Check Validity',
+                            : Text(
+                                AppLocalizations.of(context)!.posPromoCheckValidity,
                                 style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                       ),
@@ -431,7 +432,7 @@ class _PosPromoViewState extends State<PosPromoView> {
               ),
               if (onRemove != null)
                 Tooltip(
-                  message: 'Remove promo',
+                  message: AppLocalizations.of(context)!.posPromoRemovePromoLower,
                   child: IconButton(
                     onPressed: onRemove,
                     icon: Icon(
@@ -452,7 +453,7 @@ class _PosPromoViewState extends State<PosPromoView> {
           SizedBox(height: gapAfterTitle),
           _buildResultDetail(
             Icons.store,
-            'Store: ${validResult['store']}',
+            '${AppLocalizations.of(context)!.posPromoStoreLabel} ${validResult['store']}',
             compact: compact,
           ),
           SizedBox(height: gapDetail),
@@ -627,8 +628,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    'Check Conditions',
+                  child: Text(
+                    AppLocalizations.of(context)!.posPromoCheckConditions,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.secondaryLight,

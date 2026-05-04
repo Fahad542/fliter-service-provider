@@ -5,6 +5,7 @@ import '../models/create_invoice_model.dart';
 import '../utils/app_formatters.dart';
 import '../utils/invoice_maintenance_checklist.dart';
 import '../utils/thermal_invoice_totals.dart';
+import 'thermal_invoice_pdf_ar_constants.dart';
 
 const double kThermalPaperWidth = 380;
 
@@ -176,6 +177,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
           thermalDashedRule(),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +220,24 @@ class ThermalInvoiceReceipt extends StatelessWidget {
             t.grossExVatBeforeDiscount,
             bodyBold,
           ),
-          _moneyRow('Discount', t.totalDiscountLine, body),
+          _discountSummaryBilingual(
+            ThermalInvoicePdfLabels.itemDiscountAr,
+            ThermalInvoicePdfLabels.itemDiscountEn,
+            thermalR2(t.itemDiscountsTotal),
+            body,
+          ),
+          _discountSummaryBilingual(
+            ThermalInvoicePdfLabels.invoiceDiscountAr,
+            ThermalInvoicePdfLabels.invoiceDiscountEn,
+            thermalR2(t.invoiceDiscount),
+            body,
+          ),
+          _discountSummaryBilingual(
+            ThermalInvoicePdfLabels.promoDiscountAr,
+            ThermalInvoicePdfLabels.promoDiscountEn,
+            thermalR2(t.promoDiscount),
+            body,
+          ),
           _moneyRow(
             'Total Taxable Amount (Excl. VAT)',
             t.totalTaxableAmount,
@@ -385,6 +404,44 @@ class ThermalInvoiceReceipt extends StatelessWidget {
       );
     });
     return out;
+  }
+
+  /// Matches thermal PDF summary: Arabic line above, English label + amount row.
+  Widget _discountSummaryBilingual(
+    String ar,
+    String en,
+    double value,
+    TextStyle style,
+  ) {
+    final vStr = '${value.toStringAsFixed(2)} SR';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            ar,
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+            style: style.copyWith(fontSize: 9, height: 1.15),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text('$en:', style: style),
+              ),
+              Text(
+                vStr,
+                style: style.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _moneyRow(

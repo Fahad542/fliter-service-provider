@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../models/pos_payment_method.dart';
 import '../../../utils/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/toast_service.dart';
 
 /// Optional handler to persist PAY draft to `PATCH …/payment-method` before closing.
@@ -154,6 +155,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
   }
 
   Future<void> _onCustomerTypeTapped(bool wantCorporate) async {
+    final l10n = AppLocalizations.of(context)!;
     if (_isCorporate == wantCorporate) return;
 
     final firstPick = _isCorporate == null;
@@ -185,7 +187,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
                 child: Text(
-                  'Cancel',
+                  l10n.posCommonCancel,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: AppColors.secondaryLight.withValues(alpha: 0.85),
@@ -633,6 +635,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final mq = MediaQuery.sizeOf(context);
     final maxW = min(560.0, mq.width - 40);
     final maxH = min(600.0, mq.height * 0.85);
@@ -810,7 +813,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                     onPressed:
                         (_draftSaving || _draftClearing) ? null : () => Navigator.of(context).pop(),
                     child: Text(
-                      'Cancel',
+                      l10n.posCommonCancel,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -843,8 +846,8 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                             height: 22,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text(
-                            'Save',
+                        : Text(
+                            l10n.posCommonSave,
                             style:
                                 TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
                           ),

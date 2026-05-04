@@ -2634,6 +2634,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'No matching order found for this booking yet. Please refresh and try again.';
 
   @override
+  String get posCorporateLoadError => 'Failed to load bookings';
+
+  @override
+  String get posCorporateAuthTokenNotFound => 'Authentication token not found';
+
+  @override
   String get posCorporateStatusCancelled => 'Cancelled';
 
   @override
@@ -4164,7 +4170,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get posHomeTitleWorkshop => 'Workshop ';
+  String get posHomeTitleFilter => 'Filter ';
 
   @override
   String get posHomeTitlePos => 'POS';
@@ -4839,11 +4845,1165 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posNavOrdersHub => 'Orders Hub';
 
   @override
-  String get posNavBroadcastTechnician => 'Broadcast';
+  String get posNavBroadcastTechnician => 'Broadcast Technician';
 
   @override
   String get posNavInventorySales => 'Inventory Sales';
 
   @override
   String get posNavTakeaway => 'Takeaway';
+
+  @override
+  String get posCustomerInvoiceLoadError => 'Could not load invoice';
+
+  @override
+  String get posCustomerLoading => 'Loading…';
+
+  @override
+  String get posCustomerPrintInvoice => 'Print Invoice';
+
+  @override
+  String get posCommonNotAvailable => 'N/A';
+
+  @override
+  String get posCommonDash => '—';
+
+  @override
+  String get posCurrentShiftDefaultCashier => 'Cashier';
+
+  @override
+  String get posCurrentShiftDefaultStatus => 'Active';
+
+  @override
+  String get posCurrentShiftCredentialsError =>
+      'User credentials or token missing.';
+
+  @override
+  String get posDeptAuthError => 'No authentication token found';
+
+  @override
+  String get posDeptLoadError => 'Failed to load departments';
+
+  @override
+  String get posPaymentsChooseMethod => 'Choose at least one payment method.';
+
+  @override
+  String get posPaymentsLineMinimum =>
+      'Each payment line must be at least 0.01 SAR.';
+
+  @override
+  String posPaymentsSplitMismatch(String payable, String current) {
+    return 'Split totals must equal the order payable amount ($payable SAR). Currently: $current SAR.';
+  }
+
+  @override
+  String get posSessionExpiredSignIn => 'Session expired. Sign in again.';
+
+  @override
+  String get posPaymentSelectionSaveError =>
+      'Could not save payment selection.';
+
+  @override
+  String get posPaymentSelectionClearError => 'Could not clear saved payment.';
+
+  @override
+  String get posBillingEditLocked =>
+      'Billing cannot be edited after an invoice exists.';
+
+  @override
+  String get posBillingCustomerMobileRequired =>
+      'Customer name and mobile are required.';
+
+  @override
+  String get posBillingSaveError => 'Failed to update billing details';
+
+  @override
+  String get posBillingClearEmployeePaymentError =>
+      'Could not clear saved payment for employee customer.';
+
+  @override
+  String get posCorporateAccountRequired => 'Please select a corporate account';
+
+  @override
+  String get posDepartmentSelectAtLeastOne => 'Select at least one department';
+
+  @override
+  String get posAuthTokenMissing => 'Authentication token not found';
+
+  @override
+  String get posVehiclePlateRequired => 'Vehicle plate is required';
+
+  @override
+  String get posOrderCreated => 'Order created';
+
+  @override
+  String get posCorporateAccountMissing =>
+      'Corporate account is missing for this corporate draft.';
+
+  @override
+  String get posCorporateContactRequired =>
+      'Contact name is required for corporate quote';
+
+  @override
+  String posUnitPriceInvalid(String name) {
+    return 'Enter a valid unit price for $name';
+  }
+
+  @override
+  String get posLineDepartmentRequired => 'Each line needs a department';
+
+  @override
+  String get posNoLineItemsToSave => 'No line items to save';
+
+  @override
+  String posDepartmentJobMissing(String departmentId) {
+    return 'No job for department $departmentId. Use “Add departments” or refresh orders.';
+  }
+
+  @override
+  String posPricingSaveFailed(String departmentId) {
+    return 'Failed to save pricing for department $departmentId';
+  }
+
+  @override
+  String get posEditContextMissing => 'Edit context missing. Please try again.';
+
+  @override
+  String get posNoChangesToSave => 'No changes to save';
+
+  @override
+  String get posUnlockJobFailed => 'Could not unlock this job for editing';
+
+  @override
+  String get posUnlockJobFailedRetry =>
+      'Could not unlock this job for editing. Please try again.';
+
+  @override
+  String get posOrderUpdateSuccess => 'Order updated successfully';
+
+  @override
+  String get posOrderUpdateFailed => 'Failed to update order';
+
+  @override
+  String get posAuthInfoMissing => 'Authentication information missing';
+
+  @override
+  String get posProductsFetchFailed => 'Failed to fetch products';
+
+  @override
+  String get posServiceOnlyOnce =>
+      'Services can only be booked once per order.';
+
+  @override
+  String posStockLimitExceeded(String stock) {
+    return 'Cannot exceed available stock limit ($stock)';
+  }
+
+  @override
+  String get posOrdersFetchFailed => 'Failed to fetch orders';
+
+  @override
+  String get posDepartmentStarted => 'Department started';
+
+  @override
+  String get posDepartmentStartFailed => 'Failed to start department';
+
+  @override
+  String get posOrderDetailsMissing => 'Order details not found';
+
+  @override
+  String get posCorporateApprovalSent => 'Sent for corporate approval';
+
+  @override
+  String get posCorporateApprovalFailed => 'Failed to send for approval';
+
+  @override
+  String get posVehicleNumberRequiredForBilling =>
+      'vehicleNumber is required when sending vehicle fields. Add the plate under Add Customer.';
+
+  @override
+  String get posInvoiceJobNotReady =>
+      'Job is not ready to invoice. Add billable lines and technicians first.';
+
+  @override
+  String get posFinalizeEditedJobFailed =>
+      'Could not finalize edited job before invoice.';
+
+  @override
+  String get posInvoiceCustomerRequired =>
+      'Customer name and mobile are required before invoice. Complete the billing prompt or update customer';
+
+  @override
+  String get posInvoiceVehiclePlateRequired =>
+      'Vehicle plate is required before invoice. Add it under Add Customer (billing), then try again.';
+
+  @override
+  String get posInvoicePaymentRequired =>
+      'Payment method is required before generating invoice.';
+
+  @override
+  String get posInvoicePaymentSaveFailed =>
+      'Invoice created, but failed to save payment.';
+
+  @override
+  String get posInvoiceSaved => 'Invoice saved';
+
+  @override
+  String get posJobProductsRequired =>
+      'Please add products/services before completing the job.';
+
+  @override
+  String get posBroadcastSaveOrderFirst =>
+      'Save the order first before broadcasting.';
+
+  @override
+  String posBroadcastWait(String wait) {
+    return 'Please wait $wait before broadcasting this department again.';
+  }
+
+  @override
+  String get posBroadcastFailed => 'Broadcast failed';
+
+  @override
+  String get posBroadcastSent => 'Broadcast sent to technicians';
+
+  @override
+  String get posBroadcastCancelFailed => 'Cancel broadcast failed';
+
+  @override
+  String get posBroadcastCancelled => 'Broadcast cancelled';
+
+  @override
+  String get posOrderCancelSuccess => 'Order cancelled successfully';
+
+  @override
+  String get posCancelReasonRequired => 'Cancellation reason is required';
+
+  @override
+  String get posCancelOrderFailed => 'Failed to cancel order';
+
+  @override
+  String get posCancelledByCashier => 'Cancelled by cashier';
+
+  @override
+  String get posJobCancelled => 'Job cancelled';
+
+  @override
+  String get posJobCancelFailed => 'Failed to cancel job';
+
+  @override
+  String get posDepartmentsAdded => 'Departments added';
+
+  @override
+  String get posDepartmentsAddFailed => 'Failed to add departments';
+
+  @override
+  String posDetailsCreated(Object date) {
+    return 'Created: $date';
+  }
+
+  @override
+  String posDetailsOrderNo(Object id) {
+    return 'Order #$id';
+  }
+
+  @override
+  String get posShellTabletRequired => 'Tablet required';
+
+  @override
+  String get posShellTabletMessage =>
+      'Workshop POS opens only on tablet devices.';
+
+  @override
+  String get posShellLandscapeTitle => 'Landscape required';
+
+  @override
+  String get posShellLandscapeMessage =>
+      'Rotate the tablet to landscape mode to use Workshop POS.';
+
+  @override
+  String get posOrdersInvoiceSavedNoReceipt =>
+      'Invoice was saved, but receipt details were not returned. The order should appear as invoiced after refresh.';
+
+  @override
+  String get posOrdersSelectBranchEmployeeCustomer =>
+      'Select the branch employee customer first.';
+
+  @override
+  String posOrdersSplitAmountsMustEqualTotal(Object total) {
+    return 'Split amounts must equal total ($total SAR).';
+  }
+
+  @override
+  String get posHomeTitleWorkshop => 'Workshop ';
+
+  @override
+  String get posInvSalesStatDistinctItems => 'Distinct items';
+
+  @override
+  String get posInvSalesStatUniqueServices => 'Unique services';
+
+  @override
+  String get posInvSalesStartDate => 'START DATE';
+
+  @override
+  String get posInvSalesEndDate => 'END DATE';
+
+  @override
+  String get posInvSalesStartTime => 'START TIME';
+
+  @override
+  String get posInvSalesEndTime => 'END TIME';
+
+  @override
+  String get posInvSalesClear => 'Clear';
+
+  @override
+  String get posInvSalesApply => 'Apply';
+
+  @override
+  String get posInvSalesNoSalesSubtitleFriendly =>
+      'Try selecting a different date range to see activity.';
+
+  @override
+  String get posInvSalesByItemPeriod => 'SALES BY ITEM (PERIOD)';
+
+  @override
+  String posInvSalesItemsCount(int count) {
+    return '$count ITEMS';
+  }
+
+  @override
+  String get posInvSalesColItemName => 'ITEM NAME';
+
+  @override
+  String get posInvSalesColDepartment => 'DEPARTMENT';
+
+  @override
+  String get posInvSalesColType => 'TYPE';
+
+  @override
+  String get posInvSalesColSkuShort => 'SKU';
+
+  @override
+  String get posInvSalesColQtyShort => 'QTY';
+
+  @override
+  String get posInvSalesErrStartTimeBeforeEndSameRange =>
+      'Start time must be on or before end time (same calendar range).';
+
+  @override
+  String get posInvSalesErrEndTimeAfterStartSameRange =>
+      'End time must be on or after start time (same calendar range).';
+
+  @override
+  String get posInvSalesErrStartTimeBeforeEndRange =>
+      'Start time must be on or before end time for this date range.';
+
+  @override
+  String get moreMenuBarrierLabel => 'More Menu';
+
+  @override
+  String get posSalesReturnTitle => 'Sales Return';
+
+  @override
+  String posSalesReturnMobileTitle(String invoiceNo) {
+    return 'Return - $invoiceNo';
+  }
+
+  @override
+  String get posSalesReturnResults => 'Results';
+
+  @override
+  String get posSalesReturnSearchHint => 'e.g. INV-123 or Name/Phone';
+
+  @override
+  String posSalesReturnNoInvoicesFound(String query) {
+    return 'No invoices found for \"$query\"';
+  }
+
+  @override
+  String get posSalesReturnSelectInvoiceTitle => 'Select an Invoice';
+
+  @override
+  String get posSalesReturnSelectInvoiceBody =>
+      'Search and select an invoice from the left\nto initiate its sales return process.';
+
+  @override
+  String get posSalesReturnWalkInCustomer => 'Walk-in Customer';
+
+  @override
+  String get posSalesReturnTotal => 'Total';
+
+  @override
+  String get posSalesReturnSelectItems => 'Select Items to Return';
+
+  @override
+  String posSalesReturnSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get posSalesReturnProof => 'Return Proof';
+
+  @override
+  String get posSalesReturnOptional => 'Optional';
+
+  @override
+  String get posSalesReturnCancel => 'Cancel';
+
+  @override
+  String get posSalesReturnSubmit => 'Submit Return';
+
+  @override
+  String get posSalesReturnQty => 'Return Qty';
+
+  @override
+  String get posSalesReturnReasonHint => 'Select Return Reason';
+
+  @override
+  String get posSalesReturnUploadProof => 'Tap to upload proof image';
+
+  @override
+  String get posSalesReturnUploadFormats => 'JPG, PNG up to 5MB';
+
+  @override
+  String posSalesReturnLinePrice(String qty, String price) {
+    return '${qty}x @ SAR $price';
+  }
+
+  @override
+  String posSalesReturnSarAmount(String amount) {
+    return 'SAR $amount';
+  }
+
+  @override
+  String get posSalesReturnReasonDefective => 'Defective Product/Service';
+
+  @override
+  String get posSalesReturnReasonCancellation => 'Customer Cancellation';
+
+  @override
+  String get posSalesReturnReasonWrongItem => 'Wrong Item / Service';
+
+  @override
+  String get posSalesReturnReasonOther => 'Other';
+
+  @override
+  String get posSalesReturnErrorFetchInvoices =>
+      'Error fetching invoices. Ensure customer ID is correct.';
+
+  @override
+  String get posSalesReturnErrorSelectItem =>
+      'Please select at least one item to return';
+
+  @override
+  String get posSalesReturnErrorQty =>
+      'Enter return quantity (at least 1) for each selected item before submitting.';
+
+  @override
+  String get posSalesReturnSuccessSubmitted =>
+      'Return request submitted successfully';
+
+  @override
+  String posSalesReturnErrorSubmit(String error) {
+    return 'Failed to submit request: $error';
+  }
+
+  @override
+  String get posSalesReturnErrorNoValidLines => 'No valid return lines';
+
+  @override
+  String get posSalesReturnTokenNotFound => 'Token not found';
+
+  @override
+  String get posSalesReturnAuthTokenNotFound =>
+      'Authentication token not found';
+
+  @override
+  String get posSalesReturnListTitle => 'Returns List';
+
+  @override
+  String get posSalesReturnListFailedLoad => 'Failed to load returns';
+
+  @override
+  String get posSalesReturnListNoReturns => 'No sales returns found';
+
+  @override
+  String posSalesReturnListInvoiceLabel(String invoiceNo) {
+    return 'Invoice: $invoiceNo';
+  }
+
+  @override
+  String get posSalesReturnRefundAmount => 'Refund Amount';
+
+  @override
+  String get posSalesReturnDetailsTitle => 'Return Details';
+
+  @override
+  String get posSalesReturnDetailsSubtitle => 'Full transaction summary';
+
+  @override
+  String get posSalesReturnItemsReturned => 'Items Returned';
+
+  @override
+  String get posSalesReturnCloseDetails => 'Close Details';
+
+  @override
+  String get posSalesReturnNoLabel => 'Return No';
+
+  @override
+  String get posSalesReturnInvoiceNoLabel => 'Invoice No';
+
+  @override
+  String get posSalesReturnOrderIdLabel => 'Order ID';
+
+  @override
+  String get posSalesReturnCustomerLabel => 'Customer';
+
+  @override
+  String get posSalesReturnTotalRefund => 'Total Refund';
+
+  @override
+  String get posSalesReturnReasonLabel => 'Return Reason';
+
+  @override
+  String posSalesReturnItemId(String itemId) {
+    return 'Item ID: $itemId';
+  }
+
+  @override
+  String posSalesReturnItemQty(String qty) {
+    return 'Qty: $qty';
+  }
+
+  @override
+  String get posSalesReturnListVmFailedFetch => 'Failed to fetch returns';
+
+  @override
+  String get posStoreClosingTitle => 'Store Closing';
+
+  @override
+  String get posStoreClosingCounterReconciliation => 'Counter Reconciliation';
+
+  @override
+  String get posStoreClosingSummaryTitle => 'RECONCILIATION SUMMARY';
+
+  @override
+  String get posStoreClosingShiftStatus => 'Shift Closing Status';
+
+  @override
+  String get posStoreClosingCashier => 'Cashier';
+
+  @override
+  String get posStoreClosingBranch => 'Branch';
+
+  @override
+  String get posStoreClosingMainBranch => 'Main Branch';
+
+  @override
+  String get posStoreClosingPhysicalDrawerCount => 'Physical Drawer Count';
+
+  @override
+  String get posStoreClosingPhysicalDrawerHint =>
+      'Enter the physical amounts you have counted for each payment category.';
+
+  @override
+  String get posStoreClosingPhysicalCashAmount => 'Physical Cash Amount';
+
+  @override
+  String get posStoreClosingBankCardSlips => 'Bank / Card Slips';
+
+  @override
+  String get posStoreClosingCorporateInvoices => 'Corporate Invoices';
+
+  @override
+  String get posStoreClosingTamaraCredits => 'Tamara Credits';
+
+  @override
+  String get posStoreClosingTabbyCredits => 'Tabby Credits';
+
+  @override
+  String get posStoreClosingOthersEmployeeSales => 'Others (Employee sales)';
+
+  @override
+  String get posStoreClosingNotesOptional => 'Notes (Optional)';
+
+  @override
+  String get posStoreClosingTotalPhysicalSum => 'Total Physical Sum';
+
+  @override
+  String posStoreClosingExpectedAmount(String amount) {
+    return 'Expected: SAR $amount';
+  }
+
+  @override
+  String get posStoreClosingAddNotesHint => 'Add notes here...';
+
+  @override
+  String get posStoreClosingShiftBalanced => 'Shift Balanced';
+
+  @override
+  String get posStoreClosingDiscrepancyDetected => 'Discrepancy Detected';
+
+  @override
+  String get posStoreClosingShiftClosedSuccessfully =>
+      'Shift closed successfully.';
+
+  @override
+  String get posStoreClosingGrossNetExplanation =>
+      'System column is gross POS settled amounts. Diff compares each bucket’s expected net (after sales returns) to physical, not (gross − physical). Positive diff = system higher than physical.';
+
+  @override
+  String get posStoreClosingPositiveDiff =>
+      'Positive diff = system > physical.';
+
+  @override
+  String get posStoreClosingClosingId => 'Closing ID';
+
+  @override
+  String get posStoreClosingCashAccount => 'Cash Account';
+
+  @override
+  String get posStoreClosingBankCards => 'Bank / Cards';
+
+  @override
+  String get posStoreClosingCorporate => 'Corporate';
+
+  @override
+  String get posStoreClosingTamara => 'Tamara';
+
+  @override
+  String get posStoreClosingTabby => 'Tabby';
+
+  @override
+  String get posStoreClosingOthers => 'Others';
+
+  @override
+  String get posStoreClosingCategory => 'Category';
+
+  @override
+  String get posStoreClosingSystem => 'System';
+
+  @override
+  String get posStoreClosingGross => '(gross)';
+
+  @override
+  String get posStoreClosingPhysical => 'Physical';
+
+  @override
+  String get posStoreClosingDiff => 'Diff';
+
+  @override
+  String get posStoreClosingNet => '(net)';
+
+  @override
+  String get posStoreClosingLessSalesReturn => 'Less: Total sales return';
+
+  @override
+  String get posStoreClosingGrandTotal => 'Grand Total';
+
+  @override
+  String get posStoreClosingCloseShift => 'Close Shift';
+
+  @override
+  String get posStoreClosingPrinterHint =>
+      'Tap: Wi‑Fi thermal print. Long‑press: printer IP / port.';
+
+  @override
+  String get posStoreClosingSaveSuccess => 'save successfully';
+
+  @override
+  String get posStoreClosingReceiptSent => 'Receipt sent to Wi‑Fi printer.';
+
+  @override
+  String get posStoreClosingPrint => 'Print';
+
+  @override
+  String get posStoreClosingFinalLogout => 'Final Logout';
+
+  @override
+  String get posStoreClosingLogout => 'Log out';
+
+  @override
+  String get posStoreClosingLogoutConfirm =>
+      'Are you sure you want to log out from your account?';
+
+  @override
+  String get posStoreClosingCancel => 'Cancel';
+
+  @override
+  String get posStoreClosingVmSuccess => 'Shift closed successfully!';
+
+  @override
+  String posStoreClosingVmFailed(String error) {
+    return 'Failed to close shift: $error';
+  }
+
+  @override
+  String get posStoreClosingVmCounterFailed => 'Counter closing failed';
+
+  @override
+  String get posStoreClosingPdfTitle => 'Store Closing Report';
+
+  @override
+  String get posStoreClosingPdfCategory => 'Category';
+
+  @override
+  String get posStoreClosingPdfSystem => 'System';
+
+  @override
+  String get posStoreClosingPdfPhysical => 'Physical';
+
+  @override
+  String get posStoreClosingPdfDifference => 'Difference';
+
+  @override
+  String get posTechnicianTitle => 'Technicians';
+
+  @override
+  String get posTechnicianAssignmentTitle => 'Technician Assignment';
+
+  @override
+  String get posTechnicianSearchHint => 'Search technicians...';
+
+  @override
+  String posTechnicianErrorPrefix(String message) {
+    return 'Error: $message';
+  }
+
+  @override
+  String get posTechnicianOnlineOnly => 'Online Only';
+
+  @override
+  String get posTechnicianShowAll => 'Show All';
+
+  @override
+  String get posTechnicianLoading => 'Loading technicians…';
+
+  @override
+  String posTechnicianLastSeen(String time) {
+    return 'Last seen: $time';
+  }
+
+  @override
+  String posTechnicianSlots(int used, int total) {
+    return 'Slots: $used/$total';
+  }
+
+  @override
+  String posTechnicianWait(String duration) {
+    return 'Wait $duration';
+  }
+
+  @override
+  String get posTechnicianBroadcast => 'Broadcast';
+
+  @override
+  String get posTechnicianSave => 'Save Technicians';
+
+  @override
+  String get posTechnicianAssignSuccess => 'Technicians assigned successfully';
+
+  @override
+  String get posTechnicianRemoveSuccess =>
+      'All technicians removed from this job';
+
+  @override
+  String get posTechnicianAssignFailed => 'Failed to assign technicians';
+
+  @override
+  String get posTechnicianFailedJobEdit => 'Failed to get job ID for edit';
+
+  @override
+  String get posTechnicianFailedOrderId => 'Failed to get order ID';
+
+  @override
+  String get posTechnicianJobNotFound => 'Job not found for this assignment.';
+
+  @override
+  String get posTechnicianUnlockFailed =>
+      'Could not unlock job to change technicians. Try again.';
+
+  @override
+  String get posTechnicianGeneral => 'General';
+
+  @override
+  String get posTechnicianTokenNotFound => 'Token not found';
+
+  @override
+  String get posTechnicianFetchFailed => 'Failed to fetch technicians';
+
+  @override
+  String get posTechnicianOldAssignWarning =>
+      'Technician was not assigned. The server may still count old assignments on this job.';
+
+  @override
+  String get posTechnicianAddOnlyWarning =>
+      'Cannot apply removals: server treats assign as add-only. Backend must sync employeeIds to the full desired list (or honor sync: true).';
+
+  @override
+  String get posTechnicianNoneAssignedWarning =>
+      'No technicians were assigned. The server may still count cancelled assignments on this job.';
+
+  @override
+  String get posTechnicianOnlineFirst =>
+      'Mark this technician online before changing workshop or on-call duty.';
+
+  @override
+  String get posTechnicianNotSignedIn => 'Not signed in';
+
+  @override
+  String get posTechnicianDutyFailed => 'Failed to update duty';
+
+  @override
+  String get posTechnicianDutyUpdated => 'Duty updated';
+
+  @override
+  String get posTechnicianStatusFailed => 'Failed to update status';
+
+  @override
+  String get posTechnicianMarkedOnline => 'Technician marked online';
+
+  @override
+  String get posTechnicianMarkedOffline => 'Technician marked offline';
+
+  @override
+  String get posTakeawayTitle => 'Takeaway';
+
+  @override
+  String get posTakeawayRetry => 'Retry';
+
+  @override
+  String get posTakeawaySearchHint => 'Search products & services...';
+
+  @override
+  String get posTakeawayRefresh => 'Refresh';
+
+  @override
+  String get posTakeawayAll => 'All';
+
+  @override
+  String get posTakeawayOrderItems => 'Order Items';
+
+  @override
+  String get posTakeawayNoItems => 'No items in invoice';
+
+  @override
+  String get posTakeawayGrossExVat => 'Gross Amount (Excl. VAT)';
+
+  @override
+  String get posTakeawayLineDiscount => 'Line discount';
+
+  @override
+  String get posTakeawayPriceAfterLineDiscount => 'Price after line discount';
+
+  @override
+  String get posTakeawayTotalDiscount => 'Total discount';
+
+  @override
+  String get posTakeawayAmount => 'amount';
+
+  @override
+  String get posTakeawayPercent => 'percent';
+
+  @override
+  String get posTakeawayTotalDiscountApplied => 'Total discount applied';
+
+  @override
+  String get posTakeawayPriceAfterTotalDiscount => 'Price after total discount';
+
+  @override
+  String get posTakeawayAddPromoCode => 'Add Promo Code';
+
+  @override
+  String posTakeawayPromoApplied(String code) {
+    return 'Promo: $code';
+  }
+
+  @override
+  String get posTakeawayPromoDiscount => 'Promo discount';
+
+  @override
+  String get posTakeawayPriceAfterPromo => 'Price after promo';
+
+  @override
+  String get posTakeawayVat15 => 'VAT (15%)';
+
+  @override
+  String get posTakeawayTotal => 'Total';
+
+  @override
+  String get posTakeawayAddCustomerDetails => 'Add customer details';
+
+  @override
+  String get posTakeawaySelectPayment => 'Select payment';
+
+  @override
+  String get posTakeawayGenerateInvoice => 'Generate Invoice';
+
+  @override
+  String get posTakeawayNoProductsFound => 'No products found';
+
+  @override
+  String get posTakeawayNoProductsMatch => 'No products match your search.';
+
+  @override
+  String posTakeawayUnit(String unit) {
+    return 'Unit: $unit';
+  }
+
+  @override
+  String posTakeawayItemsCount(int count) {
+    return '$count items';
+  }
+
+  @override
+  String get posTakeawayGrandTotal => 'Grand Total';
+
+  @override
+  String get posTakeawayCustomerSaved => 'Customer details saved';
+
+  @override
+  String get posTakeawayPaymentSaved => 'Payment method saved';
+
+  @override
+  String get posTakeawayCustomerRequired =>
+      'Customer name and mobile number are required.';
+
+  @override
+  String get posTakeawaySelectPaymentFirst => 'Select payment method first.';
+
+  @override
+  String get posTakeawayValidPaymentAmounts =>
+      'Add valid payment amounts to continue.';
+
+  @override
+  String get posTakeawayInvoiceFailed => 'Failed to generate invoice';
+
+  @override
+  String get posTakeawayInactive => 'Inactive';
+
+  @override
+  String posTakeawayInStock(String qty) {
+    return 'In Stock ($qty)';
+  }
+
+  @override
+  String posTakeawayLowStock(String qty) {
+    return 'Low ($qty)';
+  }
+
+  @override
+  String get posTakeawayOutOfStock => 'Out of Stock';
+
+  @override
+  String get posTakeawayDis => 'Dis.';
+
+  @override
+  String get posTakeawayNotLoggedIn => 'Not logged in';
+
+  @override
+  String get posTakeawayCartEmpty => 'Cart is empty.';
+
+  @override
+  String get posTakeawayWalkInCustomer => 'Walk-in Customer';
+
+  @override
+  String get posTakeawayNoInvoiceResponse => 'No invoice in response';
+
+  @override
+  String get posTakeawayCheckoutFailed => 'Checkout failed';
+
+  @override
+  String posCommonSarAmount(String amount) {
+    return 'SAR $amount';
+  }
+
+  @override
+  String posCommonQtyX(String qty) {
+    return 'x$qty';
+  }
+
+  @override
+  String get posPromoTitle => 'Promo Code';
+
+  @override
+  String get posPromoAvailablePromotions => 'Available Promotions';
+
+  @override
+  String get posPromoNoPromotionsAvailable => 'No promotions available';
+
+  @override
+  String get posPromoApplyPromoCode => 'Apply Promo Code';
+
+  @override
+  String get posPromoSelectPromoBelow => 'Select a promo below';
+
+  @override
+  String get posPromoNoPromoCodesAvailable => 'No promo codes available';
+
+  @override
+  String get posPromoEnterCodeManually => 'Enter code manually';
+
+  @override
+  String get posPromoExampleSave10 => 'e.g. SAVE10';
+
+  @override
+  String get posPromoRemovePromo => 'Remove Promo';
+
+  @override
+  String get posPromoRemovePromoLower => 'remove promo';
+
+  @override
+  String get posPromoValidPromoCode => 'Valid promo code';
+
+  @override
+  String get posPromoDiscountLabel => 'Discount';
+
+  @override
+  String get posPromoStoreLabel => 'Store';
+
+  @override
+  String get posPromoProductsLabel => 'Products';
+
+  @override
+  String get posPromoValidityLabel => 'Validity';
+
+  @override
+  String get posPromoCheckCode => 'Check Code';
+
+  @override
+  String get posPromoApplyDiscount => 'Apply Discount';
+
+  @override
+  String get posPromoCheckDescription =>
+      'Check the promo code details and conditions.';
+
+  @override
+  String get posPromoCheckValidity => 'Check validity';
+
+  @override
+  String get posPromoCheckConditions => 'Check conditions';
+
+  @override
+  String get posProductInvalidQuantity => 'Invalid quantity';
+
+  @override
+  String get posProductQuantity => 'Quantity';
+
+  @override
+  String get posProductInventory => 'Inventory';
+
+  @override
+  String get posProductItems => 'Items';
+
+  @override
+  String get posProductNoItemsInInvoice => 'No items in invoice';
+
+  @override
+  String get posProductGrossExclVat => 'Gross excl. VAT';
+
+  @override
+  String get posProductPromoPrefix => 'Promo:';
+
+  @override
+  String get posProductSave => 'Save';
+
+  @override
+  String get posProductOrderCompletedSuccess => 'Order completed successfully';
+
+  @override
+  String get posProductFailedCompleteJob => 'Failed to complete job';
+
+  @override
+  String get posProductNoProductsMatch => 'No products match your search';
+
+  @override
+  String get posProductProductsTitle => 'Products';
+
+  @override
+  String get posProductServicesTitle => 'Services';
+
+  @override
+  String get posProductUnitPrefix => 'Unit';
+
+  @override
+  String get posProductDiscountAbbrev => 'Disc.';
+
+  @override
+  String get posPettyCashTabExpense => 'Expense';
+
+  @override
+  String get posPettyCashTabFund => 'Fund';
+
+  @override
+  String get posPettyCashTabHistory => 'History';
+
+  @override
+  String get posPettyCashAvailablePettyCash => 'Available Petty Cash';
+
+  @override
+  String get posPettyCashLowBalanceWarning => 'Low balance warning';
+
+  @override
+  String get posPettyCashExpenseSubmittedPending =>
+      'Expense submitted for approval.';
+
+  @override
+  String get posPettyCashFundRequestSubmittedPending =>
+      'Fund request submitted for approval.';
+
+  @override
+  String get posCommonSelectDate => 'Select date';
+
+  @override
+  String get posCommonFrom => 'From';
+
+  @override
+  String get posCommonTo => 'To';
+
+  @override
+  String get posCommonReset => 'Reset';
+
+  @override
+  String get posPettyCashExpenseFundHistory => 'Expense & Fund History';
+
+  @override
+  String get posPettyCashNoHistoryForFilter =>
+      'No history found for this filter';
+
+  @override
+  String get posPettyCashPendingExplanation =>
+      'This request is pending approval.';
+
+  @override
+  String get posProductsBranchPrefix => 'Branch:';
+
+  @override
+  String get posProductsFailedLoadProducts => 'Failed to load products';
+
+  @override
+  String get posNavInventory => 'Inventory';
+
+  @override
+  String get posNavSalesReturn => 'Sales Return';
+
+  @override
+  String get posNavReturnsList => 'Returns List';
+
+  @override
+  String get posNavPettyCash => 'Petty Cash';
+
+  @override
+  String get posNavPromoCodes => 'Promo Codes';
+
+  @override
+  String get posNavTechnicians => 'Technicians';
+
+  @override
+  String get posNavCurrentShift => 'Current Shift';
+
+  @override
+  String get posShellVersion => 'Version 1.0.0';
 }

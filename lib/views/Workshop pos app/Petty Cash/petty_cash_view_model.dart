@@ -7,8 +7,9 @@ import '../../../../models/petty_cash_model.dart';
 import '../../../../models/expense_category_model.dart';
 import '../../../../models/cashier_expense_models.dart';
 import '../../../../services/realtime_service.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
-class PettyCashViewModel extends ChangeNotifier {
+class PettyCashViewModel extends ChangeNotifier with TranslatableMixin {
   final SessionService sessionService;
   final PosRepository posRepository;
 
@@ -16,6 +17,16 @@ class PettyCashViewModel extends ChangeNotifier {
     required this.sessionService,
     required this.posRepository,
   });
+
+  /// Bind from the screen/provider with SettingsViewModel so raw API labels are
+  /// re-translated when the app locale changes.
+  void bindSettingsViewModel(Listenable settingsViewModel) {
+    bindLocaleRetranslation(settingsViewModel, retranslate);
+  }
+
+  Future<void> retranslate() async {
+    notifyListeners();
+  }
 
   List<ExpenseCategory> _expenseCategories = [];
   List<BranchEmployee> _branchEmployees = [];
@@ -246,16 +257,16 @@ class PettyCashViewModel extends ChangeNotifier {
   Future<bool> submitExpenseAction(Function(String) onError) async {
     final amount = double.tryParse(amountController.text) ?? 0;
     if (amount <= 0) {
-      onError('Please enter a valid amount');
+      onError(await t('Please enter a valid amount'));
       return false;
     }
     if (_selectedCategory == null) {
-      onError('Please select a category');
+      onError(await t('Please select a category'));
       return false;
     }
     if (_selectedCategory!.requiresEmployeeSelection) {
       if (_selectedBranchEmployee == null) {
-        onError('Please select an employee for Salary Advances');
+        onError(await t('Please select an employee for Salary Advances'));
         return false;
       }
     }
@@ -275,7 +286,7 @@ class PettyCashViewModel extends ChangeNotifier {
         clearExpenseForm();
         return true;
       } else {
-        onError('Failed to submit expense. Check balance or try again.');
+        onError(await t('Failed to submit expense. Check balance or try again.'));
         return false;
       }
     } catch (e) {
@@ -293,13 +304,13 @@ class PettyCashViewModel extends ChangeNotifier {
 
     final amount = double.tryParse(requestAmountController.text) ?? 0;
     if (amount <= 0) {
-      onError('Please enter a valid amount');
+      onError(await t('Please enter a valid amount'));
       _isRequestSubmitting = false;
       notifyListeners();
       return;
     }
     if (reasonController.text.isEmpty) {
-      onError('Please enter a reason');
+      onError(await t('Please enter a reason'));
       _isRequestSubmitting = false;
       notifyListeners();
       return;
@@ -316,7 +327,7 @@ class PettyCashViewModel extends ChangeNotifier {
       setShowPendingRequestStatus(true);
       await fetchWalletBalance();
     } else {
-      onError('Failed to submit fund request');
+      onError(await t('Failed to submit fund request'));
     }
     _isRequestSubmitting = false;
     notifyListeners();

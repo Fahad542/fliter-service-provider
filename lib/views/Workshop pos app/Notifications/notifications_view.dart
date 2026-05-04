@@ -10,6 +10,8 @@ import '../../../widgets/pos_widgets.dart';
 
 import 'package:provider/provider.dart';
 import 'notifications_view_model.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 
 class NotificationsView extends StatelessWidget {
   const NotificationsView({super.key});
@@ -17,6 +19,7 @@ class NotificationsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final l10n = AppLocalizations.of(context)!;
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
@@ -24,7 +27,7 @@ class NotificationsView extends StatelessWidget {
       ),
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
-        appBar: PosScreenAppBar(title: 'Notifications'),
+        appBar: PosScreenAppBar(title: l10n.notifTitle),
         body: Consumer<NotificationsViewModel>(
           builder: (context, vm, child) {
             final notifications = vm.notifications;
@@ -32,7 +35,7 @@ class NotificationsView extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               itemCount: notifications.length,
               itemBuilder: (context, index) {
-                return _buildNotificationCard(notifications[index], isTablet);
+                return _buildNotificationCard(context, notifications[index], isTablet);
               },
             );
           },
@@ -41,7 +44,7 @@ class NotificationsView extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationCard(NotificationModel notification, bool isTablet) {
+  Widget _buildNotificationCard(BuildContext context, NotificationModel notification, bool isTablet) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -84,7 +87,7 @@ class NotificationsView extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(
+                      child: LocalizedApiText(
                         notification.title,
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.w700,
@@ -95,7 +98,7 @@ class NotificationsView extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        Text(
+                        LocalizedApiText(
                           notification.time,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Colors.grey.shade400,
@@ -118,8 +121,8 @@ class NotificationsView extends StatelessWidget {
                     ),
                   ],
                 ),
-                 SizedBox(height: 4),
-                Text(
+                const SizedBox(height: 4),
+                LocalizedApiText(
                   notification.message,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey.shade600,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../models/pos_order_model.dart';
 import '../../../utils/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 
 class PosOrderDetailsView extends StatelessWidget {
   final PosOrder order;
@@ -10,6 +12,7 @@ class PosOrderDetailsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
@@ -18,8 +21,8 @@ class PosOrderDetailsView extends StatelessWidget {
         foregroundColor: AppColors.secondaryLight,
         elevation: 0.5,
         centerTitle: true,
-        title: const Text(
-          'Order Details',
+        title: Text(
+          l10n.posDetailsTitle,
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
         ),
       ),
@@ -33,28 +36,28 @@ class PosOrderDetailsView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeaderCard(isTablet),
+            _buildHeaderCard(context, isTablet),
             const SizedBox(height: 12),
             _buildSectionCard(
               isTablet: isTablet,
-              title: 'Customer',
+              title: l10n.posDetailsCustomerSection,
               icon: Icons.person_outline_rounded,
               children: [
                 _infoRow(
-                  'Vehicle no.',
+                  l10n.posDetailsVehicleNo,
                   order.plateNumber.isNotEmpty ? order.plateNumber : '-',
                   isTablet,
                 ),
-                _infoRow('Customer', order.customerName, isTablet),
+                _infoRow(l10n.posDetailsCustomer, order.customerName, isTablet),
                 _infoRow(
-                  'Mobile',
+                  l10n.posDetailsMobile,
                   order.customer?.mobile.isNotEmpty == true
                       ? order.customer!.mobile
                       : '-',
                   isTablet,
                 ),
                 _infoRow(
-                  'VAT',
+                  l10n.posDetailsVat,
                   order.customer?.vatNumber.isNotEmpty == true
                       ? order.customer!.vatNumber
                       : '-',
@@ -65,31 +68,31 @@ class PosOrderDetailsView extends StatelessWidget {
             const SizedBox(height: 12),
             _buildSectionCard(
               isTablet: isTablet,
-              title: 'Vehicle',
+              title: l10n.posDetailsVehicleSection,
               icon: Icons.directions_car_outlined,
               children: [
                 _infoRow(
-                  'Make/Model',
+                  l10n.posDetailsMakeModel,
                   order.carModel.isNotEmpty ? order.carModel : '-',
                   isTablet,
                 ),
                 _infoRow(
-                  'Plate',
+                  l10n.posDetailsPlate,
                   order.plateNumber.isNotEmpty ? order.plateNumber : '-',
                   isTablet,
                 ),
-                _infoRow('Odometer', '${order.odometerReading} km', isTablet),
+                _infoRow(l10n.posDetailsOdometer, l10n.posDetailsOdometerKm(order.odometerReading.toString()), isTablet),
               ],
             ),
             const SizedBox(height: 12),
-            _buildJobsSection(isTablet),
+            _buildJobsSection(context, isTablet),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeaderCard(bool isTablet) {
+  Widget _buildHeaderCard(BuildContext context, bool isTablet) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -133,11 +136,11 @@ class PosOrderDetailsView extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LocalizedApiText(
                         () {
                           final m = order.carModel.isNotEmpty
                               ? order.carModel
-                              : '-';
+                              : AppLocalizations.of(context)!.posCommonDash;
                           final c = order.customerName;
                           if (c != 'Unknown' && c.isNotEmpty) {
                             return '$c  •  $m';
@@ -157,7 +160,7 @@ class PosOrderDetailsView extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              'Created: ${order.date.isNotEmpty ? order.date : '-'}',
+                              AppLocalizations.of(context)!.posDetailsCreated(order.date.isNotEmpty ? order.date : AppLocalizations.of(context)!.posCommonDash),
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.72),
                                 fontSize: isTablet ? 12 : 10,
@@ -177,7 +180,7 @@ class PosOrderDetailsView extends StatelessWidget {
                               color: order.statusColor.withOpacity(0.18),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Text(
+                            child: LocalizedApiText(
                               order.statusText,
                               style: TextStyle(
                                 color: Colors.white,
@@ -202,7 +205,7 @@ class PosOrderDetailsView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Order #${order.id.split('-').last.toUpperCase()}',
+                    AppLocalizations.of(context)!.posDetailsOrderNo(order.id.split('-').last.toUpperCase()),
                     style: TextStyle(
                       color: AppColors.secondaryLight,
                       fontWeight: FontWeight.w700,
@@ -268,13 +271,13 @@ class PosOrderDetailsView extends StatelessWidget {
     );
   }
 
-  Widget _buildJobsSection(bool isTablet) {
+  Widget _buildJobsSection(BuildContext context, bool isTablet) {
     final jobs = order.jobs.where((j) => !j.isCancelledJob).toList();
     if (jobs.isEmpty) {
       return _buildSectionCard(
         isTablet: isTablet,
-        title: 'Jobs',
-        children: [_infoRow('Details', 'No jobs found', isTablet)],
+        title: AppLocalizations.of(context)!.posDetailsJobsSection,
+        children: [_infoRow(AppLocalizations.of(context)!.posDetailsJobsSection, AppLocalizations.of(context)!.posDetailsNoJobsFound, isTablet)],
       );
     }
 
@@ -290,29 +293,29 @@ class PosOrderDetailsView extends StatelessWidget {
           padding: EdgeInsets.only(bottom: i == jobs.length - 1 ? 0 : 12),
           child: _buildSectionCard(
             isTablet: isTablet,
-            title: 'Job ${i + 1} • ${job.status.replaceAll('_', ' ').toUpperCase()}',
+            title: AppLocalizations.of(context)!.posDetailsJobTitle((i + 1).toString(), job.status.replaceAll('_', ' ').toUpperCase()),
             icon: Icons.work_outline_rounded,
             children: [
               _infoRow(
-                'Department',
+                AppLocalizations.of(context)!.posDetailsDepartment,
                 job.department.isNotEmpty ? job.department : '-',
                 isTablet,
               ),
               _infoRow(
-                'Technician',
+                AppLocalizations.of(context)!.posDetailsTechnician,
                 techNames.isNotEmpty ? techNames : '-',
                 isTablet,
               ),
               _infoRow(
-                'Subtotal',
-                'SAR ${(job.totalAmount - job.vatAmount).toStringAsFixed(2)}',
+                AppLocalizations.of(context)!.posDetailsSubtotal,
+                '${AppLocalizations.of(context)!.posCommonSar} ${(job.totalAmount - job.vatAmount).toStringAsFixed(2)}',
                 isTablet,
               ),
-              _infoRow('VAT', 'SAR ${job.vatAmount.toStringAsFixed(2)}', isTablet),
-              _infoRow('Total', 'SAR ${job.totalAmount.toStringAsFixed(2)}', isTablet),
+              _infoRow(AppLocalizations.of(context)!.posDetailsVat15, '${AppLocalizations.of(context)!.posCommonSar} ${job.vatAmount.toStringAsFixed(2)}', isTablet),
+              _infoRow(AppLocalizations.of(context)!.posDetailsTotal, '${AppLocalizations.of(context)!.posCommonSar} ${job.totalAmount.toStringAsFixed(2)}', isTablet),
               const SizedBox(height: 6),
               Text(
-                'Items (${job.items.length})',
+                AppLocalizations.of(context)!.posDetailsItems(job.items.length.toString()),
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: isTablet ? 16 : 14,
@@ -335,7 +338,7 @@ class PosOrderDetailsView extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Text(
+                            child: LocalizedApiText(
                               item.productName.isNotEmpty
                                   ? item.productName
                                   : item.productId,
@@ -358,7 +361,7 @@ class PosOrderDetailsView extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'SAR ${item.lineTotal.toStringAsFixed(2)}',
+                            '${AppLocalizations.of(context)!.posCommonSar} ${item.lineTotal.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: isTablet ? 13 : 12,
@@ -393,7 +396,7 @@ class PosOrderDetailsView extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
+            child: LocalizedApiText(
               value,
               style: TextStyle(
                 color: const Color(0xFF1E2124),

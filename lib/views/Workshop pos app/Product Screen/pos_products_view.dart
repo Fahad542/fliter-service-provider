@@ -8,6 +8,7 @@ import '../Home Screen/pos_view_model.dart';
 import '../../../models/pos_product_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../Promo/pos_promo_view.dart';
+import '../../../services/LocalizedApiText.dart';
 
 class PosProductsView extends StatefulWidget {
   final List<String>? preSelectedProducts;
@@ -64,7 +65,7 @@ class _PosProductsViewState extends State<PosProductsView> {
       appBar: PosAppBar(
         userName: vm.cashierName,
         infoTitle: vm.workshopName,
-        infoBranch: 'Branch: ${vm.branchName}',
+        infoBranch: '${AppLocalizations.of(context)!.posProductsBranchPrefix} ${vm.branchName}',
         infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
         showDrawer: false,
         showGlobalLeft: true,
@@ -131,7 +132,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       const Icon(Icons.error_outline, size: 48, color: Colors.red),
                       const SizedBox(height: 16),
                       Text(
-                        'Failed to load products',
+                        AppLocalizations.of(context)!.posProductsFailedLoadProducts,
                         style: AppTextStyles.h2.copyWith(color: AppColors.secondaryLight),
                       ),
                       const SizedBox(height: 8),
@@ -159,7 +160,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade300),
                       const SizedBox(height: 12),
                       Text(
-                        'No products found',
+                        AppLocalizations.of(context)!.posProductNoProductsFound,
                         style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
                       ),
                     ],

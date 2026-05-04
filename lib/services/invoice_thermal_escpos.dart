@@ -9,6 +9,7 @@ import '../utils/app_formatters.dart';
 import '../utils/invoice_maintenance_checklist.dart';
 import '../utils/thermal_invoice_totals.dart'
     show computeThermalInvoiceTotals, thermalInvoiceQrPayload, kThermalInvoiceLogoAsset;
+import '../widgets/thermal_invoice_pdf_ar_constants.dart';
 
 /// [Generator] default was `latin1`. Arabic labels need UTF-8 capable printers.
 String thermalSafeText(String input) {
@@ -187,7 +188,12 @@ String buildInvoiceThermalTerminalPreview({
   }
 
   emitSummaryRow('Total (Excl VAT)', _sr(t.grossExVatBeforeDiscount));
-  emitSummaryRow('Discount', _sr(t.totalDiscountLine));
+  sb.writeln(_line(ThermalInvoicePdfLabels.itemDiscountAr));
+  emitSummaryRow('Item Discount', _sr(_r2(t.itemDiscountsTotal)));
+  sb.writeln(_line(ThermalInvoicePdfLabels.invoiceDiscountAr));
+  emitSummaryRow('Invoice Discount', _sr(_r2(t.invoiceDiscount)));
+  sb.writeln(_line(ThermalInvoicePdfLabels.promoDiscountAr));
+  emitSummaryRow('Promo Code Discount', _sr(_r2(t.promoDiscount)));
   emitSummaryRow('Taxable (Excl VAT)', _sr(t.totalTaxableAmount));
   emitSummaryRow('Total VAT', _sr(t.vatAmount));
   emitSummaryRow('Total Amount Due', _sr(t.totalInvoiceAmount), bold: true);
@@ -545,8 +551,31 @@ Future<List<int>> buildInvoiceEscPosBytes({
     );
   }
 
+  void emitBilingualDiscountBlock(String arLine, String enLabel, double amount) {
+    bytes += g.text(
+      _line(arLine),
+      styles: const PosStyles(align: PosAlign.left),
+      linesAfter: 0,
+    );
+    emitSummaryRow(enLabel, _sr(_r2(amount)));
+  }
+
   emitSummaryRow('Total (Excl VAT)', _sr(grossExVatBeforeDiscount));
-  emitSummaryRow('Discount', _sr(totalDiscountLine));
+  emitBilingualDiscountBlock(
+    ThermalInvoicePdfLabels.itemDiscountAr,
+    'Item Discount',
+    itemDiscountsTotal,
+  );
+  emitBilingualDiscountBlock(
+    ThermalInvoicePdfLabels.invoiceDiscountAr,
+    'Invoice Discount',
+    invoiceDiscount,
+  );
+  emitBilingualDiscountBlock(
+    ThermalInvoicePdfLabels.promoDiscountAr,
+    'Promo Code Discount',
+    promoDiscount,
+  );
   emitSummaryRow('Taxable (Excl VAT)', _sr(totalTaxableAmount));
   emitSummaryRow('Total VAT', _sr(vatAmount));
   emitSummaryRow('Total Amount Due', _sr(totalInvoiceAmount), emphasis: true);

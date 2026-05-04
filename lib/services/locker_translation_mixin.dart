@@ -86,6 +86,31 @@ class AppTranslationService {
     'cashier expense'   : 'مصروف أمين الصندوق',
     'CASHIER EXPENSE'   : 'مصروف أمين الصندوق',
     'Petty cash request': 'طلب عهدة نقدية',
+    // ── POS order / cashier statuses ─────────────────────────────────────
+    'Draft'             : 'مسودة',
+    'draft'             : 'مسودة',
+    'Waiting'           : 'في الانتظار',
+    'waiting'           : 'في الانتظار',
+    'Accepted by Tech'  : 'مقبول من الفني',
+    'accepted'          : 'مقبول',
+    'In Progress'       : 'قيد التنفيذ',
+    'in progress'       : 'قيد التنفيذ',
+    'Tech Completed'    : 'أكمله الفني',
+    'completed by technician': 'أكمله الفني',
+    'Completed'         : 'مكتمل',
+    'completed'         : 'مكتمل',
+    'Cancelled'         : 'ملغى',
+    'cancelled'         : 'ملغى',
+    'canceled'          : 'ملغى',
+    'Corp. pending approval': 'بانتظار موافقة الشركة',
+    'waiting for corporate': 'بانتظار الشركة',
+    'unapproved'        : 'غير معتمد',
+    'Corporate approved': 'معتمد من الشركة',
+    'corporate approved': 'معتمد من الشركة',
+    'Rejected by corporate': 'مرفوض من الشركة',
+    'rejected by corporate': 'مرفوض من الشركة',
+    'Invoiced'          : 'مفوتر',
+    'invoiced'          : 'مفوتر',
     // ── Employee / POS statuses ───────────────────────────────────────────
     'active'            : 'نشط',
     'inactive'          : 'غير نشط',
@@ -111,10 +136,6 @@ class AppTranslationService {
     'waiting approval'  : 'في انتظار الموافقة',
     'Waiting Approval'  : 'في انتظار الموافقة',
     'complete'          : 'مكتمل',
-    'completed'         : 'مكتمل',
-    'invoiced'          : 'تم إصدار الفاتورة',
-    'cancelled'         : 'ملغي',
-    'canceled'          : 'ملغي',
     'cash'              : 'نقداً',
     'Cash'              : 'نقداً',
     'card'              : 'بطاقة',
@@ -204,6 +225,44 @@ class AppTranslationService {
     return translate(text);
   }
 
+
+  /// Localizes Western digits to Arabic-Indic digits when [languageCode] is Arabic.
+  /// This is intentionally separate from text translation so API numeric values
+  /// can be rendered locale-correctly without sending numbers to the translator.
+  static String localizeDigitsForLanguage(String text, String languageCode) {
+    if (languageCode != 'ar' || text.isEmpty) return text;
+    const western = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    var out = text;
+    for (var i = 0; i < western.length; i++) {
+      out = out.replaceAll(western[i], arabic[i]);
+    }
+    return out;
+  }
+
+  /// Locale-safe dynamic API value renderer. Text is translated for Arabic,
+  /// while bare numbers/dates/counts are digit-localized for Arabic.
+  /// Reference codes, URLs, and emails stay raw; numeric API values get localized digits.
+  static Future<String> localizedDynamicValueForLanguage(
+    String text,
+    String languageCode,
+  ) async {
+    if (languageCode != 'ar') return text;
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return text;
+
+    final translated = await localizedTextForLanguage(text, languageCode);
+
+    // Keep IDs/reference codes, URLs, and emails raw to avoid breaking them.
+    // Phone numbers and bare numeric API values still get Arabic digits.
+    if (_looksLikeReferenceCode(trimmed) ||
+        RegExp(r'^https?://', caseSensitive: false).hasMatch(trimmed) ||
+        RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(trimmed)) {
+      return translated;
+    }
+    return localizeDigitsForLanguage(translated, languageCode);
+  }
+
   /// Nullable variant — returns null when input is null.
   static Future<String?> localizedTextNullable(String? text) async {
     if (text == null) return null;
@@ -256,6 +315,13 @@ class AppTranslationService {
   static Future<bool> _isArabicFromSession() async {
     final locale = await SessionService.getLocale();
     return locale == 'ar';
+  }
+
+  static bool _looksLikeReferenceCode(String text) {
+    final v = text.trim();
+    if (RegExp(r'^#?[A-Z]{1,6}[-_/]?[A-Z0-9]{2,}$').hasMatch(v)) return true;
+    if (RegExp(r'^[A-Z0-9]{2,}[-_/][A-Z0-9\-_/]{2,}$').hasMatch(v)) return true;
+    return false;
   }
 
   /// Strings that should NEVER be sent to the translation API:

@@ -1,3 +1,4 @@
+import '../constants/app_assets.dart';
 import '../models/create_invoice_model.dart';
 
 double thermalR2(double v) => (v * 100).roundToDouble() / 100;
@@ -185,4 +186,4 @@ String thermalInvoiceQrPayload(Invoice invoice, double totalWithVat) {
 }
 
 /// Filter logo bundled under pubspec `assets/images/`.
-const String kThermalInvoiceLogoAsset = 'assets/images/icon.png';
+const String kThermalInvoiceLogoAsset = kAppBrandLogoAsset;

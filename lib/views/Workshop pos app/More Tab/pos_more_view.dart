@@ -157,7 +157,7 @@ class PosMoreView extends StatelessWidget {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'More Menu',
+      barrierLabel: AppLocalizations.of(context)!.moreMenuBarrierLabel,
       barrierColor: Colors.black.withOpacity(0.1),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (context, anim1, anim2) {

@@ -7,6 +7,7 @@ import 'package:filter_service_providers/views/Workshop%20pos%20app/Broadcast/ca
 import 'package:filter_service_providers/views/Workshop%20pos%20app/Broadcast/pos_cashier_broadcast_view.dart';
 
 import '../../../utils/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_tablet_layout.dart';
@@ -158,18 +159,18 @@ class _PosShellState extends State<PosShell> {
         MediaQuery.of(context).orientation == Orientation.landscape;
 
     if (!isTablet) {
-      return const _PosDeviceRestrictionView(
-        title: 'Tablet required',
-        message:
-            'Workshop POS sirf tablet device par open hota hai.',
+      final l10n = AppLocalizations.of(context)!;
+      return _PosDeviceRestrictionView(
+        title: l10n.posShellTabletRequired,
+        message: l10n.posShellTabletMessage,
       );
     }
 
     if (!isLandscape) {
-      return const _PosDeviceRestrictionView(
-        title: 'Landscape required',
-        message:
-            'Workshop POS ko landscape mode me rotate karein.',
+      final l10n = AppLocalizations.of(context)!;
+      return _PosDeviceRestrictionView(
+        title: l10n.posShellLandscapeTitle,
+        message: l10n.posShellLandscapeMessage,
       );
     }
 
@@ -298,6 +299,8 @@ class _PosShellState extends State<PosShell> {
   // --- DRAWER IMPLEMENTATION ---
 
   Widget _buildDrawer(bool isTablet) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Drawer(
       width: isTablet ? 300 : 260,
       backgroundColor: AppColors.secondaryLight,
@@ -310,53 +313,53 @@ class _PosShellState extends State<PosShell> {
                   horizontal: isTablet ? 20 : 16, vertical: 20),
               children: [
                 _buildDrawerItem(
-                    0, 'Home', Icons.home_rounded, isTablet),
+                    0, l10n.posNavHome, Icons.home_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    2, 'Orders Hub', Icons.receipt_long_outlined, isTablet),
+                    2, l10n.posNavOrdersHub, Icons.receipt_long_outlined, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                     11,
-                    'Broadcast Technician',
+                    l10n.posNavBroadcastTechnician,
                     Icons.podcasts_rounded,
                     isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    1, 'Inventory', Icons.inventory_2_outlined, isTablet),
+                    1, l10n.posNavInventory, Icons.inventory_2_outlined, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                   12,
-                  'Inventory Sales',
+                  l10n.posNavInventorySales,
                   Icons.query_stats_rounded,
                   isTablet,
                 ),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                     10,
-                    'Takeaway',
+                    l10n.posNavTakeaway,
                     Icons.takeout_dining_rounded,
                     isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    7, 'Sales Return', Icons.assignment_return_rounded, isTablet),
+                    7, l10n.posNavSalesReturn, Icons.assignment_return_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    9, 'Returns List', Icons.list_alt_rounded, isTablet),
+                    9, l10n.posNavReturnsList, Icons.list_alt_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    4, 'Petty Cash', Icons.payments_rounded, isTablet),
+                    4, l10n.posNavPettyCash, Icons.payments_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    5, 'Promo Codes', Icons.local_offer_rounded, isTablet),
+                    5, l10n.posNavPromoCodes, Icons.local_offer_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    6, 'Technicians', Icons.engineering_rounded, isTablet),
+                    6, l10n.posNavTechnicians, Icons.engineering_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    8, 'Current Shift', Icons.access_time_filled_rounded, isTablet),
+                    8, l10n.posNavCurrentShift, Icons.access_time_filled_rounded, isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
-                    3, 'Store Closing', Icons.store_rounded, isTablet),
+                    3, l10n.posNavStoreClosing, Icons.store_rounded, isTablet),
                 const SizedBox(height: 8),
               ],
             ),
@@ -417,7 +420,7 @@ class _PosShellState extends State<PosShell> {
                 const SizedBox(height: 4),
                 if (branchName.isNotEmpty)
                   Text(
-                    'Branch: $branchName',
+                    '${AppLocalizations.of(context)!.posProductsBranchPrefix} $branchName',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: isTablet ? 14 : 12,
@@ -499,7 +502,7 @@ class _PosShellState extends State<PosShell> {
               color: Colors.white24, size: isTablet ? 20 : 16),
           const SizedBox(width: 8),
           Text(
-            'Version 1.0.0',
+            AppLocalizations.of(context)!.posShellVersion,
             style: TextStyle(
               color: Colors.white.withOpacity(0.2),
               fontSize: isTablet ? 14 : 11,

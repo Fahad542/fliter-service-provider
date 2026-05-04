@@ -11,6 +11,7 @@ import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 
 import '../../../l10n/app_localizations.dart';
+import '../../../services/LocalizedApiText.dart';
 
 class PosTechnicianView extends StatefulWidget {
   final bool showBackButton;

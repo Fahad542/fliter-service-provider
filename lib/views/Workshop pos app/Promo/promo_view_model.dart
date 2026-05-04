@@ -4,6 +4,7 @@ import '../../../../services/session_service.dart';
 import '../../../../utils/toast_service.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../Home Screen/pos_view_model.dart';
+import '../../../../services/locker_translation_mixin.dart';
 
 class AvailablePromotion {
   final String code;
@@ -27,7 +28,7 @@ class AvailablePromotion {
   });
 }
 
-class PromoViewModel extends ChangeNotifier {
+class PromoViewModel extends ChangeNotifier with TranslatableMixin {
   final SessionService sessionService;
   final PosRepository posRepository;
 
@@ -35,6 +36,14 @@ class PromoViewModel extends ChangeNotifier {
     required this.sessionService,
     required this.posRepository,
   });
+
+  void bindSettingsViewModel(Listenable settingsViewModel) {
+    bindLocaleRetranslation(settingsViewModel, retranslate);
+  }
+
+  Future<void> retranslate() async {
+    notifyListeners();
+  }
 
   bool _isLoading = false;
   String? _promoErrorMessage;
@@ -117,7 +126,7 @@ class PromoViewModel extends ChangeNotifier {
         };
         // Don't apply to cart yet, let user confirm first.
       } else {
-        final msg = response.message.isNotEmpty ? response.message : 'Invalid Promo Code';
+        final msg = response.message.isNotEmpty ? response.message : await t('Invalid Promo Code');
         _promoErrorMessage = msg;
         posVm.clearPromoCode(isMainTab: isMainTab);
         _validResult = null;
@@ -213,7 +222,7 @@ class PromoViewModel extends ChangeNotifier {
       notifyListeners();
       _applyMockPromo(posVm);
     } else {
-      _promoErrorMessage = 'Invalid or Expired Promo Code';
+      _promoErrorMessage = await t('Invalid or Expired Promo Code');
       _isLoading = false;
       notifyListeners();
     }
@@ -231,6 +240,7 @@ class PromoViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    unbindLocaleRetranslation();
     promoController.dispose();
     super.dispose();
   }
