@@ -6,7 +6,7 @@ import '../../Workshop Owner/Approvals/approvals_view_model.dart';
 import '../widgets/owner_app_bar.dart';
 import '../widgets/owner_petty_cash_approval_card.dart';
 
-// ------- --------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // ApprovalsView
 //
 // ── Filter keys vs display labels ───────────────────────────────────────────

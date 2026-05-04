@@ -5,7 +5,6 @@ import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../../../models/create_invoice_model.dart';
-import '../../../l10n/app_localizations.dart';
 import 'sales_return_view_model.dart';
 
 class PosSalesReturnView extends StatefulWidget {

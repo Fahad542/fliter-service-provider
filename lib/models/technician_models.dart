@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'technician_assigned_orders_model.dart';
 import 'technician_order_details_model.dart';
 
@@ -98,7 +99,7 @@ class TechNotification {
   final String message;
   final DateTime timestamp;
   final bool isRead;
-  final String type; // Display label (Broadcast, etc.)
+  final String type; // 'Broadcast', 'Assignment', 'Commission'
 
   TechNotification({
     required this.id,
@@ -108,22 +109,4 @@ class TechNotification {
     this.isRead = false,
     required this.type,
   });
-
-  factory TechNotification.fromWorkshop(Map<String, dynamic> j) {
-    final createdRaw = j['createdAt'] as String? ?? '';
-    final createdAt =
-        DateTime.tryParse(createdRaw) ?? DateTime.now();
-    final isUnread = j['isUnread'] == true;
-    final t = j['type'] as String? ?? '';
-    var label = 'Workshop';
-    if (t.contains('broadcast')) label = 'Broadcast';
-    return TechNotification(
-      id: j['id']?.toString() ?? '',
-      title: j['title'] as String? ?? '',
-      message: j['body'] as String? ?? '',
-      timestamp: createdAt,
-      isRead: !isUnread,
-      type: label,
-    );
-  }
 }

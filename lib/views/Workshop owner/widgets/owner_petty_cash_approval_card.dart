@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../models/workshop_owner_models.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -28,53 +27,22 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
     required this.onReject,
   });
 
-  static String formatDateTimeCompact(DateTime? dt, {String localeName = 'en'}) {
+  static String formatDateTimeCompact(DateTime? dt) {
     if (dt == null) return '—';
-    return DateFormat('dd MMM yyyy, HH:mm', localeName).format(dt.toLocal());
-  }
-
-  String _localizedStatus(AppLocalizations l10n, String status) {
-    final s = status.trim().toLowerCase();
-    if (s == 'approved') return l10n.pettyCashStatusApproved;
-    if (s == 'rejected') return l10n.pettyCashStatusRejected;
-    if (s == 'pending') return l10n.pettyCashStatusPending;
-    return l10n.pettyCashStatusFallback(status.toUpperCase());
+    return DateFormat('dd MMM yyyy, HH:mm').format(dt.toLocal());
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final status = request.status.toLowerCase();
     final statusColor = status == 'approved'
         ? Colors.green
         : status == 'rejected'
             ? Colors.red
             : Colors.orange;
-
     final isExpense = request.isExpenseKind;
-    final queueTag = isExpense
-        ? l10n.pettyCashQueueCashierExpense
-        : l10n.pettyCashQueueFundRequest;
-    final noteText = (request.translatedReason ?? request.reason).trim();
-    final cashierName = request.translatedCashierName?.trim().isNotEmpty == true
-        ? request.translatedCashierName!
-        : request.cashierName;
-    final branchName = request.translatedBranchName?.trim().isNotEmpty == true
-        ? request.translatedBranchName!
-        : request.branchName;
-    final categoryLabel = request.translatedCategoryLabel?.trim().isNotEmpty == true
-        ? request.translatedCategoryLabel!
-        : request.categoryLabel;
-    final employeeName = request.translatedEmployeeName?.trim().isNotEmpty == true
-        ? request.translatedEmployeeName!
-        : request.employeeName;
-    final localizedCurrency = currency.toUpperCase() == 'SAR'
-        ? l10n.ownerCurrencySar
-        : currency;
-    final localizedAmount = l10n.ownerCurrencyAmount(
-      localizedCurrency,
-      request.amount.toStringAsFixed(2),
-    );
+    final queueTag = isExpense ? 'CASHIER EXPENSE' : 'FUND REQUEST';
+    final noteText = request.reason.trim();
 
     final tertiary = AppColors.secondaryLight.withValues(alpha: 0.55);
     final caption = AppColors.secondaryLight.withValues(alpha: 0.38);
@@ -87,9 +55,7 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(32),
         ),
         child: Text(
-          _localizedStatus(l10n, request.translatedStatus ?? request.status),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          status.toUpperCase(),
           style: TextStyle(
             color: statusColor,
             fontWeight: FontWeight.w800,
@@ -127,7 +93,7 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    Flexible(child: statusBadge()),
+                    statusBadge(),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -136,7 +102,8 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.secondaryLight.withValues(alpha: 0.72),
+                          color:
+                              AppColors.secondaryLight.withValues(alpha: 0.72),
                           fontSize: 10,
                           letterSpacing: 0.75,
                           height: 1.2,
@@ -147,26 +114,20 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  localizedAmount,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    height: 1.2,
-                    color: AppColors.secondaryLight,
-                  ),
+              Text(
+                '$currency ${request.amount.toStringAsFixed(2)}',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  height: 1.2,
+                  color: AppColors.secondaryLight,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
-            cashierName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            request.cashierName,
             style: AppTextStyles.bodyLarge.copyWith(
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -177,7 +138,7 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
           if (!isExpense) ...[
             const SizedBox(height: 4),
             Text(
-              l10n.pettyCashRequestLabel,
+              'Petty cash request',
               style: AppTextStyles.bodyMedium.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -186,12 +147,10 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
               ),
             ),
           ],
-          if (isExpense && (categoryLabel ?? '').isNotEmpty) ...[
+          if (isExpense && (request.categoryLabel ?? '').isNotEmpty) ...[
             const SizedBox(height: 5),
             Text(
-              categoryLabel!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              request.categoryLabel!,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -200,12 +159,10 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
               ),
             ),
           ],
-          if (isExpense && (employeeName ?? '').isNotEmpty) ...[
+          if (isExpense && (request.employeeName ?? '').isNotEmpty) ...[
             const SizedBox(height: 2),
             Text(
-              employeeName!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              request.employeeName!,
               style: AppTextStyles.bodySmall.copyWith(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -218,8 +175,6 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               noteText,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -246,9 +201,7 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      branchName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      request.branchName,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -258,10 +211,7 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      formatDateTimeCompact(
-                        request.requestedAt,
-                        localeName: l10n.localeName,
-                      ),
+                      formatDateTimeCompact(request.requestedAt),
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
@@ -288,12 +238,12 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
                             if (ok) {
                               ToastService.showSuccess(
                                 context,
-                                l10n.pettyCashRequestApprovedSuccess,
+                                'Request approved successfully',
                               );
                             } else {
                               ToastService.showError(
                                 context,
-                                l10n.pettyCashRequestApproveFailed,
+                                'Failed to approve request',
                               );
                             }
                           },
@@ -326,9 +276,7 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
                             ),
                           )
                         : Text(
-                            l10n.pettyCashApprove,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            'Approve',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
@@ -377,10 +325,8 @@ class OwnerPettyCashApprovalCard extends StatelessWidget {
                             ),
                           )
                         : Text(
-                            l10n.pettyCashReject,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            'Reject',
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../utils/app_text_styles.dart';
+import 'package:provider/provider.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Petty Cash/petty_cash_view_model.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PosMoreView extends StatelessWidget {
   final Function(int)? onSelect;
@@ -16,7 +15,6 @@ class PosMoreView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isTablet = MediaQuery.of(context).size.width > 600;
-
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: PosTabletLayout.textScaler(context),
@@ -43,89 +41,76 @@ class PosMoreView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-
-                  // ── Petty Cash ─────────────────────────────────────────
                   InkWell(
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect?.call(4);
+                      if (onSelect != null) {
+                        onSelect!(4); // Index 4: Petty Cash
+                      }
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Row(
                         children: [
                           Icon(
                             Icons.account_balance_wallet,
                             size: isTablet ? 20 : 16,
-                            color: context
-                                .watch<PettyCashViewModel>()
-                                .isLowPettyCashBalance
+                            color: context.watch<PettyCashViewModel>().isLowPettyCashBalance
                                 ? Colors.red
                                 : AppColors.secondaryLight.withOpacity(0.7),
                           ),
                           const SizedBox(width: 10),
-                          // Flexible prevents overflow in Arabic
-                          Flexible(
-                            child: Text(
-                              l10n.moreMenuPettyCash,
-                              style: TextStyle(
-                                fontSize: isTablet ? 12 : 10,
-                                color: context
-                                    .watch<PettyCashViewModel>()
-                                    .isLowPettyCashBalance
-                                    ? Colors.red
-                                    : AppColors.secondaryLight,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            l10n.moreMenuPettyCash,
+                            style: TextStyle(
+                              fontSize: isTablet ? 12 : 10,
+                              color: context.watch<PettyCashViewModel>().isLowPettyCashBalance
+                                  ? Colors.red
+                                  : AppColors.secondaryLight,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
-                  // ── Promo Code ─────────────────────────────────────────
                   _buildMenuItem(
                     label: l10n.moreMenuPromoCode,
                     icon: Icons.local_offer,
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect?.call(5);
+                      if (onSelect != null) {
+                        onSelect!(5); // Index 5: Promo Code
+                      }
                     },
                     isTablet: isTablet,
                   ),
-
                   const SizedBox(height: 12),
-
-                  // ── Store Closing ──────────────────────────────────────
                   _buildMenuItem(
                     label: l10n.moreMenuStoreClosing,
                     icon: Icons.door_front_door_outlined,
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect?.call(6);
+                      if (onSelect != null) {
+                        onSelect!(6); // Index 6: Store Closing
+                      }
                     },
                     isTablet: isTablet,
                   ),
-
                   const SizedBox(height: 12),
-
-                  // ── Sales Return ───────────────────────────────────────
                   _buildMenuItem(
                     label: l10n.moreMenuSalesReturn,
                     icon: Icons.assignment_return_outlined,
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect?.call(7);
+                      if (onSelect != null) {
+                        onSelect!(7); // Index 7: Sales Return
+                      }
                     },
                     isTablet: isTablet,
                   ),
-
                   const SizedBox(height: 12),
                 ],
               );
@@ -152,22 +137,14 @@ class PosMoreView extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: isTablet ? 18 : 15,
-              color: AppColors.secondaryLight.withOpacity(0.7),
-            ),
+            Icon(icon, size: isTablet ? 18 : 15, color: AppColors.secondaryLight.withOpacity(0.7)),
             const SizedBox(width: 10),
-            // Flexible prevents Arabic text from overflowing the popup.
-            Flexible(
-              child: Text(
-                label,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.secondaryLight,
-                  fontSize: isTablet ? 12 : 10,
-                ),
-                overflow: TextOverflow.ellipsis,
+            Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryLight,
+                fontSize: isTablet ? 12 : 10,
               ),
             ),
           ],

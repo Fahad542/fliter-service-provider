@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../l10n/app_localizations.dart';
 import '../../../services/session_service.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
@@ -10,6 +8,7 @@ import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/custom_auth_header.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/custom_text_field.dart';
+import '../../../l10n/app_localizations.dart';
 
 import '../Navbar/pos_shell.dart';
 import 'login_view_model.dart';
@@ -85,7 +84,6 @@ class _LoginViewState extends State<LoginView> {
   }
 
   void _handleForgotPassword() {
-    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -93,8 +91,7 @@ class _LoginViewState extends State<LoginView> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        // Re-read l10n inside builder — context may differ but locale is same
-        final sheetL10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context)!;
         final isTablet = MediaQuery.of(context).size.width > 600;
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
@@ -123,7 +120,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  sheetL10n.posLoginResetPasswordTitle,
+                  l10n.posLoginResetPasswordTitle,
                   style: AppTextStyles.h2.copyWith(
                     color: AppColors.secondaryLight,
                     fontSize: isTablet ? 26 : 22,
@@ -131,7 +128,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  sheetL10n.posLoginResetPasswordSubtitle,
+                  l10n.posLoginResetPasswordSubtitle,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey,
                     fontSize: isTablet ? 16 : 14,
@@ -139,8 +136,8 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 32),
                 CustomTextField(
-                  label: sheetL10n.posLoginResetPasswordEmailLabel,
-                  hint: sheetL10n.posLoginResetPasswordEmailHint,
+                  label: l10n.posLoginResetPasswordEmailLabel,
+                  hint: l10n.posLoginResetPasswordEmailHint,
                   prefixIcon: const Icon(Icons.email_outlined),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -148,12 +145,12 @@ class _LoginViewState extends State<LoginView> {
                 SizedBox(
                   width: double.infinity,
                   child: CustomButton(
-                    text: sheetL10n.posLoginResetPasswordSendButton,
+                    text: l10n.posLoginResetPasswordSendButton,
                     onPressed: () {
                       Navigator.pop(context);
                       ToastService.showSuccess(
                         context,
-                        sheetL10n.posLoginResetPasswordSentSuccess,
+                        l10n.posLoginResetPasswordSentSuccess,
                       );
                     },
                   ),
@@ -239,7 +236,7 @@ class _LoginViewState extends State<LoginView> {
                               hint: l10n.posLoginPasswordHint,
                               controller: _passwordController,
                               obscureText:
-                              context.watch<LoginViewModel>().obscurePassword,
+                                  context.watch<LoginViewModel>().obscurePassword,
                               prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -270,8 +267,7 @@ class _LoginViewState extends State<LoginView> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 32),
                             Consumer<LoginViewModel>(
                               builder: (context, viewModel, child) {
                                 return SizedBox(

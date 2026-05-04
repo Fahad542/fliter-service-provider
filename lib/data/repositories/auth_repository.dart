@@ -119,6 +119,7 @@ class AuthRepository {
         {
           'email': email,
           'password': password,
+          'clientOpenedAt': DateTime.now().toIso8601String(),
         },
         headers: {
           'Authorization': 'Bearer $token',
@@ -138,6 +139,7 @@ class AuthRepository {
         {
           'email': email,
           'password': password,
+          'clientClosedAt': DateTime.now().toIso8601String(),
         },
         headers: {
           'Authorization': 'Bearer $token',

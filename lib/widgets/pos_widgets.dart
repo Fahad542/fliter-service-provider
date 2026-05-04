@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../services/LocalizedApiText.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
-import '../services/localized_api_text.dart';
 import '../models/pos_order_model.dart';
 import '../utils/app_text_styles.dart';
 import '../views/Workshop pos app/More Tab/settings_view_model.dart';
@@ -10,10 +10,9 @@ import 'package:provider/provider.dart';
 import '../utils/app_formatters.dart';
 import '../views/Workshop pos app/Home Screen/pos_view_model.dart' as pvm;
 import '../models/create_invoice_model.dart';
-import '../models/pos_technician_model.dart'; // Added import for TechnicianCard + localizedLastSeen
+import '../models/pos_technician_model.dart'; // Added import for TechnicianCard
 import '../models/pos_product_model.dart'; // Added import for ProductCard
 import 'package:intl/intl.dart' hide TextDirection;
-import 'package:share_plus/share_plus.dart';
 import '../utils/toast_service.dart';
 import '../utils/pos_tablet_layout.dart';
 import '../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
@@ -21,8 +20,12 @@ import '../views/Workshop pos app/Notifications/notifications_view.dart';
 import '../views/Workshop pos app/Product Grid/pos_product_grid_view.dart';
 import '../views/Workshop pos app/Order Screen/pos_order_review_view.dart';
 import '../views/Workshop pos app/Department/pos_department_view.dart';
-import '../views/Workshop pos app/Technician Assignment/pos_technician_assignment_view.dart' hide localizedLastSeen;
+import '../views/Workshop pos app/Technician Assignment/pos_technician_assignment_view.dart';
 import '../views/Workshop pos app/Add Customer Screen/pos_add_customer_view.dart';
+import '../services/invoice_network_print.dart';
+import '../services/invoice_thermal_escpos.dart';
+import '../services/thermal_printer_settings.dart';
+import 'cashier_invoice_preview.dart';
 
 /// Drawer menu (hamburger) is always available on tablet; the left rail was removed.
 bool kPosHideDrawerMenuTabletLandscape(BuildContext context) => false;
@@ -30,6 +33,7 @@ bool kPosHideDrawerMenuTabletLandscape(BuildContext context) => false;
 // ── Reusable POS Screen AppBar (Back + Title + Global Icon) ──
 class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final FontWeight? titleFontWeight;
   final VoidCallback? onBack;
   final bool showBackButton;
   final bool showHamburger;
@@ -40,6 +44,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   const PosScreenAppBar({
     super.key,
     required this.title,
+    this.titleFontWeight,
     this.onBack,
     this.showBackButton = true,
     this.showHamburger = true,
@@ -110,7 +115,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                     width: isTablet ? PosTabletLayout.appBarIconBox : 40,
                     height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.35),
+                      color: Colors.white.withValues(alpha: 0.35),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -150,7 +155,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.secondaryLight
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -178,7 +183,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                 title,
                 style: TextStyle(
                   color: Colors.black,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: titleFontWeight ?? FontWeight.bold,
                   fontSize:
                   isTablet ? PosTabletLayout.appBarTitleSize : 19,
                 ),
@@ -215,7 +220,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                                   ? PosTabletLayout.appBarIconBox
                                   : 40,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.35),
+                                color: Colors.white.withValues(alpha: 0.35),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
@@ -250,7 +255,7 @@ class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                       width: isTablet ? PosTabletLayout.appBarIconBox : 40,
                       height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.35),
+                        color: Colors.white.withValues(alpha: 0.35),
                         shape: BoxShape.circle,
                       ),
                       child: Stack(
@@ -379,7 +384,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                 width: isTablet ? PosTabletLayout.appBarIconBox : 40,
                 height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.35),
+                  color: Colors.white.withValues(alpha: 0.35),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -417,7 +422,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                 borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.secondaryLight.withOpacity(0.2),
+                    color: AppColors.secondaryLight.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -462,11 +467,25 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                 height:
                 isTablet ? PosTabletLayout.appBarLogoHeight : 28,
                 child: Image.asset(
-                  'assets/images/icon.png',
-                  color: Colors.black,
+                  'assets/images/icons.png',
+                  color: AppColors.secondaryLight,
+                  colorBlendMode: BlendMode.srcIn,
                   fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                  filterQuality: FilterQuality.high,
                   errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.store, color: Colors.black),
+                      Image.asset(
+                        'assets/images/Icon.png',
+                        color: AppColors.secondaryLight,
+                        colorBlendMode: BlendMode.srcIn,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.store,
+                          color: AppColors.secondaryLight,
+                        ),
+                      ),
                 ),
               ),
             ),
@@ -501,7 +520,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                               ? PosTabletLayout.appBarIconBox
                               : 40,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.35),
+                            color: Colors.white.withValues(alpha: 0.35),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -536,7 +555,7 @@ class PosAppBar extends StatelessWidget implements PreferredSizeWidget {
                   width: isTablet ? PosTabletLayout.appBarIconBox : 40,
                   height: isTablet ? PosTabletLayout.appBarIconBox : 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.35),
+                    color: Colors.white.withValues(alpha: 0.35),
                     shape: BoxShape.circle,
                   ),
                   child: Stack(
@@ -633,11 +652,11 @@ class PosInfoBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: isBlack
             ? const Color(0xFF212529)
-            : Colors.white.withOpacity(0.5),
+            : Colors.white.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(30),
         border: isBlack
             ? null
-            : Border.all(color: Colors.white.withOpacity(0.3)),
+            : Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -680,7 +699,7 @@ class UserChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -788,7 +807,7 @@ class SearchHistoryItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -818,12 +837,17 @@ class SearchHistoryItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            vehicle,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                          Expanded(
+                            child: Text(
+                              customer,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
                             ),
                           ),
                           if (isCorporate) ...[
@@ -848,11 +872,43 @@ class SearchHistoryItem extends StatelessWidget {
                               ),
                             ),
                           ],
+                          const SizedBox(width: 6),
+                          Material(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: onViewHistory ?? () {},
+                              borderRadius: BorderRadius.circular(10),
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: Icon(
+                                  Icons.keyboard_arrow_right,
+                                  color: AppColors.secondaryLight,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
+                      if (vehicle.trim().isNotEmpty &&
+                          vehicle.toLowerCase() != 'no vehicle') ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          vehicle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 9),
                       Text(
-                        'Plate: $plate  •  $customer${(phone != null && phone!.trim().isNotEmpty) ? '  •  ${phone!.trim()}' : ''}',
+                        'Plate: $plate${(phone != null && phone!.trim().isNotEmpty) ? '  •  ${phone!.trim()}' : ''}',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: Colors.grey.shade600,
                           fontSize: 12,
@@ -913,19 +969,19 @@ class SearchHistoryItem extends StatelessWidget {
                           horizontal: 12,
                           vertical: 8,
                         ),
-                        minimumSize: const Size(0, 34),
+                        minimumSize: const Size(0, 40),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text(
-                        AppLocalizations.of(context)!.posSearchHistoryContinue,
+                      child: const Text(
+                        'Continue Order',
                         maxLines: 1,
                         softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 11,
+                          color: AppColors.secondaryLight,
                         ),
                       ),
                     ),
@@ -934,46 +990,24 @@ class SearchHistoryItem extends StatelessWidget {
                 ],
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: onViewHistory ?? () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryLight,
-                      foregroundColor: AppColors.secondaryLight,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.posSearchHistoryHistory,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
                     onPressed: onSalesReturn ?? () {},
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade400,
-                      side: BorderSide(color: Colors.red.shade200),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondaryLight,
+                      foregroundColor: AppColors.onSecondaryLight,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 8),
+                      minimumSize: const Size(0, 40),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
-                      AppLocalizations.of(context)!.posSearchHistorySalesReturn,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                    child: const Text(
+                      'Sales Return',
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
+                        color: AppColors.onSecondaryLight,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
@@ -1006,7 +1040,7 @@ class PosBottomBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, -2),
           ),
@@ -1018,10 +1052,10 @@ class PosBottomBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(context, 0, Icons.home_rounded, AppLocalizations.of(context)!.posNavHome),
-              _buildNavItem(context, 1, Icons.inventory_2_outlined, AppLocalizations.of(context)!.posNavProducts),
-              _buildNavItem(context, 2, Icons.receipt_long_outlined, AppLocalizations.of(context)!.posNavOrders),
-              _buildNavItem(context, 3, Icons.store_rounded, AppLocalizations.of(context)!.posNavStoreClosing),
+              _buildNavItem(context, 0, Icons.home_rounded, 'Home'),
+              _buildNavItem(context, 1, Icons.inventory_2_outlined, 'Products'),
+              _buildNavItem(context, 2, Icons.receipt_long_outlined, 'Orders'),
+              _buildNavItem(context, 3, Icons.store_rounded, 'Store Closing'),
             ],
           ),
         ),
@@ -1049,7 +1083,7 @@ class PosBottomBar extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryLight.withOpacity(0.15)
+              ? AppColors.primaryLight.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
@@ -1108,7 +1142,7 @@ class PosSearchBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -1274,12 +1308,12 @@ class _OrderItemCardState extends State<OrderItemCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
         ],
-        border: Border.all(color: Colors.black.withOpacity(0.02)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -1999,6 +2033,9 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                                       InvoiceDialog(
                                                         invoice:
                                                         response.invoice!,
+                                                        maintenanceChecksFallback:
+                                                        widget.order
+                                                            .maintenanceChecks,
                                                       ),
                                                 );
                                               } else if (response != null &&
@@ -2194,16 +2231,16 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
             titlePadding: const EdgeInsets.fromLTRB(28, 28, 28, 8),
             contentPadding: const EdgeInsets.fromLTRB(28, 12, 28, 20),
             actionsPadding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
-            title: const Text(
-              'Cancel Order',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
+            title: Text(
+              AppLocalizations.of(ctx)!.posOrdersCancelOrderTitle,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Are you sure you want to cancel this order?',
+                  AppLocalizations.of(ctx)!.posOrdersCancelOrderBody,
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
                 ),
               ],
@@ -2221,7 +2258,7 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: const Text('Go Back', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                      child: Text(AppLocalizations.of(ctx)!.posCommonGoBack, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2260,7 +2297,7 @@ void _showCancelOrderDialog(BuildContext context, String orderId) {
                           strokeWidth: 2.5,
                         ),
                       )
-                          : const Text('Confirm Cancel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                          : Text(AppLocalizations.of(ctx)!.posCommonConfirmCancel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     ),
                   ),
                 ],
@@ -2405,7 +2442,7 @@ void _showOrderDetailsSheet(
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -2512,7 +2549,7 @@ void _showOrderDetailsSheet(
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
+                              color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -2528,8 +2565,8 @@ void _showOrderDetailsSheet(
                                 vertical: 14,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryLight.withOpacity(
-                                  0.05,
+                                color: AppColors.primaryLight.withValues(alpha:
+                                0.05,
                                 ),
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(16),
@@ -2768,7 +2805,7 @@ void _showOrderDetailsSheet(
                                               decoration: BoxDecoration(
                                                 color: AppColors
                                                     .primaryLight
-                                                    .withOpacity(0.15),
+                                                    .withValues(alpha: 0.15),
                                                 shape: BoxShape.circle,
                                               ),
                                               child: const Icon(
@@ -2795,7 +2832,7 @@ void _showOrderDetailsSheet(
                                             Builder(
                                               builder: (context) {
                                                 final s = tech.status?.toLowerCase() ?? '';
-                                                Color bgColor = Colors.orange.withOpacity(0.1);
+                                                Color bgColor = Colors.orange.withValues(alpha: 0.1);
                                                 Color textColor = Colors.orange.shade700;
                                                 String displayText = s.isEmpty ? 'PENDING' : tech.status!.toUpperCase();
 
@@ -2806,10 +2843,10 @@ void _showOrderDetailsSheet(
                                                 }
 
                                                 if (s.contains('completed') || s.contains('accepted')) {
-                                                  bgColor = Colors.green.withOpacity(0.1);
+                                                  bgColor = Colors.green.withValues(alpha: 0.1);
                                                   textColor = Colors.green.shade700;
                                                 } else if (s.contains('progress')) {
-                                                  bgColor = Colors.purple.withOpacity(0.1);
+                                                  bgColor = Colors.purple.withValues(alpha: 0.1);
                                                   textColor = Colors.purple.shade700;
                                                 }
 
@@ -2860,7 +2897,7 @@ void _showOrderDetailsSheet(
                                 BoxShadow(
                                   color: const Color(
                                     0xFF27AE60,
-                                  ).withOpacity(0.3),
+                                  ).withValues(alpha: 0.3),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -3034,7 +3071,7 @@ void _showCompletionBottomSheet(
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
+                                  color: Colors.blue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -3376,18 +3413,18 @@ Widget _buildStatusPill(PosOrder order) {
       status.contains('waiting') ||
       status.contains('accepted')) {
     textColor = const Color(0xFFE67E22); // Orange for waiting
-    bgColor = const Color(0xFFE67E22).withOpacity(0.15);
+    bgColor = const Color(0xFFE67E22).withValues(alpha: 0.15);
   } else if (status == 'in progress' || status == 'ready for invoice') {
     textColor = AppColors.secondaryLight;
-    bgColor = const Color(0xFF2D9CDB).withOpacity(0.15);
+    bgColor = const Color(0xFF2D9CDB).withValues(alpha: 0.15);
   } else if (status.contains('completed') ||
       status == 'invoiced' ||
       status == 'delivered') {
     textColor = const Color(0xFF27AE60);
-    bgColor = const Color(0xFF27AE60).withOpacity(0.15);
+    bgColor = const Color(0xFF27AE60).withValues(alpha: 0.15);
   } else if (status.contains('rejected') || status.contains('cancelled')) {
     textColor = Colors.red.shade700;
-    bgColor = Colors.red.withOpacity(0.15);
+    bgColor = Colors.red.withValues(alpha: 0.15);
   } else {
     textColor = Colors.grey.shade700;
     bgColor = Colors.grey.shade200;
@@ -3644,234 +3681,262 @@ void _showCommissionPopup(BuildContext context, dynamic commissionData) {
   );
 }
 
+class _InvoiceThermalActionBar extends StatefulWidget {
+  final Invoice invoice;
+  final String paymentMethodText;
+  final VoidCallback? onDone;
+
+  const _InvoiceThermalActionBar({
+    required this.invoice,
+    required this.paymentMethodText,
+    this.onDone,
+  });
+
+  @override
+  State<_InvoiceThermalActionBar> createState() =>
+      _InvoiceThermalActionBarState();
+}
+
+class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
+  bool _printing = false;
+
+  Future<void> _openThermalSettings() async {
+    final cfg = await ThermalPrinterSettings.load();
+    final ipCtrl = TextEditingController(text: cfg.host);
+    final portCtrl = TextEditingController(text: '${cfg.port}');
+    if (!mounted) {
+      ipCtrl.dispose();
+      portCtrl.dispose();
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.posThermalPrinterTitle),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: ipCtrl,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.posThermalPrinterIpLabel,
+                  hintText: AppLocalizations.of(context)!.posThermalPrinterIpHint,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: portCtrl,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.posThermalPrinterPortLabel,
+                  helperText: AppLocalizations.of(context)!.posThermalPrinterPortHelper,
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(AppLocalizations.of(context)!.posCommonCancel),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final p = int.tryParse(portCtrl.text.trim()) ??
+                  ThermalPrinterSettings.defaultPort;
+              await ThermalPrinterSettings.save(ipCtrl.text.trim(), p);
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+              if (!mounted) return;
+              ToastService.showSuccess(context, AppLocalizations.of(context)!.posThermalPrinterSaved);
+            },
+            child: Text(AppLocalizations.of(context)!.posCommonSave),
+          ),
+        ],
+      ),
+    );
+    ipCtrl.dispose();
+    portCtrl.dispose();
+  }
+
+  Future<void> _sendToThermalPrinter() async {
+    setState(() => _printing = true);
+    try {
+      await executeInvoiceThermalPrint(
+        invoice: widget.invoice,
+        paymentMethodText: widget.paymentMethodText,
+      );
+      if (!mounted) return;
+      ToastService.showSuccess(context, 'Receipt sent to Wi‑Fi printer.');
+    } catch (e) {
+      if (!mounted) return;
+      ToastService.showError(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _printing = false);
+    }
+  }
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Tooltip(
+              message:
+              'Tap: print to Wi‑Fi thermal printer. Long‑press: IP / port.',
+              child: GestureDetector(
+                onLongPress: _printing ? null : _openThermalSettings,
+                child: ElevatedButton(
+                  onPressed: _printing ? null : _sendToThermalPrinter,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E3237),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _printing
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text(
+                    'Print',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _printing
+                  ? null
+                  : () {
+                printThermalInvoicePreviewToStdout(
+                  invoice: widget.invoice,
+                  paymentMethodText: widget.paymentMethodText,
+                );
+                if (widget.onDone == null) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pop(context);
+                  widget.onDone!();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryLight,
+                foregroundColor: AppColors.secondaryLight,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Done',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class InvoiceDialog extends StatelessWidget {
   final Invoice invoice;
   final VoidCallback? onDone;
   final String? requestedPaymentMethod;
+  final List<bool>? maintenanceChecksFallback;
 
   const InvoiceDialog({
     super.key,
     required this.invoice,
     this.onDone,
     this.requestedPaymentMethod,
+    this.maintenanceChecksFallback,
   });
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(
-      symbol: 'SAR ',
-      decimalDigits: 2,
-    );
-    final invoiceDateText = formatInvoiceLegalDate(invoice.invoiceDate);
-    final issuedAtClock = formatInvoiceIssuedAtClock(invoice.issuedAt);
     final paymentMethodText = invoice.payments.isNotEmpty
         ? invoice.payments.map((p) => p.method).join(', ')
         : (invoice.paymentMethod ?? requestedPaymentMethod ?? 'Unpaid');
 
+    final mq = MediaQuery.sizeOf(context);
+    final shellMaxW = mq.width.clamp(280.0, 940.0);
+    final shellMaxH = mq.height * 0.88;
+
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
       child: Container(
-        width: double.infinity,
+        constraints: BoxConstraints(
+          maxWidth: shellMaxW,
+          maxHeight: shellMaxH,
+        ),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF1E2124), width: 1),
+          color: const Color(0xFFF4F4F4),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF2B2B2B), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 14,
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 16,
               offset: const Offset(0, 6),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(11),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Flexible(
+              Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              color: const Color(0xFF5B5B5B),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'FILTER',
-                                    style: TextStyle(
-                                      color: AppColors.primaryLight,
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  const Text(
-                                    'Car Services',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Simplified TAX Invoice',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Invoice No: ${invoice.invoiceNo}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Date: $invoiceDateText',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  if (issuedAtClock != null) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Time: $issuedAtClock',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: 148,
-                            height: 148,
-                            margin: const EdgeInsets.only(left: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.black87, width: 0.9),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.qr_code_2,
-                                size: 146,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        width: double.infinity,
-                        color: AppColors.primaryLight,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        child: Text(
-                          (invoice.branchName ?? 'Branch').toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1E2124),
-                          ),
-                        ),
-                      ),
-                      _buildInvoiceInfoTable(paymentMethodText),
-                      const SizedBox(height: 12),
-                      _buildItemsTaxTable(currencyFormat),
-                      const SizedBox(height: 12),
-                      _buildTotalsTaxTable(currencyFormat),
-                      const SizedBox(height: 12),
-                      _buildChecklistSection(),
-                    ],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 16,
+                  ),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: CashierInvoicePreview(
+                      invoice: invoice,
+                      paymentMethodText: paymentMethodText,
+                      maintenanceChecksFallback: maintenanceChecksFallback,
+                    ),
                   ),
                 ),
               ),
-
-              // Actions
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Implement actual Bluetooth/PDF Print logic
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Printing functionality coming soon!',
-                              ),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryLight,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Print',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          if (onDone != null) onDone!();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight,
-                          foregroundColor: AppColors.secondaryLight,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _InvoiceThermalActionBar(
+                invoice: invoice,
+                paymentMethodText: paymentMethodText,
+                onDone: onDone,
               ),
             ],
           ),
@@ -3879,558 +3944,150 @@ class InvoiceDialog extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildInvoiceInfoTable(String paymentMethodText) {
-    final yearStr = invoice.vehicleYear.trim();
-    final vinStr = invoice.vehicleVin.trim();
-    final rows = <List<String>>[
-      ['Customer', invoice.customerName],
-      ['Phone', invoice.customerMobile ?? '-'],
-      ['Tax ID', invoice.customerTaxId ?? '-'],
-      ['Model', invoice.vehicleModel.isNotEmpty ? invoice.vehicleModel : '-'],
-      ['Plate', invoice.plateNo.isNotEmpty ? invoice.plateNo : '-'],
-      ['Year', yearStr.isNotEmpty ? yearStr : '-'],
-      ['VIN', vinStr.isNotEmpty ? vinStr : '-'],
-      ['Mileage', invoice.odometerReading?.toString() ?? '-'],
-      ['Make', invoice.vehicleMake.isNotEmpty ? invoice.vehicleMake : '-'],
-      ['Payment Method', paymentMethodText],
-    ];
-    return Container(
-      decoration: BoxDecoration(border: Border.all(color: const Color(0xFF1E2124))),
-      child: Column(
-        children: List.generate((rows.length / 2).ceil(), (index) {
-          final left = rows[index * 2];
-          final right = (index * 2 + 1) < rows.length
-              ? rows[index * 2 + 1]
-              : ['', ''];
-          return Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: _buildInfoCell(
-                  left[0],
-                  isLabel: true,
-                  rightBorder: true,
-                  bottomBorder: true,
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: _buildInfoCell(left[1], bottomBorder: true),
-              ),
-              Expanded(
-                flex: 2,
-                child: _buildInfoCell(
-                  right[0],
-                  isLabel: true,
-                  rightBorder: true,
-                  leftBorder: true,
-                  bottomBorder: true,
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: _buildInfoCell(right[1], bottomBorder: true),
-              ),
-            ],
-          );
-        }),
-      ),
-    );
+bool _techCanToggleWorkshop(PosTechnician tech) {
+  final t = tech.technicianType.toLowerCase();
+  if (t.isEmpty) return true;
+  return t == 'workshop' || t == 'both';
+}
+
+bool _techCanToggleOnCall(PosTechnician tech) {
+  final t = tech.technicianType.toLowerCase();
+  if (t.isEmpty) return true;
+  return t == 'on_call' || t == 'both';
+}
+
+class _CashierDutyToggle extends StatelessWidget {
+  final String label;
+  final bool isTablet;
+  final bool compact;
+  final bool enabled;
+  final bool value;
+  final bool busy;
+  final bool technicianOnline;
+  /// False when this duty row does not apply (e.g. on-call row for workshop-only tech).
+  final bool roleAllowsDuty;
+  final ValueChanged<bool>? onChanged;
+
+  const _CashierDutyToggle({
+    required this.label,
+    required this.isTablet,
+    required this.compact,
+    required this.enabled,
+    required this.value,
+    required this.busy,
+    required this.technicianOnline,
+    required this.roleAllowsDuty,
+    required this.onChanged,
+  });
+
+  String get _statusCaption {
+    if (!roleAllowsDuty) return 'Not applicable';
+    if (!technicianOnline) {
+      return 'Unavailable while offline';
+    }
+    if (value) return 'Active';
+    return 'Not available';
   }
 
-  Widget _buildInfoCell(
-      String text, {
-        bool isLabel = false,
-        bool leftBorder = false,
-        bool rightBorder = false,
-        bool bottomBorder = false,
-      }) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        border: Border(
-          left: leftBorder
-              ? const BorderSide(color: Color(0xFF1E2124))
-              : BorderSide.none,
-          right: rightBorder
-              ? const BorderSide(color: Color(0xFF1E2124))
-              : BorderSide.none,
-          bottom: bottomBorder
-              ? const BorderSide(color: Color(0xFF1E2124))
-              : BorderSide.none,
-        ),
+  @override
+  Widget build(BuildContext context) {
+    final toggleWidth = isTablet ? 46.0 : (compact ? 40.0 : 42.0);
+    final toggleHeight = compact ? 24.0 : 27.0;
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: compact ? 26 : 30,
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: isLabel ? FontWeight.w700 : FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  static double _r2(double v) => (v * 100).roundToDouble() / 100;
-
-  Widget _buildItemsTaxTable(NumberFormat currencyFormat) {
-    final rows = <Map<String, String>>[];
-
-    void addItem(InvoiceItem item) {
-      final unitExclVat = _r2(item.unitPrice / 1.15);
-      final grossBeforeVat = _r2(unitExclVat * item.qty);
-      double discount = 0;
-      if (item.discountType == 'percent' || item.discountType == 'percentage') {
-        discount = _r2(grossBeforeVat * ((item.discountValue ?? 0) / 100));
-      } else if ((item.discountValue ?? 0) > 0) {
-        discount = item.discountValue ?? 0;
-      }
-      final totalBeforeVat = _r2(grossBeforeVat - discount);
-      final vat = _r2(totalBeforeVat * 0.15);
-      final totalWithVat = _r2(totalBeforeVat + vat);
-      rows.add({
-        'name': item.productName,
-        'unit': currencyFormat.format(unitExclVat),
-        'qty': item.qty % 1 == 0 ? item.qty.toInt().toString() : item.qty.toStringAsFixed(2),
-        'gross': currencyFormat.format(grossBeforeVat),
-        'discount': currencyFormat.format(discount),
-        'beforeVat': currencyFormat.format(totalBeforeVat),
-        'vat': currencyFormat.format(vat),
-        'withVat': currencyFormat.format(totalWithVat),
-      });
-    }
-
-    if (invoice.departments.isNotEmpty) {
-      for (final dept in invoice.departments) {
-        for (final item in dept.items) {
-          addItem(item);
-        }
-      }
-    } else {
-      for (final item in invoice.items) {
-        addItem(item);
-      }
-    }
-
-    Widget cell(String text, {int flex = 1, bool bold = false, Color? bg}) {
-      return Expanded(
-        flex: flex,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          decoration: BoxDecoration(
-            color: bg,
-            border: Border.all(color: const Color(0xFF1E2124), width: 0.5),
-          ),
-          alignment: Alignment.centerLeft,
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              cell('Goods/Services', flex: 4, bold: true, bg: AppColors.primaryLight),
-              cell('Unit Price (Excl. VAT)', flex: 2, bold: true, bg: AppColors.primaryLight),
-              cell('Qty', flex: 1, bold: true, bg: AppColors.primaryLight),
-              cell('Gross Amt Before VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
-              cell('Discount', flex: 2, bold: true, bg: AppColors.primaryLight),
-              cell('Total Before VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
-              cell('VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
-              cell('Total With VAT', flex: 2, bold: true, bg: AppColors.primaryLight),
-            ],
-          ),
-        ),
-        ...rows.map(
-              (r) => IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                cell(r['name']!, flex: 4),
-                cell(r['unit']!, flex: 2),
-                cell(r['qty']!, flex: 1),
-                cell(r['gross']!, flex: 2),
-                cell(r['discount']!, flex: 2),
-                cell(r['beforeVat']!, flex: 2),
-                cell(r['vat']!, flex: 2),
-                cell(r['withVat']!, flex: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isTablet ? 9.5 : 8.5,
+                    fontWeight: FontWeight.w600,
+                    color: enabled
+                        ? const Color(0xFF475569)
+                        : Colors.grey.shade400,
+                  ),
+                ),
+                Text(
+                  _statusCaption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isTablet ? 8.0 : 7.5,
+                    fontWeight: FontWeight.w600,
+                    color: !roleAllowsDuty
+                        ? Colors.grey.shade400
+                        : (!technicianOnline
+                        ? Colors.grey.shade500
+                        : (value
+                        ? Colors.green.shade700
+                        : Colors.grey.shade600)),
+                  ),
+                ),
               ],
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTotalsTaxTable(NumberFormat currencyFormat) {
-    Widget row(String label, String value, {bool total = false}) {
-      return Row(
-        children: [
-          Expanded(
-            flex: 6,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: Color(0xFF1E2124)),
-                  right: BorderSide(color: Color(0xFF1E2124)),
-                  bottom: BorderSide(color: Color(0xFF1E2124)),
-                ),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: total ? 14 : 12,
-                  fontWeight: total ? FontWeight.w800 : FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                border: Border(
-                  right: BorderSide(color: Color(0xFF1E2124)),
-                  bottom: BorderSide(color: Color(0xFF1E2124)),
-                ),
-              ),
-              child: Text(
-                value,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  fontSize: total ? 14 : 12,
-                  fontWeight: total ? FontWeight.w900 : FontWeight.w700,
-                  color: total ? AppColors.secondaryLight : const Color(0xFF1E2124),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Compute per-item totals from the items table (VAT-exclusive).
-    double grossAmountExclVat = 0;
-    double itemDiscountsTotal = 0;
-    void accumulate(InvoiceItem item) {
-      final unitExcl = _r2(item.unitPrice / 1.15);
-      final gross = _r2(unitExcl * item.qty);
-      double disc = 0;
-      if (item.discountType == 'percent' || item.discountType == 'percentage') {
-        disc = _r2(gross * ((item.discountValue ?? 0) / 100));
-      } else if ((item.discountValue ?? 0) > 0) {
-        disc = item.discountValue ?? 0;
-      }
-      grossAmountExclVat += gross;
-      itemDiscountsTotal += disc;
-    }
-    if (invoice.departments.isNotEmpty) {
-      for (final dept in invoice.departments) {
-        for (final item in dept.items) {
-          accumulate(item);
-        }
-      }
-    } else {
-      for (final item in invoice.items) {
-        accumulate(item);
-      }
-    }
-
-    // Job-level discounts from departments.
-    double invoiceDiscount = 0;
-    double promoDiscount = 0;
-    if (invoice.departments.isNotEmpty) {
-      for (final dept in invoice.departments) {
-        final afterLine = dept.amountAfterDiscount > 0
-            ? dept.amountAfterDiscount
-            : (grossAmountExclVat - itemDiscountsTotal);
-        if (dept.totalDiscountType == 'percent' || dept.totalDiscountType == 'percentage') {
-          invoiceDiscount += _r2(afterLine * (dept.totalDiscountValue / 100));
-        } else {
-          invoiceDiscount += dept.totalDiscountValue;
-        }
-        promoDiscount += dept.promoDiscountAmount;
-      }
-    }
-
-    final totalTaxableAmount = _r2(grossAmountExclVat - itemDiscountsTotal - invoiceDiscount - promoDiscount);
-    final vatAmount = _r2(totalTaxableAmount * 0.15);
-    final totalInvoiceAmount = _r2(totalTaxableAmount + vatAmount);
-
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          color: AppColors.primaryLight,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-          child: const Text(
-            'Total Amount',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-          ),
-        ),
-        row('Gross Amount (Excluding VAT)', currencyFormat.format(grossAmountExclVat)),
-        row('Item Discounts', currencyFormat.format(itemDiscountsTotal)),
-        if (invoiceDiscount > 0)
-          row('Invoice Discount', currencyFormat.format(invoiceDiscount)),
-        if (promoDiscount > 0)
-          row('Promo Discount', currencyFormat.format(promoDiscount)),
-        row('Total Taxable Amount', currencyFormat.format(totalTaxableAmount)),
-        row('VAT 15%', currencyFormat.format(vatAmount)),
-        row('Total Invoice Amount', currencyFormat.format(totalInvoiceAmount), total: true),
-      ],
-    );
-  }
-
-  /// Bilingual maintenance checklist: header in two halves; each row is
-  /// English | Arabic | checkbox | English | Arabic | checkbox.
-  Widget _buildChecklistSection() {
-    const kInv = Color(0xFF1E2124);
-    const leftCol = <(String en, String ar)>[
-      ('Tire Pressure Check', 'فحص هواء الاطارات'),
-      ('Brake Fluid Check', 'فحص سائل الفرامل'),
-      ('Wipers Fluid Check', 'فحص سائل المساحات'),
-    ];
-    const rightCol = <(String en, String ar)>[
-      ('Power Steering Fluid Check', 'فحص سائل المقود'),
-      ('Transmission Fluid Check', 'فحص سائل نقل الحركة'),
-      ('Radiator Fluid Check', 'فحص سائل مبرد المحرك'),
-    ];
-
-    const headerStyle = TextStyle(
-      color: Colors.white,
-      fontSize: 12,
-      fontWeight: FontWeight.w800,
-    );
-
-    Widget cellEn(String text) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            text,
-            textAlign: TextAlign.left,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: kInv,
-              height: 1.25,
-            ),
-          ),
-        ),
-      );
-    }
-
-    Widget cellAr(String text) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            text,
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade800,
-              height: 1.25,
-            ),
-          ),
-        ),
-      );
-    }
-
-    Widget cellCheckbox() {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Center(
-          child: Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              border: Border.all(color: kInv, width: 1),
-              borderRadius: BorderRadius.circular(2),
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: kInv, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Color(0xFF5B5B5B),
-              border: Border(
-                bottom: BorderSide(color: kInv, width: 1),
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text('Check list', style: headerStyle),
-                    ),
+          if (busy)
+            SizedBox(
+              width: compact ? 32 : 36,
+              child: Center(
+                child: SizedBox(
+                  width: compact ? 18 : 20,
+                  height: compact ? 18 : 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.primaryLight,
                   ),
-                  Container(width: 1, color: kInv),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Text('قائمة الفحص', style: headerStyle),
-                    ),
-                  ),
-                ],
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              width: toggleWidth,
+              height: toggleHeight,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.centerRight,
+                child: Switch(
+                  value: value,
+                  onChanged: enabled ? onChanged : null,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  thumbColor: MaterialStateProperty.resolveWith((states) {
+                    if (states.contains(MaterialState.disabled)) {
+                      return Colors.grey.shade400;
+                    }
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.white;
+                    }
+                    return Colors.grey.shade200;
+                  }),
+                  trackColor: MaterialStateProperty.resolveWith((states) {
+                    if (states.contains(MaterialState.disabled)) {
+                      return Colors.grey.shade300;
+                    }
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.green.shade600;
+                    }
+                    return Colors.grey.shade500;
+                  }),
+                  trackOutlineColor:
+                  MaterialStateProperty.all(Colors.transparent),
+                ),
               ),
             ),
-          ),
-          Table(
-            columnWidths: const <int, TableColumnWidth>{
-              0: FlexColumnWidth(2.15),
-              1: FlexColumnWidth(2.15),
-              2: FixedColumnWidth(26),
-              3: FlexColumnWidth(2.15),
-              4: FlexColumnWidth(2.15),
-              5: FixedColumnWidth(26),
-            },
-            border: const TableBorder(
-              horizontalInside: BorderSide(color: kInv, width: 1),
-              verticalInside: BorderSide(color: kInv, width: 1),
-            ),
-            children: [
-              for (var i = 0; i < 3; i++)
-                TableRow(
-                  children: [
-                    cellEn(leftCol[i].$1),
-                    cellAr(leftCol[i].$2),
-                    cellCheckbox(),
-                    cellEn(rightCol[i].$1),
-                    cellAr(rightCol[i].$2),
-                    cellCheckbox(),
-                  ],
-                ),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppColors.secondaryLight),
-        const SizedBox(width: 8),
-        Text(
-          '$label:',
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Color(0xFF1E2124),
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-            textAlign: TextAlign.right,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetaItem(String label, String value, {Color? color}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey.shade500,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            color: color ?? const Color(0xFF1E2124),
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPriceRow(
-      String label,
-      String value, {
-        bool isTotal = false,
-        bool isDiscount = false,
-        Color? labelColor,
-        Color? valueColor,
-      }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isTotal ? 17 : 15,
-            fontWeight: isTotal ? FontWeight.w900 : FontWeight.w600,
-            color:
-            labelColor ??
-                (isDiscount
-                    ? Colors.red.shade700
-                    : (isTotal
-                    ? const Color(0xFF1E2124)
-                    : Colors.grey.shade700)),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isTotal ? 21 : 15,
-            fontWeight: isTotal ? FontWeight.w900 : FontWeight.w800,
-            color: valueColor ??
-                (isDiscount
-                    ? Colors.red.shade700
-                    : (isTotal
-                    ? AppColors.secondaryLight
-                    : const Color(0xFF1E2124))),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -4442,6 +4099,11 @@ class TechnicianCard extends StatelessWidget {
   final bool showPresenceToggle;
   final bool presenceBusy;
   final ValueChanged<bool>? onPresenceChanged;
+  /// Cashier: workshop / on-call duty toggles (can show together with [showPresenceToggle]).
+  final bool showDutyToggles;
+  final bool dutyBusy;
+  final ValueChanged<bool>? onWorkshopDutyChanged;
+  final ValueChanged<bool>? onOnCallDutyChanged;
 
   const TechnicianCard({
     super.key,
@@ -4450,35 +4112,65 @@ class TechnicianCard extends StatelessWidget {
     this.showPresenceToggle = false,
     this.presenceBusy = false,
     this.onPresenceChanged,
+    this.showDutyToggles = false,
+    this.dutyBusy = false,
+    this.onWorkshopDutyChanged,
+    this.onOnCallDutyChanged,
   });
 
-  Color _getStatusColor(String status) {
-    final lowerStatus = status.toLowerCase();
-    if (lowerStatus.contains('online') ||
-        lowerStatus.contains('available') ||
-        lowerStatus.contains('active')) {
-      return Colors.green.shade600;
-    } else if (lowerStatus.contains('busy') ||
-        lowerStatus.contains('working') ||
-        lowerStatus.contains('ongoing')) {
-      return Colors.orange.shade600;
+  Color _cashierPresenceDotColor(PosTechnician tech) {
+    if (!tech.isOnline) return Colors.grey.shade500;
+    final dm = _effectiveDutyModeForCard(tech);
+    if (dm == 'workshop') return Colors.green.shade600;
+    if (dm == 'on_call') return Colors.deepOrange.shade600;
+    return Colors.grey.shade600;
+  }
+
+  String _effectiveDutyModeForCard(PosTechnician tech) {
+    var dm = tech.dutyMode?.toLowerCase().trim() ?? '';
+    if (dm.isNotEmpty) return dm;
+    if (tech.workshopDuty) return 'workshop';
+    if (tech.onCallDuty) return 'on_call';
+    return 'inactive';
+  }
+
+  /// Workshop → active floor; on-call only → **On call**; otherwise **Not available** (still not cashier-offline).
+  String _cashierPresenceHeadline(PosTechnician tech, AppLocalizations l10n) {
+    if (!tech.isOnline) {
+      return l10n.posTechCardLastSeen(tech.formattedLastSeen);
     }
-    return Colors.grey.shade500;
+    final dm = _effectiveDutyModeForCard(tech);
+    if (dm == 'workshop') {
+      return l10n.posTechCardOnlineNow;
+    }
+    if (dm == 'on_call') {
+      return l10n.posTechCardOnCall;
+    }
+    return l10n.posTechCardNotAvailable;
+  }
+
+  Color _cashierPresenceHeadlineColor(PosTechnician tech) {
+    if (!tech.isOnline) return Colors.grey.shade600;
+    final dm = _effectiveDutyModeForCard(tech);
+    if (dm == 'workshop') {
+      return Colors.green.shade700;
+    }
+    if (dm == 'on_call') {
+      return Colors.deepOrange.shade800;
+    }
+    return Colors.grey.shade700;
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final statusColor = _getStatusColor(tech.statusInfo);
+    final presenceDotColor = _cashierPresenceDotColor(tech);
+    final l10n = AppLocalizations.of(context)!;
     final departmentText = tech.departments.isNotEmpty
         ? tech.departments.map((d) => d.name).where((e) => e.isNotEmpty).join(', ')
         : l10n.posTechCardNoDepartment;
-    // Resolve last-seen using locale-aware helper (rebuilds on locale switch automatically)
-    final rawLastSeen = localizedLastSeen(tech, l10n);
-    final lastSeenText = tech.isOnline
-        ? l10n.posTechCardOnlineNow
-        : l10n.posTechCardLastSeen(rawLastSeen);
+    final presenceHeadline = _cashierPresenceHeadline(tech, l10n);
+    final presenceHeadlineColor = _cashierPresenceHeadlineColor(tech);
     final slotsFull = tech.totalSlots > 0 && tech.slotsUsed >= tech.totalSlots;
 
     return Container(
@@ -4491,7 +4183,7 @@ class TechnicianCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -4503,13 +4195,18 @@ class TechnicianCard extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              CircleAvatar(
-                radius: isTablet ? 24 : 20,
-                backgroundColor: AppColors.primaryLight.withOpacity(0.15),
+              Container(
+                width: isTablet ? 48 : 40,
+                height: isTablet ? 48 : 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
                 child: Icon(
                   Icons.person,
                   size: isTablet ? 24 : 20,
-                  color: AppColors.secondaryLight,
+                  color: AppColors.onPrimaryLight,
                 ),
               ),
               Positioned(
@@ -4519,7 +4216,7 @@ class TechnicianCard extends StatelessWidget {
                   width: isTablet ? 11 : 9,
                   height: isTablet ? 11 : 9,
                   decoration: BoxDecoration(
-                    color: statusColor,
+                    color: presenceDotColor,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
@@ -4538,15 +4235,13 @@ class TechnicianCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        lastSeenText,
+                        presenceHeadline,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: isTablet ? 10.0 : 9.0,
                           fontWeight: FontWeight.w600,
-                          color: tech.isOnline
-                              ? Colors.green.shade700
-                              : Colors.grey.shade600,
+                          color: presenceHeadlineColor,
                         ),
                       ),
                     ),
@@ -4669,6 +4364,35 @@ class TechnicianCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (showDutyToggles &&
+                    (onWorkshopDutyChanged != null ||
+                        onOnCallDutyChanged != null)) ...[
+                  SizedBox(height: isTablet ? 6 : 5),
+                  _CashierDutyToggle(
+                    label: l10n.posTechCardWorkshopDuty,
+                    isTablet: isTablet,
+                    compact: compact,
+                    enabled:
+                    _techCanToggleWorkshop(tech) && tech.isOnline,
+                    value: tech.workshopDuty,
+                    busy: dutyBusy,
+                    technicianOnline: tech.isOnline,
+                    roleAllowsDuty: _techCanToggleWorkshop(tech),
+                    onChanged: onWorkshopDutyChanged,
+                  ),
+                  SizedBox(height: isTablet ? 3 : 2),
+                  _CashierDutyToggle(
+                    label: l10n.posTechCardOnCallDuty,
+                    isTablet: isTablet,
+                    compact: compact,
+                    enabled: _techCanToggleOnCall(tech) && tech.isOnline,
+                    value: tech.onCallDuty,
+                    busy: dutyBusy,
+                    technicianOnline: tech.isOnline,
+                    roleAllowsDuty: _techCanToggleOnCall(tech),
+                    onChanged: onOnCallDutyChanged,
+                  ),
+                ],
               ],
             ),
           ),
@@ -4711,12 +4435,12 @@ class StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: accentColor.withOpacity(0.04),
+            color: accentColor.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -4767,7 +4491,7 @@ class SearchBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PosSearchBar(
-      hintText: 'Search item or service',
+      hintText: AppLocalizations.of(context)!.posProductSearchHint,
       onChanged: (val) => context.read<pvm.PosViewModel>().setSearchQuery(val),
     );
   }
@@ -4848,7 +4572,7 @@ class ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -4857,7 +4581,7 @@ class ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LocalizedApiText(
+          Text(
             product.name,
             style: const TextStyle(
               fontSize: 16,
@@ -4873,7 +4597,7 @@ class ProductCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: stockColor.withOpacity(0.12),
+                  color: stockColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -4888,7 +4612,7 @@ class ProductCard extends StatelessWidget {
               const SizedBox(width: 8),
               if (product.subtitle.isNotEmpty)
                 Expanded(
-                  child: LocalizedApiText(
+                  child: Text(
                     product.subtitle,
                     style: TextStyle(
                       fontSize: 12,

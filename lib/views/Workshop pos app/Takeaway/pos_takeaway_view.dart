@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
-import '../../../services/localized_api_text.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/toast_service.dart';
@@ -10,7 +9,6 @@ import '../../../models/takeaway_models.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Home Screen/pos_view_model.dart';
-import '../../../l10n/app_localizations.dart';
 import '../Order Screen/pos_invoice_payment_dialog.dart';
 import '../Order Screen/pos_order_review_view.dart'
 show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
@@ -329,7 +327,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
 
   /// Right column on tablet — mirrors Products tab live invoice (narrow panel + totals).
   Widget _buildLiveInvoicePanel(BuildContext context, TakeawayViewModel vm) {
-    final currency = AppLocalizations.of(context)!.currencySymbol;
+    final currency = vm.catalog?.currency ?? 'SAR';
 
     final gross = vm.grossExclVatBeforeLineDiscounts;
     final lineDiscount = vm.lineDiscountTotalExclVat;
@@ -753,7 +751,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         alignment: Alignment.center,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 9),
-          child: LocalizedApiText(
+          child: Text(
             label,
             textAlign: TextAlign.center,
             maxLines: 2,
@@ -818,7 +816,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                           ]
                         : null,
                   ),
-                  child: LocalizedApiText(
+                  child: Text(
                     subCat,
                     style: TextStyle(
                       fontSize: isTablet ? 12 : 11,
@@ -861,7 +859,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     bool isPortrait,
   ) {
     final filtered = vm.visibleProducts;
-    final currency = AppLocalizations.of(context)!.currencySymbol;
+    final currency = vm.catalog?.currency ?? 'SAR';
 
     if (filtered.isEmpty) {
       return RefreshIndicator(
@@ -997,7 +995,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                   padding: EdgeInsets.only(
                                     right: cartQty > 0 ? 44 : 0,
                                   ),
-                                  child: LocalizedApiText(
+                                  child: Text(
                                     product.name,
                                     style: AppTextStyles.bodyMedium.copyWith(
                                       fontWeight: FontWeight.w700,
@@ -1191,7 +1189,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                       children: [
                         SizedBox(
                           height: 36,
-                          child: LocalizedApiText(
+                          child: Text(
                             product.name,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w700,
@@ -1374,7 +1372,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     TakeawayViewModel vm,
     bool isTablet,
   ) {
-    final currency = AppLocalizations.of(context)!.currencySymbol;
+    final currency = vm.catalog?.currency ?? 'SAR';
     return Container(
       padding: EdgeInsets.fromLTRB(
         isTablet ? 18 : 16,
@@ -1733,7 +1731,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: LocalizedApiText(
+                    child: Text(
                       line.product.name,
                       style: TextStyle(
                         fontSize: isTablet ? 17 : 13,
@@ -1874,7 +1872,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                         borderRadius: BorderRadius.circular(7),
                       ),
                       child: Text(
-                        isPercent ? '%' : AppLocalizations.of(context)!.currencySymbol,
+                        isPercent ? '%' : 'SAR',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

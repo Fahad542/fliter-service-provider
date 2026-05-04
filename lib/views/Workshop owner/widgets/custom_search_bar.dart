@@ -1,27 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../utils/app_colors.dart';
 
 class CustomSearchBar extends StatelessWidget {
   final Function(String) onChanged;
-  final String? hintText;
+  final String hintText;
 
   const CustomSearchBar({
     super.key,
     required this.onChanged,
-    this.hintText,
+    this.hintText = 'Search...',
   });
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
     return TextField(
       onChanged: onChanged,
       style: const TextStyle(fontSize: 14),
-      textDirection: Directionality.of(context),
       decoration: InputDecoration(
-        hintText: hintText ?? l10n.ownerCommonSearchHint,
+        hintText: hintText,
         hintStyle: const TextStyle(fontSize: 13.5, color: Colors.grey),
         prefixIcon: const Icon(Icons.search_rounded, color: Colors.grey, size: 20),
         filled: true,

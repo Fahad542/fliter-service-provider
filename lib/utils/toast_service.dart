@@ -1,31 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../l10n/app_localizations.dart'; // adjust path if needed
-import '../services/locker_translation_mixin.dart'; // provides AppTranslationService
 
 class ToastService {
   static OverlayEntry? _currentEntry;
   static Timer? _timer;
 
-  static void showSuccess(BuildContext context, String message, {String? title}) async {
-    final l10n = AppLocalizations.of(context);
-    final langCode = Localizations.localeOf(context).languageCode;
-    final translatedMessage = await AppTranslationService.localizedTextForLanguage(message, langCode);
-    _show(context, translatedMessage, title ?? l10n?.toastSuccess ?? 'Success', Colors.green.shade800);
+  static void showSuccess(BuildContext context, String message) {
+    _show(context, message, 'Success', Colors.green.shade800);
   }
 
-  static void showError(BuildContext context, String message, {String? title}) async {
-    final l10n = AppLocalizations.of(context);
-    final langCode = Localizations.localeOf(context).languageCode;
-    final translatedMessage = await AppTranslationService.localizedTextForLanguage(message, langCode);
-    _show(context, translatedMessage, title ?? l10n?.toastError ?? 'Error', const Color(0xFFB71C1C));
+  static void showError(BuildContext context, String message) {
+    _show(context, message, 'Error', const Color(0xFFB71C1C));
   }
 
-  static void showInfo(BuildContext context, String message, {String? title}) async {
-    final l10n = AppLocalizations.of(context);
-    final langCode = Localizations.localeOf(context).languageCode;
-    final translatedMessage = await AppTranslationService.localizedTextForLanguage(message, langCode);
-    _show(context, translatedMessage, title ?? l10n?.toastInfo ?? 'Info', Colors.blue.shade800);
+  static void showInfo(BuildContext context, String message) {
+    _show(context, message, 'Info', Colors.blue.shade800);
   }
 
   static void _show(BuildContext context, String message, String title, Color titleColor) {
@@ -33,7 +22,7 @@ class ToastService {
     _timer?.cancel();
 
     final overlay = Overlay.of(context);
-
+    
     _currentEntry = OverlayEntry(
       builder: (context) => _ToastWidget(
         title: title,
@@ -120,7 +109,7 @@ class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderSta
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top + 20;
-
+    
     return Positioned(
       top: topPadding,
       left: 24,

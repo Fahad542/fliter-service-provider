@@ -8861,6 +8861,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Info'**
   String get toastInfo;
+
+  /// No description provided for @posCommonGoBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get posCommonGoBack;
+
+  /// No description provided for @posCommonConfirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Cancel'**
+  String get posCommonConfirmCancel;
+
+  /// No description provided for @posCommonCancelledByCashier.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled by cashier'**
+  String get posCommonCancelledByCashier;
+
+  /// No description provided for @posThermalPrinterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Thermal Printer (Wi-Fi)'**
+  String get posThermalPrinterTitle;
+
+  /// No description provided for @posThermalPrinterIpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Printer IP'**
+  String get posThermalPrinterIpLabel;
+
+  /// No description provided for @posThermalPrinterIpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 192.168.8.55'**
+  String get posThermalPrinterIpHint;
+
+  /// No description provided for @posThermalPrinterPortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get posThermalPrinterPortLabel;
+
+  /// No description provided for @posThermalPrinterPortHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'9100 for most Epson network receipt printers'**
+  String get posThermalPrinterPortHelper;
+
+  /// No description provided for @posThermalPrinterSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Printer address saved.'**
+  String get posThermalPrinterSaved;
+
+  /// No description provided for @posCommonCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get posCommonCancel;
+
+  /// No description provided for @posOrdersCancelOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Order'**
+  String get posOrdersCancelOrderTitle;
+
+  /// No description provided for @posOrdersCancelOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to cancel this order?'**
+  String get posOrdersCancelOrderBody;
+
+  /// No description provided for @posTechCardOnCall.
+  ///
+  /// In en, this message translates to:
+  /// **'On call'**
+  String get posTechCardOnCall;
+
+  /// No description provided for @posTechCardNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get posTechCardNotAvailable;
+
+  /// No description provided for @posTechCardWorkshopDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop Duty'**
+  String get posTechCardWorkshopDuty;
+
+  /// No description provided for @posTechCardOnCallDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'On Call Duty'**
+  String get posTechCardOnCallDuty;
+
+  /// No description provided for @storeClosingCounterReconciliation.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter Reconciliation'**
+  String get storeClosingCounterReconciliation;
+
+  /// No description provided for @storeClosingReconciliationSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconciliation Summary'**
+  String get storeClosingReconciliationSummary;
+
+  /// No description provided for @storeClosingShiftClosingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift Closing Status'**
+  String get storeClosingShiftClosingStatus;
+
+  /// No description provided for @storeClosingCashier.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashier'**
+  String get storeClosingCashier;
+
+  /// No description provided for @storeClosingBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get storeClosingBranch;
+
+  /// No description provided for @storeClosingMainBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Main Branch'**
+  String get storeClosingMainBranch;
+
+  /// No description provided for @storeClosingOthersEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Others / Employee'**
+  String get storeClosingOthersEmployee;
+
+  /// No description provided for @posCommonAddNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add notes...'**
+  String get posCommonAddNotesHint;
+
+  /// No description provided for @storeClosingCashAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Account'**
+  String get storeClosingCashAccount;
+
+  /// No description provided for @storeClosingBankCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank / Cards'**
+  String get storeClosingBankCards;
+
+  /// No description provided for @storeClosingOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Others'**
+  String get storeClosingOthers;
+
+  /// No description provided for @storeClosingCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get storeClosingCategory;
+
+  /// No description provided for @storeClosingSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get storeClosingSystem;
+
+  /// No description provided for @storeClosingPhysicalCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Physical'**
+  String get storeClosingPhysicalCol;
+
+  /// No description provided for @storeClosingDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Diff'**
+  String get storeClosingDiff;
+
+  /// No description provided for @storeClosingBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced'**
+  String get storeClosingBalanced;
+
+  /// No description provided for @storeClosingShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Short'**
+  String get storeClosingShort;
+
+  /// No description provided for @storeClosingExcess.
+  ///
+  /// In en, this message translates to:
+  /// **'Excess'**
+  String get storeClosingExcess;
+
+  /// No description provided for @storeClosingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get storeClosingSummary;
+
+  /// No description provided for @storeClosingAmountCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get storeClosingAmountCol;
+
+  /// No description provided for @storeClosingTotalSalesReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Sales Return'**
+  String get storeClosingTotalSalesReturn;
+
+  /// No description provided for @storeClosingBeforeReturns.
+  ///
+  /// In en, this message translates to:
+  /// **'Before Returns'**
+  String get storeClosingBeforeReturns;
+
+  /// No description provided for @storeClosingGrandTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Total'**
+  String get storeClosingGrandTotal;
+
+  /// No description provided for @storeClosingCloseShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Shift'**
+  String get storeClosingCloseShift;
+
+  /// No description provided for @storeClosingGenerateReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Report'**
+  String get storeClosingGenerateReport;
+
+  /// No description provided for @storeClosingFinalLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Final Logout'**
+  String get storeClosingFinalLogout;
+
+  /// No description provided for @storeClosingLogOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Out'**
+  String get storeClosingLogOut;
+
+  /// No description provided for @storeClosingLogOutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out and close the shift?'**
+  String get storeClosingLogOutBody;
+
+  /// No description provided for @storeClosingLogOutCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get storeClosingLogOutCancel;
+
+  /// No description provided for @posHomeTabletRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Tablet Required'**
+  String get posHomeTabletRequired;
+
+  /// No description provided for @posHomeLandscapeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please rotate your device to landscape mode to use the POS system.'**
+  String get posHomeLandscapeRequired;
+
+  /// No description provided for @posNavOrdersHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders Hub'**
+  String get posNavOrdersHub;
+
+  /// No description provided for @posNavBroadcastTechnician.
+  ///
+  /// In en, this message translates to:
+  /// **'Broadcast'**
+  String get posNavBroadcastTechnician;
+
+  /// No description provided for @posNavInventorySales.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory Sales'**
+  String get posNavInventorySales;
+
+  /// No description provided for @posNavTakeaway.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeaway'**
+  String get posNavTakeaway;
 }
 
 class _AppLocalizationsDelegate

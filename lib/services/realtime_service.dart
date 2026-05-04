@@ -13,6 +13,8 @@ class RealtimeService {
   static const String _namespace = '/realtime';
   static const String _socketPath = '/socket.io';
 
+  static const String eventCashierTechniciansUpdated = 'cashier.technicians.updated';
+  static const String eventTechnicianProfileUpdated = 'technician.profile.updated';
   static const String eventCashierOrdersUpdated = 'cashier.orders.updated';
   static const String eventTechnicianOrdersUpdated = 'technician.assigned-orders.updated';
   static const String eventTechnicianBroadcastCreated = 'technician.broadcast.created';
@@ -64,6 +66,16 @@ class RealtimeService {
 
     _socket!.onError((err) {
       print('[Realtime] Socket error: $err');
+    });
+
+    _socket!.on(eventCashierTechniciansUpdated, (data) {
+      print('[Realtime] cashier.technicians.updated: $data');
+      _emit(eventCashierTechniciansUpdated, _toMap(data));
+    });
+
+    _socket!.on(eventTechnicianProfileUpdated, (data) {
+      print('[Realtime] technician.profile.updated: $data');
+      _emit(eventTechnicianProfileUpdated, _toMap(data));
     });
 
     _socket!.on(eventCashierOrdersUpdated, (data) {

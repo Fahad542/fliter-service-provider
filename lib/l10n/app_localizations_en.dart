@@ -4689,4 +4689,161 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toastInfo => 'Info';
+
+  @override
+  String get posCommonGoBack => 'Go Back';
+
+  @override
+  String get posCommonConfirmCancel => 'Confirm Cancel';
+
+  @override
+  String get posCommonCancelledByCashier => 'Cancelled by cashier';
+
+  @override
+  String get posThermalPrinterTitle => 'Thermal Printer (Wi-Fi)';
+
+  @override
+  String get posThermalPrinterIpLabel => 'Printer IP';
+
+  @override
+  String get posThermalPrinterIpHint => 'e.g. 192.168.8.55';
+
+  @override
+  String get posThermalPrinterPortLabel => 'Port';
+
+  @override
+  String get posThermalPrinterPortHelper =>
+      '9100 for most Epson network receipt printers';
+
+  @override
+  String get posThermalPrinterSaved => 'Printer address saved.';
+
+  @override
+  String get posCommonCancel => 'Cancel';
+
+  @override
+  String get posOrdersCancelOrderTitle => 'Cancel Order';
+
+  @override
+  String get posOrdersCancelOrderBody =>
+      'Are you sure you want to cancel this order?';
+
+  @override
+  String get posTechCardOnCall => 'On call';
+
+  @override
+  String get posTechCardNotAvailable => 'Not available';
+
+  @override
+  String get posTechCardWorkshopDuty => 'Workshop Duty';
+
+  @override
+  String get posTechCardOnCallDuty => 'On Call Duty';
+
+  @override
+  String get storeClosingCounterReconciliation => 'Counter Reconciliation';
+
+  @override
+  String get storeClosingReconciliationSummary => 'Reconciliation Summary';
+
+  @override
+  String get storeClosingShiftClosingStatus => 'Shift Closing Status';
+
+  @override
+  String get storeClosingCashier => 'Cashier';
+
+  @override
+  String get storeClosingBranch => 'Branch';
+
+  @override
+  String get storeClosingMainBranch => 'Main Branch';
+
+  @override
+  String get storeClosingOthersEmployee => 'Others / Employee';
+
+  @override
+  String get posCommonAddNotesHint => 'Add notes...';
+
+  @override
+  String get storeClosingCashAccount => 'Cash Account';
+
+  @override
+  String get storeClosingBankCards => 'Bank / Cards';
+
+  @override
+  String get storeClosingOthers => 'Others';
+
+  @override
+  String get storeClosingCategory => 'Category';
+
+  @override
+  String get storeClosingSystem => 'System';
+
+  @override
+  String get storeClosingPhysicalCol => 'Physical';
+
+  @override
+  String get storeClosingDiff => 'Diff';
+
+  @override
+  String get storeClosingBalanced => 'Balanced';
+
+  @override
+  String get storeClosingShort => 'Short';
+
+  @override
+  String get storeClosingExcess => 'Excess';
+
+  @override
+  String get storeClosingSummary => 'Summary';
+
+  @override
+  String get storeClosingAmountCol => 'Amount';
+
+  @override
+  String get storeClosingTotalSalesReturn => 'Total Sales Return';
+
+  @override
+  String get storeClosingBeforeReturns => 'Before Returns';
+
+  @override
+  String get storeClosingGrandTotal => 'Grand Total';
+
+  @override
+  String get storeClosingCloseShift => 'Close Shift';
+
+  @override
+  String get storeClosingGenerateReport => 'Generate Report';
+
+  @override
+  String get storeClosingFinalLogout => 'Final Logout';
+
+  @override
+  String get storeClosingLogOut => 'Log Out';
+
+  @override
+  String get storeClosingLogOutBody =>
+      'Are you sure you want to log out and close the shift?';
+
+  @override
+  String get storeClosingLogOutCancel => 'Cancel';
+
+  @override
+  String get posHomeTabletRequired => 'Tablet Required';
+
+  @override
+  String get posHomeLandscapeRequired =>
+      'Please rotate your device to landscape mode to use the POS system.';
+
+  @override
+  String get posNavOrdersHub => 'Orders Hub';
+
+  @override
+  String get posNavBroadcastTechnician => 'Broadcast';
+
+  @override
+  String get posNavInventorySales => 'Inventory Sales';
+
+  @override
+  String get posNavTakeaway => 'Takeaway';
 }

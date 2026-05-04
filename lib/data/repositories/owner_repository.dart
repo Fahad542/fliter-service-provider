@@ -531,6 +531,7 @@ class OwnerRepository {
     String token, {
     DateTime? from,
     DateTime? to,
+    int? viewerUtcOffsetMinutes,
   }) async {
     try {
       String ymd(DateTime d) =>
@@ -541,6 +542,9 @@ class OwnerRepository {
       final qp = <String, String>{};
       if (from != null) qp['from'] = ymd(from);
       if (to != null) qp['to'] = ymd(to);
+      if (viewerUtcOffsetMinutes != null) {
+        qp['viewerUtcOffsetMinutes'] = '$viewerUtcOffsetMinutes';
+      }
 
       if (qp.isEmpty) {
         final response = await _apiService.get(

@@ -130,9 +130,9 @@ class TechDashboardView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 8),
-                            _buildAvailabilityCard(vm),
-                            const SizedBox(height: 16),
-                            _buildDutyToggles(context, vm),
+                            vm.isOfflineLockedByCashier
+                                ? _buildOfflineLockedNotice()
+                                : _buildDutyToggles(context, vm),
                             const SizedBox(height: 24),
                             _buildQuickAction(context),
                             const SizedBox(height: 32),
@@ -149,139 +149,110 @@ class TechDashboardView extends StatelessWidget {
     );
   }
 
-
-  Widget _buildDutyToggles(BuildContext context, TechAppViewModel vm) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Opacity(
-          opacity: vm.isOnline ? 1.0 : 0.45,
-          child: IgnorePointer(
-            ignoring: !vm.isOnline,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildToggleCard(
-                    'Workshop Duty',
-                    '(In-house)',
-                    vm.isWorkshopDuty,
-                    Icons.store_rounded,
-                (val) => vm.toggleWorkshopDuty(context, val),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildToggleCard(
-                    'On-Call Duty',
-                    '(Emergency)',
-                    vm.isOnCallDuty,
-                    Icons.electric_bolt_rounded,
-                (val) => vm.toggleOnCallDuty(context, val),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (!vm.isOnline)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              'Go online to enable duty modes and receive jobs.',
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.35),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        if (vm.isWorkshopDuty || vm.isOnCallDuty)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              'You can only be active in one mode at a time.',
-              style: TextStyle(color: Colors.black.withOpacity(0.3), fontSize: 11, fontWeight: FontWeight.w600),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildAvailabilityCard(TechAppViewModel vm) {
-    final bool online = vm.isOnline;
-    final Color accent = online ? const Color(0xFF1FA772) : Colors.grey.shade600;
+  /// Shown when cashier marked the technician offline (presence); duty toggles are hidden.
+  Widget _buildOfflineLockedNotice() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
             offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: AppColors.primaryLight.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.primaryLight.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
-              online ? Icons.wifi_tethering_rounded : Icons.wifi_off_rounded,
+              Icons.wifi_off_rounded,
               color: AppColors.secondaryLight,
-              size: 22,
+              size: 26,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Availability Status',
+                  'You are currently offline',
                   style: TextStyle(
                     color: AppColors.secondaryLight,
-                    fontSize: 13,
+                    fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 6),
                 Text(
-                  online ? 'You are visible for new assignments' : 'You are currently offline',
+                  'The cashier has set your status to offline. Workshop and on-call duties are unavailable until you are marked online again.',
                   style: TextStyle(
-                    color: Colors.black.withOpacity(0.45),
-                    fontSize: 11,
+                    color: Colors.black.withOpacity(0.48),
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
+                    height: 1.35,
                   ),
                 ),
               ],
             ),
           ),
-          if (vm.isOnlineUpdating)
-            const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.secondaryLight,
-              ),
-            )
-          else
-            Switch.adaptive(
-              value: vm.isOnline,
-              onChanged: (v) => vm.updateOnlineStatus(v),
-              activeColor: AppColors.secondaryLight,
-            ),
         ],
       ),
+    );
+  }
+
+
+  Widget _buildDutyToggles(BuildContext context, TechAppViewModel vm) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildToggleCard(
+                'Workshop Duty',
+                '(In-house)',
+                vm.isWorkshopDuty,
+                Icons.store_rounded,
+                (val) => vm.toggleWorkshopDuty(context, val),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildToggleCard(
+                'On-Call Duty',
+                '(Emergency)',
+                vm.isOnCallDuty,
+                Icons.electric_bolt_rounded,
+                (val) => vm.toggleOnCallDuty(context, val),
+              ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Text(
+            'Turn workshop or on-call duty on for the jobs you want to receive. Only one can be active at a time.',
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.35),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

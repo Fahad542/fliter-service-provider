@@ -1,9 +1,9 @@
-import '../../models/locker_financial_models.dart';
-import '../../models/locker_models.dart';
+import '../../../../models/locker_financial_models.dart';
+import '../../../../models/locker_models.dart';
 import '../network/api_constants.dart';
 import '../network/base_api_service.dart';
 
-export '../../models/locker_models.dart' show LockerBranch, LockerVarianceApproval;
+export '../../../../models/locker_models.dart' show LockerBranch, LockerVarianceApproval;
 
 /// Locker portal API wrapper (dashboard, requests, financials, notifications).
 class LockerRepository {

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
-import '../../../l10n/app_localizations.dart';
 import '../../../models/cashier_active_broadcasts_model.dart';
 import '../../../utils/app_colors.dart';
-import '../../../services/localized_api_text.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../Technician App/Notifications/notifications_view.dart';
 import 'cashier_broadcast_view_model.dart';
@@ -17,15 +16,6 @@ class PosCashierBroadcastView extends StatefulWidget {
 }
 
 class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<CashierBroadcastViewModel>().fetchActive();
-    });
-  }
-
   double _gridChildAspectRatio(double gridInnerWidth) {
     const crossGap = 12.0;
     final cellW = (gridInnerWidth - crossGap) / 2;
@@ -40,11 +30,12 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
     return '$m:$s';
   }
 
-  /// Builds a localised window label e.g. "05:00 window" / "05:00 نافذة"
+  /// Returns localised window label: e.g. "5:00 نافذة" in AR or "5:00 window" in EN.
   String _windowLabel(int seconds, AppLocalizations l10n) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return l10n.posBroadcastWindow(m, s);
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    final time = '$m:${s.toString().padLeft(2, '0')}';
+    return l10n.posBroadcastWindow(time, s.toString().padLeft(2, '0'));
   }
 
   @override
@@ -54,8 +45,6 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
     final list = vm.broadcasts;
     final window = vm.windowSeconds;
     final displayCount = vm.activeCountMeta > 0 ? vm.activeCountMeta : list.length;
-    final windowLabel = _windowLabel(window, l10n);
-    final errorText = vm.resolveError(l10n);
 
     final scroll = CustomScrollView(
       physics: const BouncingScrollPhysics(),
@@ -115,7 +104,10 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                         Text(
                           list.isEmpty && !vm.isLoading
                               ? l10n.posBroadcastNoActive
-                              : l10n.posBroadcastCountActive(displayCount, windowLabel),
+                              : l10n.posBroadcastCountActive(
+                                  displayCount,
+                                  _windowLabel(window, l10n),
+                                ),
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.72),
                             fontSize: 13,
@@ -136,7 +128,7 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
             hasScrollBody: false,
             child: Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
           )
-        else if (errorText != null && list.isEmpty)
+        else if (vm.errorMessage != null && list.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
@@ -146,7 +138,7 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      errorText,
+                      vm.errorMessage!,
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
                     ),
@@ -161,48 +153,49 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
             ),
           )
         else if (list.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Text(
-                  l10n.posBroadcastNoActive,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                l10n.posBroadcastNoActive,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-              sliver: SliverLayoutBuilder(
-                builder: (context, constraints) {
-                  final aspect = _gridChildAspectRatio(constraints.crossAxisExtent);
-                  return SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: aspect,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                        final e = list[index];
-                        return _BroadcastCard(
-                          item: e,
-                          vm: vm,
-                          windowLabel: windowLabel,
-                          formatCountdown: _formatCountdown,
-                        );
-                      },
-                      childCount: list.length,
-                    ),
-                  );
-                },
-              ),
             ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            sliver: SliverLayoutBuilder(
+              builder: (context, constraints) {
+                final aspect = _gridChildAspectRatio(constraints.crossAxisExtent);
+                return SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: aspect,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final e = list[index];
+                      return _BroadcastCard(
+                        item: e,
+                        vm: vm,
+                        windowLabel: _windowLabel(window, l10n),
+                        formatCountdown: _formatCountdown,
+                        l10n: l10n,
+                      );
+                    },
+                    childCount: list.length,
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
 
@@ -278,22 +271,32 @@ class _BroadcastCard extends StatelessWidget {
     required this.vm,
     required this.windowLabel,
     required this.formatCountdown,
+    required this.l10n,
   });
 
   final CashierActiveBroadcastItem item;
   final CashierBroadcastViewModel vm;
   final String windowLabel;
   final String Function(Duration) formatCountdown;
+  final AppLocalizations l10n;
+
+  /// Translates broadcast type string to localised label.
+  String _typeBadge(String rawType) {
+    final type = rawType.trim().toLowerCase();
+    if (type == 'on_call') return l10n.posBroadcastTypeOnCall;
+    if (type == 'workshop') return l10n.posBroadcastTypeWorkshop;
+    if (type.isEmpty) return '';
+    return rawType; // unknown type — return as-is (API value)
+  }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final left = vm.remainingFor(item);
     final expired = vm.isExpired(item);
     final urgent = vm.showSoon(item);
     final progress = vm.progressRemaining(item);
-    // Badge resolved in view so it picks up locale on every rebuild.
-    final badge = vm.resolveBadge(item.broadcastType, l10n);
+    final rawType = item.broadcastType.trim().toLowerCase();
+    final badge = rawType.isEmpty ? null : _typeBadge(rawType);
 
     return Material(
       color: Colors.white,
@@ -307,8 +310,8 @@ class _BroadcastCard extends StatelessWidget {
             color: expired
                 ? Colors.grey.shade200
                 : urgent
-                ? const Color(0xFFFFB74D).withOpacity(0.55)
-                : Colors.grey.shade200,
+                    ? const Color(0xFFFFB74D).withOpacity(0.55)
+                    : Colors.grey.shade200,
             width: urgent && !expired ? 1.5 : 1,
           ),
           boxShadow: [
@@ -355,8 +358,8 @@ class _BroadcastCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: LocalizedApiText(
-                                  item.title,
+                                child: Text(
+                                  item.displayTitle,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -401,11 +404,12 @@ class _BroadcastCard extends StatelessWidget {
                                       color: expired
                                           ? Colors.grey.shade400
                                           : urgent
-                                          ? const Color(0xFFE65100)
-                                          : AppColors.secondaryLight,
+                                              ? const Color(0xFFE65100)
+                                              : AppColors.secondaryLight,
                                     ),
                                   ),
                                   Text(
+                                    // "Closed" vs "remaining" — both localised
                                     expired ? l10n.posBroadcastLabelClosed : l10n.posBroadcastLabelRemaining,
                                     style: TextStyle(
                                       fontSize: 9,
@@ -418,7 +422,7 @@ class _BroadcastCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          if (badge != null) ...[
+                          if (badge != null && badge.isNotEmpty) ...[
                             const SizedBox(height: 3),
                             Text(
                               badge,
@@ -431,7 +435,7 @@ class _BroadcastCard extends StatelessWidget {
                             ),
                           ],
                           const SizedBox(height: 2),
-                          LocalizedApiText(
+                          Text(
                             item.subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -457,12 +461,13 @@ class _BroadcastCard extends StatelessWidget {
                     color: expired
                         ? Colors.grey.shade300
                         : urgent
-                        ? const Color(0xFFFF9800)
-                        : AppColors.primaryLight,
+                            ? const Color(0xFFFF9800)
+                            : AppColors.primaryLight,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
+                  // "Expired" vs window label — both localised
                   expired ? l10n.posBroadcastLabelExpired : windowLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

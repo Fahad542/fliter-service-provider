@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/technician_models.dart';
 import '../../data/repositories/technician_repository.dart';
-import '../../data/repositories/workshop_notifications_repository.dart';
 import '../../services/session_service.dart';
 import '../../services/realtime_service.dart';
 import '../../models/technician_performance_model.dart';
@@ -15,9 +14,9 @@ import '../../utils/toast_service.dart';
 class TechAppViewModel extends ChangeNotifier {
   final TechnicianRepository _repository;
   final SessionService _sessionService;
-  final WorkshopNotificationsRepository _workshopNotif =
-      WorkshopNotificationsRepository();
   final RealtimeService _realtimeService = RealtimeService();
+
+  Timer? _profileSocketDebounce;
 
   TechAppViewModel({
     required TechnicianRepository repository,
@@ -34,6 +33,14 @@ class TechAppViewModel extends ChangeNotifier {
     _realtimeService.on(RealtimeService.eventTechnicianOrdersUpdated, _onAssignedOrdersUpdated);
     _realtimeService.on(RealtimeService.eventTechnicianBroadcastCreated, _onBroadcastCreated);
     _realtimeService.on(RealtimeService.eventTechnicianBroadcastClosed, _onBroadcastClosed);
+    _realtimeService.on(RealtimeService.eventTechnicianProfileUpdated, _onProfileUpdatedSocket);
+  }
+
+  void _onProfileUpdatedSocket(Map<String, dynamic> _) {
+    _profileSocketDebounce?.cancel();
+    _profileSocketDebounce = Timer(const Duration(milliseconds: 350), () {
+      fetchProfile(affectLoading: false);
+    });
   }
 
   void _onAssignedOrdersUpdated(Map<String, dynamic> payload) {
@@ -43,7 +50,6 @@ class TechAppViewModel extends ChangeNotifier {
   /// New broadcast(s) from cashier — sync with GET /technician/broadcasts.
   void _onBroadcastCreated(Map<String, dynamic> payload) {
     fetchBroadcasts();
-    unawaited(fetchWorkshopNotifications());
   }
 
   /// Broadcast ended (e.g. reason `accepted` by another tech) — drop locally first, then re-fetch.
@@ -85,21 +91,19 @@ class TechAppViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _profileSocketDebounce?.cancel();
     _realtimeService.off(RealtimeService.eventTechnicianOrdersUpdated, _onAssignedOrdersUpdated);
     _realtimeService.off(RealtimeService.eventTechnicianBroadcastCreated, _onBroadcastCreated);
     _realtimeService.off(RealtimeService.eventTechnicianBroadcastClosed, _onBroadcastClosed);
+    _realtimeService.off(RealtimeService.eventTechnicianProfileUpdated, _onProfileUpdatedSocket);
     _realtimeService.disconnect();
     _broadcastTimer?.cancel();
     super.dispose();
   }
 
-  // --- Toggles ---
+  // --- Toggles (workshop / on-call / both / inactive via API dutyMode) ---
   bool _isWorkshopDuty = false;
   bool _isOnCallDuty = false;
-  bool _isOnline = true;
-  bool _isOnlineUpdating = false;
-  bool _cachedWorkshopDutyBeforeOffline = false;
-  bool _cachedOnCallDutyBeforeOffline = false;
 
   /// From login payload; profile may omit `technicianType` so we keep this for duty defaults.
   String? _sessionTechnicianType;
@@ -112,97 +116,66 @@ class TechAppViewModel extends ChangeNotifier {
 
   bool get isWorkshopDuty => _isWorkshopDuty;
   bool get isOnCallDuty => _isOnCallDuty;
-  bool get isOnline => _isOnline;
-  bool get isOnlineUpdating => _isOnlineUpdating;
 
-  Future<void> fetchOnlineStatus() async {
-    try {
-      final token = await _sessionService.getToken(role: 'tech');
-      if (token == null) return;
-      final response = await _repository.getOnlineStatus(token);
-      if (response is! Map<String, dynamic>) return;
-
-      final rawStatus =
-          response['status'] ??
-          response['onlineStatus'] ??
-          response['technicianStatus']?['status'] ??
-          response['data']?['status'] ??
-          response['data']?['technicianStatus']?['status'];
-      final status = rawStatus?.toString().toLowerCase();
-      if (status == 'online' || status == 'available') {
-        _isOnline = true;
-      } else if (status == 'offline') {
-        _isOnline = false;
-        _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
-        _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
-        _isWorkshopDuty = false;
-        _isOnCallDuty = false;
-      }
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error fetching online status: $e');
-    }
+  /// Presence is **offline** (cashier / system). Duty toggles are hidden until marked online again.
+  /// Note: `dutyMode` may be `inactive` while offline — that does **not** mean the technician should
+  /// see duty toggles; presence `offline` always shows the offline notice.
+  bool get isOfflineLockedByCashier {
+    final os = profile?.onlineStatus?.toString().toLowerCase().trim() ?? '';
+    return os == 'offline';
   }
 
-  Future<void> updateOnlineStatus(bool value) async {
-    if (value == _isOnline || _isOnlineUpdating) return;
-    _isOnlineUpdating = true;
-    notifyListeners();
-    try {
-      final token = await _sessionService.getToken(role: 'tech');
-      if (token != null) {
-        final res = await _repository.updateOnlineStatus(
-          token,
-          value ? 'online' : 'offline',
-        );
-        if (res != null) {
-          final wasOnline = _isOnline;
-          _isOnline = value;
-          if (!value) {
-            // Cache duty state before going offline, so we can restore it later.
-            _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
-            _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
-            _isWorkshopDuty = false;
-            _isOnCallDuty = false;
-          } else if (!wasOnline) {
-            // Restore last known duty state when coming back online.
-            _isWorkshopDuty = _cachedWorkshopDutyBeforeOffline;
-            _isOnCallDuty = _cachedOnCallDutyBeforeOffline;
-
-            // Keep backend duty-mode in sync with restored local state.
-            if (_isWorkshopDuty && !_isOnCallDuty) {
-              await _repository.updateDutyStatus(token, 'workshop');
-            } else if (_isOnCallDuty && !_isWorkshopDuty) {
-              await _repository.updateDutyStatus(token, 'on_call');
-            } else {
-              await _repository.updateDutyStatus(token, 'offline');
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error updating online status: $e');
-    } finally {
-      _isOnlineUpdating = false;
-      notifyListeners();
+  static String _encodeDutyModeForType(
+    String technicianType,
+    bool workshop,
+    bool onCall,
+  ) {
+    final t = technicianType.toLowerCase();
+    if (t == 'workshop') {
+      return workshop ? 'workshop' : 'inactive';
     }
+    if (t == 'on_call') {
+      return onCall ? 'on_call' : 'inactive';
+    }
+    if (!workshop && !onCall) return 'inactive';
+    if (workshop && onCall) return 'workshop';
+    if (workshop) return 'workshop';
+    return 'on_call';
   }
 
   Future<void> toggleWorkshopDuty(BuildContext context, bool value) async {
-    if (!_isOnline) return;
+    if (isOfflineLockedByCashier) {
+      if (context.mounted) {
+        ToastService.showError(
+          context,
+          'You are offline. Ask the cashier to mark you online.',
+        );
+      }
+      return;
+    }
     if (value == _isWorkshopDuty) return;
-    
+    final t =
+        (_sessionTechnicianType ?? profile?.technicianType ?? 'workshop')
+            .toLowerCase();
+    var w = value;
+    var o = _isOnCallDuty;
+    if (t == 'on_call') return;
+    if (t == 'workshop') o = false;
+    if (t == 'both') {
+      if (value) o = false;
+    }
+
     _setLoading(true);
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
-        // use 'offline' if turning off, otherwise 'workshop'
-        final res = await _repository.updateDutyStatus(token, value ? 'workshop' : 'offline');
+        final techType =
+            _sessionTechnicianType ?? profile?.technicianType ?? 'workshop';
+        final mode = _encodeDutyModeForType(techType, w, o);
+        final res = await _repository.updateDutyStatus(token, mode);
         if (res != null) {
-          _isWorkshopDuty = value;
-          if (value) _isOnCallDuty = false;
-          _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
-          _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
+          _isWorkshopDuty = w;
+          _isOnCallDuty = o;
         }
       }
     } catch (e) {
@@ -218,20 +191,36 @@ class TechAppViewModel extends ChangeNotifier {
   }
 
   Future<void> toggleOnCallDuty(BuildContext context, bool value) async {
-    if (!_isOnline) return;
+    if (isOfflineLockedByCashier) {
+      if (context.mounted) {
+        ToastService.showError(
+          context,
+          'You are offline. Ask the cashier to mark you online.',
+        );
+      }
+      return;
+    }
     if (value == _isOnCallDuty) return;
+    final t =
+        (_sessionTechnicianType ?? profile?.technicianType ?? 'workshop')
+            .toLowerCase();
+    var w = _isWorkshopDuty;
+    var o = value;
+    if (t == 'workshop') return;
+    if (t == 'on_call') w = false;
+    if (t == 'both' && value) w = false;
 
     _setLoading(true);
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token != null) {
-        // use 'offline' if turning off, otherwise 'on_call'
-        final res = await _repository.updateDutyStatus(token, value ? 'on_call' : 'offline');
+        final techType =
+            _sessionTechnicianType ?? profile?.technicianType ?? 'workshop';
+        final mode = _encodeDutyModeForType(techType, w, o);
+        final res = await _repository.updateDutyStatus(token, mode);
         if (res != null) {
-          _isOnCallDuty = value;
-          if (value) _isWorkshopDuty = false;
-          _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
-          _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
+          _isWorkshopDuty = w;
+          _isOnCallDuty = o;
         }
       }
     } catch (e) {
@@ -663,6 +652,12 @@ class TechAppViewModel extends ChangeNotifier {
           } else if (dm == 'on_call') {
             _isWorkshopDuty = false;
             _isOnCallDuty = true;
+          } else if (dm == 'both') {
+            _isWorkshopDuty = true;
+            _isOnCallDuty = false;
+          } else if (dm == 'inactive') {
+            _isWorkshopDuty = false;
+            _isOnCallDuty = false;
           } else if (dm == 'offline') {
             _isWorkshopDuty = false;
             _isOnCallDuty = false;
@@ -679,17 +674,6 @@ class TechAppViewModel extends ChangeNotifier {
             }
           }
 
-          final status = profile?.onlineStatus?.toLowerCase();
-          if (status == 'online') {
-            _isOnline = true;
-          } else if (status == 'offline') {
-            _isOnline = false;
-            _cachedWorkshopDutyBeforeOffline = _isWorkshopDuty;
-            _cachedOnCallDutyBeforeOffline = _isOnCallDuty;
-            _isWorkshopDuty = false;
-            _isOnCallDuty = false;
-          }
-          
           notifyListeners();
         }
       }
@@ -703,7 +687,6 @@ class TechAppViewModel extends ChangeNotifier {
   /// Workshop-only (or on-call / both) accounts should show the matching duty ON when online.
   /// The profile API often returns `workshopDuty: false` while `technicianType` is `workshop`, which hid the toggle.
   void _applyDefaultDutyForTechnicianType() {
-    if (!_isOnline) return;
     final dm =
         profile?.dutyMode?.toString().toLowerCase().trim() ?? '';
     if (dm == 'workshop') {
@@ -718,7 +701,13 @@ class TechAppViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    if (dm == 'offline') {
+    if (dm == 'both') {
+      _isWorkshopDuty = true;
+      _isOnCallDuty = false;
+      notifyListeners();
+      return;
+    }
+    if (dm == 'inactive' || dm == 'offline') {
       _isWorkshopDuty = false;
       _isOnCallDuty = false;
       notifyListeners();
@@ -747,15 +736,14 @@ class TechAppViewModel extends ChangeNotifier {
 
   /// Keeps server duty mode aligned when we default the toggles from `technicianType`.
   Future<void> _syncDutyStateToBackendAfterInitialDefault() async {
-    if (!_isOnline) return;
     try {
       final token = await _sessionService.getToken(role: 'tech');
       if (token == null) return;
-      if (_isWorkshopDuty && !_isOnCallDuty) {
-        await _repository.updateDutyStatus(token, 'workshop');
-      } else if (_isOnCallDuty && !_isWorkshopDuty) {
-        await _repository.updateDutyStatus(token, 'on_call');
-      }
+      final techType =
+          _sessionTechnicianType ?? profile?.technicianType ?? 'workshop';
+      final mode =
+          _encodeDutyModeForType(techType, _isWorkshopDuty, _isOnCallDuty);
+      await _repository.updateDutyStatus(token, mode);
     } catch (e) {
       debugPrint('Initial duty backend sync: $e');
     }
@@ -959,6 +947,14 @@ class TechAppViewModel extends ChangeNotifier {
           _isWorkshopDuty = false;
           _isOnCallDuty = true;
           return;
+        case 'both':
+          _isWorkshopDuty = true;
+          _isOnCallDuty = false;
+          return;
+        case 'inactive':
+          _isWorkshopDuty = false;
+          _isOnCallDuty = false;
+          return;
         case 'offline':
           _isWorkshopDuty = false;
           _isOnCallDuty = false;
@@ -1020,14 +1016,15 @@ class TechAppViewModel extends ChangeNotifier {
     }
     notifyListeners();
 
-    // 1) Critical APIs — online status before profile so duty flags are not overwritten by a race.
-    await fetchOnlineStatus();
+    // 1) Profile + performance (duty comes from GET /technician/profile)
     await fetchProfile(affectLoading: false);
     await fetchTodayPerformance(affectLoading: false);
     if (!_initialDutyDefaultsApplied) {
       _applyDefaultDutyForTechnicianType();
       _initialDutyDefaultsApplied = true;
-      unawaited(_syncDutyStateToBackendAfterInitialDefault());
+      if (!isOfflineLockedByCashier) {
+        unawaited(_syncDutyStateToBackendAfterInitialDefault());
+      }
     }
 
     _isBootstrapped = true;
@@ -1037,66 +1034,18 @@ class TechAppViewModel extends ChangeNotifier {
     unawaited(fetchAssignedOrders(affectLoading: false));
     unawaited(fetchCommissionHistory());
     unawaited(fetchBroadcasts());
-    unawaited(fetchWorkshopNotifications());
-  }
-
-  static const String _workshopNotifRole = 'technician';
-
-  Future<void> fetchWorkshopNotifications() async {
-    final token = await _sessionService.getToken(role: 'tech');
-    if (token == null) return;
-    try {
-      final res = await _workshopNotif.listInbox(
-        token: token,
-        roleParam: _workshopNotifRole,
-        page: 1,
-        limit: 100,
-      );
-      final items = (res['items'] as List?) ?? [];
-      _notifications = items
-          .map((e) => TechNotification.fromWorkshop(
-              Map<String, dynamic>.from(e as Map)))
-          .toList();
-      notifyListeners();
-    } catch (_) {}
-  }
-
-  Future<void> markWorkshopNotificationRead(String id) async {
-    final token = await _sessionService.getToken(role: 'tech');
-    if (token == null) return;
-    try {
-      await _workshopNotif.markRead(
-        token: token,
-        notificationId: id,
-        roleParam: _workshopNotifRole,
-      );
-      await fetchWorkshopNotifications();
-    } catch (_) {}
-  }
-
-  Future<void> deleteWorkshopNotification(String id) async {
-    final token = await _sessionService.getToken(role: 'tech');
-    if (token == null) return;
-    try {
-      await _workshopNotif.deleteOne(
-        token: token,
-        notificationId: id,
-        roleParam: _workshopNotifRole,
-      );
-      _notifications.removeWhere((n) => n.id == id);
-      notifyListeners();
-    } catch (_) {}
-  }
-
-  Future<void> clearAllWorkshopNotifications() async {
-    final token = await _sessionService.getToken(role: 'tech');
-    if (token == null) return;
-    try {
-      await _workshopNotif.clearAll(
-          token: token, roleParam: _workshopNotifRole);
-      _notifications = [];
-      notifyListeners();
-    } catch (_) {}
+    
+    // Notifications remain mock for now as per image focus
+    _notifications = [
+      TechNotification(
+        id: '1',
+        title: 'Commission Credited',
+        message: 'SAR 45.00 added to your daily earnings for ORD-7721',
+        timestamp: DateTime.now(),
+        type: 'Commission',
+      ),
+    ];
+    notifyListeners();
   }
 
   void clearSession() {
@@ -1105,11 +1054,7 @@ class TechAppViewModel extends ChangeNotifier {
     _initialDutyDefaultsApplied = false;
     _isWorkshopDuty = false;
     _isOnCallDuty = false;
-    _isOnline = true;
-    _isOnlineUpdating = false;
     _isBootstrapped = false;
-    _cachedWorkshopDutyBeforeOffline = false;
-    _cachedOnCallDutyBeforeOffline = false;
     technicianName = '';
     todayCompletedJobs = 0;
     todayRevenue = 0.0;

@@ -9,11 +9,10 @@ import '../../../models/pos_technician_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
+
 import '../../../l10n/app_localizations.dart';
 
 class PosTechnicianView extends StatefulWidget {
-  /// When embedded in [PosShell], keep drawer + no back. When pushed from another
-  /// flow (e.g. department product grid), show back and hide the drawer control.
   final bool showBackButton;
   final bool showHamburger;
 
@@ -28,34 +27,51 @@ class PosTechnicianView extends StatefulWidget {
 }
 
 class _PosTechnicianViewState extends State<PosTechnicianView> {
-  /// All | Offline | Online — filters by [PosTechnician.isOnline].
-  /// Stored as a stable enum-like key; label is resolved from l10n at build time.
-  String _presenceTab = 'All'; // always 'All' | 'Offline' | 'Online' (locale-independent keys)
+  /// Internal key stays English for switch-case logic safety.
+  String _presenceTab = 'All';
 
-  Widget _buildPresenceTab(String tabKey, String label) {
-    final isSelected = _presenceTab == tabKey;
+  static String _dutyModeResolved(PosTechnician t) {
+    final dm = t.dutyMode?.toLowerCase().trim() ?? '';
+    if (dm.isNotEmpty) return dm;
+    if (t.workshopDuty) return 'workshop';
+    if (t.onCallDuty) return 'on_call';
+    return 'inactive';
+  }
+
+  /// Maps internal key → localised display label.
+  String _tabLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'All':        return l10n.posTechViewTabAll;
+      case 'Offline':    return l10n.posTechViewTabOffline;
+      case 'Online':     return l10n.posTechViewTabOnline;
+      case 'On call':    return l10n.empTechTypeOnCall;
+      case 'Not available': return l10n.posTechViewNoOffline;
+      default:           return key;
+    }
+  }
+
+  Widget _buildPresenceTab(BuildContext context, AppLocalizations l10n, String key) {
+    final isSelected = _presenceTab == key;
     return GestureDetector(
       onTap: () {
-        if (!isSelected) {
-          setState(() => _presenceTab = tabKey);
-        }
+        if (!isSelected) setState(() => _presenceTab = key);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFCC247) : Colors.transparent,
+          color: isSelected ? AppColors.secondaryLight : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: isSelected
               ? null
               : Border.all(color: const Color(0xFFE8ECF3), width: 1.5),
         ),
         child: Text(
-          label,
+          _tabLabel(l10n, key),
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            color: isSelected ? const Color(0xFF23262D) : const Color(0xFF64748B),
+            color: isSelected ? AppColors.onSecondaryLight : const Color(0xFF64748B),
           ),
         ),
       ),
@@ -63,14 +79,24 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
   }
 
   List<PosTechnician> _filterByPresence(List<PosTechnician> searched) {
-    if (_presenceTab == 'All') return searched;
-    if (_presenceTab == 'Online') return searched.where((t) => t.isOnline).toList();
-    return searched.where((t) => !t.isOnline).toList();
+    bool presenceOnline(PosTechnician t) => t.isOnline;
+
+    switch (_presenceTab) {
+      case 'All':          return searched;
+      case 'Offline':      return searched.where((t) => !presenceOnline(t)).toList();
+      case 'Online':       return searched.where((t) => presenceOnline(t) && _dutyModeResolved(t) == 'workshop').toList();
+      case 'On call':      return searched.where((t) => presenceOnline(t) && _dutyModeResolved(t) == 'on_call').toList();
+      case 'Not available':return searched.where((t) => presenceOnline(t) && _dutyModeResolved(t) == 'inactive').toList();
+      default:             return searched;
+    }
   }
 
-  @override
-  void initState() {
-    super.initState();
+  String _emptyFilterMessage(AppLocalizations l10n) {
+    switch (_presenceTab) {
+      case 'Online':       return l10n.posTechViewNoOnline;
+      case 'Offline':      return l10n.posTechViewNoOffline;
+      default:             return l10n.posTechViewNoTechnicians;
+    }
   }
 
   @override
@@ -78,7 +104,6 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
     final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
-    final posVm = context.watch<PosViewModel>();
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -87,9 +112,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
         title: l10n.posTechViewTitle,
         showBackButton: widget.showBackButton,
         showHamburger: widget.showHamburger,
-        onMenuPressed: widget.showHamburger
-            ? PosShellScaffoldRegistry.openDrawer
-            : null,
+        onMenuPressed: widget.showHamburger ? PosShellScaffoldRegistry.openDrawer : null,
       ),
       body: wrapPosShellRailBody(
         context,
@@ -115,7 +138,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
                           Text(l10n.posTechViewErrorPrefix(vm.errorMessage!)),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            onPressed: () => vm.fetchTechnicians(),
+                            onPressed: vm.fetchTechnicians,
                             child: Text(l10n.posTechViewErrorRetry),
                           ),
                         ],
@@ -130,82 +153,63 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
               final horizontalPadding = isTablet ? 32.0 : 16.0;
 
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      24,
-                      horizontalPadding,
-                      0,
-                    ),
-                    child: _buildSearchSection(context, l10n, isTablet),
+                    padding: EdgeInsets.fromLTRB(horizontalPadding, 24, horizontalPadding, 0),
+                    child: _buildSearchSection(context, l10n),
                   ),
                   const SizedBox(height: 16),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                    child: Row(
-                      children: [
-                        _buildPresenceTab('All', l10n.posTechViewTabAll),
-                        const SizedBox(width: 12),
-                        _buildPresenceTab('Offline', l10n.posTechViewTabOffline),
-                        const SizedBox(width: 12),
-                        _buildPresenceTab('Online', l10n.posTechViewTabOnline),
-                      ],
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildPresenceTab(context, l10n, 'All'),
+                          const SizedBox(width: 12),
+                          _buildPresenceTab(context, l10n, 'Offline'),
+                          const SizedBox(width: 12),
+                          _buildPresenceTab(context, l10n, 'Online'),
+                          const SizedBox(width: 12),
+                          _buildPresenceTab(context, l10n, 'On call'),
+                          const SizedBox(width: 12),
+                          _buildPresenceTab(context, l10n, 'Not available'),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Expanded(
                     child: searched.isEmpty
                         ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                        vertical: 16,
-                      ),
-                      child: SizedBox(
-                        height: 280,
-                        child: Center(child: Text(l10n.posTechViewNoTechnicians)),
-                      ),
-                    )
-                        : technicians.isEmpty
-                        ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                        vertical: 16,
-                      ),
-                      child: SizedBox(
-                        height: 280,
-                        child: Center(
-                          child: Text(
-                            _presenceTab == 'Online'
-                                ? l10n.posTechViewNoOnline
-                                : _presenceTab == 'Offline'
-                                ? l10n.posTechViewNoOffline
-                                : l10n.posTechViewNoTechnicians,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w600,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+                            child: SizedBox(
+                              height: 280,
+                              child: Center(child: Text(l10n.posTechViewNoTechnicians)),
                             ),
-                          ),
-                        ),
-                      ),
-                    )
-                        : SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        0,
-                        horizontalPadding,
-                        24,
-                      ),
-                      child: _buildTechnicianGrid(
-                        context,
-                        vm,
-                        technicians,
-                        isTablet,
-                      ),
-                    ),
+                          )
+                        : technicians.isEmpty
+                            ? SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+                                child: SizedBox(
+                                  height: 280,
+                                  child: Center(
+                                    child: Text(
+                                      _emptyFilterMessage(l10n),
+                                      style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 24),
+                                child: _buildTechnicianGrid(context, vm, technicians, isTablet),
+                              ),
                   ),
                 ],
               );
@@ -216,14 +220,13 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
     );
   }
 
-  Widget _buildSearchSection(BuildContext context, AppLocalizations l10n, bool isTablet) {
+  Widget _buildSearchSection(BuildContext context, AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
           child: PosSearchBar(
             hintText: l10n.posTechViewSearchHint,
-            onChanged: (val) =>
-                context.read<TechnicianViewModel>().setSearchQuery(val),
+            onChanged: (val) => context.read<TechnicianViewModel>().setSearchQuery(val),
           ),
         ),
       ],
@@ -231,11 +234,11 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
   }
 
   Widget _buildTechnicianGrid(
-      BuildContext context,
-      TechnicianViewModel vm,
-      List<PosTechnician> technicians,
-      bool isTablet,
-      ) {
+    BuildContext context,
+    TechnicianViewModel vm,
+    List<PosTechnician> technicians,
+    bool isTablet,
+  ) {
     final orientation = MediaQuery.of(context).orientation;
     final crossAxisCount = orientation == Orientation.landscape ? 4 : 2;
 
@@ -246,8 +249,8 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         childAspectRatio: isTablet
-            ? (orientation == Orientation.landscape ? 2.15 : 2.6)
-            : (orientation == Orientation.landscape ? 2.3 : 2.3),
+            ? (orientation == Orientation.landscape ? 1.30 : 1.35)
+            : (orientation == Orientation.landscape ? 1.32 : 1.35),
         crossAxisSpacing: isTablet ? 18 : 12,
         mainAxisSpacing: isTablet ? 18 : 12,
       ),
@@ -258,8 +261,11 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
           compact: !isTablet && orientation == Orientation.portrait,
           showPresenceToggle: true,
           presenceBusy: vm.isPresenceToggleBusy(tech.id),
-          onPresenceChanged: (online) =>
-              vm.setTechnicianPresence(context, tech.id, online),
+          onPresenceChanged: (online) => vm.setTechnicianPresence(context, tech.id, online),
+          showDutyToggles: true,
+          dutyBusy: vm.isDutyToggleBusy(tech.id),
+          onWorkshopDutyChanged: (v) => vm.setTechnicianWorkshopDuty(context, tech, v),
+          onOnCallDutyChanged: (v) => vm.setTechnicianOnCallDuty(context, tech, v),
         );
       },
     );

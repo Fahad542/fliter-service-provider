@@ -139,10 +139,10 @@ class AppTranslationService {
   /// Returns the original on error, empty input, numeric input, or if the
   /// text is already in the target script.
   static Future<String> translate(
-    String text, {
-    String targetLang = 'ar',
-    String sourceLang = 'en',
-  }) async {
+      String text, {
+        String targetLang = 'ar',
+        String sourceLang = 'en',
+      }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return text;
     if (_shouldKeepRaw(trimmed)) return text;
@@ -197,9 +197,9 @@ class AppTranslationService {
   /// locale, you pass its languageCode here, and you always get the correct
   /// translation regardless of whether SessionService has flushed yet.
   static Future<String> localizedTextForLanguage(
-    String text,
-    String languageCode,
-  ) async {
+      String text,
+      String languageCode,
+      ) async {
     if (languageCode != 'ar') return text;
     return translate(text);
   }
@@ -212,9 +212,9 @@ class AppTranslationService {
 
   /// Nullable variant using widget-tree language code (preferred in widgets).
   static Future<String?> localizedTextNullableForLanguage(
-    String? text,
-    String languageCode,
-  ) async {
+      String? text,
+      String languageCode,
+      ) async {
     if (text == null) return null;
     return localizedTextForLanguage(text, languageCode);
   }
@@ -227,9 +227,9 @@ class AppTranslationService {
 
   /// Translates a list of strings using widget-tree locale (preferred).
   static Future<List<String>> localizedAllForLanguage(
-    List<String> texts,
-    String languageCode,
-  ) async {
+      List<String> texts,
+      String languageCode,
+      ) async {
     if (languageCode != 'ar') return texts;
     return Future.wait(texts.map(translate));
   }
@@ -242,9 +242,9 @@ class AppTranslationService {
 
   /// Translates a status string using widget-tree locale (preferred).
   static Future<String> localizedStatusForLanguage(
-    String status,
-    String languageCode,
-  ) async {
+      String status,
+      String languageCode,
+      ) async {
     if (languageCode != 'ar') return status;
     return _statusMapAr[status] ?? translate(status);
   }
@@ -362,9 +362,9 @@ mixin TranslatableMixin {
   ///   2. Re-translate all raw API data
   ///   3. Call notifyListeners()
   void bindLocaleRetranslation(
-    Listenable settingsViewModel,
-    Future<void> Function() retranslate,
-  ) {
+      Listenable settingsViewModel,
+      Future<void> Function() retranslate,
+      ) {
     unbindLocaleRetranslation();
     _localeListenable = settingsViewModel;
     _localeListener = () async {
@@ -418,8 +418,8 @@ mixin TranslatableMixin {
 
   /// Translates branch / cashier / officer fields of a dynamic request list.
   Future<List<RequestTranslated>> translateRequests(
-    List<dynamic> rawRequests,
-  ) async {
+      List<dynamic> rawRequests,
+      ) async {
     return Future.wait(rawRequests.map((r) => _translateRequest(r)));
   }
 
@@ -486,24 +486,24 @@ mixin TranslatableMixin {
 
   /// Translates all dynamic display fields on a petty-cash request.
   Future<PettyCashRequestItem> translatePettyCashRequest(
-    PettyCashRequestItem request,
-  ) async {
+      PettyCashRequestItem request,
+      ) async {
     return request.copyWith(
       translatedPartyName:       await tNullable(request.partyName),
       translatedBranchName:      await tBranch(request.branchName),
       translatedCashierName:     await tPerson(request.cashierName),
       translatedStatus:          await tUiStatus(request.status),
-      translatedReason:          await tNotes(request.reason),
-      translatedCategoryLabel:   await tNullable(request.categoryLabel),
-      translatedEmployeeName:    await tNullable(request.employeeName),
-      translatedRejectionReason: await tNullable(request.rejectionReason),
+    //  translatedReason:          await tNotes(request.reason),
+    //  translatedCategoryLabel:   await tNullable(request.categoryLabel),
+     // translatedEmployeeName:    await tNullable(request.employeeName),
+     // translatedRejectionReason: await tNullable(request.rejectionReason),
     );
   }
 
   /// Translates a list of petty-cash requests without mutating raw API data.
   Future<List<PettyCashRequestItem>> translatePettyCashRequests(
-    List<PettyCashRequestItem> requests,
-  ) async {
+      List<PettyCashRequestItem> requests,
+      ) async {
     return Future.wait(requests.map(translatePettyCashRequest));
   }
 }

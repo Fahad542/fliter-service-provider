@@ -1,7 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../../../services/locker_translation_mixin.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../services/session_service.dart';
 import '../../../../data/repositories/pos_repository.dart';
@@ -11,78 +9,6 @@ import '../../../../models/cashier_expense_models.dart';
 import '../../../../services/realtime_service.dart';
 
 class PettyCashViewModel extends ChangeNotifier {
-  Locale? _translatedLocale;
-  String _translationSignature = '';
-  final Map<String, String> _translationCache = {};
-
-  String localizedText(String value) => _translationCache[value] ?? value;
-
-  Future<void> translateApiDataForLocale(Locale locale) async {
-    final signature = [
-      ..._expenseCategories.map((c) => '${c.id}|${c.name}'),
-      ..._branchEmployees.map((e) => '${e.id}|${e.name}|${e.employeeType}'),
-      ..._expenseHistory.map((e) => '${e.id}|${e.kind}|${e.category}|${e.employeeName}|${e.description}|${e.rejectionReason}|${e.status}'),
-      ..._fundRequests.map((r) => '${r.id}|${r.reason}|${r.status}'),
-    ].join(';;');
-    if (_translatedLocale == locale && _translationSignature == signature) return;
-    _translatedLocale = locale;
-    _translationSignature = signature;
-    _translationCache.clear();
-    if (locale.languageCode != 'ar') {
-      notifyListeners();
-      return;
-    }
-
-    Future<void> add(String? value) async {
-      final v = (value ?? '').trim();
-      if (v.isEmpty || _translationCache.containsKey(v)) return;
-      _translationCache[v] = await AppTranslationService.localizedText(v);
-    }
-
-    for (final c in _expenseCategories) {
-      await add(c.name);
-    }
-    for (final e in _branchEmployees) {
-      await add(e.name);
-      await add(e.employeeType);
-    }
-    for (final h in _expenseHistory) {
-      await add(h.category);
-      await add(h.employeeName);
-      await add(h.description);
-      await add(h.rejectionReason);
-      await add(h.kind.replaceAll('_', ' '));
-      await add(h.status);
-    }
-    for (final r in _fundRequests) {
-      await add(r.reason);
-    }
-    notifyListeners();
-  }
-
-  String validationMessage(AppLocalizations l10n, String key) {
-    switch (key) {
-      case 'valid_amount':
-        return l10n.posPettyCashValidAmountError;
-      case 'select_category':
-        return l10n.posPettyCashSelectCategoryError;
-      case 'select_employee':
-        return l10n.posPettyCashSelectEmployeeError;
-      case 'submit_expense_failed':
-        return l10n.posPettyCashSubmitExpenseError;
-      case 'reason_required':
-        return l10n.posPettyCashReasonError;
-      case 'submit_request_failed':
-        return l10n.posPettyCashSubmitRequestError;
-      case 'token_not_found':
-        return l10n.posPettyCashTokenNotFound;
-      case 'low_balance':
-        return l10n.posPettyCashLowBalanceError;
-      default:
-        return key;
-    }
-  }
-
   final SessionService sessionService;
   final PosRepository posRepository;
 
@@ -258,7 +184,7 @@ class PettyCashViewModel extends ChangeNotifier {
       final token = await sessionService.getToken();
       if (token == null) return;
       final statusParam =
-      _expenseHistoryStatusFilter == 'all' ? null : _expenseHistoryStatusFilter;
+          _expenseHistoryStatusFilter == 'all' ? null : _expenseHistoryStatusFilter;
       final res = await posRepository.getExpenseHistory(
         token,
         status: statusParam,
@@ -272,7 +198,6 @@ class PettyCashViewModel extends ChangeNotifier {
         _expenseHistory = List<CashierExpenseHistoryEntry>.from(res.items);
       } else {
         _expenseHistory.addAll(res.items);
-        _translatedLocale = null;
       }
       _expenseHistoryOffset += res.items.length;
       _expenseHistoryHasMore = res.items.length >= _expenseHistoryPageSize;
@@ -321,16 +246,16 @@ class PettyCashViewModel extends ChangeNotifier {
   Future<bool> submitExpenseAction(Function(String) onError) async {
     final amount = double.tryParse(amountController.text) ?? 0;
     if (amount <= 0) {
-      onError('valid_amount');
+      onError('Please enter a valid amount');
       return false;
     }
     if (_selectedCategory == null) {
-      onError('select_category');
+      onError('Please select a category');
       return false;
     }
     if (_selectedCategory!.requiresEmployeeSelection) {
       if (_selectedBranchEmployee == null) {
-        onError('select_employee');
+        onError('Please select an employee for Salary Advances');
         return false;
       }
     }
@@ -350,7 +275,7 @@ class PettyCashViewModel extends ChangeNotifier {
         clearExpenseForm();
         return true;
       } else {
-        onError('submit_expense_failed');
+        onError('Failed to submit expense. Check balance or try again.');
         return false;
       }
     } catch (e) {
@@ -360,21 +285,21 @@ class PettyCashViewModel extends ChangeNotifier {
   }
 
   Future<void> submitRequestAction(
-      Function(String) onError,
-      VoidCallback onSuccess,
-      ) async {
+    Function(String) onError,
+    VoidCallback onSuccess,
+  ) async {
     _isRequestSubmitting = true;
     notifyListeners();
 
     final amount = double.tryParse(requestAmountController.text) ?? 0;
     if (amount <= 0) {
-      onError('valid_amount');
+      onError('Please enter a valid amount');
       _isRequestSubmitting = false;
       notifyListeners();
       return;
     }
     if (reasonController.text.isEmpty) {
-      onError('reason_required');
+      onError('Please enter a reason');
       _isRequestSubmitting = false;
       notifyListeners();
       return;
@@ -391,7 +316,7 @@ class PettyCashViewModel extends ChangeNotifier {
       setShowPendingRequestStatus(true);
       await fetchWalletBalance();
     } else {
-      onError('submit_request_failed');
+      onError('Failed to submit fund request');
     }
     _isRequestSubmitting = false;
     notifyListeners();
@@ -443,7 +368,7 @@ class PettyCashViewModel extends ChangeNotifier {
 
     try {
       final token = await sessionService.getToken();
-      if (token == null) throw Exception('token_not_found');
+      if (token == null) throw Exception('Token not found');
 
       final response = await posRepository.submitExpense(
         amount: amount,
@@ -462,13 +387,13 @@ class PettyCashViewModel extends ChangeNotifier {
         if (pettyCash is Map<String, dynamic>) {
           _pettyCashBalance =
               double.tryParse(pettyCash['balance']?.toString() ?? '0') ??
-                  _pettyCashBalance;
+              _pettyCashBalance;
           _lowBalanceThreshold =
               double.tryParse(
                 pettyCash['lowBalanceThreshold']?.toString() ??
                     _lowBalanceThreshold.toString(),
               ) ??
-                  _lowBalanceThreshold;
+              _lowBalanceThreshold;
         } else {
           await fetchWalletBalance();
         }
@@ -478,7 +403,7 @@ class PettyCashViewModel extends ChangeNotifier {
     } catch (e) {
       final msg = e.toString().toLowerCase();
       if (msg.contains('low balance')) {
-        throw Exception('low_balance');
+        throw Exception('Low balance - request fund first');
       }
       debugPrint('Error submitting expense: $e');
       return false;
@@ -494,7 +419,7 @@ class PettyCashViewModel extends ChangeNotifier {
   }) async {
     try {
       final token = await sessionService.getToken();
-      if (token == null) throw Exception('token_not_found');
+      if (token == null) throw Exception('Token not found');
 
       final response = await posRepository.requestPettyCashFund({
         'amount': amount,

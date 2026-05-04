@@ -1,7 +1,7 @@
 class ApiConstants {
 
-  static const String baseUrl = 'https://filterbackend-production.up.railway.app';
- // static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+ //static const String baseUrl = 'http://localhost:3000';
+ static const String baseUrl = 'https://filterbackend-production.up.railway.app';
 
   //// workshop pos ////
   static const String loginEndpoint = '/auth/cashier/login';
@@ -175,15 +175,6 @@ class ApiConstants {
   static String workshopPettyCashRejectEndpoint(String requestId) => '/workshop-staff/petty-cash/$requestId/reject';
   static String editCategoryEndpoint(String id) => '/workshop-staff/category/$id';
   static String editCorporateAccountEndpoint(String id) => '/workshop-staff/corporate-account/$id';
-
-  static String workshopNotificationsInbox =
-      '/workshop-notifications/inbox';
-  static String workshopNotificationMarkRead(String id) =>
-      '/workshop-notifications/$id/read';
-  static String workshopNotificationDeleteOne(String id) =>
-      '/workshop-notifications/$id';
-  static const String workshopNotificationsClearAll =
-      '/workshop-notifications/clear/all';
 
   ///// technician /////
   static const String technicianLoginEndpoint = '/auth/technician/login';

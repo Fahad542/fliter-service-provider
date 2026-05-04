@@ -4657,4 +4657,159 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get toastInfo => 'معلومة';
+
+  @override
+  String get posCommonGoBack => 'العودة';
+
+  @override
+  String get posCommonConfirmCancel => 'تأكيد الإلغاء';
+
+  @override
+  String get posCommonCancelledByCashier => 'ألغاها أمين الصندوق';
+
+  @override
+  String get posThermalPrinterTitle => 'الطابعة الحرارية (Wi-Fi)';
+
+  @override
+  String get posThermalPrinterIpLabel => 'عنوان IP للطابعة';
+
+  @override
+  String get posThermalPrinterIpHint => 'مثال: 192.168.8.55';
+
+  @override
+  String get posThermalPrinterPortLabel => 'المنفذ';
+
+  @override
+  String get posThermalPrinterPortHelper => '9100 لمعظم طابعات إبسون الشبكية';
+
+  @override
+  String get posThermalPrinterSaved => 'تم حفظ عنوان الطابعة.';
+
+  @override
+  String get posCommonCancel => 'إلغاء';
+
+  @override
+  String get posOrdersCancelOrderTitle => 'إلغاء الطلب';
+
+  @override
+  String get posOrdersCancelOrderBody => 'هل أنت متأكد من إلغاء هذا الطلب؟';
+
+  @override
+  String get posTechCardOnCall => 'في مناوبة';
+
+  @override
+  String get posTechCardNotAvailable => 'غير متاح';
+
+  @override
+  String get posTechCardWorkshopDuty => 'مناوبة الورشة';
+
+  @override
+  String get posTechCardOnCallDuty => 'مناوبة الاتصال';
+
+  @override
+  String get storeClosingCounterReconciliation => 'تسوية الكاونتر';
+
+  @override
+  String get storeClosingReconciliationSummary => 'ملخص التسوية';
+
+  @override
+  String get storeClosingShiftClosingStatus => 'حالة إغلاق الوردية';
+
+  @override
+  String get storeClosingCashier => 'أمين الصندوق';
+
+  @override
+  String get storeClosingBranch => 'الفرع';
+
+  @override
+  String get storeClosingMainBranch => 'الفرع الرئيسي';
+
+  @override
+  String get storeClosingOthersEmployee => 'أخرى / موظف';
+
+  @override
+  String get posCommonAddNotesHint => 'أضف ملاحظات...';
+
+  @override
+  String get storeClosingCashAccount => 'حساب النقد';
+
+  @override
+  String get storeClosingBankCards => 'البنك / البطاقات';
+
+  @override
+  String get storeClosingOthers => 'أخرى';
+
+  @override
+  String get storeClosingCategory => 'الفئة';
+
+  @override
+  String get storeClosingSystem => 'النظام';
+
+  @override
+  String get storeClosingPhysicalCol => 'الفعلي';
+
+  @override
+  String get storeClosingDiff => 'الفرق';
+
+  @override
+  String get storeClosingBalanced => 'متوازن';
+
+  @override
+  String get storeClosingShort => 'عجز';
+
+  @override
+  String get storeClosingExcess => 'زيادة';
+
+  @override
+  String get storeClosingSummary => 'الملخص';
+
+  @override
+  String get storeClosingAmountCol => 'المبلغ';
+
+  @override
+  String get storeClosingTotalSalesReturn => 'إجمالي المرتجعات';
+
+  @override
+  String get storeClosingBeforeReturns => 'قبل المرتجعات';
+
+  @override
+  String get storeClosingGrandTotal => 'المجموع الكلي';
+
+  @override
+  String get storeClosingCloseShift => 'إغلاق الوردية';
+
+  @override
+  String get storeClosingGenerateReport => 'إنشاء تقرير';
+
+  @override
+  String get storeClosingFinalLogout => 'تسجيل خروج نهائي';
+
+  @override
+  String get storeClosingLogOut => 'تسجيل الخروج';
+
+  @override
+  String get storeClosingLogOutBody =>
+      'هل أنت متأكد أنك تريد تسجيل الخروج وإغلاق الوردية؟';
+
+  @override
+  String get storeClosingLogOutCancel => 'إلغاء';
+
+  @override
+  String get posHomeTabletRequired => 'مطلوب جهاز لوحي';
+
+  @override
+  String get posHomeLandscapeRequired =>
+      'يرجى تدوير جهازك إلى الوضع الأفقي لاستخدام نظام نقاط البيع.';
+
+  @override
+  String get posNavOrdersHub => 'مركز الطلبات';
+
+  @override
+  String get posNavBroadcastTechnician => 'البث';
+
+  @override
+  String get posNavInventorySales => 'مبيعات المخزون';
+
+  @override
+  String get posNavTakeaway => 'تيك أواي';
 }
