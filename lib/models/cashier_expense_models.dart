@@ -34,7 +34,16 @@ class BranchEmployee {
   String get employeeTypeDisplay {
     final t = employeeType?.trim();
     if (t == null || t.isEmpty) return '';
-    return '${t[0].toUpperCase()}${t.substring(1).toLowerCase()}';
+    switch (t.toLowerCase()) {
+      case 'staff':
+        return 'Staff';
+      case 'technician':
+        return 'Technician';
+      case 'cashier':
+        return 'Cashier';
+      default:
+        return '${t[0].toUpperCase()}${t.substring(1).toLowerCase()}';
+    }
   }
 }
 

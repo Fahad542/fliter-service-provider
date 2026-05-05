@@ -172,16 +172,15 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               borderRadius: BorderRadius.circular(12),
             ),
             title: Text(
-              'Change customer',
+              l10n.posPaymentChangeCustomerTitle,
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 color: AppColors.secondaryLight,
                 fontSize: 17,
               ),
             ),
-            content: const Text(
-              'Do you really want to change the customer? Your payment choices for '
-              'this customer type will be cleared.',
+            content: Text(
+              l10n.posPaymentChangeCustomerBody,
             ),
             actions: [
               TextButton(
@@ -200,9 +199,9 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                   foregroundColor: AppColors.onPrimaryLight,
                 ),
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text(
-                  'Change customer',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                child: Text(
+                  l10n.posPaymentChangeCustomerButton,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
             ],
@@ -327,7 +326,29 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     return _remainingAmount.abs() <= 0.05;
   }
 
+  String _methodLabel(AppLocalizations l10n, PaymentMethod pm) {
+    switch (pm) {
+      case PaymentMethod.cash:
+        return l10n.posPaymentCash;
+      case PaymentMethod.card:
+        return l10n.posPaymentCard;
+      case PaymentMethod.bankTransfer:
+        return l10n.posPaymentBankTransfer;
+      case PaymentMethod.tamara:
+        return l10n.posPaymentTamara;
+      case PaymentMethod.tabby:
+        return l10n.posPaymentTabby;
+      case PaymentMethod.wallet:
+        return l10n.posPaymentWallet;
+      case PaymentMethod.monthlyBilling:
+        return l10n.posPaymentMonthlyBilling;
+      case PaymentMethod.employees:
+        return l10n.posPaymentEmployees;
+    }
+  }
+
   Widget _paymentTile(PaymentMethod pm, {required bool isCorporateMode}) {
+    final l10n = AppLocalizations.of(context)!;
     final isSelected = _selected.contains(pm);
     return Material(
       color: Colors.transparent,
@@ -365,7 +386,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
             children: [
               Expanded(
                 child: Text(
-                  pm.label,
+                  _methodLabel(l10n, pm),
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
@@ -431,6 +452,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
   }
 
   Widget _splitAmountsEditor() {
+    final l10n = AppLocalizations.of(context)!;
     final methods = _selected.toList();
     const spacing = 8.0;
     const cols = 3;
@@ -457,7 +479,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Amount by payment method',
+          l10n.posPaymentAmountByMethod,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
@@ -492,7 +514,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Remaining: ${_remainingAmount.toStringAsFixed(2)} SAR',
+                  l10n.posPaymentRemaining(_remainingAmount.toStringAsFixed(2)),
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
@@ -510,6 +532,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
   }
 
   Widget _amountField(PaymentMethod pm) {
+    final l10n = AppLocalizations.of(context)!;
     final c = _amountControllers[pm]!;
     return TextFormField(
       controller: c,
@@ -519,7 +542,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
       ],
       onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
-        labelText: '${pm.label} amount',
+        labelText: l10n.posPaymentAmountLabel(_methodLabel(l10n, pm)),
         labelStyle: TextStyle(
           fontSize: 10.5,
           fontWeight: FontWeight.w600,
@@ -530,7 +553,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
           fontWeight: FontWeight.w700,
           color: AppColors.secondaryLight,
         ),
-        suffixText: 'SAR',
+        suffixText: l10n.posCommonSar,
         suffixStyle: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
@@ -659,8 +682,8 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Payment method',
+                  Text(
+                    l10n.posPaymentMethodTitle,
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -670,7 +693,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Select customer type, then choose how this invoice will be paid.',
+                    l10n.posPaymentMethodDescription,
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w500,
@@ -688,12 +711,12 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _sectionLabel('Customer type'),
+                    _sectionLabel(l10n.posPaymentCustomerType),
                     Row(
                       children: [
                         Expanded(
                           child: _CustomerTypeCard(
-                            label: 'Individual',
+                            label: l10n.posPaymentIndividual,
                             icon: Icons.person_outline_rounded,
                             selected: _isCorporate == false,
                             onTap: () => _onCustomerTypeTapped(false),
@@ -702,7 +725,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                         const SizedBox(width: 8),
                         Expanded(
                           child: _CustomerTypeCard(
-                            label: 'Corporate',
+                            label: l10n.posPaymentCorporate,
                             icon: Icons.business_rounded,
                             selected: _isCorporate == true,
                             onTap: () => _onCustomerTypeTapped(true),
@@ -713,7 +736,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                     if (_isCorporate == null) ...[
                       const SizedBox(height: 12),
                       Text(
-                        'Tap Individual or Corporate first. Then choose Cash, Card, Tabby, etc.',
+                        l10n.posPaymentTapCustomerFirst,
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
@@ -747,8 +770,8 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                                 Expanded(
                                   child: Text(
                                     _isCorporate!
-                                        ? 'Corporate payment (multi-select to split)'
-                                        : 'Payment (multi-select to split)',
+                                        ? l10n.posPaymentCorporateMulti
+                                        : l10n.posPaymentMulti,
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w800,
@@ -796,7 +819,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
-                              'Clear saved payment',
+                              l10n.posPaymentClearSaved,
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,

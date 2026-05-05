@@ -639,6 +639,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
     String label,
     TextEditingController controller,
     IconData icon, {
+    String? hintText,
     TextInputType keyboardType = TextInputType.text,
     bool isTablet = false,
     String? Function(String?)? validator,
@@ -647,6 +648,8 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
     bool autocorrect = true,
     TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
+    final isAr = Localizations.maybeLocaleOf(context)?.languageCode == 'ar';
+    final effectiveHint = hintText ?? label;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -655,8 +658,8 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
         if (val == null || val.isEmpty) return validator?.call(val);
         return validator?.call(EnglishNumberFormatter.convert(val));
       },
-      textAlign: TextAlign.left,
-      textDirection: TextDirection.ltr,
+      textAlign: isAr ? TextAlign.right : TextAlign.left,
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       inputFormatters: [
         EnglishNumberFormatter(),
         if (keyboardType == TextInputType.number || keyboardType == TextInputType.phone)
@@ -668,7 +671,11 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
       style: AppTextStyles.bodyMedium.copyWith(fontSize: isTablet ? 14 : 14, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
+        hintText: effectiveHint,
+        hintTextDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+        alignLabelWithHint: true,
         labelStyle: AppTextStyles.bodyMedium.copyWith(color: Colors.grey, fontSize: isTablet ? 14 : 13),
+        hintStyle: AppTextStyles.bodyMedium.copyWith(color: Colors.grey.shade400, fontSize: isTablet ? 14 : 13),
         prefixIcon: Icon(icon, size: isTablet ? 22 : 20, color: Colors.grey.shade400),
         filled: true,
         fillColor: Colors.white,

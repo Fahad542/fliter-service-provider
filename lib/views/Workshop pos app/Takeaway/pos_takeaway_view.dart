@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/toast_service.dart';
@@ -25,6 +26,88 @@ TextStyle _takeawayCatalogEmptyMessageTextStyle() => TextStyle(
       color: Colors.grey.shade500,
       height: 1.35,
     );
+
+
+String _takeawayLang(BuildContext context) =>
+    Localizations.localeOf(context).languageCode;
+
+String _takeawayDigits(BuildContext context, Object? value) {
+  return AppTranslationService.localizeDigitsForLanguage(
+    value?.toString() ?? '',
+    _takeawayLang(context),
+  );
+}
+
+String _takeawayQtyText(BuildContext context, double qty) {
+  final raw = (!qty.isFinite)
+      ? '0'
+      : (qty % 1 == 0 ? qty.toInt().toString() : qty.toStringAsFixed(1));
+  return _takeawayDigits(context, raw);
+}
+
+String _takeawayMoney(BuildContext context, num amount, {bool negative = false}) {
+  final l10n = AppLocalizations.of(context)!;
+  final localizedAmount = _takeawayDigits(context, amount.abs().toStringAsFixed(2));
+  final money = l10n.posCommonSarAmount(localizedAmount);
+  if (!negative) return money;
+  return _takeawayLang(context) == 'ar' ? '$money-' : '-$money';
+}
+
+String _takeawayUnitLabel(BuildContext context, String unit) {
+  final localizedUnit = AppTranslationService.syncStatusOrRawForLanguage(
+    unit,
+    _takeawayLang(context),
+  );
+  return AppLocalizations.of(context)!.posTakeawayUnit(localizedUnit);
+}
+
+String _takeawayStockLabel(BuildContext context, TakeawayProduct product) {
+  final l10n = AppLocalizations.of(context)!;
+  final q = product.qtyOnHand == product.qtyOnHand.roundToDouble()
+      ? product.qtyOnHand.round().toString()
+      : product.qtyOnHand.toStringAsFixed(1);
+  final localizedQty = _takeawayDigits(context, q);
+  if (!product.isActive) return l10n.posTakeawayInactive;
+  if (product.qtyOnHand > 5) return l10n.posTakeawayInStock(localizedQty);
+  if (product.qtyOnHand > 0) return l10n.posTakeawayLowStock(localizedQty);
+  return l10n.posTakeawayOutOfStock;
+}
+
+class _TakeawayApiLabel extends StatelessWidget {
+  const _TakeawayApiLabel(
+    this.text, {
+    this.style,
+    this.textAlign,
+    this.maxLines,
+    this.overflow,
+  });
+
+  final String text;
+  final TextStyle? style;
+  final TextAlign? textAlign;
+  final int? maxLines;
+  final TextOverflow? overflow;
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.trim().toLowerCase() == 'all') {
+      return Text(
+        AppLocalizations.of(context)!.posTakeawayAll,
+        style: style,
+        textAlign: textAlign,
+        maxLines: maxLines,
+        overflow: overflow,
+      );
+    }
+    return LocalizedApiText(
+      text,
+      style: style,
+      textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: overflow,
+    );
+  }
+}
 
 extension _TakeawayStockUi on TakeawayProduct {
   Color get _stockColor {
@@ -115,7 +198,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            LocalizedApiText(
               message,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.red.shade700),
@@ -405,7 +488,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '${vm.cartLineCount}',
+                    _takeawayDigits(context, vm.cartLineCount),
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -444,17 +527,17 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                buildRow(AppLocalizations.of(context)!.posTakeawayGrossExVat, '$currency ${gross.toStringAsFixed(2)}'),
+                buildRow(AppLocalizations.of(context)!.posTakeawayGrossExVat, _takeawayMoney(context, gross)),
                 const SizedBox(height: 6),
                 buildRow(
                   AppLocalizations.of(context)!.posTakeawayLineDiscount,
-                  '-$currency ${lineDiscount.toStringAsFixed(2)}',
+                  _takeawayMoney(context, lineDiscount, negative: true),
                   color: lineDiscount > 0 ? Colors.green.shade700 : Colors.grey.shade600,
                 ),
                 const SizedBox(height: 6),
                 buildRow(
                   AppLocalizations.of(context)!.posTakeawayPriceAfterLineDiscount,
-                  '$currency ${subtotal.toStringAsFixed(2)}',
+                  _takeawayMoney(context, subtotal),
                 ),
                 const SizedBox(height: 8),
 
@@ -513,7 +596,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                           border: Border.all(color: Colors.green.withOpacity(0.3)),
                         ),
                         child: Text(
-                          isOrderDiscPercent ? '%' : currency,
+                          isOrderDiscPercent ? '%' : AppLocalizations.of(context)!.posCommonSar,
                           style: const TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
@@ -529,12 +612,12 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 if (orderDisc > 0) ...[
                   buildRow(
                     AppLocalizations.of(context)!.posTakeawayTotalDiscountApplied,
-                    '-$currency ${orderDisc.toStringAsFixed(2)}',
+                    _takeawayMoney(context, orderDisc, negative: true),
                     color: Colors.green.shade700,
                   ),
                   const SizedBox(height: 6),
                 ],
-                buildRow(AppLocalizations.of(context)!.posTakeawayPriceAfterTotalDiscount, '$currency ${afterOrderDiscount.toStringAsFixed(2)}'),
+                buildRow(AppLocalizations.of(context)!.posTakeawayPriceAfterTotalDiscount, _takeawayMoney(context, afterOrderDiscount)),
                 const SizedBox(height: 8),
                 
                 Container(
@@ -563,8 +646,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                               child: Text(
                                 vm.promoCodeController.text.trim().isEmpty
-                                    ? 'Add Promo Code'
-                                    : 'Promo: ${vm.promoCodeController.text.trim()}',
+                                    ? AppLocalizations.of(context)!.posTakeawayAddPromoCode
+                                    : AppLocalizations.of(context)!.posTakeawayPromoApplied(vm.promoCodeController.text.trim()),
                                 style: const TextStyle(
                                   color: Color(0xFF1E2124),
                                   fontWeight: FontWeight.w700,
@@ -603,14 +686,14 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 ),
                 const SizedBox(height: 6),
                 if (promoDiscount > 0) ...[
-                  buildRow(AppLocalizations.of(context)!.posTakeawayPromoDiscount, '-$currency ${promoDiscount.toStringAsFixed(2)}', color: Colors.green),
+                  buildRow(AppLocalizations.of(context)!.posTakeawayPromoDiscount, _takeawayMoney(context, promoDiscount, negative: true), color: Colors.green),
                   const SizedBox(height: 6),
                 ],
-                buildRow(AppLocalizations.of(context)!.posTakeawayPriceAfterPromo, '$currency ${taxable.toStringAsFixed(2)}'),
+                buildRow(AppLocalizations.of(context)!.posTakeawayPriceAfterPromo, _takeawayMoney(context, taxable)),
                 const SizedBox(height: 6),
                 buildRow(
                   AppLocalizations.of(context)!.posTakeawayVat15,
-                  '$currency ${vatAmount.toStringAsFixed(2)}',
+                  _takeawayMoney(context, vatAmount),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -621,7 +704,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                     ),
                     const Spacer(),
                     Text(
-                      '$currency ${vm.estimatedDisplayTotal.toStringAsFixed(2)}',
+                      _takeawayMoney(context, vm.estimatedDisplayTotal),
                       style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                     ),
                   ],
@@ -753,7 +836,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         alignment: Alignment.center,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 9),
-          child: Text(
+          child: _TakeawayApiLabel(
             label,
             textAlign: TextAlign.center,
             maxLines: 2,
@@ -818,7 +901,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                           ]
                         : null,
                   ),
-                  child: Text(
+                  child: _TakeawayApiLabel(
                     subCat,
                     style: TextStyle(
                       fontSize: isTablet ? 12 : 11,
@@ -997,7 +1080,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                   padding: EdgeInsets.only(
                                     right: cartQty > 0 ? 44 : 0,
                                   ),
-                                  child: Text(
+                                  child: LocalizedApiText(
                                     product.name,
                                     style: AppTextStyles.bodyMedium.copyWith(
                                       fontWeight: FontWeight.w700,
@@ -1017,7 +1100,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                           if (product.unit != null &&
                               product.unit!.isNotEmpty) ...[
                             Text(
-                              AppLocalizations.of(context)!.posTakeawayUnit(product.unit.toString()),
+                              _takeawayUnitLabel(context, product.unit.toString()),
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.grey.shade600,
@@ -1038,7 +1121,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              product._stockLabel,
+                              _takeawayStockLabel(context, product),
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
@@ -1070,7 +1153,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                               ],
                             ),
                             child: Text(
-                              'x${cartQty % 1 == 0 ? cartQty.toInt() : cartQty}',
+                              AppLocalizations.of(context)!.posCommonQtyX(_takeawayQtyText(context, cartQty)),
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
@@ -1088,7 +1171,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '$currency ${product.allowDecimalQty ? product.salePrice.toStringAsFixed(2) : product.salePrice.toInt()}',
+                      _takeawayMoney(context, product.salePrice),
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
@@ -1122,8 +1205,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                             ),
                             child: Text(
                               (!product.allowDecimalQty || cartQty % 1 == 0)
-                                  ? '${cartQty.toInt()}'
-                                  : cartQty.toStringAsFixed(1),
+                                  ? _takeawayQtyText(context, cartQty)
+                                  : _takeawayQtyText(context, cartQty),
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -1191,7 +1274,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                       children: [
                         SizedBox(
                           height: 36,
-                          child: Text(
+                          child: LocalizedApiText(
                             product.name,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w700,
@@ -1211,7 +1294,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                             child: (product.unit != null &&
                                     product.unit!.isNotEmpty)
                                 ? Text(
-                                    AppLocalizations.of(context)!.posTakeawayUnit(product.unit.toString()),
+                                    _takeawayUnitLabel(context, product.unit.toString()),
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: Colors.grey.shade600,
@@ -1237,7 +1320,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                product._stockLabel,
+                                _takeawayStockLabel(context, product),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -1249,7 +1332,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '$currency ${product.allowDecimalQty ? product.salePrice.toStringAsFixed(2) : product.salePrice.toInt()}',
+                          _takeawayMoney(context, product.salePrice),
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
@@ -1294,8 +1377,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                   child: Text(
                                     (!product.allowDecimalQty ||
                                             cartQty % 1 == 0)
-                                        ? '${cartQty.toInt()}'
-                                        : cartQty.toStringAsFixed(1),
+                                        ? _takeawayQtyText(context, cartQty)
+                                        : _takeawayQtyText(context, cartQty),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -1337,7 +1420,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 ],
               ),
               child: Text(
-                'x${cartQty % 1 == 0 ? cartQty.toInt() : cartQty}',
+                AppLocalizations.of(context)!.posCommonQtyX(_takeawayQtyText(context, cartQty)),
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
@@ -1436,7 +1519,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                   ),
                 ),
                 Text(
-                  '$currency ${vm.estimatedDisplayTotal.toStringAsFixed(2)}',
+                  _takeawayMoney(context, vm.estimatedDisplayTotal),
                   style: TextStyle(
                     fontSize: isTablet ? 19 : 18,
                     fontWeight: FontWeight.w800,
@@ -1733,7 +1816,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
+                    child: LocalizedApiText(
                       line.product.name,
                       style: TextStyle(
                         fontSize: isTablet ? 17 : 13,
@@ -1751,7 +1834,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                     children: [
                       if (safeDiscount > 0)
                         Text(
-                          '${widget.currency} ${grossLineTotal.toStringAsFixed(2)}',
+                          _takeawayMoney(context, grossLineTotal),
                           style: TextStyle(
                             fontSize: isTablet ? 13 : 10,
                             color: Colors.grey.shade400,
@@ -1761,7 +1844,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                           ),
                         ),
                       Text(
-                        '${widget.currency} ${discountedLineTotal.toStringAsFixed(2)}',
+                        _takeawayMoney(context, discountedLineTotal),
                         style: TextStyle(
                           fontSize: isTablet ? 18 : 13,
                           fontWeight: FontWeight.w800,
@@ -1771,7 +1854,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                       ),
                       if (safeDiscount > 0)
                         Text(
-                          '-${widget.currency} ${safeDiscount.toStringAsFixed(2)}',
+                          _takeawayMoney(context, safeDiscount, negative: true),
                           style: TextStyle(
                             fontSize: isTablet ? 11 : 9,
                             color: Colors.green.shade600,
@@ -1816,7 +1899,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      '${line.qty % 1 == 0 ? line.qty.toInt() : line.qty} × ${widget.currency} ${line.unitPrice.toStringAsFixed(0)}',
+                      '${_takeawayQtyText(context, line.qty)} × ${_takeawayMoney(context, line.unitPrice)}',
                       style: TextStyle(
                         fontSize: isTablet ? 13 : 11,
                         fontWeight: FontWeight.w600,
@@ -1874,7 +1957,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
                         borderRadius: BorderRadius.circular(7),
                       ),
                       child: Text(
-                        isPercent ? '%' : 'SAR',
+                        isPercent ? '%' : AppLocalizations.of(context)!.posCommonSar,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

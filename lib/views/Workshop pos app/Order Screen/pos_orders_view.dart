@@ -47,6 +47,42 @@ bool _ordersIsRetailWalkInBranchEmployee(PosViewModel vm, PosOrder order) {
   return order.customer?.isCustomerEmployee == true;
 }
 
+
+String _ordersTranslatedStatusLabel(BuildContext context, String statusRaw) {
+  final l10n = AppLocalizations.of(context)!;
+  var s = statusRaw.trim().toLowerCase().replaceAll(' ', '_');
+  if (s == 'complete') s = 'completed';
+  if (s == 'job_edited') s = 'edited';
+  if (s == 'canceled') s = 'cancelled';
+  if (s == 'rejected_by_corporate' || s.contains('rejected')) {
+    return l10n.posOrdersStatusRejected;
+  }
+  switch (s) {
+    case 'cancelled':
+      return l10n.posOrdersStatusCancelled;
+    case 'completed':
+    case 'invoiced':
+      return l10n.posOrdersStatusComplete;
+    case 'edited':
+      return l10n.posOrdersStatusEdited;
+    case 'in_progress':
+    case 'inprogress':
+      return l10n.posOrdersStatusInProgress;
+    case 'unapproved':
+      return l10n.posOrdersStatusUnapproved;
+    case 'waiting_approval':
+    case 'waiting_corporate_approval':
+      return l10n.posOrdersStatusWaitingApproval;
+    case 'corp_approved':
+    case 'corporate_approved':
+      return l10n.posOrdersStatusCorpApproved;
+    case 'draft':
+      return l10n.posOrdersStatusDraft;
+    default:
+      return l10n.posOrdersStatusPending;
+  }
+}
+
 String? _ordersBranchEmployeeIdForPayroll(PosViewModel vm, PosOrder order) {
   final snap = vm.walkInBillingSnapshotForOrder(order.id);
   final a = snap?.billingEmployeeId?.trim();
@@ -93,7 +129,7 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
             if (ctx.mounted) setModalState(() {});
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please sign in again.')),
+                SnackBar(content: Text(AppLocalizations.of(context)!.posOrdersPleaseSignInAgain)),
               );
             }
             return;
@@ -114,7 +150,7 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
             Navigator.of(dialogContext).pop();
             ToastService.showSuccess(
               context,
-              'Maintenance checklist saved.',
+              AppLocalizations.of(context)!.posOrdersChecklistSaved,
             );
           } catch (e) {
             savingRef[0] = false;
@@ -134,7 +170,7 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Maintenance checklist',
+                  AppLocalizations.of(context)!.posOrdersMaintenanceChecklistTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -150,7 +186,7 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'These items appear on the printed invoice – tick each that applies.',
+                    AppLocalizations.of(context)!.posOrdersMaintenanceChecklistDescription,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -170,7 +206,9 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
                               setModalState(() => checks[i] = v ?? false);
                             },
                       title: Text(
-                        InvoiceMaintenanceChecklist.rows[i].en,
+                        (Localizations.localeOf(context).languageCode == 'ar'
+                            ? InvoiceMaintenanceChecklist.rows[i].ar
+                            : InvoiceMaintenanceChecklist.rows[i].en),
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
@@ -195,7 +233,7 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
             TextButton(
               onPressed:
                   savingRef[0] ? null : () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.posCommonCancel),
             ),
             FilledButton(
               onPressed: savingRef[0] ? null : save,
@@ -220,7 +258,7 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
                         ),
                       ),
                     )
-                  : const Text('Save'),
+                  : Text(AppLocalizations.of(context)!.posCommonSave),
             ),
           ],
         );
@@ -261,14 +299,14 @@ class _PosOrdersViewState extends State<PosOrdersView> {
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFD),
       appBar: PosScreenAppBar(
-        title: 'Orders Hub',
+        title: AppLocalizations.of(context)!.posOrdersHubTitle,
         showBackButton: false,
         actions: [
           Consumer<PosViewModel>(
             builder: (context, vmRefresh, _) {
               final isBarTablet = MediaQuery.of(context).size.width > 600;
               return IconButton(
-                tooltip: 'Refresh orders',
+                tooltip: AppLocalizations.of(context)!.posOrdersRefreshOrders,
                 onPressed: vmRefresh.isOrdersScreenRefreshing
                     ? null
                     : () => vmRefresh.refreshOrdersScreen(),
@@ -342,8 +380,8 @@ class _PosOrdersViewState extends State<PosOrdersView> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: const Center(
-                    child: _OrdersEmptyStateBody(title: 'No orders found'),
+                  child: Center(
+                    child: _OrdersEmptyStateBody(title: AppLocalizations.of(context)!.posOrdersNoOrdersFound),
                   ),
                 ),
               );
@@ -361,12 +399,12 @@ class _PosOrdersViewState extends State<PosOrdersView> {
             children: [
               Expanded(
                 child: PosSearchBar(
-                  hintText: 'Search orders...',
+                  hintText: AppLocalizations.of(context)!.posOrdersSearchHint,
                   onChanged: (val) => vm.setOrderSearchQuery(val),
                 ),
               ),
               const SizedBox(width: 10),
-              const _OrdersNewOrderButton(),
+              _OrdersNewOrderButton(),
             ],
           ),
         ),
@@ -422,6 +460,12 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
 
   Widget _buildTab(String title) {
     final isSelected = _selectedTab == title;
+    final l10n = AppLocalizations.of(context)!;
+    final displayTitle = title == 'All'
+        ? l10n.posOrdersTabAll
+        : title == 'Pending'
+            ? l10n.posOrdersTabPending
+            : l10n.posOrdersTabCompleted;
     return GestureDetector(
       onTap: () {
         _setSelectedTab(title);
@@ -437,7 +481,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
               : Border.all(color: const Color(0xFFE8ECF3), width: 1.5),
         ),
         child: Text(
-          title,
+          displayTitle,
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
@@ -504,8 +548,8 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
                         horizontal: 24,
                         vertical: 32,
                       ),
-                      child: const _OrdersEmptyStateBody(
-                        title: 'No orders found',
+                      child: _OrdersEmptyStateBody(
+                        title: AppLocalizations.of(context)!.posOrdersNoOrdersFound,
                       ),
                     ),
                   ),
@@ -536,14 +580,14 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
                       child: SizedBox(
                         height: 44,
                         child: PosSearchBar(
-                          hintText: 'Search plate, name, ID...',
+                          hintText: AppLocalizations.of(context)!.posOrdersSearchPlateNameId,
                           onChanged: (val) =>
                               vm.setOrderSearchQuery(val),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const _OrdersNewOrderButton(),
+                    _OrdersNewOrderButton(),
                   ],
                 ),
               ),
@@ -686,7 +730,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
       );
       if (!context.mounted) return;
       if (result == null) return;
-      ToastService.showSuccess(context, 'Customer details saved');
+      ToastService.showSuccess(context, AppLocalizations.of(context)!.posOrdersCustomerDetailsSaved);
     }
 
     Future<void> openPayment() async {
@@ -719,7 +763,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
           paymentAmounts: result.paymentAmounts,
           employeeIds: result.employeeIds,
         );
-        ToastService.showSuccess(context, 'Payment method saved');
+        ToastService.showSuccess(context, AppLocalizations.of(context)!.posOrdersPaymentMethodSaved);
       }
     }
 
@@ -737,8 +781,8 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: const Text(
-          'Edit customer details',
+        child: Text(
+          AppLocalizations.of(context)!.posOrdersEditCustomerDetails,
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -776,8 +820,8 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
             ),
             child: Text(
               vm.invoicePaymentSelectionReady
-                  ? 'Edit payment'
-                  : 'Select payment method',
+                  ? AppLocalizations.of(context)!.posOrdersEditPayment
+                  : AppLocalizations.of(context)!.posOrdersSelectPaymentMethod,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -799,7 +843,7 @@ class _OrdersHeaderCustomerPaymentRow extends StatelessWidget {
 class _OrdersEmptyStateBody extends StatelessWidget {
   final String title;
 
-  const _OrdersEmptyStateBody({required this.title});
+  _OrdersEmptyStateBody({required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -819,7 +863,7 @@ class _OrdersEmptyStateBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const _OrdersNewOrderButton(),
+          _OrdersNewOrderButton(),
         ],
       ),
     );
@@ -827,7 +871,7 @@ class _OrdersEmptyStateBody extends StatelessWidget {
 }
 
 class _OrdersNewOrderButton extends StatelessWidget {
-  const _OrdersNewOrderButton();
+  _OrdersNewOrderButton();
 
   @override
   Widget build(BuildContext context) {
@@ -859,13 +903,13 @@ class _OrdersNewOrderButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_rounded, color: Color(0xFF23262D), size: 18),
-              SizedBox(width: 6),
+              const Icon(Icons.add_rounded, color: Color(0xFF23262D), size: 18),
+              const SizedBox(width: 6),
               Text(
-                'New Order',
+                AppLocalizations.of(context)!.posOrdersNewOrder,
                 style: TextStyle(
                   color: Color(0xFF23262D),
                   fontWeight: FontWeight.w800,
@@ -881,7 +925,7 @@ class _OrdersNewOrderButton extends StatelessWidget {
 }
 
 /// Job status chip — same look in department cards and ORDER SUMMARY.
-Widget posOrdersJobStatusBadge(String statusRaw) {
+Widget posOrdersJobStatusBadge(BuildContext context, String statusRaw) {
   var s = statusRaw.toLowerCase().replaceAll(' ', '_');
   if (s == 'complete') s = 'completed';
   if (s == 'job_edited') s = 'edited';
@@ -946,7 +990,7 @@ Widget posOrdersJobStatusBadge(String statusRaw) {
       borderRadius: BorderRadius.circular(6),
       border: Border.all(color: border),
     ),
-    child: Text(label, style: textStyle),
+    child: Text(_ordersTranslatedStatusLabel(context, label), style: textStyle),
   );
 }
 
@@ -1022,7 +1066,7 @@ class _OrderDetailPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'No Order Selected',
+                    AppLocalizations.of(context)!.posOrdersNoOrderSelected,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -1031,7 +1075,7 @@ class _OrderDetailPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Select an order from the list on the left to view details',
+                    AppLocalizations.of(context)!.posOrdersSelectFromList,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade400,
@@ -1318,7 +1362,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        posOrdersJobStatusBadge('pending'),
+                        posOrdersJobStatusBadge(context, 'pending'),
                       ],
                     ),
                   ),
@@ -1332,11 +1376,11 @@ class _CorporatePendingJobCard extends StatelessWidget {
                   _ModernActionChip(
                     icon: Icons.add_shopping_cart_rounded,
                     label: hasDeptItems
-                        ? '$deptItemCount ${deptItemCount == 1 ? 'item' : 'items'}'
-                        : 'Products & Services',
+                        ? AppLocalizations.of(context)!.posOrdersItemCount(deptItemCount)
+                        : AppLocalizations.of(context)!.posOrdersProductsAndServices,
                     trailing: hasDeptItems
                         ? Text(
-                            'SAR ${deptTotal.toStringAsFixed(2)}',
+                            AppLocalizations.of(context)!.posCommonSarAmount(deptTotal.toStringAsFixed(2)),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
@@ -1348,7 +1392,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
                       if (isRejectedCorporateOrder) {
                         ToastService.showError(
                           context,
-                          'Rejected corporate orders are read-only. Remove the order from the list.',
+                          AppLocalizations.of(context)!.posOrdersRejectedCorporateReadOnly,
                         );
                         return;
                       }
@@ -1433,11 +1477,11 @@ class _CorporatePendingJobCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   _ModernActionChip(
                     icon: Icons.engineering_rounded,
-                    label: 'Assign Technicians',
+                    label: AppLocalizations.of(context)!.posOrdersAssignTechnicians,
                     onTap: () => ToastService.showError(
                       context,
                       isRejectedCorporateOrder
-                          ? 'Rejected corporate orders are read-only. Remove the order from the list.'
+                          ? AppLocalizations.of(context)!.posOrdersRejectedCorporateReadOnly
                           : 'This corporate walk-in has no real jobId yet. Send for approval first, then assign technicians as normal.',
                     ),
                   ),
@@ -1452,7 +1496,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _JobFooterButton(
-                        label: 'Cancel',
+                        label: AppLocalizations.of(context)!.posCommonCancel,
                         backgroundColor: const Color(0xFF23262D),
                         textColor: Colors.white,
                         enabled: true,
@@ -1462,7 +1506,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _JobFooterButton(
-                        label: 'Mark Complete',
+                        label: AppLocalizations.of(context)!.posOrdersMarkComplete,
                         backgroundColor: const Color(0xFFFCC247),
                         textColor: const Color(0xFF23262D),
                         enabled: true,
@@ -1620,7 +1664,7 @@ void _openJobProductGrid(BuildContext context, PosOrder order, PosOrderJob job) 
   if (posVm.vehicleNumber.trim().isEmpty && order.plateNumber.trim().isEmpty) {
     ToastService.showError(
       context,
-      'Please add vehicle number first (Add Customer)',
+      AppLocalizations.of(context)!.posOrdersPleaseAddVehicleFirst,
     );
     return;
   }
@@ -1702,7 +1746,7 @@ Future<void> _onMarkJobComplete(
     return;
   }
   if (job.items.isEmpty) {
-    ToastService.showError(context, 'This job has no line items.');
+    ToastService.showError(context, AppLocalizations.of(context)!.posOrdersThisJobNoLineItems);
     return;
   }
 
@@ -1777,12 +1821,12 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Delete Job',
+              AppLocalizations.of(context)!.posOrdersDeleteJobTitle,
               style: AppTextStyles.h2.copyWith(fontSize: 20),
             ),
             const SizedBox(height: 8),
             Text(
-              'Are you sure you want to delete this job? This action cannot be undone.',
+              AppLocalizations.of(context)!.posOrdersDeleteJobBody,
               textAlign: TextAlign.center,
               style: AppTextStyles.bodySmall.copyWith(
                 color: Colors.grey.shade600,
@@ -1807,7 +1851,7 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
                       minimumSize: const Size(0, 40),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text('NO', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 13)),
+                    child: Text(AppLocalizations.of(context)!.posOrdersNoBtn, style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 13)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1832,7 +1876,7 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text('YES, DELETE', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 13)),
+                        : Text(AppLocalizations.of(context)!.posOrdersYesDeleteBtn, style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 13)),
                   ),
                 ),
               ],
@@ -1939,8 +1983,9 @@ class _JobCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        job.department.toUpperCase(),
+                      LocalizedApiText(
+                        job.department,
+                        uppercase: Localizations.localeOf(context).languageCode != 'ar',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1951,7 +1996,7 @@ class _JobCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      posOrdersJobStatusBadge(statusForUi),
+                      posOrdersJobStatusBadge(context, statusForUi),
                     ],
                   ),
                 ),
@@ -1967,11 +2012,11 @@ class _JobCard extends StatelessWidget {
                 _ModernActionChip(
                   icon: Icons.add_shopping_cart_rounded,
                   label: hasLineItems
-                      ? '$lineItemCount ${lineItemCount == 1 ? 'item' : 'items'}'
-                      : 'Products & Services',
+                      ? AppLocalizations.of(context)!.posOrdersItemCount(lineItemCount)
+                      : AppLocalizations.of(context)!.posOrdersProductsAndServices,
                   trailing: hasLineItems
                       ? Text(
-                          'SAR ${jobTotalDisplay.toStringAsFixed(2)}',
+                          AppLocalizations.of(context)!.posCommonSarAmount(jobTotalDisplay.toStringAsFixed(2)),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -1982,7 +2027,7 @@ class _JobCard extends StatelessWidget {
                   onTap: isLocked
                       ? () => ToastService.showError(
                             context,
-                            'This job cannot be edited.',
+                            AppLocalizations.of(context)!.posOrdersJobCannotBeEdited,
                           )
                       : () => _openJobProductGrid(
                             context,
@@ -1994,12 +2039,12 @@ class _JobCard extends StatelessWidget {
                 _ModernActionChip(
                   icon: Icons.engineering_rounded,
                   label: job.distinctActiveTechnicians.isEmpty
-                      ? 'Assign Technicians'
-                      : '${job.distinctActiveTechnicians.length} ${job.distinctActiveTechnicians.length == 1 ? 'technician' : 'technicians'}',
+                      ? AppLocalizations.of(context)!.posOrdersAssignTechnicians
+                      : AppLocalizations.of(context)!.posOrdersTechnicianCount(job.distinctActiveTechnicians.length),
                   onTap: isLocked
                       ? () => ToastService.showError(
                             context,
-                            'This job cannot be edited.',
+                            AppLocalizations.of(context)!.posOrdersJobCannotBeEdited,
                           )
                       : () => _openJobTechnicianAssignment(
                             context,
@@ -2022,7 +2067,7 @@ class _JobCard extends StatelessWidget {
                     if (!isInvoiced && !isComplete && !isEdited) ...[
                       Expanded(
                         child: _JobFooterButton(
-                          label: 'Cancel',
+                          label: AppLocalizations.of(context)!.posCommonCancel,
                         backgroundColor: isCancelled
                                 ? const Color(0xFF23262D).withValues(alpha: 0.45)
                                 : const Color(0xFF23262D),
@@ -2034,7 +2079,7 @@ class _JobCard extends StatelessWidget {
                               if (isRejectedCorporateOrder) {
                                 ToastService.showError(
                                   context,
-                                  'Rejected corporate orders are read-only. Remove the order from the list.',
+                                  AppLocalizations.of(context)!.posOrdersRejectedCorporateReadOnly,
                                 );
                                 return;
                               }
@@ -2048,10 +2093,10 @@ class _JobCard extends StatelessWidget {
                       Expanded(
                         child: _JobFooterButton(
                           label: (isComplete || isEdited)
-                              ? 'Edit'
+                              ? AppLocalizations.of(context)!.posOrdersEdit
                               : isCancelled
-                                  ? 'Cancelled'
-                                  : 'Mark Complete',
+                                  ? AppLocalizations.of(context)!.posOrdersStatusCancelled
+                                  : AppLocalizations.of(context)!.posOrdersMarkComplete,
                           backgroundColor: (isComplete || isEdited)
                               ? const Color(0xFF23262D)
                               : isCancelled
@@ -2075,7 +2120,7 @@ class _JobCard extends StatelessWidget {
                                   if (isRejectedCorporateOrder) {
                                     ToastService.showError(
                                       context,
-                                      'Rejected corporate orders are read-only. Remove the order from the list.',
+                                      AppLocalizations.of(context)!.posOrdersRejectedCorporateReadOnly,
                                     );
                                     return;
                                   }
@@ -2344,7 +2389,7 @@ double _draftPerTechnicianCommissionPreviewSar(
 }
 
 /// Plain totals under dept discount (no highlight strip) — same label typography as dept discount.
-Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
+Widget _draftDeptTotalsPlainTextRows(BuildContext context, PosOrderJob job) {
   final labelStyle = TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.w600,
@@ -2379,7 +2424,7 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(child: Text('Total before VAT', style: labelStyle)),
+          Expanded(child: Text(AppLocalizations.of(context)!.posOrdersTotalBeforeVat, style: labelStyle)),
           Text(
             '${beforeVat.toStringAsFixed(2)} SAR',
             style: valueStyle,
@@ -2390,7 +2435,7 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(child: Text('VAT ($pctLabel%)', style: labelStyle)),
+          Expanded(child: Text(AppLocalizations.of(context)!.posOrdersVatPercent(pctLabel), style: labelStyle)),
           Text(
             '+ ${vatAmount.toStringAsFixed(2)} SAR',
             style: valueStyle.copyWith(color: Colors.red.shade700),
@@ -2403,7 +2448,7 @@ Widget _draftDeptTotalsPlainTextRows(PosOrderJob job) {
         children: [
           Expanded(
             child: Text(
-              'Total (incl. VAT)',
+              AppLocalizations.of(context)!.posOrdersTotalInclVat,
               style: GoogleFonts.manrope(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
@@ -3018,8 +3063,8 @@ class _OrderSummaryPanel extends StatelessWidget {
                         orderId: order.id,
                       ),
               icon: const Icon(Icons.send_rounded, size: 16),
-              label: const Text(
-                'Send for Approval',
+              label: Text(
+                AppLocalizations.of(context)!.posOrdersSendForApproval,
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w800,
@@ -3047,10 +3092,10 @@ class _OrderSummaryPanel extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Grand total',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.posOrdersGrandTotal,
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     color: AppColors.onSecondaryLight,
@@ -3105,8 +3150,8 @@ class _OrderSummaryPanel extends StatelessWidget {
                   ),
                   child: Text(
                     maintenanceChecklistSaved
-                        ? 'Checklist saved (tap to edit)'
-                        : 'Checklist (optional)',
+                        ? AppLocalizations.of(context)!.posOrdersChecklistSaved
+                        : AppLocalizations.of(context)!.posOrdersChecklistOptional,
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -3164,8 +3209,8 @@ class _OrderSummaryPanel extends StatelessWidget {
                                 color: AppColors.onSecondaryLight,
                               ),
                             )
-                          : const Text(
-                              'Generate Invoice',
+                          : Text(
+                              AppLocalizations.of(context)!.posOrdersGenerateInvoice,
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -3199,11 +3244,11 @@ class _OrderSummaryPanel extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Expanded(
+              Expanded(
                 flex: 2,
                 child: Text(
-                  'ORDER SUMMARY',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.posOrdersOrderSummary,
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.5,
@@ -3306,8 +3351,9 @@ class _DraftDepartmentSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  job.department.toUpperCase(),
+                child: LocalizedApiText(
+                  job.department,
+                  uppercase: Localizations.localeOf(context).languageCode != 'ar',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
@@ -3319,14 +3365,14 @@ class _DraftDepartmentSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              posOrdersJobStatusBadge(statusForUi),
+              posOrdersJobStatusBadge(context, statusForUi),
             ],
           ),
         ),
         const SizedBox(height: 8),
         if (items.isEmpty)
           Text(
-            'No products or services',
+            AppLocalizations.of(context)!.posOrdersNoProductsOrServices,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -3360,7 +3406,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                         ),
                       ),
                       Expanded(
-                        child: Text(
+                        child: LocalizedApiText(
                           item.productName,
                           style: const TextStyle(
                             fontSize: 12,
@@ -3394,11 +3440,13 @@ class _DraftDepartmentSection extends StatelessWidget {
                         ),
                         children: [
                           TextSpan(
-                            text:
-                                'Qty ${_draftFmtQty(item.qty)} × ${_draftLineUnitPriceExVat(job, item).toStringAsFixed(2)}',
+                            text: AppLocalizations.of(context)!.posOrdersQtyWithoutVat(
+                                _draftFmtQty(item.qty),
+                                _draftLineUnitPriceExVat(job, item).toStringAsFixed(2),
+                              ),
                           ),
                           TextSpan(
-                            text: ' Without VAT',
+                            text: '',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
@@ -3527,8 +3575,8 @@ class _DraftDepartmentSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   displayPromoName.isNotEmpty
-                      ? 'Dept promo ($displayPromoName)'
-                      : 'Dept promo',
+                      ? AppLocalizations.of(context)!.posOrdersDeptPromoWithName(displayPromoName)
+                      : AppLocalizations.of(context)!.posOrdersDeptPromo,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -3558,9 +3606,9 @@ class _DraftDepartmentSection extends StatelessWidget {
                     final dt = (job.totalDiscountType ?? '').toLowerCase();
                     final dv = job.totalDiscountValue;
                     if (dt == 'percent' || dt == 'percentage') {
-                      return 'Dept discount (${dv.toStringAsFixed(0)}%)';
+                      return AppLocalizations.of(context)!.posOrdersDeptDiscountPercent(dv.toStringAsFixed(0));
                     }
-                    return 'Dept discount';
+                    return AppLocalizations.of(context)!.posOrdersDeptDiscount;
                   }(),
                   style: TextStyle(
                     fontSize: 10,
@@ -3581,13 +3629,13 @@ class _DraftDepartmentSection extends StatelessWidget {
           ),
           const SizedBox(height: 6),
         ],
-        _draftDeptTotalsPlainTextRows(job),
+        _draftDeptTotalsPlainTextRows(context, job),
       ],
     );
   }
 }
 
-Widget _orderStripStatusBadge(PosOrder order, {required bool isSelected}) {
+Widget _orderStripStatusBadge(BuildContext context, PosOrder order, {required bool isSelected}) {
   String label = order.jobsAggregateBadgeLabel;
   if (order.isCorporateWalkIn) {
     if (order.isCorporateUnapproved) {
@@ -3625,7 +3673,7 @@ Widget _orderStripStatusBadge(PosOrder order, {required bool isSelected}) {
       borderRadius: BorderRadius.circular(6),
     ),
     child: Text(
-      label,
+      _ordersTranslatedStatusLabel(context, label),
       style: TextStyle(
         fontSize: 7,
         fontWeight: FontWeight.w800,
@@ -3663,7 +3711,7 @@ class _HorizontalOrderTile extends StatelessWidget {
     final jobProgressLabel = '$completedActive/${activeJobs.length}';
     final deptNames = order.selectedDepartmentNames;
     final showDeptLine = order.isCorporateWalkIn && deptNames.isNotEmpty;
-    final rightMetaLabel = showDeptLine ? '${deptNames.length} dept' : jobProgressLabel;
+    final rightMetaLabel = showDeptLine ? AppLocalizations.of(context)!.posOrdersDeptCount(deptNames.length) : jobProgressLabel;
     final canCancel = posOrderCanCashierCancel(order);
 
     return Stack(
@@ -3714,7 +3762,7 @@ class _HorizontalOrderTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    _orderStripStatusBadge(order, isSelected: isSelected),
+                    _orderStripStatusBadge(context, order, isSelected: isSelected),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -3729,7 +3777,7 @@ class _HorizontalOrderTile extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        order.vehicle?.plateNo ?? 'No Plate',
+                        order.vehicle?.plateNo ?? AppLocalizations.of(context)!.posOrdersNoPlate,
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 12,
@@ -3753,7 +3801,7 @@ class _HorizontalOrderTile extends StatelessWidget {
                 if (showDeptLine) ...[
                   const SizedBox(height: 3),
                   Text(
-                    'Dept: ${deptNames.join(', ')}',
+                    AppLocalizations.of(context)!.posOrdersDeptNames(deptNames.join(', ')),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

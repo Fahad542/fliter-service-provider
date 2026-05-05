@@ -147,15 +147,15 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('Store Closing Report',
+              pw.Text('تقرير إغلاق المتجر / Store Closing Report',
                   style: pw.TextStyle(
                       fontSize: 24, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 20),
-              pw.Text('Branch: ${_report!.branch}'),
-              pw.Text('Cashier: ${_report!.cashierName}'),
+              pw.Text('الفرع / Branch: ${_report!.branch}'),
+              pw.Text('أمين الصندوق / Cashier: ${_report!.cashierName}'),
               pw.Text(
-                  'Date: ${DateFormat('dd MMM, yyyy hh:mm a').format(_report!.timestamp)}'),
-              if (_closingId != null) pw.Text('Closing ID: $_closingId'),
+                  'التاريخ / Date: ${DateFormat('dd MMM, yyyy hh:mm a').format(_report!.timestamp)}'),
+              if (_closingId != null) pw.Text('رقم الإغلاق / Closing ID: $_closingId'),
               pw.SizedBox(height: 20),
               pw.Divider(),
               pw.SizedBox(height: 10),
@@ -163,24 +163,24 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Expanded(
-                      child: pw.Text('Category',
+                      child: pw.Text('الفئة / Category',
                           style:
                               pw.TextStyle(fontWeight: pw.FontWeight.bold))),
                   pw.SizedBox(
                       width: 80,
-                      child: pw.Text('System',
+                      child: pw.Text('النظام / System',
                           textAlign: pw.TextAlign.right,
                           style:
                               pw.TextStyle(fontWeight: pw.FontWeight.bold))),
                   pw.SizedBox(
                       width: 80,
-                      child: pw.Text('Physical',
+                      child: pw.Text('الفعلي / Physical',
                           textAlign: pw.TextAlign.right,
                           style:
                               pw.TextStyle(fontWeight: pw.FontWeight.bold))),
                   pw.SizedBox(
                       width: 80,
-                      child: pw.Text('Difference',
+                      child: pw.Text('الفرق / Difference',
                           textAlign: pw.TextAlign.right,
                           style:
                               pw.TextStyle(fontWeight: pw.FontWeight.bold))),
@@ -189,17 +189,17 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
               pw.SizedBox(height: 10),
               pw.Divider(),
               pw.SizedBox(height: 10),
-              _buildPdfRow('Cash Account', _report!.systemCashGross,
+              _buildPdfRow('حساب النقد / Cash Account', _report!.systemCashGross,
                   _report!.physicalCash, _report!.cashDiff),
-              _buildPdfRow('Bank / Cards', _report!.systemBankGross,
+              _buildPdfRow('البنك / البطاقات / Bank / Cards', _report!.systemBankGross,
                   _report!.physicalBank, _report!.bankDiff),
-              _buildPdfRow('Corporate', _report!.systemCorporateGross,
+              _buildPdfRow('الشركات / Corporate', _report!.systemCorporateGross,
                   _report!.physicalCorporate, _report!.corporateDiff),
-              _buildPdfRow('Tamara', _report!.systemTamaraGross,
+              _buildPdfRow('تمارا / Tamara', _report!.systemTamaraGross,
                   _report!.physicalTamara, _report!.tamaraDiff),
-              _buildPdfRow('Tabby', _report!.systemTabbyGross,
+              _buildPdfRow('تابي / Tabby', _report!.systemTabbyGross,
                   _report!.physicalTabby, _report!.tabbyDiff),
-              _buildPdfRow('Others (Employees)', _report!.systemOthersGross,
+              _buildPdfRow('أخرى (الموظفون) / Others (Employees)', _report!.systemOthersGross,
                   _report!.physicalOthers, _report!.othersDiff),
               pw.SizedBox(height: 12),
               pw.Divider(),
@@ -219,7 +219,7 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
         _buildPdfRow(
-          'Total',
+          'الإجمالي / Total',
           r.systemBucketsSumGross,
           r.physicalTotal,
           r.diffBucketsSum,
@@ -231,7 +231,7 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
             children: [
               pw.Expanded(
                 child: pw.Text(
-                  'Less: Total sales return',
+                  'خصم: إجمالي مرتجعات المبيعات / Less: Total sales return',
                   style: pw.TextStyle(
                     fontWeight: pw.FontWeight.bold,
                     fontSize: 11,
@@ -260,7 +260,7 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
           children: [
             pw.Expanded(
               child: pw.Text(
-                'Grand Total',
+                'الإجمالي الكلي / Grand Total',
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
                   fontSize: 14,

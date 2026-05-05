@@ -4,6 +4,32 @@ import '../../../utils/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
 
+
+String _detailsStatusLabel(BuildContext context, String status) {
+  final l10n = AppLocalizations.of(context)!;
+  var s = status.trim().toLowerCase().replaceAll(' ', '_');
+  if (s == 'complete') s = 'completed';
+  if (s == 'job_edited') s = 'edited';
+  switch (s) {
+    case 'completed':
+    case 'invoiced':
+      return l10n.posOrdersStatusComplete;
+    case 'edited':
+      return l10n.posOrdersStatusEdited;
+    case 'in_progress':
+    case 'inprogress':
+      return l10n.posOrdersStatusInProgress;
+    case 'cancelled':
+    case 'canceled':
+      return l10n.posOrdersStatusCancelled;
+    case 'rejected':
+    case 'rejected_by_corporate':
+      return l10n.posOrdersStatusRejected;
+    default:
+      return l10n.posOrdersStatusPending;
+  }
+}
+
 class PosOrderDetailsView extends StatelessWidget {
   final PosOrder order;
 

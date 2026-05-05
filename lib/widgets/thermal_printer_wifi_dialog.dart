@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 import '../services/thermal_printer_settings.dart';
+
 
 /// Wi‑Fi ESC/POS printer IP/port (same fields as POS invoice long‑press).
 ///
@@ -75,12 +77,12 @@ class _ThermalPrinterWifiDialogState extends State<_ThermalPrinterWifiDialog> {
     FocusScope.of(context).unfocus();
     final rawIp = _ipCtrl.text.trim();
     if (!ThermalPrinterSettings.isPlausibleHost(rawIp)) {
-      setState(() => _error = 'Enter a valid printer IP or hostname.');
+      setState(() => _error = AppLocalizations.of(context)!.posThermalPrinterInvalidHost);
       return;
     }
     final parsedPort = int.tryParse(_portCtrl.text.trim());
     if (parsedPort == null || parsedPort < 1 || parsedPort > 65535) {
-      setState(() => _error = 'Enter a valid port (1–65535).');
+      setState(() => _error = AppLocalizations.of(context)!.posThermalPrinterInvalidPort);
       return;
     }
     setState(() {
@@ -93,7 +95,7 @@ class _ThermalPrinterWifiDialogState extends State<_ThermalPrinterWifiDialog> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = 'Could not save settings.';
+          _error = AppLocalizations.of(context)!.posThermalPrinterSaveFailed;
         });
       }
       return;
@@ -105,7 +107,7 @@ class _ThermalPrinterWifiDialogState extends State<_ThermalPrinterWifiDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Thermal printer (Wi‑Fi)'),
+      title: Text(AppLocalizations.of(context)!.posThermalPrinterTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -124,18 +126,18 @@ class _ThermalPrinterWifiDialogState extends State<_ThermalPrinterWifiDialog> {
             ],
             TextField(
               controller: _ipCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Printer IP',
-                hintText: 'e.g. 192.168.8.55',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.posThermalPrinterIpLabel,
+                hintText: AppLocalizations.of(context)!.posThermalPrinterIpHint,
               ),
               enabled: !_saving,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _portCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Port',
-                helperText: '9100 for most Epson network receipt printers',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.posThermalPrinterPortLabel,
+                helperText: AppLocalizations.of(context)!.posThermalPrinterPortHelper,
               ),
               keyboardType: TextInputType.number,
               enabled: !_saving,
@@ -146,7 +148,7 @@ class _ThermalPrinterWifiDialogState extends State<_ThermalPrinterWifiDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(AppLocalizations.of(context)!.posCommonCancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _onSave,
@@ -156,7 +158,7 @@ class _ThermalPrinterWifiDialogState extends State<_ThermalPrinterWifiDialog> {
                   height: 22,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(widget.primaryButtonLabel),
+              : Text(widget.primaryButtonLabel == 'Save' ? AppLocalizations.of(context)!.posCommonSave : widget.primaryButtonLabel),
         ),
       ],
     );

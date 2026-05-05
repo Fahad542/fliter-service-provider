@@ -340,7 +340,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
 
     if (!isCorporateLocked && _billingPickEmployeeMode) {
       if (_billingEmployeesPickLoading) {
-        ToastService.showInfo(context, 'Loading employees…');
+        ToastService.showInfo(context, AppLocalizations.of(context)!.posInvoiceDetailsLoadingEmployees);
         return;
       }
       if (_billingEmployeePickSelection == null) {
@@ -515,7 +515,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 title: Text(
-                  'Customer is a branch employee',
+                  AppLocalizations.of(context)!.posInvoiceDetailsBranchEmployee,
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
@@ -523,7 +523,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   ),
                 ),
                 subtitle: Text(
-                  'Pick from staff list to fill name and mobile.',
+                  AppLocalizations.of(context)!.posInvoiceDetailsPickStaff,
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 ),
                 value: _billingPickEmployeeMode,
@@ -560,7 +560,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'No employees listed for this branch.',
+                      AppLocalizations.of(context)!.posInvoiceDetailsNoEmployees,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -571,11 +571,11 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   DropdownButtonFormField<BranchEmployee>(
                     value: _billingEmployeePickSelection,
                     decoration: _walkInInvoiceFieldDecoration(
-                      'Employee',
+                      AppLocalizations.of(context)!.posInvoiceDetailsEmployee,
                       compact: true,
                     ),
                     hint: Text(
-                      'Choose employee',
+                      AppLocalizations.of(context)!.posInvoiceDetailsChooseEmployee,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -620,7 +620,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       color: Colors.grey.shade900,
                     ),
                     decoration: _walkInInvoiceFieldDecoration(
-                      'Customer name',
+                      AppLocalizations.of(context)!.posInvoiceDetailsCustomerName,
                       compact: true,
                     ),
                     textCapitalization: TextCapitalization.words,
@@ -628,7 +628,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                         isCorporateLocked
                             ? null
                             : (s == null || s.trim().isEmpty)
-                                ? 'Required'
+                                ? AppLocalizations.of(context)!.posInvoiceDetailsRequired
                                 : null,
                   ),
                 ),
@@ -642,7 +642,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       color: Colors.grey.shade900,
                     ),
                     decoration: _walkInInvoiceFieldDecoration(
-                      'Mobile',
+                      AppLocalizations.of(context)!.posInvoiceDetailsMobile,
                       compact: true,
                     ),
                     keyboardType: TextInputType.phone,
@@ -650,7 +650,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                         isCorporateLocked
                             ? null
                             : (s == null || s.trim().isEmpty)
-                                ? 'Required'
+                                ? AppLocalizations.of(context)!.posInvoiceDetailsRequired
                                 : null,
                   ),
                 ),
@@ -662,7 +662,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
               readOnly: isCorporateLocked,
               style: _kWalkInInvoiceDialogFieldStyle,
               decoration: _walkInInvoiceFieldDecoration(
-                'VAT',
+                AppLocalizations.of(context)!.posInvoiceDetailsVat,
                 optional: true,
                 compact: true,
               ),
@@ -684,13 +684,13 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
-                        'Plate number',
+                        AppLocalizations.of(context)!.posInvoiceDetailsPlateNumber,
                         compact: true,
                       ),
                       textCapitalization: TextCapitalization.characters,
                       validator: (s) =>
                           (s == null || s.trim().isEmpty)
-                              ? 'Plate is required'
+                              ? AppLocalizations.of(context)!.posInvoiceDetailsPlateRequired
                               : null,
                     ),
                   ),
@@ -701,7 +701,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
-                        'Odometer',
+                        AppLocalizations.of(context)!.posInvoiceDetailsOdometer,
                         optional: true,
                         compact: true,
                       ),
@@ -720,7 +720,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
-                        'Make',
+                        AppLocalizations.of(context)!.posInvoiceDetailsMake,
                         optional: true,
                         compact: true,
                       ),
@@ -734,7 +734,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
-                        'Model',
+                        AppLocalizations.of(context)!.posInvoiceDetailsModel,
                         optional: true,
                         compact: true,
                       ),
@@ -753,7 +753,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
-                        'Year',
+                        AppLocalizations.of(context)!.posInvoiceDetailsYear,
                         optional: true,
                         compact: true,
                       ),
@@ -762,7 +762,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                         if (s == null || s.trim().isEmpty) return null;
                         final yi = int.tryParse(s.trim());
                         if (yi == null || yi < 1900 || yi > 2100) {
-                          return 'Invalid year';
+                          return AppLocalizations.of(context)!.posInvoiceDetailsInvalidYear;
                         }
                         return null;
                       },
@@ -775,7 +775,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       readOnly: vehicleFieldsLocked,
                       style: _kWalkInInvoiceDialogFieldStyle,
                       decoration: _walkInInvoiceFieldDecoration(
-                        'VIN',
+                        AppLocalizations.of(context)!.posInvoiceDetailsVin,
                         optional: true,
                         compact: true,
                       ),
@@ -811,8 +811,8 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                 children: [
                   Text(
                     widget.showVehicleSection
-                        ? 'Invoice details'
-                        : 'Customer details',
+                        ? AppLocalizations.of(context)!.posInvoiceDetailsTitle
+                        : AppLocalizations.of(context)!.posInvoiceDetailsCustomerDetails,
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -823,8 +823,8 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                   const SizedBox(height: 4),
                   Text(
                     widget.showVehicleSection
-                        ? 'Confirm billing contact and vehicle before creating the invoice.'
-                        : 'Confirm billing contact before creating the invoice.',
+                        ? AppLocalizations.of(context)!.posInvoiceDetailsConfirmVehicle
+                        : AppLocalizations.of(context)!.posInvoiceDetailsConfirmContact,
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w500,
@@ -1216,7 +1216,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       setIdle();
       Navigator.of(dialogContext).pop();
       if (!mounted) return;
-      ToastService.showSuccess(context, 'Maintenance checklist saved.');
+      ToastService.showSuccess(context, AppLocalizations.of(context)!.posOrdersChecklistSaved);
     } catch (e) {
       setIdle();
       if (!mounted) return;
@@ -1247,7 +1247,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Maintenance checklist',
+                    AppLocalizations.of(context)!.posOrdersMaintenanceChecklistTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -1263,7 +1263,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'These items appear on the printed invoice – tick each that applies.',
+                      AppLocalizations.of(context)!.posOrdersMaintenanceChecklistDescription,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -1280,7 +1280,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                         onChanged:
                             savingRef[0] ? null : (v) => toggle(i, v),
                         title: Text(
-                          InvoiceMaintenanceChecklist.rows[i].en,
+                          (Localizations.localeOf(context).languageCode == 'ar' ? InvoiceMaintenanceChecklist.rows[i].ar : InvoiceMaintenanceChecklist.rows[i].en),
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
@@ -1344,7 +1344,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                           ),
                         ),
                       )
-                    : const Text('Save'),
+                    : Text(AppLocalizations.of(context)!.posCommonSave),
               ),
             ],
           );
@@ -1379,7 +1379,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
           label: Text(
             saved
                 ? 'Checklist saved (tap to edit)'
-                : 'Maintenance checklist (optional)',
+                : AppLocalizations.of(context)!.posOrdersChecklistOptional,
           ),
           onPressed: _showMaintenanceChecklistDialog,
           style: OutlinedButton.styleFrom(
@@ -1439,7 +1439,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             .map(
               (item) => ReviewLineItem(
                 name: item.productName,
-                technicianName: 'Technician',
+                technicianName: AppLocalizations.of(context)!.posReviewTechnicianFallback,
                 unitPrice: item.unitPrice,
                 qty: item.qty.toInt(),
               ),
@@ -1469,10 +1469,10 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             ? priceDynamic.toDouble()
             : (priceDynamic as double? ?? 0.0);
         return ReviewLineItem(
-          name: item['productName'] ?? item['name'] ?? 'Item',
+          name: item['productName'] ?? item['name'] ?? AppLocalizations.of(context)!.posReviewItemFallback,
           technicianName: widget.order.jobs.any((j) => !j.isCancelledJob)
               ? widget.order.jobs.firstWhere((j) => !j.isCancelledJob).department
-              : 'Technician',
+              : AppLocalizations.of(context)!.posReviewTechnicianFallback,
           unitPrice: price,
           qty: item['quantity'] ?? item['qty'] ?? 1,
           commissionRate: 0.10, // Mock commission fallback
@@ -1623,7 +1623,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     if (_totalAmount <= 0) return [];
     return [
       _CommissionDisplayEntry(
-        technicianName: 'Technician',
+        technicianName: AppLocalizations.of(context)!.posReviewTechnicianFallback,
         departmentName: widget.order.jobs.any((j) => !j.isCancelledJob)
             ? widget.order.jobs.firstWhere((j) => !j.isCancelledJob).department
             : '',
@@ -1684,7 +1684,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               backgroundColor: AppColors.surfaceLight,
               title: Text(
-                'Split Payment',
+                AppLocalizations.of(context)!.posPaymentMulti,
                 style: AppTextStyles.h3.copyWith(color: AppColors.secondaryLight),
               ),
               content: SizedBox(
@@ -1701,7 +1701,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Invoice Total', style: AppTextStyles.bodyMedium),
+                          Text(AppLocalizations.of(context)!.posReviewInvoiceTotal, style: AppTextStyles.bodyMedium),
                           Text('${_totalAmount.toStringAsFixed(2)} SAR',
                               style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700)),
                         ],
@@ -1727,7 +1727,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                               child: TextFormField(
                                 controller: controllers[pm],
                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                decoration: _walkInInvoiceFieldDecoration('Amount (SAR)'),
+                                decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posReviewAmountSar),
                                 onChanged: (_) => setDialogState(() {}),
                               ),
                             ),
@@ -1792,7 +1792,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     final remaining = _totalAmount - currentSum;
 
     return _SectionCard(
-      title: 'Split Payment',
+      title: AppLocalizations.of(context)!.posPaymentMulti,
       icon: Icons.call_split_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1806,7 +1806,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Invoice Total', style: AppTextStyles.bodyMedium),
+                Text(AppLocalizations.of(context)!.posReviewInvoiceTotal, style: AppTextStyles.bodyMedium),
                 Text(
                   '${_totalAmount.toStringAsFixed(2)} SAR',
                   style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
@@ -1841,7 +1841,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                           TextFormField(
                             controller: _splitControllers[first],
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: _walkInInvoiceFieldDecoration('Amount (SAR)'),
+                            decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posReviewAmountSar),
                             onChanged: (_) => setState(() {}),
                           ),
                         ],
@@ -1864,7 +1864,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                             TextFormField(
                               controller: _splitControllers[methods[i + 1]],
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: _walkInInvoiceFieldDecoration('Amount (SAR)'),
+                              decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posReviewAmountSar),
                               onChanged: (_) => setState(() {}),
                             ),
                           ],
@@ -1902,7 +1902,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     final lockNameMobileFromEmployee =
         !billingContactLocked && _inlineBillingPickEmployeeMode;
     return _SectionCard(
-      title: 'Invoice Details',
+      title: AppLocalizations.of(context)!.posInvoiceDetailsTitle,
       icon: Icons.receipt_outlined,
       child: Form(
         key: _billingFormKey,
@@ -1915,14 +1915,14 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  'Customer is a branch employee',
+                  AppLocalizations.of(context)!.posInvoiceDetailsBranchEmployee,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: Colors.grey.shade800,
                   ),
                 ),
                 subtitle: Text(
-                  'Pick from staff list to fill name and mobile.',
+                  AppLocalizations.of(context)!.posInvoiceDetailsPickStaff,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 value: _inlineBillingPickEmployeeMode,
@@ -1961,7 +1961,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'No employees listed for this branch.',
+                      AppLocalizations.of(context)!.posInvoiceDetailsNoEmployees,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade600,
@@ -1971,9 +1971,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 else
                   DropdownButtonFormField<BranchEmployee>(
                     value: _inlineBillingEmployeePickSelection,
-                    decoration: _walkInInvoiceFieldDecoration('Employee'),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsEmployee),
                     hint: Text(
-                      'Choose employee',
+                      AppLocalizations.of(context)!.posInvoiceDetailsChooseEmployee,
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                     isExpanded: true,
@@ -2016,10 +2016,10 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade900,
                     ),
-                    decoration: _walkInInvoiceFieldDecoration('Customer name'),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsCustomerName),
                     textCapitalization: TextCapitalization.words,
                     validator: (s) =>
-                        (s == null || s.trim().isEmpty) ? 'Required' : null,
+                        (s == null || s.trim().isEmpty) ? AppLocalizations.of(context)!.posInvoiceDetailsRequired : null,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -2033,10 +2033,10 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade900,
                     ),
-                    decoration: _walkInInvoiceFieldDecoration('Mobile'),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsMobile),
                     keyboardType: TextInputType.phone,
                     validator: (s) =>
-                        (s == null || s.trim().isEmpty) ? 'Required' : null,
+                        (s == null || s.trim().isEmpty) ? AppLocalizations.of(context)!.posInvoiceDetailsRequired : null,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -2044,7 +2044,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   child: TextFormField(
                     controller: _vatCtrl,
                     readOnly: billingContactLocked,
-                    decoration: _walkInInvoiceFieldDecoration('VAT', optional: true),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsVat, optional: true),
                   ),
                 ),
               ],
@@ -2058,17 +2058,17 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 Expanded(
                   child: TextFormField(
                     controller: _plateCtrl,
-                    decoration: _walkInInvoiceFieldDecoration('Plate number'),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsPlateNumber),
                     textCapitalization: TextCapitalization.characters,
                     validator: (s) =>
-                        (s == null || s.trim().isEmpty) ? 'Plate is required' : null,
+                        (s == null || s.trim().isEmpty) ? AppLocalizations.of(context)!.posInvoiceDetailsPlateRequired : null,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
                     controller: _odoCtrl,
-                    decoration: _walkInInvoiceFieldDecoration('Odometer', optional: true),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsOdometer, optional: true),
                     keyboardType: TextInputType.number,
                   ),
                 ),
@@ -2076,7 +2076,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 Expanded(
                   child: TextFormField(
                     controller: _makeCtrl,
-                    decoration: _walkInInvoiceFieldDecoration('Make', optional: true),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsMake, optional: true),
                     textCapitalization: TextCapitalization.words,
                   ),
                 ),
@@ -2089,7 +2089,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 Expanded(
                   child: TextFormField(
                     controller: _modelCtrl,
-                    decoration: _walkInInvoiceFieldDecoration('Model', optional: true),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsModel, optional: true),
                     textCapitalization: TextCapitalization.words,
                   ),
                 ),
@@ -2097,13 +2097,13 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 Expanded(
                   child: TextFormField(
                     controller: _yearCtrl,
-                    decoration: _walkInInvoiceFieldDecoration('Year', optional: true),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsYear, optional: true),
                     keyboardType: TextInputType.number,
                     validator: (s) {
                       if (s == null || s.trim().isEmpty) return null;
                       final yi = int.tryParse(s.trim());
                       if (yi == null || yi < 1900 || yi > 2100) {
-                        return 'Invalid year';
+                        return AppLocalizations.of(context)!.posInvoiceDetailsInvalidYear;
                       }
                       return null;
                     },
@@ -2113,7 +2113,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                 Expanded(
                   child: TextFormField(
                     controller: _vinCtrl,
-                    decoration: _walkInInvoiceFieldDecoration('VIN', optional: true),
+                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsVin, optional: true),
                     textCapitalization: TextCapitalization.characters,
                   ),
                 ),
@@ -2219,7 +2219,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
           !widget.order.isCorporateBookingOrder;
       if (!billingLocked && _inlineBillingPickEmployeeMode) {
         if (_inlineBillingEmployeesPickLoading) {
-          ToastService.showInfo(context, 'Loading employees…');
+          ToastService.showInfo(context, AppLocalizations.of(context)!.posInvoiceDetailsLoadingEmployees);
           return;
         }
         if (_inlineBillingEmployeePickSelection == null) {
@@ -2271,7 +2271,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         paymentMethod: _isCorporate == true
             ? (_selectedPayments.isNotEmpty
                 ? _selectedPayments.first.label
-                : 'Corporate')
+                : AppLocalizations.of(context)!.posPaymentCorporate)
             : (paymentSplits != null && paymentSplits.length == 1
                 ? paymentSplits.first['method'] as String?
                 : null),
@@ -2575,12 +2575,12 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     final rows = <TableRow>[
       TableRow(
         children: [
-          _reviewHeaderCell('Department', isTablet),
+          _reviewHeaderCell(AppLocalizations.of(context)!.posReviewDepartmentCol, isTablet),
           _reviewHeaderCell('Job ID', isTablet),
           _reviewHeaderCell('Status', isTablet),
           _reviewHeaderCell('Product / Service', isTablet),
           _reviewHeaderCell('Qty', isTablet, align: TextAlign.end),
-          _reviewHeaderCell('Amount (SAR)', isTablet, align: TextAlign.end),
+          _reviewHeaderCell(AppLocalizations.of(context)!.posReviewAmountSar, isTablet, align: TextAlign.end),
         ],
       ),
     ];
@@ -2593,7 +2593,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             _reviewBodyCell(job.department, isTablet, weight: FontWeight.w700),
             _reviewBodyCell(job.id, isTablet),
             _reviewBodyCell(job.status.toUpperCase(), isTablet, maxLines: 2),
-            _reviewBodyCell('No line items', isTablet, color: Colors.grey.shade500),
+            _reviewBodyCell(AppLocalizations.of(context)!.posReviewNoLineItems, isTablet, color: Colors.grey.shade500),
             _reviewBodyCell('—', isTablet, align: TextAlign.end),
             _reviewBodyCell('—', isTablet, align: TextAlign.end),
           ],
@@ -2643,7 +2643,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             _reviewBodyCell('', isTablet),
             _reviewBodyCell('', isTablet),
             _reviewBodyCell('', isTablet),
-            _reviewBodyCell('Gross (Excl. VAT)', isTablet, weight: FontWeight.w700),
+            _reviewBodyCell(AppLocalizations.of(context)!.posReviewGrossExclVat, isTablet, weight: FontWeight.w700),
             _reviewBodyCell('', isTablet),
             _reviewBodyCell(jobSubtotalExclusive.toStringAsFixed(2), isTablet,
                 align: TextAlign.end, weight: FontWeight.w700),
@@ -2671,7 +2671,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             _reviewBodyCell('', isTablet),
             _reviewBodyCell('', isTablet),
             _reviewBodyCell('', isTablet),
-            _reviewBodyCell('VAT (${(_vatRate * 100).toStringAsFixed(0)}%)', isTablet, weight: FontWeight.w700),
+            _reviewBodyCell(AppLocalizations.of(context)!.posReviewVatPct((_vatRate * 100).toStringAsFixed(0)), isTablet, weight: FontWeight.w700),
             _reviewBodyCell('', isTablet),
             _reviewBodyCell(jobVatAmount.toStringAsFixed(2), isTablet,
                 align: TextAlign.end, weight: FontWeight.w700),
@@ -2683,7 +2683,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             _reviewBodyCell('', isTablet),
             _reviewBodyCell('', isTablet),
             _reviewBodyCell('', isTablet),
-            _reviewBodyCell('Department total', isTablet, weight: FontWeight.w900),
+            _reviewBodyCell(AppLocalizations.of(context)!.posReviewDepartmentTotal, isTablet, weight: FontWeight.w900),
             _reviewBodyCell('', isTablet),
             _reviewBodyCell(currencyFormat.format(jobTotal), isTablet,
                 align: TextAlign.end,
@@ -2836,7 +2836,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       children: [
                         Expanded(
                           child: _SectionCard(
-                            title: 'Corporate Customer?',
+                            title: AppLocalizations.of(context)!.posPaymentCorporate,
                             icon: Icons.business_rounded,
                             child: _CorporatePrompt(
                               isCorporate: _isCorporate,
@@ -2848,7 +2848,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: _SectionCard(
-                              title: 'Payment Method (Select multiple if splitting)',
+                              title: AppLocalizations.of(context)!.posPaymentMethodTitleSplit,
                               icon: Icons.payment_rounded,
                               child: _PaymentMethodSelector(
                                 selected: _selectedPayments,
@@ -2866,7 +2866,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       children: [
                         Expanded(
                           child: _SectionCard(
-                            title: 'Corporate Customer?',
+                            title: AppLocalizations.of(context)!.posPaymentCorporate,
                             icon: Icons.business_rounded,
                             child: _CorporatePrompt(
                               isCorporate: _isCorporate,
@@ -2878,7 +2878,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: _SectionCard(
-                              title: 'Payment Method',
+                              title: AppLocalizations.of(context)!.posPaymentMethodTitle,
                               icon: Icons.payment_rounded,
                               child: _PaymentMethodSelector(
                                 selected: _selectedPayments,
@@ -2893,7 +2893,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                     )
                   else
                     _SectionCard(
-                      title: 'Corporate Customer?',
+                      title: AppLocalizations.of(context)!.posPaymentCorporate,
                       icon: Icons.business_rounded,
                       child: _CorporatePrompt(
                         isCorporate: _isCorporate,
@@ -2909,7 +2909,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   ],
                 ] else ...[
                   _SectionCard(
-                    title: 'Corporate Customer?',
+                    title: AppLocalizations.of(context)!.posPaymentCorporate,
                     icon: Icons.business_rounded,
                     child: _CorporatePrompt(
                       isCorporate: _isCorporate,
@@ -2920,7 +2920,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   if (_isCorporate == false) ...[
                     if (!_isBranchEmployeeRetailWalkIn) ...[
                       _SectionCard(
-                        title: 'Payment Method (Select multiple if splitting)',
+                        title: AppLocalizations.of(context)!.posPaymentMethodTitleSplit,
                         icon: Icons.payment_rounded,
                         child: _PaymentMethodSelector(
                           selected: _selectedPayments,
@@ -2938,7 +2938,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   if (_isCorporate == true &&
                       !_isBranchEmployeeRetailWalkIn) ...[
                     _SectionCard(
-                      title: 'Payment Method',
+                      title: AppLocalizations.of(context)!.posPaymentMethodTitle,
                       icon: Icons.payment_rounded,
                       child: _PaymentMethodSelector(
                         selected: _selectedPayments,
@@ -2987,8 +2987,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       return 'Employees';
     }
     if (_isCorporate == true) {
-      if (_selectedPayments.isEmpty) return 'Corporate';
-      return 'Corporate — ${_selectedPayments.first.label}';
+      if (_selectedPayments.isEmpty) return AppLocalizations.of(context)!.posPaymentCorporate;
+      return AppLocalizations.of(context)!.posReviewCorporatePayment(_selectedPayments.first.label);
     }
     if (_selectedPayments.length > 1) {
       return 'Split (${_selectedPayments.map((p) => p.label).join(' + ')})';
@@ -2999,7 +2999,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
 
   void _showPrintDialog() {
     if (_currentInvoice == null) {
-      ToastService.showError(context, 'Invoice could not be loaded.');
+      ToastService.showError(context, AppLocalizations.of(context)!.posReviewInvoiceCouldNotLoad);
       return;
     }
 
@@ -3515,8 +3515,8 @@ class _CommissionsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (commissions.isEmpty) {
-      return const Text(
-        'No technician commissions.',
+      return Text(
+        AppLocalizations.of(context)!.posOrdersNoTechnicianCommissions,
         style: TextStyle(color: Colors.grey),
       );
     }
@@ -3812,7 +3812,7 @@ class _GenerateInvoiceButton extends StatelessWidget {
               ),
             )
           : Text(
-              'Complete Order & Generate Invoice',
+              AppLocalizations.of(context)!.posOrdersGenerateInvoice,
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
@@ -3866,7 +3866,7 @@ class _GeneratedSuccessCard extends StatelessWidget {
           ),
           SizedBox(height: isTablet ? 16 : 10),
           Text(
-            'Invoice Generated & Locked',
+            AppLocalizations.of(context)!.posReviewInvoiceGeneratedLocked,
             style: TextStyle(
               color: Colors.white,
               fontSize: isTablet ? 18 : 14,
@@ -3892,12 +3892,12 @@ class _GeneratedSuccessCard extends StatelessWidget {
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.lock_rounded, size: 14, color: Colors.white70),
-                SizedBox(width: 6),
+              children: [
+                const Icon(Icons.lock_rounded, size: 14, color: Colors.white70),
+                const SizedBox(width: 6),
                 Text(
-                  'No further edits allowed',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.posOrdersNoFurtherEditsAllowed,
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -3951,8 +3951,8 @@ class _PrintButton extends StatelessWidget {
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: const Icon(Icons.print_rounded, size: 18),
-      label: const Text(
-        'Print Invoice & Receipt',
+      label: Text(
+        AppLocalizations.of(context)!.posOrdersPrintInvoiceReceipt,
         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
       ),
       style: OutlinedButton.styleFrom(
@@ -4059,12 +4059,12 @@ class _MockInvoicePrintDialog extends StatelessWidget {
 
               // Customer / vehicle (plate prominent)
               _DialogRow(
-                label: 'Vehicle no.',
+                label: AppLocalizations.of(context)!.posReviewVehicleNoLabel,
                 value: order.plateNumber.isNotEmpty
                     ? order.plateNumber.toUpperCase()
                     : '—',
               ),
-              _DialogRow(label: 'Customer', value: order.customerName),
+              _DialogRow(label: AppLocalizations.of(context)!.posReviewCustomerLabel, value: order.customerName),
               _DialogRow(label: AppLocalizations.of(context)!.posReviewVehicle, value: order.carModel),
               _DialogRow(
                 label: AppLocalizations.of(context)!.posReviewBilling,
@@ -4093,7 +4093,7 @@ class _MockInvoicePrintDialog extends StatelessWidget {
                 for (var item in items) {
                   final deptName =
                       item.technicianName.isEmpty ||
-                          item.technicianName == 'Technician'
+                          item.technicianName == AppLocalizations.of(context)!.posReviewTechnicianFallback
                       ? 'General Services'
                       : item.technicianName;
                   groupedItems.putIfAbsent(deptName, () => []).add(item);
@@ -4354,7 +4354,7 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
           line(AppLocalizations.of(context)!.posReviewItemDiscounts, '- ${itemDiscountsTotal.toStringAsFixed(2)}', negative: true),
           line(AppLocalizations.of(context)!.posReviewInvoiceDiscount, '- ${invoiceDiscountTotal.toStringAsFixed(2)}', negative: true),
           line('Promo Discount', '- ${promoDiscountTotal.toStringAsFixed(2)}', negative: true),
-          line('Total Taxable Amount', netSubtotal.toStringAsFixed(2)),
+          line(AppLocalizations.of(context)!.posOrdersTotalBeforeVat, netSubtotal.toStringAsFixed(2)),
           line(AppLocalizations.of(context)!.posReviewVat15, vatAmount.toStringAsFixed(2)),
           if (showFinalReviewHints) ...[
             const SizedBox(height: 10),
@@ -4368,7 +4368,7 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Invoice and promo discounts apply to the taxable subtotal.',
+              AppLocalizations.of(context)!.posReviewDiscountsApplyTaxableSubtotal,
               style: TextStyle(
                 fontSize: isTablet ? 11.5 : 11,
                 color: Colors.grey.shade600,
@@ -4377,7 +4377,7 @@ class _ReviewDraftOrderSummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Confirm all amounts match the job before generating the invoice.',
+              AppLocalizations.of(context)!.posOrdersGenerateInvoice,
               style: TextStyle(
                 fontSize: isTablet ? 11.5 : 11,
                 color: Colors.grey.shade500,
@@ -4454,6 +4454,7 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
   }
 
   List<Widget> _jobBlocks({
+    required BuildContext context,
     required TextStyle deptStyle,
     required TextStyle jobIdStyle,
     required TextStyle nameStyle,
@@ -4469,12 +4470,16 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(job.department.toUpperCase(), style: deptStyle),
+              LocalizedApiText(
+                job.department,
+                uppercase: Localizations.localeOf(context).languageCode != 'ar',
+                style: deptStyle,
+              ),
               Text('Job #${job.id}', style: jobIdStyle),
               const SizedBox(height: 8),
               if (techs.isEmpty)
                 Text(
-                  'No technician assigned',
+                  AppLocalizations.of(context)!.posOrdersNoTechnicianAssigned,
                   style: TextStyle(
                     fontSize: isTablet ? 12.5 : 11.5,
                     fontStyle: FontStyle.italic,
@@ -4498,9 +4503,9 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(t.name, style: nameStyle),
+                              LocalizedApiText(t.name, style: nameStyle),
                               Text(
-                                'Commission: ${_commissionLabel(t, job)}',
+                                AppLocalizations.of(context)!.posReviewCommissionLabel(_commissionLabel(t, job)),
                                 style: commStyle,
                               ),
                             ],
@@ -4546,7 +4551,7 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
     );
 
     final header = Text(
-      'ASSIGNED TECHNICIANS',
+      AppLocalizations.of(context)!.posOrdersAssignedTechnicians,
       style: TextStyle(
         fontSize: isTablet ? 13 : 12,
         fontWeight: FontWeight.w900,
@@ -4556,6 +4561,7 @@ class _ReviewAssignTechniciansCard extends StatelessWidget {
     );
 
     final blocks = _jobBlocks(
+      context: context,
       deptStyle: deptStyle,
       jobIdStyle: jobIdStyle,
       nameStyle: nameStyle,

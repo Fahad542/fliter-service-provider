@@ -2875,5 +2875,278 @@
   "posNavPromoCodes": "رموز العروض",
   "posNavTechnicians": "الفنيون",
   "posNavCurrentShift": "الوردية الحالية",
-  "posShellVersion": "الإصدار 1.0.0"
+  "posShellVersion": "الإصدار 1.0.0",
+  "posOrdersHubTitle": "مركز الطلبات",
+  "posOrdersRefreshOrders": "تحديث الطلبات",
+  "posOrdersSearchPlateNameId": "ابحث برقم اللوحة أو الاسم أو الرقم...",
+  "posOrdersProductsAndServices": "المنتجات والخدمات",
+  "posOrdersEdit": "تعديل",
+  "posOrdersCancelled": "ملغي",
+  "posOrdersNoProductsOrServices": "لا توجد منتجات أو خدمات",
+  "posOrdersMaintenanceChecklistTitle": "قائمة فحص الصيانة",
+  "posOrdersMaintenanceChecklistDescription": "تظهر هذه العناصر في الفاتورة المطبوعة عند تحديدها.",
+  "posOrdersChecklistSaved": "تم حفظ قائمة فحص الصيانة.",
+  "posOrdersPleaseSignInAgain": "يرجى تسجيل الدخول مرة أخرى.",
+  "posOrdersQtyWithoutVat": "الكمية {qty} × {price} بدون ضريبة",
+  "posOrdersChecklistOptional": "قائمة الفحص (اختياري)",
+  "posOrdersEditCustomerDetails": "تعديل بيانات العميل",
+  "posOrdersTotalDiscount": "إجمالي الخصم",
+  "posOrdersNoFurtherEditsAllowed": "لا يُسمح بمزيد من التعديلات",
+  "posOrdersPrintInvoiceReceipt": "طباعة الفاتورة والإيصال",
+  "posOrdersNoTechnicianCommissions": "لا توجد عمولات فنيين.",
+  "posOrdersAssignedTechnicians": "الفنيون المعينون",
+  "posOrdersNoTechnicianAssigned": "لا يوجد فني معين",
+  "posInvoiceDetailsTitle": "بيانات الفاتورة",
+  "posInvoiceDetailsCustomerDetails": "بيانات العميل",
+  "posInvoiceDetailsConfirmVehicle": "أكد جهة الفوترة والمركبة قبل إنشاء الفاتورة.",
+  "posInvoiceDetailsConfirmContact": "أكد جهة الفوترة قبل إنشاء الفاتورة.",
+  "posInvoiceDetailsBranchEmployee": "العميل موظف في الفرع",
+  "posInvoiceDetailsPickStaff": "اختر من قائمة الموظفين لتعبئة الاسم والجوال.",
+  "posInvoiceDetailsLoadingEmployees": "جارٍ تحميل الموظفين…",
+  "posInvoiceDetailsNoEmployees": "لا يوجد موظفون لهذا الفرع.",
+  "posInvoiceDetailsEmployee": "الموظف",
+  "posInvoiceDetailsChooseEmployee": "اختر الموظف",
+  "posInvoiceDetailsCustomerName": "اسم العميل",
+  "posInvoiceDetailsRequired": "مطلوب",
+  "posInvoiceDetailsMobile": "الجوال",
+  "posInvoiceDetailsVat": "ضريبة القيمة المضافة",
+  "posInvoiceDetailsPlateNumber": "رقم اللوحة",
+  "posInvoiceDetailsPlateRequired": "رقم اللوحة مطلوب",
+  "posInvoiceDetailsOdometer": "عداد المسافة",
+  "posInvoiceDetailsMake": "الشركة المصنّعة",
+  "posInvoiceDetailsModel": "الطراز",
+  "posInvoiceDetailsYear": "السنة",
+  "posInvoiceDetailsInvalidYear": "سنة غير صحيحة",
+  "posInvoiceDetailsVin": "رقم الهيكل",
+  "posInvoiceDetailsSaveProceed": "حفظ ومتابعة إلى الفاتورة",
+  "posPaymentMethodTitle": "طريقة الدفع",
+  "posPaymentMethodDescription": "اختر نوع العميل ثم طريقة دفع الفاتورة.",
+  "posPaymentCustomerType": "نوع العميل",
+  "posPaymentIndividual": "فرد",
+  "posPaymentCorporate": "شركة",
+  "posPaymentTapCustomerFirst": "اختر فرد أو شركة أولاً، ثم اختر نقداً أو بطاقة أو تابي وغيرها.",
+  "posPaymentCorporateMulti": "دفع الشركات (اختيار متعدد للتقسيم)",
+  "posPaymentMulti": "الدفع (اختيار متعدد للتقسيم)",
+  "posPaymentAmountByMethod": "المبلغ حسب طريقة الدفع",
+  "posPaymentRemaining": "المتبقي: {amount} ر.س",
+  "posPaymentAmountLabel": "مبلغ {method}",
+  "posPaymentClearSaved": "مسح الدفع المحفوظ",
+  "posPaymentCash": "نقداً",
+  "posPaymentCard": "بطاقة",
+  "posPaymentBankTransfer": "تحويل بنكي",
+  "posPaymentTamara": "تمارا",
+  "posPaymentTabby": "تابي",
+  "posPaymentWallet": "محفظة",
+  "posPaymentMonthlyBilling": "فوترة شهرية",
+  "posPaymentEmployees": "الموظفون",
+  "posProductNoOrdersFound": "لا توجد طلبات",
+  "posProductOutOfStock": "غير متوفر",
+  "posProductLowStock": "منخفض",
+  "posProductInStock": "متوفر",
+  "posProductOtherOils": "زيوت أخرى",
+  "posProductOtherOilFilters": "فلاتر زيت أخرى",
+  "posProductGearOil": "زيت القير",
+  "posProductOilChangeDepartment": "قسم تغيير الزيت",
+  "posTechOnlineNow": "متصل الآن",
+  "posTechNotAvailable": "غير متاح",
+  "posTechWorkshopDuty": "دوام الورشة",
+  "posTechOnCallDuty": "دوام عند الطلب",
+  "posTechActive": "نشط",
+  "posCommonDone": "تم",
+  "posCommonPrint": "طباعة",
+  "@posOrdersQtyWithoutVat": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "@posPaymentRemaining": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@posPaymentAmountLabel": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "posOrdersCorpBadge": "مؤسسي",
+  "posSearchHistoryPlateLabel": "اللوحة: {plate}",
+  "@posSearchHistoryPlateLabel": {
+    "placeholders": {
+      "plate": {}
+    }
+  },
+  "posSearchHistoryOrderLabel": "الطلب: #{orderNumber}",
+  "@posSearchHistoryOrderLabel": {
+    "placeholders": {
+      "orderNumber": {}
+    }
+  },
+  "posOrdersSelectedDepartments": "الأقسام المحددة",
+  "posOrdersDeptNotReturnedInPayload": "لم يتم إرجاع الأقسام في بيانات قائمة الطلبات.",
+  "posOrdersTechnicianLabel": "الفني: {name}",
+  "@posOrdersTechnicianLabel": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "posOrdersTechnicianNone": "لا يوجد",
+  "posOrdersWaitingCorporateApproval": "بانتظار موافقة الشركة",
+  "posOrdersRejectedByCorporateReason": "مرفوض من الشركة: {reason}",
+  "@posOrdersRejectedByCorporateReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "posOrdersRejectedByCorporate": "مرفوض من الشركة",
+  "posOrdersEditOrder": "تعديل الطلب",
+  "posOrdersCancelOrder": "إلغاء الطلب",
+  "posOrdersGenInvoice": "إنشاء فاتورة",
+  "posOrdersInvoice": "فاتورة",
+  "posOrdersAddDept": "إضافة قسم",
+  "posDetailsWalkIn": "عميل مباشر",
+  "posDetailsOrderHash": "الطلب #{id}",
+  "@posDetailsOrderHash": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "posDetailsJobId": "رقم المهمة: {id}",
+  "@posDetailsJobId": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "posDetailsNoItemsInDept": "لا توجد عناصر مرتبطة بهذا القسم.",
+  "posDetailsQtyLabel": "الكمية: {qty}",
+  "@posDetailsQtyLabel": {
+    "placeholders": {
+      "qty": {}
+    }
+  },
+  "posDetailsSarEa": "{price} ر.س / للواحدة",
+  "@posDetailsSarEa": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "posDetailsActive": "نشط",
+  "posOrdersConfirmCompletion": "تأكيد الإكمال",
+  "posJobApproved": "تمت الموافقة على المهمة!",
+  "posJobTechnicianCommissionLogged": "تم تسجيل عمولة الفني.",
+  "posJobTechnicianLabel": "الفني",
+  "posJobCommissionLabel": "العمولة",
+  "posDutyNotApplicable": "غير منطبق",
+  "posDutyUnavailableOffline": "غير متاح أثناء عدم الاتصال",
+  "posDutyActive": "نشط",
+  "posProductStockLabel": "المخزون: {count}",
+  "@posProductStockLabel": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posProductSearchItemOrService": "ابحث عن عنصر أو خدمة",
+  "posProductIncVat": "شامل الضريبة",
+  "posOrdersJobBadge": "مهمة",
+  "posReceiptSimplifiedTaxInvoice": "فاتورة ضريبية مبسطة",
+  "posReceiptBranch": "الفرع",
+  "posReceiptAddress": "العنوان",
+  "posReceiptVatNumber": "الرقم الضريبي",
+  "posReceiptInvoiceNo": "رقم الفاتورة",
+  "posReceiptDate": "التاريخ",
+  "posReceiptCounter": "الكاونتر",
+  "posReceiptCashier": "أمين الصندوق",
+  "posReceiptItem": "الصنف",
+  "posReceiptQty": "الكمية",
+  "posReceiptUnitPrice": "سعر الوحدة",
+  "posReceiptTotal": "الإجمالي",
+  "posReceiptTotalExcludingVat": "الإجمالي (غير شامل ضريبة القيمة المضافة)",
+  "posReceiptTotalTaxableAmountExclVat": "إجمالي المبلغ الخاضع للضريبة (غير شامل ضريبة القيمة المضافة)",
+  "posReceiptTotalVat15": "إجمالي ضريبة القيمة المضافة 15%",
+  "posReceiptTotalAmountDue": "إجمالي المبلغ المستحق",
+  "posReceiptNextOilChangeOdometer": "عداد تغيير الزيت القادم",
+  "posReceiptCustomerDetails": "تفاصيل العميل",
+  "posReceiptName": "الاسم",
+  "posReceiptMobile": "الجوال",
+  "posReceiptVehicleNo": "رقم المركبة",
+  "posReceiptOdometer": "العداد",
+  "posReceiptMaintenanceChecklist": "قائمة فحص الصيانة",
+  "posReceiptThankYou": "شكراً لزيارتكم",
+  "posThermalPrinterInvalidHost": "أدخل عنوان IP أو اسم مضيف صحيح للطابعة.",
+  "posThermalPrinterInvalidPort": "أدخل منفذاً صحيحاً (1–65535).",
+  "posThermalPrinterSaveFailed": "تعذر حفظ الإعدادات.",
+  "posOrdersDeleteJobBody": "هل أنت متأكد من حذف هذه المهمة؟ لا يمكن التراجع عن هذا الإجراء.",
+  "posOrdersJobCannotBeEdited": "لا يمكن تعديل هذه المهمة.",
+  "posOrdersItemCount": "{count} عنصر",
+  "@posOrdersItemCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posOrdersTechnicianCount": "{count} فنيين",
+  "@posOrdersTechnicianCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posOrdersVatPercent": "ضريبة القيمة المضافة ({pct}%)",
+  "@posOrdersVatPercent": {
+    "placeholders": {
+      "pct": {}
+    }
+  },
+  "posOrdersDeptCount": "{count} قسم",
+  "@posOrdersDeptCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posOrdersDeptNames": "القسم: {names}",
+  "@posOrdersDeptNames": {
+    "placeholders": {
+      "names": {}
+    }
+  },
+  "posOrdersRejectedCorporateReadOnly": "طلبات الشركات المرفوضة للعرض فقط. أزل الطلب من القائمة.",
+  "posOrdersPleaseAddVehicleFirst": "يرجى إضافة رقم المركبة أولاً (إضافة عميل)",
+  "posOrdersThisJobNoLineItems": "هذه المهمة لا تحتوي على عناصر.",
+  "posOrdersDeptPromoWithName": "عرض القسم ({name})",
+  "@posOrdersDeptPromoWithName": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "posOrdersDeptDiscountPercent": "خصم القسم ({percent}%)",
+  "@posOrdersDeptDiscountPercent": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "posOrdersStatusDraft": "مسودة",
+  "posOrdersEditPayment": "تعديل الدفع",
+  "posReviewTechnicianFallback": "الفني",
+  "posReviewItemFallback": "عنصر",
+  "posReviewInvoiceCouldNotLoad": "تعذر تحميل الفاتورة.",
+  "posReviewVehicleNoLabel": "رقم المركبة",
+  "posReviewCustomerLabel": "العميل",
+  "posReviewDiscountsApplyTaxableSubtotal": "يتم تطبيق خصومات الفاتورة والعروض على الإجمالي الخاضع للضريبة.",
+  "posPaymentMethodTitleSplit": "طريقة الدفع (اختر أكثر من طريقة عند التقسيم)",
+  "posReviewCorporatePayment": "شركة — {method}",
+  "@posReviewCorporatePayment": {
+    "placeholders": {
+      "method": {}
+    }
+  },
+  "posPaymentChangeCustomerTitle": "تغيير العميل",
+  "posPaymentChangeCustomerBody": "هل تريد فعلاً تغيير العميل؟ سيتم مسح اختيارات الدفع الخاصة بهذا النوع من العملاء.",
+  "posPaymentChangeCustomerButton": "تغيير العميل"
 }

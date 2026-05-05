@@ -61,7 +61,7 @@ void navigateToPosShellOrdersTab(BuildContext context) {
     MaterialPageRoute<void>(
       builder: (_) => const PosShell(initialIndex: 2),
     ),
-    (route) => false,
+        (route) => false,
   );
 }
 
@@ -74,7 +74,7 @@ void navigateToPosShellBroadcastTab(BuildContext context) {
     MaterialPageRoute<void>(
       builder: (_) => const PosShell(initialIndex: 11),
     ),
-    (route) => false,
+        (route) => false,
   );
 }
 
@@ -103,7 +103,7 @@ class _PosShellState extends State<PosShell> {
     _shellTabsBuilt.add(widget.initialIndex);
     _shellTabKeys = List<GlobalKey>.generate(
       _screens.length,
-      (i) => GlobalKey(debugLabel: 'pos_shell_tab_$i'),
+          (i) => GlobalKey(debugLabel: 'pos_shell_tab_$i'),
     );
     PosShellScaffoldRegistry.attach(_shellScaffoldKey);
     _lockPosLandscape();
@@ -177,9 +177,9 @@ class _PosShellState extends State<PosShell> {
     /// [context.watch] on broad ViewModels rebuilds every cart/order tick and
     /// rebuilds all [IndexedStack] tabs — triggers semantics races on inactive tabs.
     final currentIndex =
-        context.select((PosViewModel vm) => vm.shellSelectedIndex);
+    context.select((PosViewModel vm) => vm.shellSelectedIndex);
     final isReconciled =
-        context.select((StoreClosingViewModel s) => s.isReconciled);
+    context.select((StoreClosingViewModel s) => s.isReconciled);
 
     // Safety check: Ensure index is within bounds of children
     final validIndex = currentIndex < _screens.length ? currentIndex : 0;
@@ -224,13 +224,13 @@ class _PosShellState extends State<PosShell> {
         bottomNavigationBar: hideBottomBar || isTablet
             ? const SizedBox.shrink()
             : PosBottomBar(
-                currentIndex: currentIndex,
-                onTap: (index) {
-                  setState(() => _shellTabsBuilt.add(index));
-                  context.read<PosViewModel>().setShellSelectedIndex(index);
-                  _triggerVisitFetch(context, index);
-                },
-              ),
+          currentIndex: currentIndex,
+          onTap: (index) {
+            setState(() => _shellTabsBuilt.add(index));
+            context.read<PosViewModel>().setShellSelectedIndex(index);
+            _triggerVisitFetch(context, index);
+          },
+        ),
       ),
     );
   }
@@ -258,7 +258,7 @@ class _PosShellState extends State<PosShell> {
     if (index == 1) {
       final posVm = context.read<PosViewModel>();
       final gridVm = context.read<ProductGridViewModel>();
-      
+
       // Reset all filters
       posVm.initMainProductsTab();
       gridVm.setDepartment('All');
@@ -372,6 +372,16 @@ class _PosShellState extends State<PosShell> {
 
   Widget _buildDrawerHeader(bool isTablet) {
     final posVm = context.watch<PosViewModel>();
+
+    // Push the live widget-tree locale to the ViewModel so the profile names
+    // are always translated correctly — even on first boot before
+    // SessionService has finished persisting the locale preference.
+    final liveLangCode = Localizations.localeOf(context).languageCode;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      posVm.retranslateWithLocale(liveLangCode);
+    });
+
     final userName = posVm.cashierName;
     final workshopName = posVm.workshopName;
     final branchName = posVm.branchName;
@@ -461,12 +471,12 @@ class _PosShellState extends State<PosShell> {
             borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
             boxShadow: isSelected && isTablet
                 ? [
-                    BoxShadow(
-                      color: AppColors.primaryLight.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ]
+              BoxShadow(
+                color: AppColors.primaryLight.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ]
                 : null,
           ),
           child: Row(

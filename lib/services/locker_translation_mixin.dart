@@ -45,7 +45,7 @@ class AppTranslationService {
 
   /// Canonical English status string → Arabic translation.
   /// Covers raw API values and formatted UI labels across ALL modules.
-  static const Map<String, String> _statusMapAr = {
+  static final Map<String, String> _statusMapAr = {
     // ── Locker / Petty Cash / Approvals ──────────────────────────────────
     'PENDING'           : 'قيد الانتظار',
     'ASSIGNED'          : 'معيَّن',
@@ -63,6 +63,96 @@ class AppTranslationService {
     'rejected'          : 'مرفوض',
     'SHORT'             : 'ناقص',
     'OVER'              : 'زائد',
+
+    // ── POS UI/API display labels ─────────────────────────────────────────
+    'Online now'        : 'متصل الآن',
+    'Not available'     : 'غير متاح',
+    'Workshop Duty'     : 'دوام الورشة',
+    'On-Call Duty'      : 'دوام عند الطلب',
+    'On Call Duty'      : 'دوام عند الطلب',
+    'Active'            : 'نشط',
+    'COMPLETE'          : 'مكتمل',
+    'COMPLETED'         : 'مكتمل',
+    'IN PROGRESS'       : 'قيد التنفيذ',
+    'In progress'       : 'قيد التنفيذ',
+    'DRAFT'             : 'مسودة',
+    'Products'          : 'المنتجات',
+    'Services'          : 'الخدمات',
+    'Products & Services': 'المنتجات والخدمات',
+    'Other Oils'        : 'زيوت أخرى',
+    'Other Oil Filters' : 'فلاتر زيت أخرى',
+    'Gear Oil'          : 'زيت القير',
+    'Oil Change Department': 'قسم تغيير الزيت',
+    'Low'               : 'منخفض',
+    'Out of stock'      : 'غير متوفر',
+    'Out of Stock'      : 'غير متوفر',
+    'In stock'          : 'متوفر',
+    'In Stock'          : 'متوفر',
+    'Assign Technicians' : 'تعيين الفنيين',
+    'items'             : 'عناصر',
+    'item'              : 'عنصر',
+    'Item'              : 'عنصر',
+    'Items'             : 'عناصر',
+    'Total before VAT'  : 'الإجمالي قبل ضريبة القيمة المضافة',
+    'VAT (15%)'         : 'ضريبة القيمة المضافة (15٪)',
+    'Total (incl. VAT)' : 'الإجمالي شامل الضريبة',
+    'No Order Selected' : 'لم يتم تحديد طلب',
+    'Select an order from the list on the left to view details': 'اختر طلبًا من القائمة لعرض التفاصيل',
+    'Delete Job'        : 'حذف المهمة',
+    'YES, DELETE'       : 'نعم، احذف',
+    'NO'                : 'لا',
+    'Dept'              : 'القسم',
+    'Dept:'             : 'القسم:',
+    'Department'        : 'القسم',
+    'dept'              : 'القسم',
+    'dept 1'            : 'القسم 1',
+    // ── Technician / Takeaway API labels ───────────────────────────────
+    'Polishing Department'      : 'قسم التلميع',
+    'Washing Department'        : 'قسم الغسيل',
+    'Takeaway'                  : 'طلبات خارجية',
+    'Technicians'               : 'الفنيون',
+    'Search technicians...'     : 'ابحث عن فني...',
+    'Search products & services...': 'ابحث عن المنتجات والخدمات...',
+    'liter'                     : 'لتر',
+    'Liter'                     : 'لتر',
+    'litre'                     : 'لتر',
+    'Litre'                     : 'لتر',
+    'Piece'                     : 'قطعة',
+    'piece'                     : 'قطعة',
+    'Inactive'                  : 'غير نشط',
+    'Low Stock'                 : 'مخزون منخفض',
+    'Add Promo Code'            : 'إضافة رمز عرض',
+    'Promo:'                    : 'العرض:',
+    'Gross Amount'              : 'المبلغ الإجمالي',
+    'Price after line discount' : 'السعر بعد خصم السطر',
+    'Line discount'             : 'خصم السطر',
+    'Total discount'            : 'إجمالي الخصم',
+    'Total discount applied'    : 'إجمالي الخصم المطبق',
+    'Price after total discount': 'السعر بعد إجمالي الخصم',
+    'Promo discount'            : 'خصم العرض',
+    'Price after promo'         : 'السعر بعد العرض',
+    'Generate Invoice'          : 'إنشاء فاتورة',
+    'Add customer details'      : 'إضافة بيانات العميل',
+    'Select payment'            : 'اختيار طريقة الدفع',
+    'Walk-in Customer'          : 'عميل عابر',
+    'Bank transfer'             : 'تحويل بنكي',
+    'Corporate credit'          : 'ائتمان شركة',
+    'corporate credit'          : 'ائتمان شركة',
+    'Tamara'                    : 'تمارا',
+    'tamara'                    : 'تمارا',
+    'Tabby'                     : 'تابي',
+    'Oil Change'                : 'تغيير الزيت',
+    'Car Wash'                  : 'غسيل السيارات',
+    'Repair'                    : 'إصلاح',
+    'AC Service'                : 'خدمة المكيف',
+    'Battery'                   : 'بطارية',
+    'Brakes'                    : 'فرامل',
+    'Filters'                   : 'فلاتر',
+    'Oils'                      : 'زيوت',
+    'Online Only'               : 'المتصلون فقط',
+    'Show All'                  : 'عرض الكل',
+    'All technicians removed from this job': 'تمت إزالة جميع الفنيين من هذه المهمة',
+    'Technicians assigned successfully': 'تم تعيين الفنيين بنجاح',
     // ── Accounting ────────────────────────────────────────────────────────
     'overdue'           : 'متأخر',
     'settled'           : 'مسوَّى',
@@ -238,6 +328,12 @@ class AppTranslationService {
       out = out.replaceAll(western[i], arabic[i]);
     }
     return out;
+  }
+
+  static String syncStatusOrRawForLanguage(String text, String languageCode) {
+    if (languageCode != 'ar') return text;
+    final trimmed = text.trim();
+    return _statusMapAr[trimmed] ?? localizeDigitsForLanguage(text, languageCode);
   }
 
   /// Locale-safe dynamic API value renderer. Text is translated for Arabic,

@@ -169,7 +169,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
         kids.addAll([
           pw.Center(
             child: pw.Text(
-              thermalSafeText('STORE CLOSING REPORT'),
+              thermalSafeText('تقرير إغلاق المتجر / STORE CLOSING REPORT'),
               style: pw.TextStyle(font: fontBold, fontSize: titleFs),
               textAlign: pw.TextAlign.center,
             ),
@@ -179,7 +179,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
           metaLine('Cashier', report.cashierName),
           pw.Padding(
             padding: const pw.EdgeInsets.only(bottom: 3),
-            child: pw.Text('Date: $dateStr', style: ts()),
+            child: pw.Text('التاريخ / Date: $dateStr', style: ts()),
           ),
           if (closingId != null && closingId.trim().isNotEmpty)
             pw.Padding(
@@ -224,21 +224,21 @@ pw.Document buildThermalStoreClosingPdfDocument({
                 ],
               ),
               dataRow(
-                  'Cash', report.systemCashGross, report.physicalCash, report.cashDiff),
-              dataRow('Bank/Cards', report.systemBankGross, report.physicalBank,
+                  'النقد / Cash', report.systemCashGross, report.physicalCash, report.cashDiff),
+              dataRow('البنك/البطاقات / Bank/Cards', report.systemBankGross, report.physicalBank,
                   report.bankDiff),
-              dataRow('Corporate', report.systemCorporateGross,
+              dataRow('الشركات / Corporate', report.systemCorporateGross,
                   report.physicalCorporate, report.corporateDiff),
-              dataRow('Tamara', report.systemTamaraGross, report.physicalTamara,
+              dataRow('تمارا / Tamara', report.systemTamaraGross, report.physicalTamara,
                   report.tamaraDiff),
-              dataRow('Tabby', report.systemTabbyGross, report.physicalTabby,
+              dataRow('تابي / Tabby', report.systemTabbyGross, report.physicalTabby,
                   report.tabbyDiff),
               dataRow('Others', report.systemOthersGross, report.physicalOthers,
                   report.othersDiff),
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                 children: [
-                  cell('Total', bold: true, size: fsBold),
+                  cell('الإجمالي / Total', bold: true, size: fsBold),
                   cell(
                     report.systemBucketsSumGross.toStringAsFixed(2),
                     align: pw.TextAlign.right,
@@ -279,7 +279,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
                 children: [
                   pw.Expanded(
                     child: pw.Text(
-                      thermalSafeText('Less: Total sales return'),
+                      thermalSafeText('خصم: إجمالي مرتجعات المبيعات / Less: Total sales return'),
                       style: pw.TextStyle(font: fontBold, fontSize: fsBold + 0.6),
                       softWrap: true,
                     ),
@@ -311,7 +311,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
               children: [
                 pw.Expanded(
                   child: pw.Text(
-                    thermalSafeText('Grand Total'),
+                    thermalSafeText('الإجمالي الكلي / Grand Total'),
                     style: pw.TextStyle(font: fontBold, fontSize: fsBold + 0.6),
                   ),
                 ),
@@ -327,7 +327,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
           pw.SizedBox(height: 9),
           pw.Center(
             child: pw.Text(
-              thermalSafeText('Thank you'),
+              thermalSafeText('شكراً لك / Thank you'),
               style: pw.TextStyle(font: fontBold, fontSize: 7.5),
             ),
           ),

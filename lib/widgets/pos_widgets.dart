@@ -23,10 +23,29 @@ import '../views/Workshop pos app/Technician Assignment/pos_technician_assignmen
 import '../views/Workshop pos app/Add Customer Screen/pos_add_customer_view.dart';
 import '../services/invoice_network_print.dart';
 import 'thermal_printer_wifi_dialog.dart';
+import '../l10n/app_localizations.dart';
+import '../services/LocalizedApiText.dart';
+import '../services/locker_translation_mixin.dart';
 import 'cashier_invoice_preview.dart';
 
 /// Drawer menu (hamburger) is always available on tablet; the left rail was removed.
 bool kPosHideDrawerMenuTabletLandscape(BuildContext context) => false;
+
+String _posWidgetDigits(BuildContext context, Object? value) {
+  return AppTranslationService.localizeDigitsForLanguage(
+    value?.toString() ?? '',
+    Localizations.localeOf(context).languageCode,
+  );
+}
+
+String _posWidgetMoney(BuildContext context, num amount, {bool negative = false}) {
+  final l10n = AppLocalizations.of(context)!;
+  final amt = _posWidgetDigits(context, amount.abs().toStringAsFixed(2));
+  final money = l10n.posCommonSarAmount(amt);
+  if (!negative) return money;
+  return Localizations.localeOf(context).languageCode == 'ar' ? '$money-' : '-$money';
+}
+
 
 // ── Reusable POS Screen AppBar (Back + Title + Global Icon) ──
 class PosScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -1558,7 +1577,11 @@ class _OrderItemCardState extends State<OrderItemCard> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Technician: ${widget.order.assignedTechnicianNames.trim().isEmpty ? 'None' : widget.order.assignedTechnicianNames}',
+                            AppLocalizations.of(context)!.posOrdersTechnicianLabel(
+                              widget.order.assignedTechnicianNames.trim().isEmpty
+                                  ? AppLocalizations.of(context)!.posOrdersTechnicianNone
+                                  : widget.order.assignedTechnicianNames,
+                            ),
                             style: TextStyle(
                               fontSize: widget.isTablet ? 8.5 : 8,
                               color: Colors.grey.shade700,
@@ -1765,7 +1788,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                             },
                                       isLoading: isCurrentOrderLoading,
                                       icon: Icons.check_circle_outline_rounded,
-                                      label: 'Complete',
+                                      label: AppLocalizations.of(context)!.posOrdersMarkComplete,
                                       color: AppColors.secondaryLight,
                                       isSecondary: true,
                                     );
@@ -1783,7 +1806,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                     );
                                   },
                                   icon: Icons.visibility_outlined,
-                                  label: 'Order Details',
+                                  label: AppLocalizations.of(context)!.posDetailsTitle,
                                   color: AppColors.primaryLight,
                                 ),
                               ),
@@ -1874,7 +1897,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                     child: _buildActionButton(
                                       onPressed: () => _openEditOrderFlow(context),
                                       icon: Icons.edit_rounded,
-                                      label: 'Edit Order',
+                                      label: AppLocalizations.of(context)!.posOrdersEditOrder,
                                       color: AppColors.primaryLight,
                                       labelFontSize: 12,
                                     ),
@@ -1945,8 +1968,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                       },
                                       icon: Icons.assignment_ind_rounded,
                                       label: displayStatus == 'pending assignment'
-                                          ? 'Edit Order'
-                                          : 'Forward to Technician',
+                                          ? AppLocalizations.of(context)!.posOrdersEditOrder
+                                          : AppLocalizations.of(context)!.posProductForwardTechnician,
                                       color: AppColors.primaryLight,
                                       labelFontSize: 12,
                                     ),
@@ -1961,7 +1984,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                           widget.order.id,
                                         ),
                                         icon: Icons.cancel_outlined,
-                                        label: 'Cancel Order',
+                                        label: AppLocalizations.of(context)!.posOrdersCancelOrder,
                                         color: AppColors.secondaryLight,
                                         isSecondary: true,
                                       ),
@@ -1984,7 +2007,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                       );
                                     },
                                     icon: Icons.visibility_outlined,
-                                    label: 'Order Details',
+                                    label: AppLocalizations.of(context)!.posDetailsTitle,
                                     color: AppColors.primaryLight,
                                   ),
                                 ),
@@ -2066,8 +2089,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                           ? Icons.receipt_long_rounded
                                           : Icons.auto_awesome_rounded,
                                       label: isInvoiced
-                                          ? 'Invoice'
-                                          : 'Gen. Invoice',
+                                          ? AppLocalizations.of(context)!.posOrdersInvoice
+                                          : AppLocalizations.of(context)!.posOrdersGenInvoice,
                                       color: isInvoiced
                                           ? AppColors.secondaryLight
                                           : AppColors.primaryLight,
@@ -2121,7 +2144,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                           );
                                         },
                                         icon: Icons.add_business_rounded,
-                                        label: 'Add Dept.',
+                                        label: AppLocalizations.of(context)!.posOrdersAddDept,
                                         color: AppColors.secondaryLight,
                                         isSecondary: true,
                                       );
@@ -2153,7 +2176,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                         }
                                       : null,
                                   icon: Icons.visibility_outlined,
-                                  label: 'Order Details',
+                                  label: AppLocalizations.of(context)!.posDetailsTitle,
                                   color: AppColors.primaryLight,
                                 ),
                               ),
@@ -2166,7 +2189,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                                     widget.order.id,
                                   ),
                                   icon: Icons.cancel_outlined,
-                                  label: 'Cancel Order',
+                                  label: AppLocalizations.of(context)!.posOrdersCancelOrder,
                                   color: AppColors.secondaryLight,
                                   isSecondary: true,
                                 ),
@@ -2348,7 +2371,7 @@ void _showOrderDetailsSheet(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
+      child: LocalizedApiText(
         displayStatus,
         style: AppTextStyles.bodySmall.copyWith(
           fontSize: 10,
@@ -2405,7 +2428,7 @@ void _showOrderDetailsSheet(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Order Details',
+                    AppLocalizations.of(context)!.posDetailsTitle,
                     style: AppTextStyles.h3.copyWith(
                       fontWeight: FontWeight.w800,
                       color: AppColors.secondaryLight,
@@ -2472,7 +2495,7 @@ void _showOrderDetailsSheet(
                                   : '$cust  •  $model';
                             }
                             return model.isEmpty
-                                ? 'Walk-in'
+                                ? AppLocalizations.of(context)!.posDetailsWalkIn
                                 : model;
                           }(),
                           style: AppTextStyles.bodyMedium.copyWith(
@@ -2497,7 +2520,7 @@ void _showOrderDetailsSheet(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Order #${order.id.split('-').last.toUpperCase()}',
+                      AppLocalizations.of(context)!.posDetailsOrderHash(_posWidgetDigits(context, order.id.split('-').last.toUpperCase())),
                       style: AppTextStyles.bodyLarge.copyWith(
                         color: Colors.black87,
                         fontWeight: FontWeight.bold,
@@ -2515,7 +2538,7 @@ void _showOrderDetailsSheet(
               child: sortedJobs.isEmpty
                   ? Center(
                       child: Text(
-                        'No departmental data found.',
+                        AppLocalizations.of(context)!.posReviewNoDeptData,
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: Colors.grey.shade500,
                         ),
@@ -2578,7 +2601,7 @@ void _showOrderDetailsSheet(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
+                                              LocalizedApiText(
                                                 job.department,
                                                 style: AppTextStyles.bodyLarge
                                                     .copyWith(
@@ -2629,7 +2652,7 @@ void _showOrderDetailsSheet(
                                                     vertical: 8,
                                                   ),
                                               child: Text(
-                                                'No items bound to this department.',
+                                                AppLocalizations.of(context)!.posDetailsNoItemsInDept,
                                                 style: AppTextStyles.bodySmall
                                                     .copyWith(
                                                       color:
@@ -2666,7 +2689,7 @@ void _showOrderDetailsSheet(
                                                           CrossAxisAlignment
                                                               .start,
                                                       children: [
-                                                        Text(
+                                                        LocalizedApiText(
                                                           item.productName,
                                                           style: AppTextStyles
                                                               .bodyMedium
@@ -2700,7 +2723,7 @@ void _showOrderDetailsSheet(
                                                                     ),
                                                               ),
                                                               child: Text(
-                                                                "Qty: ${item.qty.toInt()}",
+                                                                AppLocalizations.of(context)!.posDetailsQtyLabel(_posWidgetDigits(context, item.qty.toInt())),
                                                                 style: AppTextStyles
                                                                     .bodySmall
                                                                     .copyWith(
@@ -2719,7 +2742,7 @@ void _showOrderDetailsSheet(
                                                               width: 8,
                                                             ),
                                                             Text(
-                                                              'SAR ${item.unitPrice.toStringAsFixed(2)} / ea',
+                                                              AppLocalizations.of(context)!.posDetailsSarEa(_posWidgetDigits(context, item.unitPrice.toStringAsFixed(2))),
                                                               style: AppTextStyles
                                                                   .bodySmall
                                                                   .copyWith(
@@ -2737,7 +2760,7 @@ void _showOrderDetailsSheet(
                                                     ),
                                                   ),
                                                   Text(
-                                                    'SAR ${item.lineTotal.toStringAsFixed(2)}',
+                                                    _posWidgetMoney(context, item.lineTotal),
                                                     style: AppTextStyles
                                                         .bodyMedium
                                                         .copyWith(
@@ -2772,7 +2795,7 @@ void _showOrderDetailsSheet(
                                               ),
                                               const SizedBox(width: 8),
                                               Text(
-                                                'Assigned Technicians',
+                                                AppLocalizations.of(context)!.posOrdersAssignedTechnicians,
                                                 style: AppTextStyles.bodySmall
                                                     .copyWith(
                                                       fontWeight:
@@ -2851,7 +2874,7 @@ void _showOrderDetailsSheet(
                                                           color: bgColor,
                                                           borderRadius: BorderRadius.circular(6),
                                                         ),
-                                                        child: Text(
+                                                        child: LocalizedApiText(
                                                           displayText,
                                                           style: AppTextStyles.bodySmall.copyWith(
                                                             fontWeight: FontWeight.w800,
@@ -3195,7 +3218,7 @@ void _showCompletionBottomSheet(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      LocalizedApiText(
                                         item['name'] as String,
                                         style: TextStyle(
                                           fontWeight: FontWeight.w700,
@@ -3216,7 +3239,7 @@ void _showCompletionBottomSheet(
                                           ),
                                         ),
                                         child: Text(
-                                          '$qty × SAR ${price.toStringAsFixed(2)}',
+                                          '${_posWidgetDigits(context, qty)} × ${_posWidgetMoney(context, price)}',
                                           style: TextStyle(
                                             fontSize: isTablet ? 11 : 9,
                                             fontWeight: FontWeight.w600,
@@ -3228,7 +3251,7 @@ void _showCompletionBottomSheet(
                                   ),
                                 ),
                                 Text(
-                                  'SAR ${(price * qty).toStringAsFixed(2)}',
+                                  _posWidgetMoney(context, price * qty),
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: isTablet ? 14 : 12,
@@ -3573,18 +3596,18 @@ void _showCommissionPopup(BuildContext context, dynamic commissionData) {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Job Approved!',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.posJobApproved,
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 color: AppColors.secondaryLight,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Technician commission has been logged.',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+            Text(
+              AppLocalizations.of(context)!.posJobTechnicianCommissionLogged,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -3601,8 +3624,8 @@ void _showCommissionPopup(BuildContext context, dynamic commissionData) {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'TECHNICIAN',
+                      Text(
+                        AppLocalizations.of(context)!.posJobTechnicianLabel,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
@@ -3624,8 +3647,8 @@ void _showCommissionPopup(BuildContext context, dynamic commissionData) {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        'COMMISSION',
+                      Text(
+                        AppLocalizations.of(context)!.posJobCommissionLabel,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
@@ -3635,7 +3658,7 @@ void _showCommissionPopup(BuildContext context, dynamic commissionData) {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'SAR ${amount.toStringAsFixed(2)}',
+                        _posWidgetMoney(context, amount),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
@@ -4114,13 +4137,32 @@ class TechnicianCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final l10n = AppLocalizations.of(context)!;
+    final langCode = Localizations.localeOf(context).languageCode;
     final presenceDotColor = _cashierPresenceDotColor(tech);
-    final departmentText = tech.departments.isNotEmpty
+    final hasDepartment = tech.departments.isNotEmpty;
+    final departmentText = hasDepartment
         ? tech.departments.map((d) => d.name).where((e) => e.isNotEmpty).join(', ')
-        : 'No department';
-    final presenceHeadline = _cashierPresenceHeadline(tech);
+        : l10n.posTechCardNoDepartment;
+    final dmForHeadline = _effectiveDutyModeForCard(tech);
+    final presenceHeadline = !tech.isOnline
+        ? l10n.posTechCardLastSeen(
+            AppTranslationService.localizeDigitsForLanguage(
+              tech.formattedLastSeen,
+              langCode,
+            ),
+          )
+        : dmForHeadline == 'workshop'
+            ? l10n.posTechCardOnlineNow
+            : dmForHeadline == 'on_call'
+                ? l10n.posTechCardOnCall
+                : l10n.posTechCardNotAvailable;
     final presenceHeadlineColor = _cashierPresenceHeadlineColor(tech);
     final slotsFull = tech.totalSlots > 0 && tech.slotsUsed >= tech.totalSlots;
+    final slotsLabel = AppTranslationService.localizeDigitsForLanguage(
+      l10n.posTechCardSlots(tech.slotsUsed, tech.totalSlots),
+      langCode,
+    );
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -4275,16 +4317,27 @@ class TechnicianCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 3),
                       Expanded(
-                        child: Text(
-                          departmentText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: isTablet ? 10.0 : 9.0,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
+                        child: hasDepartment
+                            ? LocalizedApiText(
+                                departmentText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: isTablet ? 10.0 : 9.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              )
+                            : Text(
+                                departmentText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: isTablet ? 10.0 : 9.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
                       ),
                     ],
                   ),
@@ -4301,7 +4354,7 @@ class TechnicianCard extends StatelessWidget {
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(
-                        'Slots ${tech.slotsUsed}/${tech.totalSlots}',
+                        slotsLabel,
                         style: TextStyle(
                           fontSize: isTablet ? 10.0 : 9.0,
                           fontWeight: FontWeight.w700,
@@ -4318,7 +4371,7 @@ class TechnicianCard extends StatelessWidget {
                         onOnCallDutyChanged != null)) ...[
                   SizedBox(height: isTablet ? 6 : 5),
                   _CashierDutyToggle(
-                    label: 'Workshop Duty',
+                    label: l10n.posTechCardWorkshopDuty,
                     isTablet: isTablet,
                     compact: compact,
                     enabled:
@@ -4331,7 +4384,7 @@ class TechnicianCard extends StatelessWidget {
                   ),
                   SizedBox(height: isTablet ? 3 : 2),
                   _CashierDutyToggle(
-                    label: 'On Call Duty',
+                    label: l10n.posTechCardOnCallDuty,
                     isTablet: isTablet,
                     compact: compact,
                     enabled: _techCanToggleOnCall(tech) && tech.isOnline,

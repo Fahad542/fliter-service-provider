@@ -11255,6 +11255,990 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Version 1.0.0'**
   String get posShellVersion;
+
+  /// No description provided for @posOrdersHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders Hub'**
+  String get posOrdersHubTitle;
+
+  /// No description provided for @posOrdersRefreshOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh orders'**
+  String get posOrdersRefreshOrders;
+
+  /// No description provided for @posOrdersSearchPlateNameId.
+  ///
+  /// In en, this message translates to:
+  /// **'Search plate, name, ID...'**
+  String get posOrdersSearchPlateNameId;
+
+  /// No description provided for @posOrdersProductsAndServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Products & Services'**
+  String get posOrdersProductsAndServices;
+
+  /// No description provided for @posOrdersEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get posOrdersEdit;
+
+  /// No description provided for @posOrdersCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get posOrdersCancelled;
+
+  /// No description provided for @posOrdersNoProductsOrServices.
+  ///
+  /// In en, this message translates to:
+  /// **'No products or services'**
+  String get posOrdersNoProductsOrServices;
+
+  /// No description provided for @posOrdersMaintenanceChecklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance checklist'**
+  String get posOrdersMaintenanceChecklistTitle;
+
+  /// No description provided for @posOrdersMaintenanceChecklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These items appear on the printed invoice when checked.'**
+  String get posOrdersMaintenanceChecklistDescription;
+
+  /// No description provided for @posOrdersChecklistSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance checklist saved.'**
+  String get posOrdersChecklistSaved;
+
+  /// No description provided for @posOrdersPleaseSignInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again.'**
+  String get posOrdersPleaseSignInAgain;
+
+  /// No description provided for @posOrdersQtyWithoutVat.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty {qty} × {price} Without VAT'**
+  String posOrdersQtyWithoutVat(String qty, String price);
+
+  /// No description provided for @posOrdersChecklistOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist (optional)'**
+  String get posOrdersChecklistOptional;
+
+  /// No description provided for @posOrdersEditCustomerDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit customer details'**
+  String get posOrdersEditCustomerDetails;
+
+  /// No description provided for @posOrdersTotalDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total discount'**
+  String get posOrdersTotalDiscount;
+
+  /// No description provided for @posOrdersNoFurtherEditsAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'No further edits allowed'**
+  String get posOrdersNoFurtherEditsAllowed;
+
+  /// No description provided for @posOrdersPrintInvoiceReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Invoice & Receipt'**
+  String get posOrdersPrintInvoiceReceipt;
+
+  /// No description provided for @posOrdersNoTechnicianCommissions.
+  ///
+  /// In en, this message translates to:
+  /// **'No technician commissions.'**
+  String get posOrdersNoTechnicianCommissions;
+
+  /// No description provided for @posOrdersAssignedTechnicians.
+  ///
+  /// In en, this message translates to:
+  /// **'ASSIGNED TECHNICIANS'**
+  String get posOrdersAssignedTechnicians;
+
+  /// No description provided for @posOrdersNoTechnicianAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No technician assigned'**
+  String get posOrdersNoTechnicianAssigned;
+
+  /// No description provided for @posInvoiceDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice details'**
+  String get posInvoiceDetailsTitle;
+
+  /// No description provided for @posInvoiceDetailsCustomerDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer details'**
+  String get posInvoiceDetailsCustomerDetails;
+
+  /// No description provided for @posInvoiceDetailsConfirmVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm billing contact and vehicle before creating the invoice.'**
+  String get posInvoiceDetailsConfirmVehicle;
+
+  /// No description provided for @posInvoiceDetailsConfirmContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm billing contact before creating the invoice.'**
+  String get posInvoiceDetailsConfirmContact;
+
+  /// No description provided for @posInvoiceDetailsBranchEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer is a branch employee'**
+  String get posInvoiceDetailsBranchEmployee;
+
+  /// No description provided for @posInvoiceDetailsPickStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick from staff list to fill name and mobile.'**
+  String get posInvoiceDetailsPickStaff;
+
+  /// No description provided for @posInvoiceDetailsLoadingEmployees.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading employees…'**
+  String get posInvoiceDetailsLoadingEmployees;
+
+  /// No description provided for @posInvoiceDetailsNoEmployees.
+  ///
+  /// In en, this message translates to:
+  /// **'No employees listed for this branch.'**
+  String get posInvoiceDetailsNoEmployees;
+
+  /// No description provided for @posInvoiceDetailsEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee'**
+  String get posInvoiceDetailsEmployee;
+
+  /// No description provided for @posInvoiceDetailsChooseEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose employee'**
+  String get posInvoiceDetailsChooseEmployee;
+
+  /// No description provided for @posInvoiceDetailsCustomerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer name'**
+  String get posInvoiceDetailsCustomerName;
+
+  /// No description provided for @posInvoiceDetailsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get posInvoiceDetailsRequired;
+
+  /// No description provided for @posInvoiceDetailsMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get posInvoiceDetailsMobile;
+
+  /// No description provided for @posInvoiceDetailsVat.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT'**
+  String get posInvoiceDetailsVat;
+
+  /// No description provided for @posInvoiceDetailsPlateNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Plate number'**
+  String get posInvoiceDetailsPlateNumber;
+
+  /// No description provided for @posInvoiceDetailsPlateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Plate is required'**
+  String get posInvoiceDetailsPlateRequired;
+
+  /// No description provided for @posInvoiceDetailsOdometer.
+  ///
+  /// In en, this message translates to:
+  /// **'Odometer'**
+  String get posInvoiceDetailsOdometer;
+
+  /// No description provided for @posInvoiceDetailsMake.
+  ///
+  /// In en, this message translates to:
+  /// **'Make'**
+  String get posInvoiceDetailsMake;
+
+  /// No description provided for @posInvoiceDetailsModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get posInvoiceDetailsModel;
+
+  /// No description provided for @posInvoiceDetailsYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get posInvoiceDetailsYear;
+
+  /// No description provided for @posInvoiceDetailsInvalidYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid year'**
+  String get posInvoiceDetailsInvalidYear;
+
+  /// No description provided for @posInvoiceDetailsVin.
+  ///
+  /// In en, this message translates to:
+  /// **'VIN'**
+  String get posInvoiceDetailsVin;
+
+  /// No description provided for @posInvoiceDetailsSaveProceed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Continue to Invoice'**
+  String get posInvoiceDetailsSaveProceed;
+
+  /// No description provided for @posPaymentMethodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get posPaymentMethodTitle;
+
+  /// No description provided for @posPaymentMethodDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Select customer type, then choose how this invoice will be paid.'**
+  String get posPaymentMethodDescription;
+
+  /// No description provided for @posPaymentCustomerType.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer type'**
+  String get posPaymentCustomerType;
+
+  /// No description provided for @posPaymentIndividual.
+  ///
+  /// In en, this message translates to:
+  /// **'Individual'**
+  String get posPaymentIndividual;
+
+  /// No description provided for @posPaymentCorporate.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate'**
+  String get posPaymentCorporate;
+
+  /// No description provided for @posPaymentTapCustomerFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Individual or Corporate first. Then choose Cash, Card, Tabby, etc.'**
+  String get posPaymentTapCustomerFirst;
+
+  /// No description provided for @posPaymentCorporateMulti.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate payment (multi-select to split)'**
+  String get posPaymentCorporateMulti;
+
+  /// No description provided for @posPaymentMulti.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment (multi-select to split)'**
+  String get posPaymentMulti;
+
+  /// No description provided for @posPaymentAmountByMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount by payment method'**
+  String get posPaymentAmountByMethod;
+
+  /// No description provided for @posPaymentRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining: {amount} SAR'**
+  String posPaymentRemaining(String amount);
+
+  /// No description provided for @posPaymentAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{method} amount'**
+  String posPaymentAmountLabel(String method);
+
+  /// No description provided for @posPaymentClearSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved payment'**
+  String get posPaymentClearSaved;
+
+  /// No description provided for @posPaymentCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get posPaymentCash;
+
+  /// No description provided for @posPaymentCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Card'**
+  String get posPaymentCard;
+
+  /// No description provided for @posPaymentBankTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank Transfer'**
+  String get posPaymentBankTransfer;
+
+  /// No description provided for @posPaymentTamara.
+  ///
+  /// In en, this message translates to:
+  /// **'Tamara'**
+  String get posPaymentTamara;
+
+  /// No description provided for @posPaymentTabby.
+  ///
+  /// In en, this message translates to:
+  /// **'Tabby'**
+  String get posPaymentTabby;
+
+  /// No description provided for @posPaymentWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get posPaymentWallet;
+
+  /// No description provided for @posPaymentMonthlyBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Billing'**
+  String get posPaymentMonthlyBilling;
+
+  /// No description provided for @posPaymentEmployees.
+  ///
+  /// In en, this message translates to:
+  /// **'Employees'**
+  String get posPaymentEmployees;
+
+  /// No description provided for @posProductNoOrdersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders found'**
+  String get posProductNoOrdersFound;
+
+  /// No description provided for @posProductOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get posProductOutOfStock;
+
+  /// No description provided for @posProductLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get posProductLowStock;
+
+  /// No description provided for @posProductInStock.
+  ///
+  /// In en, this message translates to:
+  /// **'In stock'**
+  String get posProductInStock;
+
+  /// No description provided for @posProductOtherOils.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Oils'**
+  String get posProductOtherOils;
+
+  /// No description provided for @posProductOtherOilFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Oil Filters'**
+  String get posProductOtherOilFilters;
+
+  /// No description provided for @posProductGearOil.
+  ///
+  /// In en, this message translates to:
+  /// **'Gear Oil'**
+  String get posProductGearOil;
+
+  /// No description provided for @posProductOilChangeDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Oil Change Department'**
+  String get posProductOilChangeDepartment;
+
+  /// No description provided for @posTechOnlineNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Online now'**
+  String get posTechOnlineNow;
+
+  /// No description provided for @posTechNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get posTechNotAvailable;
+
+  /// No description provided for @posTechWorkshopDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop Duty'**
+  String get posTechWorkshopDuty;
+
+  /// No description provided for @posTechOnCallDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'On-Call Duty'**
+  String get posTechOnCallDuty;
+
+  /// No description provided for @posTechActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get posTechActive;
+
+  /// No description provided for @posCommonDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get posCommonDone;
+
+  /// No description provided for @posCommonPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get posCommonPrint;
+
+  /// No description provided for @posOrdersCorpBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'CORP'**
+  String get posOrdersCorpBadge;
+
+  /// No description provided for @posSearchHistoryPlateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Plate: {plate}'**
+  String posSearchHistoryPlateLabel(Object plate);
+
+  /// No description provided for @posSearchHistoryOrderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order: #{orderNumber}'**
+  String posSearchHistoryOrderLabel(Object orderNumber);
+
+  /// No description provided for @posOrdersSelectedDepartments.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected departments'**
+  String get posOrdersSelectedDepartments;
+
+  /// No description provided for @posOrdersDeptNotReturnedInPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments not returned in order list payload.'**
+  String get posOrdersDeptNotReturnedInPayload;
+
+  /// No description provided for @posOrdersTechnicianLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Technician: {name}'**
+  String posOrdersTechnicianLabel(Object name);
+
+  /// No description provided for @posOrdersTechnicianNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get posOrdersTechnicianNone;
+
+  /// No description provided for @posOrdersWaitingCorporateApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting corporate approval'**
+  String get posOrdersWaitingCorporateApproval;
+
+  /// No description provided for @posOrdersRejectedByCorporateReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected by corporate: {reason}'**
+  String posOrdersRejectedByCorporateReason(Object reason);
+
+  /// No description provided for @posOrdersRejectedByCorporate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected by corporate'**
+  String get posOrdersRejectedByCorporate;
+
+  /// No description provided for @posOrdersEditOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Order'**
+  String get posOrdersEditOrder;
+
+  /// No description provided for @posOrdersCancelOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Order'**
+  String get posOrdersCancelOrder;
+
+  /// No description provided for @posOrdersGenInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Gen. Invoice'**
+  String get posOrdersGenInvoice;
+
+  /// No description provided for @posOrdersInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get posOrdersInvoice;
+
+  /// No description provided for @posOrdersAddDept.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Dept.'**
+  String get posOrdersAddDept;
+
+  /// No description provided for @posDetailsWalkIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-in'**
+  String get posDetailsWalkIn;
+
+  /// No description provided for @posDetailsOrderHash.
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{id}'**
+  String posDetailsOrderHash(Object id);
+
+  /// No description provided for @posDetailsJobId.
+  ///
+  /// In en, this message translates to:
+  /// **'Job ID: {id}'**
+  String posDetailsJobId(Object id);
+
+  /// No description provided for @posDetailsNoItemsInDept.
+  ///
+  /// In en, this message translates to:
+  /// **'No items bound to this department.'**
+  String get posDetailsNoItemsInDept;
+
+  /// No description provided for @posDetailsQtyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty: {qty}'**
+  String posDetailsQtyLabel(Object qty);
+
+  /// No description provided for @posDetailsSarEa.
+  ///
+  /// In en, this message translates to:
+  /// **'SAR {price} / ea'**
+  String posDetailsSarEa(Object price);
+
+  /// No description provided for @posDetailsActive.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get posDetailsActive;
+
+  /// No description provided for @posOrdersConfirmCompletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Completion'**
+  String get posOrdersConfirmCompletion;
+
+  /// No description provided for @posJobApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Job Approved!'**
+  String get posJobApproved;
+
+  /// No description provided for @posJobTechnicianCommissionLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Technician commission has been logged.'**
+  String get posJobTechnicianCommissionLogged;
+
+  /// No description provided for @posJobTechnicianLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TECHNICIAN'**
+  String get posJobTechnicianLabel;
+
+  /// No description provided for @posJobCommissionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'COMMISSION'**
+  String get posJobCommissionLabel;
+
+  /// No description provided for @posDutyNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not applicable'**
+  String get posDutyNotApplicable;
+
+  /// No description provided for @posDutyUnavailableOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable while offline'**
+  String get posDutyUnavailableOffline;
+
+  /// No description provided for @posDutyActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get posDutyActive;
+
+  /// No description provided for @posProductStockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock: {count}'**
+  String posProductStockLabel(Object count);
+
+  /// No description provided for @posProductSearchItemOrService.
+  ///
+  /// In en, this message translates to:
+  /// **'Search item or service'**
+  String get posProductSearchItemOrService;
+
+  /// No description provided for @posProductIncVat.
+  ///
+  /// In en, this message translates to:
+  /// **'Inc. VAT'**
+  String get posProductIncVat;
+
+  /// No description provided for @posOrdersJobBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'JOB'**
+  String get posOrdersJobBadge;
+
+  /// No description provided for @posReceiptSimplifiedTaxInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Simplified Tax Invoice'**
+  String get posReceiptSimplifiedTaxInvoice;
+
+  /// No description provided for @posReceiptBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get posReceiptBranch;
+
+  /// No description provided for @posReceiptAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get posReceiptAddress;
+
+  /// No description provided for @posReceiptVatNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT Number'**
+  String get posReceiptVatNumber;
+
+  /// No description provided for @posReceiptInvoiceNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice No'**
+  String get posReceiptInvoiceNo;
+
+  /// No description provided for @posReceiptDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get posReceiptDate;
+
+  /// No description provided for @posReceiptCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter'**
+  String get posReceiptCounter;
+
+  /// No description provided for @posReceiptCashier.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashier'**
+  String get posReceiptCashier;
+
+  /// No description provided for @posReceiptItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get posReceiptItem;
+
+  /// No description provided for @posReceiptQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get posReceiptQty;
+
+  /// No description provided for @posReceiptUnitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Price'**
+  String get posReceiptUnitPrice;
+
+  /// No description provided for @posReceiptTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get posReceiptTotal;
+
+  /// No description provided for @posReceiptTotalExcludingVat.
+  ///
+  /// In en, this message translates to:
+  /// **'Total (Excluding VAT)'**
+  String get posReceiptTotalExcludingVat;
+
+  /// No description provided for @posReceiptTotalTaxableAmountExclVat.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Taxable Amount (Excluding VAT)'**
+  String get posReceiptTotalTaxableAmountExclVat;
+
+  /// No description provided for @posReceiptTotalVat15.
+  ///
+  /// In en, this message translates to:
+  /// **'Total VAT 15%'**
+  String get posReceiptTotalVat15;
+
+  /// No description provided for @posReceiptTotalAmountDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Amount Due'**
+  String get posReceiptTotalAmountDue;
+
+  /// No description provided for @posReceiptNextOilChangeOdometer.
+  ///
+  /// In en, this message translates to:
+  /// **'Next oil change odometer'**
+  String get posReceiptNextOilChangeOdometer;
+
+  /// No description provided for @posReceiptCustomerDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer details'**
+  String get posReceiptCustomerDetails;
+
+  /// No description provided for @posReceiptName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get posReceiptName;
+
+  /// No description provided for @posReceiptMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get posReceiptMobile;
+
+  /// No description provided for @posReceiptVehicleNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle No'**
+  String get posReceiptVehicleNo;
+
+  /// No description provided for @posReceiptOdometer.
+  ///
+  /// In en, this message translates to:
+  /// **'Odometer'**
+  String get posReceiptOdometer;
+
+  /// No description provided for @posReceiptMaintenanceChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance checklist'**
+  String get posReceiptMaintenanceChecklist;
+
+  /// No description provided for @posReceiptThankYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you'**
+  String get posReceiptThankYou;
+
+  /// No description provided for @posThermalPrinterInvalidHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid printer IP or hostname.'**
+  String get posThermalPrinterInvalidHost;
+
+  /// No description provided for @posThermalPrinterInvalidPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid port (1–65535).'**
+  String get posThermalPrinterInvalidPort;
+
+  /// No description provided for @posThermalPrinterSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save settings.'**
+  String get posThermalPrinterSaveFailed;
+
+  /// No description provided for @posOrdersDeleteJobBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this job? This action cannot be undone.'**
+  String get posOrdersDeleteJobBody;
+
+  /// No description provided for @posOrdersJobCannotBeEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'This job cannot be edited.'**
+  String get posOrdersJobCannotBeEdited;
+
+  /// No description provided for @posOrdersItemCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String posOrdersItemCount(Object count);
+
+  /// No description provided for @posOrdersTechnicianCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} technicians'**
+  String posOrdersTechnicianCount(Object count);
+
+  /// No description provided for @posOrdersVatPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT ({pct}%)'**
+  String posOrdersVatPercent(Object pct);
+
+  /// No description provided for @posOrdersDeptCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} dept'**
+  String posOrdersDeptCount(Object count);
+
+  /// No description provided for @posOrdersDeptNames.
+  ///
+  /// In en, this message translates to:
+  /// **'Dept: {names}'**
+  String posOrdersDeptNames(Object names);
+
+  /// No description provided for @posOrdersRejectedCorporateReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected corporate orders are read-only. Remove the order from the list.'**
+  String get posOrdersRejectedCorporateReadOnly;
+
+  /// No description provided for @posOrdersPleaseAddVehicleFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please add vehicle number first (Add Customer)'**
+  String get posOrdersPleaseAddVehicleFirst;
+
+  /// No description provided for @posOrdersThisJobNoLineItems.
+  ///
+  /// In en, this message translates to:
+  /// **'This job has no line items.'**
+  String get posOrdersThisJobNoLineItems;
+
+  /// No description provided for @posOrdersDeptPromoWithName.
+  ///
+  /// In en, this message translates to:
+  /// **'Dept promo ({name})'**
+  String posOrdersDeptPromoWithName(Object name);
+
+  /// No description provided for @posOrdersDeptDiscountPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Dept discount ({percent}%)'**
+  String posOrdersDeptDiscountPercent(Object percent);
+
+  /// No description provided for @posOrdersStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'DRAFT'**
+  String get posOrdersStatusDraft;
+
+  /// No description provided for @posOrdersEditPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit payment'**
+  String get posOrdersEditPayment;
+
+  /// No description provided for @posReviewTechnicianFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Technician'**
+  String get posReviewTechnicianFallback;
+
+  /// No description provided for @posReviewItemFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get posReviewItemFallback;
+
+  /// No description provided for @posReviewInvoiceCouldNotLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice could not be loaded.'**
+  String get posReviewInvoiceCouldNotLoad;
+
+  /// No description provided for @posReviewVehicleNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle no.'**
+  String get posReviewVehicleNoLabel;
+
+  /// No description provided for @posReviewCustomerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get posReviewCustomerLabel;
+
+  /// No description provided for @posReviewDiscountsApplyTaxableSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice and promo discounts apply to the taxable subtotal.'**
+  String get posReviewDiscountsApplyTaxableSubtotal;
+
+  /// No description provided for @posPaymentMethodTitleSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method (Select multiple if splitting)'**
+  String get posPaymentMethodTitleSplit;
+
+  /// No description provided for @posReviewCorporatePayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate — {method}'**
+  String posReviewCorporatePayment(Object method);
+
+  /// No description provided for @posPaymentChangeCustomerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change customer'**
+  String get posPaymentChangeCustomerTitle;
+
+  /// No description provided for @posPaymentChangeCustomerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to change the customer? Your payment choices for this customer type will be cleared.'**
+  String get posPaymentChangeCustomerBody;
+
+  /// No description provided for @posPaymentChangeCustomerButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Change customer'**
+  String get posPaymentChangeCustomerButton;
 }
 
 class _AppLocalizationsDelegate

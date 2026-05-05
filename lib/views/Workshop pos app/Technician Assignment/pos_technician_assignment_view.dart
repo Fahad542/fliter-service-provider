@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
 import 'package:provider/provider.dart';
 
 import '../../../utils/app_colors.dart';
@@ -354,8 +355,8 @@ class _PosTechnicianAssignmentViewState
         serverMsg.isNotEmpty
             ? serverMsg
             : (assignVm.selectedTechnicianIds.isEmpty
-                ? 'All technicians removed from this job'
-                : 'Technicians assigned successfully'),
+                ? AppLocalizations.of(context)!.posTechAssignSuccessEmpty
+                : AppLocalizations.of(context)!.posTechAssignSuccess),
       );
       if (oid != null && oid.isNotEmpty) {
         await posVm.fetchOrders(silent: true, preferredOrderId: oid);
@@ -636,8 +637,8 @@ class _PosTechnicianAssignmentViewState
                                 ),
                                 child: Text(
                                   assignVm.showAllTechnicians
-                                      ? 'Online Only'
-                                      : 'Show All',
+                                      ? AppLocalizations.of(context)!.posTechAssignOnlineOnly
+                                      : AppLocalizations.of(context)!.posTechAssignShowAll,
                                   style: const TextStyle(
                                     color: AppColors.secondaryLight,
                                     fontWeight: FontWeight.w700,
@@ -796,7 +797,7 @@ class _PosTechnicianAssignmentViewState
                                                     MainAxisAlignment.center,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text(
+                                                  LocalizedApiText(
                                                     tech.assignmentStatusDisplayLabel,
                                                     style: TextStyle(
                                                       fontSize: isTablet
@@ -816,7 +817,7 @@ class _PosTechnicianAssignmentViewState
                                                       tech.formattedLastSeen
                                                           .isNotEmpty)
                                                     Text(
-                                                      AppLocalizations.of(context)!.posTechnicianLastSeen(tech.formattedLastSeen),
+                                                      AppLocalizations.of(context)!.posTechnicianLastSeen(AppTranslationService.localizeDigitsForLanguage(tech.formattedLastSeen, Localizations.localeOf(context).languageCode)),
                                                       style: TextStyle(
                                                         fontSize: isTablet
                                                             ? 11
@@ -856,7 +857,7 @@ class _PosTechnicianAssignmentViewState
                                                       .departments
                                                       .isNotEmpty) ...[
                                                     const SizedBox(height: 2),
-                                                    Text(
+                                                    LocalizedApiText(
                                                       tech.departments
                                                           .map((d) => d.name)
                                                           .join(' • '),
@@ -891,7 +892,7 @@ class _PosTechnicianAssignmentViewState
                                                       ),
                                                       const SizedBox(width: 3),
                                                       Text(
-                                                        AppLocalizations.of(context)!.posTechnicianSlots(tech.slotsUsed, tech.totalSlots),
+                                                        AppTranslationService.localizeDigitsForLanguage(AppLocalizations.of(context)!.posTechnicianSlots(tech.slotsUsed, tech.totalSlots), Localizations.localeOf(context).languageCode),
                                                         style: TextStyle(
                                                           fontSize: isTablet
                                                               ? 12
@@ -1044,7 +1045,7 @@ class _PosTechnicianAssignmentViewState
                                                     const SizedBox(width: 6),
                                                     Flexible(
                                                       child: Text(
-                                                        AppLocalizations.of(context)!.posTechnicianWait(cooldownLabel),
+                                                        AppLocalizations.of(context)!.posTechnicianWait(AppTranslationService.localizeDigitsForLanguage(cooldownLabel, Localizations.localeOf(context).languageCode)),
                                                         maxLines: 1,
                                                         overflow:
                                                             TextOverflow.ellipsis,

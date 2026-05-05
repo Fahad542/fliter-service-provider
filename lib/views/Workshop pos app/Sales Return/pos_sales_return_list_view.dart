@@ -156,7 +156,8 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
     final isLandscape = orientation == Orientation.landscape;
 
     final date = DateTime.tryParse(returnInfo.returnDate) ?? DateTime.now();
-    final formattedDate = DateFormat('MMM dd, yyyy • hh:mm a').format(date);
+    final localeCode = Localizations.localeOf(context).languageCode;
+    final formattedDate = DateFormat('MMM dd, yyyy • hh:mm a', localeCode == 'ar' ? 'ar' : 'en').format(date);
 
     return Container(
       decoration: BoxDecoration(

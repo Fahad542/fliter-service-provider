@@ -2875,5 +2875,278 @@
   "posNavPromoCodes": "Promo Codes",
   "posNavTechnicians": "Technicians",
   "posNavCurrentShift": "Current Shift",
-  "posShellVersion": "Version 1.0.0"
+  "posShellVersion": "Version 1.0.0",
+  "posOrdersHubTitle": "Orders Hub",
+  "posOrdersRefreshOrders": "Refresh orders",
+  "posOrdersSearchPlateNameId": "Search plate, name, ID...",
+  "posOrdersProductsAndServices": "Products & Services",
+  "posOrdersEdit": "Edit",
+  "posOrdersCancelled": "Cancelled",
+  "posOrdersNoProductsOrServices": "No products or services",
+  "posOrdersMaintenanceChecklistTitle": "Maintenance checklist",
+  "posOrdersMaintenanceChecklistDescription": "These items appear on the printed invoice when checked.",
+  "posOrdersChecklistSaved": "Maintenance checklist saved.",
+  "posOrdersPleaseSignInAgain": "Please sign in again.",
+  "posOrdersQtyWithoutVat": "Qty {qty} × {price} Without VAT",
+  "posOrdersChecklistOptional": "Checklist (optional)",
+  "posOrdersEditCustomerDetails": "Edit customer details",
+  "posOrdersTotalDiscount": "Total discount",
+  "posOrdersNoFurtherEditsAllowed": "No further edits allowed",
+  "posOrdersPrintInvoiceReceipt": "Print Invoice & Receipt",
+  "posOrdersNoTechnicianCommissions": "No technician commissions.",
+  "posOrdersAssignedTechnicians": "ASSIGNED TECHNICIANS",
+  "posOrdersNoTechnicianAssigned": "No technician assigned",
+  "posInvoiceDetailsTitle": "Invoice details",
+  "posInvoiceDetailsCustomerDetails": "Customer details",
+  "posInvoiceDetailsConfirmVehicle": "Confirm billing contact and vehicle before creating the invoice.",
+  "posInvoiceDetailsConfirmContact": "Confirm billing contact before creating the invoice.",
+  "posInvoiceDetailsBranchEmployee": "Customer is a branch employee",
+  "posInvoiceDetailsPickStaff": "Pick from staff list to fill name and mobile.",
+  "posInvoiceDetailsLoadingEmployees": "Loading employees…",
+  "posInvoiceDetailsNoEmployees": "No employees listed for this branch.",
+  "posInvoiceDetailsEmployee": "Employee",
+  "posInvoiceDetailsChooseEmployee": "Choose employee",
+  "posInvoiceDetailsCustomerName": "Customer name",
+  "posInvoiceDetailsRequired": "Required",
+  "posInvoiceDetailsMobile": "Mobile",
+  "posInvoiceDetailsVat": "VAT",
+  "posInvoiceDetailsPlateNumber": "Plate number",
+  "posInvoiceDetailsPlateRequired": "Plate is required",
+  "posInvoiceDetailsOdometer": "Odometer",
+  "posInvoiceDetailsMake": "Make",
+  "posInvoiceDetailsModel": "Model",
+  "posInvoiceDetailsYear": "Year",
+  "posInvoiceDetailsInvalidYear": "Invalid year",
+  "posInvoiceDetailsVin": "VIN",
+  "posInvoiceDetailsSaveProceed": "Save & Continue to Invoice",
+  "posPaymentMethodTitle": "Payment method",
+  "posPaymentMethodDescription": "Select customer type, then choose how this invoice will be paid.",
+  "posPaymentCustomerType": "Customer type",
+  "posPaymentIndividual": "Individual",
+  "posPaymentCorporate": "Corporate",
+  "posPaymentTapCustomerFirst": "Tap Individual or Corporate first. Then choose Cash, Card, Tabby, etc.",
+  "posPaymentCorporateMulti": "Corporate payment (multi-select to split)",
+  "posPaymentMulti": "Payment (multi-select to split)",
+  "posPaymentAmountByMethod": "Amount by payment method",
+  "posPaymentRemaining": "Remaining: {amount} SAR",
+  "posPaymentAmountLabel": "{method} amount",
+  "posPaymentClearSaved": "Clear saved payment",
+  "posPaymentCash": "Cash",
+  "posPaymentCard": "Card",
+  "posPaymentBankTransfer": "Bank Transfer",
+  "posPaymentTamara": "Tamara",
+  "posPaymentTabby": "Tabby",
+  "posPaymentWallet": "Wallet",
+  "posPaymentMonthlyBilling": "Monthly Billing",
+  "posPaymentEmployees": "Employees",
+  "posProductNoOrdersFound": "No orders found",
+  "posProductOutOfStock": "Out of stock",
+  "posProductLowStock": "Low",
+  "posProductInStock": "In stock",
+  "posProductOtherOils": "Other Oils",
+  "posProductOtherOilFilters": "Other Oil Filters",
+  "posProductGearOil": "Gear Oil",
+  "posProductOilChangeDepartment": "Oil Change Department",
+  "posTechOnlineNow": "Online now",
+  "posTechNotAvailable": "Not available",
+  "posTechWorkshopDuty": "Workshop Duty",
+  "posTechOnCallDuty": "On-Call Duty",
+  "posTechActive": "Active",
+  "posCommonDone": "Done",
+  "posCommonPrint": "Print",
+  "@posOrdersQtyWithoutVat": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "@posPaymentRemaining": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@posPaymentAmountLabel": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "posOrdersCorpBadge": "CORP",
+  "posSearchHistoryPlateLabel": "Plate: {plate}",
+  "@posSearchHistoryPlateLabel": {
+    "placeholders": {
+      "plate": {}
+    }
+  },
+  "posSearchHistoryOrderLabel": "Order: #{orderNumber}",
+  "@posSearchHistoryOrderLabel": {
+    "placeholders": {
+      "orderNumber": {}
+    }
+  },
+  "posOrdersSelectedDepartments": "Selected departments",
+  "posOrdersDeptNotReturnedInPayload": "Departments not returned in order list payload.",
+  "posOrdersTechnicianLabel": "Technician: {name}",
+  "@posOrdersTechnicianLabel": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "posOrdersTechnicianNone": "None",
+  "posOrdersWaitingCorporateApproval": "Waiting corporate approval",
+  "posOrdersRejectedByCorporateReason": "Rejected by corporate: {reason}",
+  "@posOrdersRejectedByCorporateReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "posOrdersRejectedByCorporate": "Rejected by corporate",
+  "posOrdersEditOrder": "Edit Order",
+  "posOrdersCancelOrder": "Cancel Order",
+  "posOrdersGenInvoice": "Gen. Invoice",
+  "posOrdersInvoice": "Invoice",
+  "posOrdersAddDept": "Add Dept.",
+  "posDetailsWalkIn": "Walk-in",
+  "posDetailsOrderHash": "Order #{id}",
+  "@posDetailsOrderHash": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "posDetailsJobId": "Job ID: {id}",
+  "@posDetailsJobId": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "posDetailsNoItemsInDept": "No items bound to this department.",
+  "posDetailsQtyLabel": "Qty: {qty}",
+  "@posDetailsQtyLabel": {
+    "placeholders": {
+      "qty": {}
+    }
+  },
+  "posDetailsSarEa": "SAR {price} / ea",
+  "@posDetailsSarEa": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "posDetailsActive": "ACTIVE",
+  "posOrdersConfirmCompletion": "Confirm Completion",
+  "posJobApproved": "Job Approved!",
+  "posJobTechnicianCommissionLogged": "Technician commission has been logged.",
+  "posJobTechnicianLabel": "TECHNICIAN",
+  "posJobCommissionLabel": "COMMISSION",
+  "posDutyNotApplicable": "Not applicable",
+  "posDutyUnavailableOffline": "Unavailable while offline",
+  "posDutyActive": "Active",
+  "posProductStockLabel": "Stock: {count}",
+  "@posProductStockLabel": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posProductSearchItemOrService": "Search item or service",
+  "posProductIncVat": "Inc. VAT",
+  "posOrdersJobBadge": "JOB",
+  "posReceiptSimplifiedTaxInvoice": "Simplified Tax Invoice",
+  "posReceiptBranch": "Branch",
+  "posReceiptAddress": "Address",
+  "posReceiptVatNumber": "VAT Number",
+  "posReceiptInvoiceNo": "Invoice No",
+  "posReceiptDate": "Date",
+  "posReceiptCounter": "Counter",
+  "posReceiptCashier": "Cashier",
+  "posReceiptItem": "Item",
+  "posReceiptQty": "Qty",
+  "posReceiptUnitPrice": "Unit Price",
+  "posReceiptTotal": "Total",
+  "posReceiptTotalExcludingVat": "Total (Excluding VAT)",
+  "posReceiptTotalTaxableAmountExclVat": "Total Taxable Amount (Excluding VAT)",
+  "posReceiptTotalVat15": "Total VAT 15%",
+  "posReceiptTotalAmountDue": "Total Amount Due",
+  "posReceiptNextOilChangeOdometer": "Next oil change odometer",
+  "posReceiptCustomerDetails": "Customer details",
+  "posReceiptName": "Name",
+  "posReceiptMobile": "Mobile",
+  "posReceiptVehicleNo": "Vehicle No",
+  "posReceiptOdometer": "Odometer",
+  "posReceiptMaintenanceChecklist": "Maintenance checklist",
+  "posReceiptThankYou": "Thank you",
+  "posThermalPrinterInvalidHost": "Enter a valid printer IP or hostname.",
+  "posThermalPrinterInvalidPort": "Enter a valid port (1–65535).",
+  "posThermalPrinterSaveFailed": "Could not save settings.",
+  "posOrdersDeleteJobBody": "Are you sure you want to delete this job? This action cannot be undone.",
+  "posOrdersJobCannotBeEdited": "This job cannot be edited.",
+  "posOrdersItemCount": "{count} items",
+  "@posOrdersItemCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posOrdersTechnicianCount": "{count} technicians",
+  "@posOrdersTechnicianCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posOrdersVatPercent": "VAT ({pct}%)",
+  "@posOrdersVatPercent": {
+    "placeholders": {
+      "pct": {}
+    }
+  },
+  "posOrdersDeptCount": "{count} dept",
+  "@posOrdersDeptCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "posOrdersDeptNames": "Dept: {names}",
+  "@posOrdersDeptNames": {
+    "placeholders": {
+      "names": {}
+    }
+  },
+  "posOrdersRejectedCorporateReadOnly": "Rejected corporate orders are read-only. Remove the order from the list.",
+  "posOrdersPleaseAddVehicleFirst": "Please add vehicle number first (Add Customer)",
+  "posOrdersThisJobNoLineItems": "This job has no line items.",
+  "posOrdersDeptPromoWithName": "Dept promo ({name})",
+  "@posOrdersDeptPromoWithName": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "posOrdersDeptDiscountPercent": "Dept discount ({percent}%)",
+  "@posOrdersDeptDiscountPercent": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "posOrdersStatusDraft": "DRAFT",
+  "posOrdersEditPayment": "Edit payment",
+  "posReviewTechnicianFallback": "Technician",
+  "posReviewItemFallback": "Item",
+  "posReviewInvoiceCouldNotLoad": "Invoice could not be loaded.",
+  "posReviewVehicleNoLabel": "Vehicle no.",
+  "posReviewCustomerLabel": "Customer",
+  "posReviewDiscountsApplyTaxableSubtotal": "Invoice and promo discounts apply to the taxable subtotal.",
+  "posPaymentMethodTitleSplit": "Payment Method (Select multiple if splitting)",
+  "posReviewCorporatePayment": "Corporate — {method}",
+  "@posReviewCorporatePayment": {
+    "placeholders": {
+      "method": {}
+    }
+  },
+  "posPaymentChangeCustomerTitle": "Change customer",
+  "posPaymentChangeCustomerBody": "Do you really want to change the customer? Your payment choices for this customer type will be cleared.",
+  "posPaymentChangeCustomerButton": "Change customer"
 }

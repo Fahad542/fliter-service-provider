@@ -5965,4 +5965,553 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get posShellVersion => 'الإصدار 1.0.0';
+
+  @override
+  String get posOrdersHubTitle => 'مركز الطلبات';
+
+  @override
+  String get posOrdersRefreshOrders => 'تحديث الطلبات';
+
+  @override
+  String get posOrdersSearchPlateNameId =>
+      'ابحث برقم اللوحة أو الاسم أو الرقم...';
+
+  @override
+  String get posOrdersProductsAndServices => 'المنتجات والخدمات';
+
+  @override
+  String get posOrdersEdit => 'تعديل';
+
+  @override
+  String get posOrdersCancelled => 'ملغي';
+
+  @override
+  String get posOrdersNoProductsOrServices => 'لا توجد منتجات أو خدمات';
+
+  @override
+  String get posOrdersMaintenanceChecklistTitle => 'قائمة فحص الصيانة';
+
+  @override
+  String get posOrdersMaintenanceChecklistDescription =>
+      'تظهر هذه العناصر في الفاتورة المطبوعة عند تحديدها.';
+
+  @override
+  String get posOrdersChecklistSaved => 'تم حفظ قائمة فحص الصيانة.';
+
+  @override
+  String get posOrdersPleaseSignInAgain => 'يرجى تسجيل الدخول مرة أخرى.';
+
+  @override
+  String posOrdersQtyWithoutVat(String qty, String price) {
+    return 'الكمية $qty × $price بدون ضريبة';
+  }
+
+  @override
+  String get posOrdersChecklistOptional => 'قائمة الفحص (اختياري)';
+
+  @override
+  String get posOrdersEditCustomerDetails => 'تعديل بيانات العميل';
+
+  @override
+  String get posOrdersTotalDiscount => 'إجمالي الخصم';
+
+  @override
+  String get posOrdersNoFurtherEditsAllowed => 'لا يُسمح بمزيد من التعديلات';
+
+  @override
+  String get posOrdersPrintInvoiceReceipt => 'طباعة الفاتورة والإيصال';
+
+  @override
+  String get posOrdersNoTechnicianCommissions => 'لا توجد عمولات فنيين.';
+
+  @override
+  String get posOrdersAssignedTechnicians => 'الفنيون المعينون';
+
+  @override
+  String get posOrdersNoTechnicianAssigned => 'لا يوجد فني معين';
+
+  @override
+  String get posInvoiceDetailsTitle => 'بيانات الفاتورة';
+
+  @override
+  String get posInvoiceDetailsCustomerDetails => 'بيانات العميل';
+
+  @override
+  String get posInvoiceDetailsConfirmVehicle =>
+      'أكد جهة الفوترة والمركبة قبل إنشاء الفاتورة.';
+
+  @override
+  String get posInvoiceDetailsConfirmContact =>
+      'أكد جهة الفوترة قبل إنشاء الفاتورة.';
+
+  @override
+  String get posInvoiceDetailsBranchEmployee => 'العميل موظف في الفرع';
+
+  @override
+  String get posInvoiceDetailsPickStaff =>
+      'اختر من قائمة الموظفين لتعبئة الاسم والجوال.';
+
+  @override
+  String get posInvoiceDetailsLoadingEmployees => 'جارٍ تحميل الموظفين…';
+
+  @override
+  String get posInvoiceDetailsNoEmployees => 'لا يوجد موظفون لهذا الفرع.';
+
+  @override
+  String get posInvoiceDetailsEmployee => 'الموظف';
+
+  @override
+  String get posInvoiceDetailsChooseEmployee => 'اختر الموظف';
+
+  @override
+  String get posInvoiceDetailsCustomerName => 'اسم العميل';
+
+  @override
+  String get posInvoiceDetailsRequired => 'مطلوب';
+
+  @override
+  String get posInvoiceDetailsMobile => 'الجوال';
+
+  @override
+  String get posInvoiceDetailsVat => 'ضريبة القيمة المضافة';
+
+  @override
+  String get posInvoiceDetailsPlateNumber => 'رقم اللوحة';
+
+  @override
+  String get posInvoiceDetailsPlateRequired => 'رقم اللوحة مطلوب';
+
+  @override
+  String get posInvoiceDetailsOdometer => 'عداد المسافة';
+
+  @override
+  String get posInvoiceDetailsMake => 'الشركة المصنّعة';
+
+  @override
+  String get posInvoiceDetailsModel => 'الطراز';
+
+  @override
+  String get posInvoiceDetailsYear => 'السنة';
+
+  @override
+  String get posInvoiceDetailsInvalidYear => 'سنة غير صحيحة';
+
+  @override
+  String get posInvoiceDetailsVin => 'رقم الهيكل';
+
+  @override
+  String get posInvoiceDetailsSaveProceed => 'حفظ ومتابعة إلى الفاتورة';
+
+  @override
+  String get posPaymentMethodTitle => 'طريقة الدفع';
+
+  @override
+  String get posPaymentMethodDescription =>
+      'اختر نوع العميل ثم طريقة دفع الفاتورة.';
+
+  @override
+  String get posPaymentCustomerType => 'نوع العميل';
+
+  @override
+  String get posPaymentIndividual => 'فرد';
+
+  @override
+  String get posPaymentCorporate => 'شركة';
+
+  @override
+  String get posPaymentTapCustomerFirst =>
+      'اختر فرد أو شركة أولاً، ثم اختر نقداً أو بطاقة أو تابي وغيرها.';
+
+  @override
+  String get posPaymentCorporateMulti => 'دفع الشركات (اختيار متعدد للتقسيم)';
+
+  @override
+  String get posPaymentMulti => 'الدفع (اختيار متعدد للتقسيم)';
+
+  @override
+  String get posPaymentAmountByMethod => 'المبلغ حسب طريقة الدفع';
+
+  @override
+  String posPaymentRemaining(String amount) {
+    return 'المتبقي: $amount ر.س';
+  }
+
+  @override
+  String posPaymentAmountLabel(String method) {
+    return 'مبلغ $method';
+  }
+
+  @override
+  String get posPaymentClearSaved => 'مسح الدفع المحفوظ';
+
+  @override
+  String get posPaymentCash => 'نقداً';
+
+  @override
+  String get posPaymentCard => 'بطاقة';
+
+  @override
+  String get posPaymentBankTransfer => 'تحويل بنكي';
+
+  @override
+  String get posPaymentTamara => 'تمارا';
+
+  @override
+  String get posPaymentTabby => 'تابي';
+
+  @override
+  String get posPaymentWallet => 'محفظة';
+
+  @override
+  String get posPaymentMonthlyBilling => 'فوترة شهرية';
+
+  @override
+  String get posPaymentEmployees => 'الموظفون';
+
+  @override
+  String get posProductNoOrdersFound => 'لا توجد طلبات';
+
+  @override
+  String get posProductOutOfStock => 'غير متوفر';
+
+  @override
+  String get posProductLowStock => 'منخفض';
+
+  @override
+  String get posProductInStock => 'متوفر';
+
+  @override
+  String get posProductOtherOils => 'زيوت أخرى';
+
+  @override
+  String get posProductOtherOilFilters => 'فلاتر زيت أخرى';
+
+  @override
+  String get posProductGearOil => 'زيت القير';
+
+  @override
+  String get posProductOilChangeDepartment => 'قسم تغيير الزيت';
+
+  @override
+  String get posTechOnlineNow => 'متصل الآن';
+
+  @override
+  String get posTechNotAvailable => 'غير متاح';
+
+  @override
+  String get posTechWorkshopDuty => 'دوام الورشة';
+
+  @override
+  String get posTechOnCallDuty => 'دوام عند الطلب';
+
+  @override
+  String get posTechActive => 'نشط';
+
+  @override
+  String get posCommonDone => 'تم';
+
+  @override
+  String get posCommonPrint => 'طباعة';
+
+  @override
+  String get posOrdersCorpBadge => 'مؤسسي';
+
+  @override
+  String posSearchHistoryPlateLabel(Object plate) {
+    return 'اللوحة: $plate';
+  }
+
+  @override
+  String posSearchHistoryOrderLabel(Object orderNumber) {
+    return 'الطلب: #$orderNumber';
+  }
+
+  @override
+  String get posOrdersSelectedDepartments => 'الأقسام المحددة';
+
+  @override
+  String get posOrdersDeptNotReturnedInPayload =>
+      'لم يتم إرجاع الأقسام في بيانات قائمة الطلبات.';
+
+  @override
+  String posOrdersTechnicianLabel(Object name) {
+    return 'الفني: $name';
+  }
+
+  @override
+  String get posOrdersTechnicianNone => 'لا يوجد';
+
+  @override
+  String get posOrdersWaitingCorporateApproval => 'بانتظار موافقة الشركة';
+
+  @override
+  String posOrdersRejectedByCorporateReason(Object reason) {
+    return 'مرفوض من الشركة: $reason';
+  }
+
+  @override
+  String get posOrdersRejectedByCorporate => 'مرفوض من الشركة';
+
+  @override
+  String get posOrdersEditOrder => 'تعديل الطلب';
+
+  @override
+  String get posOrdersCancelOrder => 'إلغاء الطلب';
+
+  @override
+  String get posOrdersGenInvoice => 'إنشاء فاتورة';
+
+  @override
+  String get posOrdersInvoice => 'فاتورة';
+
+  @override
+  String get posOrdersAddDept => 'إضافة قسم';
+
+  @override
+  String get posDetailsWalkIn => 'عميل مباشر';
+
+  @override
+  String posDetailsOrderHash(Object id) {
+    return 'الطلب #$id';
+  }
+
+  @override
+  String posDetailsJobId(Object id) {
+    return 'رقم المهمة: $id';
+  }
+
+  @override
+  String get posDetailsNoItemsInDept => 'لا توجد عناصر مرتبطة بهذا القسم.';
+
+  @override
+  String posDetailsQtyLabel(Object qty) {
+    return 'الكمية: $qty';
+  }
+
+  @override
+  String posDetailsSarEa(Object price) {
+    return '$price ر.س / للواحدة';
+  }
+
+  @override
+  String get posDetailsActive => 'نشط';
+
+  @override
+  String get posOrdersConfirmCompletion => 'تأكيد الإكمال';
+
+  @override
+  String get posJobApproved => 'تمت الموافقة على المهمة!';
+
+  @override
+  String get posJobTechnicianCommissionLogged => 'تم تسجيل عمولة الفني.';
+
+  @override
+  String get posJobTechnicianLabel => 'الفني';
+
+  @override
+  String get posJobCommissionLabel => 'العمولة';
+
+  @override
+  String get posDutyNotApplicable => 'غير منطبق';
+
+  @override
+  String get posDutyUnavailableOffline => 'غير متاح أثناء عدم الاتصال';
+
+  @override
+  String get posDutyActive => 'نشط';
+
+  @override
+  String posProductStockLabel(Object count) {
+    return 'المخزون: $count';
+  }
+
+  @override
+  String get posProductSearchItemOrService => 'ابحث عن عنصر أو خدمة';
+
+  @override
+  String get posProductIncVat => 'شامل الضريبة';
+
+  @override
+  String get posOrdersJobBadge => 'مهمة';
+
+  @override
+  String get posReceiptSimplifiedTaxInvoice => 'فاتورة ضريبية مبسطة';
+
+  @override
+  String get posReceiptBranch => 'الفرع';
+
+  @override
+  String get posReceiptAddress => 'العنوان';
+
+  @override
+  String get posReceiptVatNumber => 'الرقم الضريبي';
+
+  @override
+  String get posReceiptInvoiceNo => 'رقم الفاتورة';
+
+  @override
+  String get posReceiptDate => 'التاريخ';
+
+  @override
+  String get posReceiptCounter => 'الكاونتر';
+
+  @override
+  String get posReceiptCashier => 'أمين الصندوق';
+
+  @override
+  String get posReceiptItem => 'الصنف';
+
+  @override
+  String get posReceiptQty => 'الكمية';
+
+  @override
+  String get posReceiptUnitPrice => 'سعر الوحدة';
+
+  @override
+  String get posReceiptTotal => 'الإجمالي';
+
+  @override
+  String get posReceiptTotalExcludingVat =>
+      'الإجمالي (غير شامل ضريبة القيمة المضافة)';
+
+  @override
+  String get posReceiptTotalTaxableAmountExclVat =>
+      'إجمالي المبلغ الخاضع للضريبة (غير شامل ضريبة القيمة المضافة)';
+
+  @override
+  String get posReceiptTotalVat15 => 'إجمالي ضريبة القيمة المضافة 15%';
+
+  @override
+  String get posReceiptTotalAmountDue => 'إجمالي المبلغ المستحق';
+
+  @override
+  String get posReceiptNextOilChangeOdometer => 'عداد تغيير الزيت القادم';
+
+  @override
+  String get posReceiptCustomerDetails => 'تفاصيل العميل';
+
+  @override
+  String get posReceiptName => 'الاسم';
+
+  @override
+  String get posReceiptMobile => 'الجوال';
+
+  @override
+  String get posReceiptVehicleNo => 'رقم المركبة';
+
+  @override
+  String get posReceiptOdometer => 'العداد';
+
+  @override
+  String get posReceiptMaintenanceChecklist => 'قائمة فحص الصيانة';
+
+  @override
+  String get posReceiptThankYou => 'شكراً لزيارتكم';
+
+  @override
+  String get posThermalPrinterInvalidHost =>
+      'أدخل عنوان IP أو اسم مضيف صحيح للطابعة.';
+
+  @override
+  String get posThermalPrinterInvalidPort => 'أدخل منفذاً صحيحاً (1–65535).';
+
+  @override
+  String get posThermalPrinterSaveFailed => 'تعذر حفظ الإعدادات.';
+
+  @override
+  String get posOrdersDeleteJobBody =>
+      'هل أنت متأكد من حذف هذه المهمة؟ لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get posOrdersJobCannotBeEdited => 'لا يمكن تعديل هذه المهمة.';
+
+  @override
+  String posOrdersItemCount(Object count) {
+    return '$count عنصر';
+  }
+
+  @override
+  String posOrdersTechnicianCount(Object count) {
+    return '$count فنيين';
+  }
+
+  @override
+  String posOrdersVatPercent(Object pct) {
+    return 'ضريبة القيمة المضافة ($pct%)';
+  }
+
+  @override
+  String posOrdersDeptCount(Object count) {
+    return '$count قسم';
+  }
+
+  @override
+  String posOrdersDeptNames(Object names) {
+    return 'القسم: $names';
+  }
+
+  @override
+  String get posOrdersRejectedCorporateReadOnly =>
+      'طلبات الشركات المرفوضة للعرض فقط. أزل الطلب من القائمة.';
+
+  @override
+  String get posOrdersPleaseAddVehicleFirst =>
+      'يرجى إضافة رقم المركبة أولاً (إضافة عميل)';
+
+  @override
+  String get posOrdersThisJobNoLineItems => 'هذه المهمة لا تحتوي على عناصر.';
+
+  @override
+  String posOrdersDeptPromoWithName(Object name) {
+    return 'عرض القسم ($name)';
+  }
+
+  @override
+  String posOrdersDeptDiscountPercent(Object percent) {
+    return 'خصم القسم ($percent%)';
+  }
+
+  @override
+  String get posOrdersStatusDraft => 'مسودة';
+
+  @override
+  String get posOrdersEditPayment => 'تعديل الدفع';
+
+  @override
+  String get posReviewTechnicianFallback => 'الفني';
+
+  @override
+  String get posReviewItemFallback => 'عنصر';
+
+  @override
+  String get posReviewInvoiceCouldNotLoad => 'تعذر تحميل الفاتورة.';
+
+  @override
+  String get posReviewVehicleNoLabel => 'رقم المركبة';
+
+  @override
+  String get posReviewCustomerLabel => 'العميل';
+
+  @override
+  String get posReviewDiscountsApplyTaxableSubtotal =>
+      'يتم تطبيق خصومات الفاتورة والعروض على الإجمالي الخاضع للضريبة.';
+
+  @override
+  String get posPaymentMethodTitleSplit =>
+      'طريقة الدفع (اختر أكثر من طريقة عند التقسيم)';
+
+  @override
+  String posReviewCorporatePayment(Object method) {
+    return 'شركة — $method';
+  }
+
+  @override
+  String get posPaymentChangeCustomerTitle => 'تغيير العميل';
+
+  @override
+  String get posPaymentChangeCustomerBody =>
+      'هل تريد فعلاً تغيير العميل؟ سيتم مسح اختيارات الدفع الخاصة بهذا النوع من العملاء.';
+
+  @override
+  String get posPaymentChangeCustomerButton => 'تغيير العميل';
 }

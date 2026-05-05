@@ -6006,4 +6006,554 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get posShellVersion => 'Version 1.0.0';
+
+  @override
+  String get posOrdersHubTitle => 'Orders Hub';
+
+  @override
+  String get posOrdersRefreshOrders => 'Refresh orders';
+
+  @override
+  String get posOrdersSearchPlateNameId => 'Search plate, name, ID...';
+
+  @override
+  String get posOrdersProductsAndServices => 'Products & Services';
+
+  @override
+  String get posOrdersEdit => 'Edit';
+
+  @override
+  String get posOrdersCancelled => 'Cancelled';
+
+  @override
+  String get posOrdersNoProductsOrServices => 'No products or services';
+
+  @override
+  String get posOrdersMaintenanceChecklistTitle => 'Maintenance checklist';
+
+  @override
+  String get posOrdersMaintenanceChecklistDescription =>
+      'These items appear on the printed invoice when checked.';
+
+  @override
+  String get posOrdersChecklistSaved => 'Maintenance checklist saved.';
+
+  @override
+  String get posOrdersPleaseSignInAgain => 'Please sign in again.';
+
+  @override
+  String posOrdersQtyWithoutVat(String qty, String price) {
+    return 'Qty $qty × $price Without VAT';
+  }
+
+  @override
+  String get posOrdersChecklistOptional => 'Checklist (optional)';
+
+  @override
+  String get posOrdersEditCustomerDetails => 'Edit customer details';
+
+  @override
+  String get posOrdersTotalDiscount => 'Total discount';
+
+  @override
+  String get posOrdersNoFurtherEditsAllowed => 'No further edits allowed';
+
+  @override
+  String get posOrdersPrintInvoiceReceipt => 'Print Invoice & Receipt';
+
+  @override
+  String get posOrdersNoTechnicianCommissions => 'No technician commissions.';
+
+  @override
+  String get posOrdersAssignedTechnicians => 'ASSIGNED TECHNICIANS';
+
+  @override
+  String get posOrdersNoTechnicianAssigned => 'No technician assigned';
+
+  @override
+  String get posInvoiceDetailsTitle => 'Invoice details';
+
+  @override
+  String get posInvoiceDetailsCustomerDetails => 'Customer details';
+
+  @override
+  String get posInvoiceDetailsConfirmVehicle =>
+      'Confirm billing contact and vehicle before creating the invoice.';
+
+  @override
+  String get posInvoiceDetailsConfirmContact =>
+      'Confirm billing contact before creating the invoice.';
+
+  @override
+  String get posInvoiceDetailsBranchEmployee => 'Customer is a branch employee';
+
+  @override
+  String get posInvoiceDetailsPickStaff =>
+      'Pick from staff list to fill name and mobile.';
+
+  @override
+  String get posInvoiceDetailsLoadingEmployees => 'Loading employees…';
+
+  @override
+  String get posInvoiceDetailsNoEmployees =>
+      'No employees listed for this branch.';
+
+  @override
+  String get posInvoiceDetailsEmployee => 'Employee';
+
+  @override
+  String get posInvoiceDetailsChooseEmployee => 'Choose employee';
+
+  @override
+  String get posInvoiceDetailsCustomerName => 'Customer name';
+
+  @override
+  String get posInvoiceDetailsRequired => 'Required';
+
+  @override
+  String get posInvoiceDetailsMobile => 'Mobile';
+
+  @override
+  String get posInvoiceDetailsVat => 'VAT';
+
+  @override
+  String get posInvoiceDetailsPlateNumber => 'Plate number';
+
+  @override
+  String get posInvoiceDetailsPlateRequired => 'Plate is required';
+
+  @override
+  String get posInvoiceDetailsOdometer => 'Odometer';
+
+  @override
+  String get posInvoiceDetailsMake => 'Make';
+
+  @override
+  String get posInvoiceDetailsModel => 'Model';
+
+  @override
+  String get posInvoiceDetailsYear => 'Year';
+
+  @override
+  String get posInvoiceDetailsInvalidYear => 'Invalid year';
+
+  @override
+  String get posInvoiceDetailsVin => 'VIN';
+
+  @override
+  String get posInvoiceDetailsSaveProceed => 'Save & Continue to Invoice';
+
+  @override
+  String get posPaymentMethodTitle => 'Payment method';
+
+  @override
+  String get posPaymentMethodDescription =>
+      'Select customer type, then choose how this invoice will be paid.';
+
+  @override
+  String get posPaymentCustomerType => 'Customer type';
+
+  @override
+  String get posPaymentIndividual => 'Individual';
+
+  @override
+  String get posPaymentCorporate => 'Corporate';
+
+  @override
+  String get posPaymentTapCustomerFirst =>
+      'Tap Individual or Corporate first. Then choose Cash, Card, Tabby, etc.';
+
+  @override
+  String get posPaymentCorporateMulti =>
+      'Corporate payment (multi-select to split)';
+
+  @override
+  String get posPaymentMulti => 'Payment (multi-select to split)';
+
+  @override
+  String get posPaymentAmountByMethod => 'Amount by payment method';
+
+  @override
+  String posPaymentRemaining(String amount) {
+    return 'Remaining: $amount SAR';
+  }
+
+  @override
+  String posPaymentAmountLabel(String method) {
+    return '$method amount';
+  }
+
+  @override
+  String get posPaymentClearSaved => 'Clear saved payment';
+
+  @override
+  String get posPaymentCash => 'Cash';
+
+  @override
+  String get posPaymentCard => 'Card';
+
+  @override
+  String get posPaymentBankTransfer => 'Bank Transfer';
+
+  @override
+  String get posPaymentTamara => 'Tamara';
+
+  @override
+  String get posPaymentTabby => 'Tabby';
+
+  @override
+  String get posPaymentWallet => 'Wallet';
+
+  @override
+  String get posPaymentMonthlyBilling => 'Monthly Billing';
+
+  @override
+  String get posPaymentEmployees => 'Employees';
+
+  @override
+  String get posProductNoOrdersFound => 'No orders found';
+
+  @override
+  String get posProductOutOfStock => 'Out of stock';
+
+  @override
+  String get posProductLowStock => 'Low';
+
+  @override
+  String get posProductInStock => 'In stock';
+
+  @override
+  String get posProductOtherOils => 'Other Oils';
+
+  @override
+  String get posProductOtherOilFilters => 'Other Oil Filters';
+
+  @override
+  String get posProductGearOil => 'Gear Oil';
+
+  @override
+  String get posProductOilChangeDepartment => 'Oil Change Department';
+
+  @override
+  String get posTechOnlineNow => 'Online now';
+
+  @override
+  String get posTechNotAvailable => 'Not available';
+
+  @override
+  String get posTechWorkshopDuty => 'Workshop Duty';
+
+  @override
+  String get posTechOnCallDuty => 'On-Call Duty';
+
+  @override
+  String get posTechActive => 'Active';
+
+  @override
+  String get posCommonDone => 'Done';
+
+  @override
+  String get posCommonPrint => 'Print';
+
+  @override
+  String get posOrdersCorpBadge => 'CORP';
+
+  @override
+  String posSearchHistoryPlateLabel(Object plate) {
+    return 'Plate: $plate';
+  }
+
+  @override
+  String posSearchHistoryOrderLabel(Object orderNumber) {
+    return 'Order: #$orderNumber';
+  }
+
+  @override
+  String get posOrdersSelectedDepartments => 'Selected departments';
+
+  @override
+  String get posOrdersDeptNotReturnedInPayload =>
+      'Departments not returned in order list payload.';
+
+  @override
+  String posOrdersTechnicianLabel(Object name) {
+    return 'Technician: $name';
+  }
+
+  @override
+  String get posOrdersTechnicianNone => 'None';
+
+  @override
+  String get posOrdersWaitingCorporateApproval => 'Waiting corporate approval';
+
+  @override
+  String posOrdersRejectedByCorporateReason(Object reason) {
+    return 'Rejected by corporate: $reason';
+  }
+
+  @override
+  String get posOrdersRejectedByCorporate => 'Rejected by corporate';
+
+  @override
+  String get posOrdersEditOrder => 'Edit Order';
+
+  @override
+  String get posOrdersCancelOrder => 'Cancel Order';
+
+  @override
+  String get posOrdersGenInvoice => 'Gen. Invoice';
+
+  @override
+  String get posOrdersInvoice => 'Invoice';
+
+  @override
+  String get posOrdersAddDept => 'Add Dept.';
+
+  @override
+  String get posDetailsWalkIn => 'Walk-in';
+
+  @override
+  String posDetailsOrderHash(Object id) {
+    return 'Order #$id';
+  }
+
+  @override
+  String posDetailsJobId(Object id) {
+    return 'Job ID: $id';
+  }
+
+  @override
+  String get posDetailsNoItemsInDept => 'No items bound to this department.';
+
+  @override
+  String posDetailsQtyLabel(Object qty) {
+    return 'Qty: $qty';
+  }
+
+  @override
+  String posDetailsSarEa(Object price) {
+    return 'SAR $price / ea';
+  }
+
+  @override
+  String get posDetailsActive => 'ACTIVE';
+
+  @override
+  String get posOrdersConfirmCompletion => 'Confirm Completion';
+
+  @override
+  String get posJobApproved => 'Job Approved!';
+
+  @override
+  String get posJobTechnicianCommissionLogged =>
+      'Technician commission has been logged.';
+
+  @override
+  String get posJobTechnicianLabel => 'TECHNICIAN';
+
+  @override
+  String get posJobCommissionLabel => 'COMMISSION';
+
+  @override
+  String get posDutyNotApplicable => 'Not applicable';
+
+  @override
+  String get posDutyUnavailableOffline => 'Unavailable while offline';
+
+  @override
+  String get posDutyActive => 'Active';
+
+  @override
+  String posProductStockLabel(Object count) {
+    return 'Stock: $count';
+  }
+
+  @override
+  String get posProductSearchItemOrService => 'Search item or service';
+
+  @override
+  String get posProductIncVat => 'Inc. VAT';
+
+  @override
+  String get posOrdersJobBadge => 'JOB';
+
+  @override
+  String get posReceiptSimplifiedTaxInvoice => 'Simplified Tax Invoice';
+
+  @override
+  String get posReceiptBranch => 'Branch';
+
+  @override
+  String get posReceiptAddress => 'Address';
+
+  @override
+  String get posReceiptVatNumber => 'VAT Number';
+
+  @override
+  String get posReceiptInvoiceNo => 'Invoice No';
+
+  @override
+  String get posReceiptDate => 'Date';
+
+  @override
+  String get posReceiptCounter => 'Counter';
+
+  @override
+  String get posReceiptCashier => 'Cashier';
+
+  @override
+  String get posReceiptItem => 'Item';
+
+  @override
+  String get posReceiptQty => 'Qty';
+
+  @override
+  String get posReceiptUnitPrice => 'Unit Price';
+
+  @override
+  String get posReceiptTotal => 'Total';
+
+  @override
+  String get posReceiptTotalExcludingVat => 'Total (Excluding VAT)';
+
+  @override
+  String get posReceiptTotalTaxableAmountExclVat =>
+      'Total Taxable Amount (Excluding VAT)';
+
+  @override
+  String get posReceiptTotalVat15 => 'Total VAT 15%';
+
+  @override
+  String get posReceiptTotalAmountDue => 'Total Amount Due';
+
+  @override
+  String get posReceiptNextOilChangeOdometer => 'Next oil change odometer';
+
+  @override
+  String get posReceiptCustomerDetails => 'Customer details';
+
+  @override
+  String get posReceiptName => 'Name';
+
+  @override
+  String get posReceiptMobile => 'Mobile';
+
+  @override
+  String get posReceiptVehicleNo => 'Vehicle No';
+
+  @override
+  String get posReceiptOdometer => 'Odometer';
+
+  @override
+  String get posReceiptMaintenanceChecklist => 'Maintenance checklist';
+
+  @override
+  String get posReceiptThankYou => 'Thank you';
+
+  @override
+  String get posThermalPrinterInvalidHost =>
+      'Enter a valid printer IP or hostname.';
+
+  @override
+  String get posThermalPrinterInvalidPort => 'Enter a valid port (1–65535).';
+
+  @override
+  String get posThermalPrinterSaveFailed => 'Could not save settings.';
+
+  @override
+  String get posOrdersDeleteJobBody =>
+      'Are you sure you want to delete this job? This action cannot be undone.';
+
+  @override
+  String get posOrdersJobCannotBeEdited => 'This job cannot be edited.';
+
+  @override
+  String posOrdersItemCount(Object count) {
+    return '$count items';
+  }
+
+  @override
+  String posOrdersTechnicianCount(Object count) {
+    return '$count technicians';
+  }
+
+  @override
+  String posOrdersVatPercent(Object pct) {
+    return 'VAT ($pct%)';
+  }
+
+  @override
+  String posOrdersDeptCount(Object count) {
+    return '$count dept';
+  }
+
+  @override
+  String posOrdersDeptNames(Object names) {
+    return 'Dept: $names';
+  }
+
+  @override
+  String get posOrdersRejectedCorporateReadOnly =>
+      'Rejected corporate orders are read-only. Remove the order from the list.';
+
+  @override
+  String get posOrdersPleaseAddVehicleFirst =>
+      'Please add vehicle number first (Add Customer)';
+
+  @override
+  String get posOrdersThisJobNoLineItems => 'This job has no line items.';
+
+  @override
+  String posOrdersDeptPromoWithName(Object name) {
+    return 'Dept promo ($name)';
+  }
+
+  @override
+  String posOrdersDeptDiscountPercent(Object percent) {
+    return 'Dept discount ($percent%)';
+  }
+
+  @override
+  String get posOrdersStatusDraft => 'DRAFT';
+
+  @override
+  String get posOrdersEditPayment => 'Edit payment';
+
+  @override
+  String get posReviewTechnicianFallback => 'Technician';
+
+  @override
+  String get posReviewItemFallback => 'Item';
+
+  @override
+  String get posReviewInvoiceCouldNotLoad => 'Invoice could not be loaded.';
+
+  @override
+  String get posReviewVehicleNoLabel => 'Vehicle no.';
+
+  @override
+  String get posReviewCustomerLabel => 'Customer';
+
+  @override
+  String get posReviewDiscountsApplyTaxableSubtotal =>
+      'Invoice and promo discounts apply to the taxable subtotal.';
+
+  @override
+  String get posPaymentMethodTitleSplit =>
+      'Payment Method (Select multiple if splitting)';
+
+  @override
+  String posReviewCorporatePayment(Object method) {
+    return 'Corporate — $method';
+  }
+
+  @override
+  String get posPaymentChangeCustomerTitle => 'Change customer';
+
+  @override
+  String get posPaymentChangeCustomerBody =>
+      'Do you really want to change the customer? Your payment choices for this customer type will be cleared.';
+
+  @override
+  String get posPaymentChangeCustomerButton => 'Change customer';
 }
