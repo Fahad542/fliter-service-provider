@@ -54,10 +54,22 @@ String _takeawayMoney(BuildContext context, num amount, {bool negative = false})
 }
 
 String _takeawayUnitLabel(BuildContext context, String unit) {
-  final localizedUnit = AppTranslationService.syncStatusOrRawForLanguage(
-    unit,
-    _takeawayLang(context),
-  );
+  final lang = _takeawayLang(context);
+  final rawUnit = unit.trim();
+  final normalized = rawUnit.toLowerCase();
+  final localizedUnit = lang == 'ar'
+      ? const <String, String>{
+          'liter': 'لتر',
+          'litre': 'لتر',
+          'l': 'لتر',
+          'pcs': 'قطعة',
+          'pc': 'قطعة',
+          'piece': 'قطعة',
+          'pieces': 'قطع',
+          'unit': 'وحدة',
+          'units': 'وحدات',
+        }[normalized] ?? AppTranslationService.localizeDigitsForLanguage(rawUnit, lang)
+      : rawUnit;
   return AppLocalizations.of(context)!.posTakeawayUnit(localizedUnit);
 }
 
