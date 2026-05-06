@@ -6065,6 +6065,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posOrdersNoTechnicianCommissions => 'No technician commissions.';
 
   @override
+  String get posOrdersTechnicianCommission => 'TECHNICIAN COMMISSION';
+
+  @override
   String get posOrdersAssignedTechnicians => 'ASSIGNED TECHNICIANS';
 
   @override
@@ -6556,4 +6559,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get posPaymentChangeCustomerButton => 'Change customer';
+
+  @override
+  String posOrdersExceedsBy(String amount) {
+    return 'Exceeds total by $amount';
+  }
+
+  @override
+  String get posReviewUnitExclVat => 'Unit (Excl. VAT)';
+
+  @override
+  String get posReviewGrossBeforeVat => 'Gross Before VAT';
+
+  @override
+  String get posReviewTotalBeforeVat => 'Total Before VAT';
+
+  @override
+  String get posCommonQty => 'Qty';
+
+  @override
+  String get posCommonTech => 'Tech';
 }

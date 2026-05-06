@@ -2894,6 +2894,7 @@
   "posOrdersNoFurtherEditsAllowed": "No further edits allowed",
   "posOrdersPrintInvoiceReceipt": "Print Invoice & Receipt",
   "posOrdersNoTechnicianCommissions": "No technician commissions.",
+  "posOrdersTechnicianCommission": "TECHNICIAN COMMISSION",
   "posOrdersAssignedTechnicians": "ASSIGNED TECHNICIANS",
   "posOrdersNoTechnicianAssigned": "No technician assigned",
   "posInvoiceDetailsTitle": "Invoice details",
@@ -3148,5 +3149,17 @@
   },
   "posPaymentChangeCustomerTitle": "Change customer",
   "posPaymentChangeCustomerBody": "Do you really want to change the customer? Your payment choices for this customer type will be cleared.",
-  "posPaymentChangeCustomerButton": "Change customer"
+  "posPaymentChangeCustomerButton": "Change customer",
+  "posOrdersExceedsBy": "Exceeds total by {amount}",
+  "@posOrdersExceedsBy": {"description": "Message when payments exceed total.", "placeholders": {"amount": {"type": "String"}}},
+  "posReviewUnitExclVat": "Unit (Excl. VAT)",
+  "@posReviewUnitExclVat": {"description": "Receipt item breakdown: unit price label"},
+  "posReviewGrossBeforeVat": "Gross Before VAT",
+  "@posReviewGrossBeforeVat": {"description": "Receipt item breakdown: gross label"},
+  "posReviewTotalBeforeVat": "Total Before VAT",
+  "@posReviewTotalBeforeVat": {"description": "Receipt item breakdown: total label"},
+  "posCommonQty": "Qty",
+  "@posCommonQty": {"description": "Common quantity abbreviation"},
+  "posCommonTech": "Tech",
+  "@posCommonTech": {"description": "Common technician abbreviation"}
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:translator/translator.dart';
 import 'session_service.dart';
+import '../../../utils/plate_transliterator.dart';
 import '../models/workshop_owner_models.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,6 +74,9 @@ class AppTranslationService {
     'Active'            : 'نشط',
     'COMPLETE'          : 'مكتمل',
     'COMPLETED'         : 'مكتمل',
+    'INVOICED'          : 'مفوتر',
+    'invoiced'          : 'مفوتر',
+    'Invoiced'          : 'مفوتر',
     'IN PROGRESS'       : 'قيد التنفيذ',
     'In progress'       : 'قيد التنفيذ',
     'DRAFT'             : 'مسودة',
@@ -117,8 +121,34 @@ class AppTranslationService {
     'Liter'                     : 'لتر',
     'litre'                     : 'لتر',
     'Litre'                     : 'لتر',
+    'LITER'                     : 'لتر',
+    'LITRE'                     : 'لتر',
+    'L'                         : 'لتر',
+    'ml'                        : 'مل',
+    'ML'                        : 'مل',
+    'Milliliter'                : 'مل',
+    'milliliter'                : 'مل',
+    'kg'                        : 'كجم',
+    'KG'                        : 'كجم',
+    'Kilogram'                  : 'كيلوغرام',
+    'kilogram'                  : 'كيلوغرام',
+    'g'                         : 'غرام',
+    'Gram'                      : 'غرام',
+    'gram'                      : 'غرام',
+    'Set'                       : 'طقم',
+    'set'                       : 'طقم',
+    'Bottle'                    : 'زجاجة',
+    'bottle'                    : 'زجاجة',
+    'Can'                       : 'علبة',
+    'can'                       : 'علبة',
+    'Box'                       : 'صندوق',
+    'box'                       : 'صندوق',
     'Piece'                     : 'قطعة',
     'piece'                     : 'قطعة',
+    'Pcs'                       : 'قطعة',
+    'pcs'                       : 'قطعة',
+    'Unit'                      : 'وحدة',
+    'unit'                      : 'وحدة',
     'Inactive'                  : 'غير نشط',
     'Low Stock'                 : 'مخزون منخفض',
     'Add Promo Code'            : 'إضافة رمز عرض',
@@ -316,13 +346,24 @@ class AppTranslationService {
   }
 
 
+  // ── Plate transliteration — delegated to PlateTransliterator ─────────────
+  //
+  // All plate logic lives in plate_transliterator.dart so every screen can
+  // import it directly without going through AppTranslationService.
+  // These wrappers keep existing call-sites working unchanged.
+
+  /// Converts a Latin plate string to its Arabic representation.
+  /// Delegates to [PlateTransliterator.toArabic].
+  static String localizePlateForArabic(String plate) =>
+      PlateTransliterator.toArabic(plate);
+
   /// Localizes Western digits to Arabic-Indic digits when [languageCode] is Arabic.
   /// This is intentionally separate from text translation so API numeric values
   /// can be rendered locale-correctly without sending numbers to the translator.
   static String localizeDigitsForLanguage(String text, String languageCode) {
     if (languageCode != 'ar' || text.isEmpty) return text;
     const western = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    const arabic  = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     var out = text;
     for (var i = 0; i < western.length; i++) {
       out = out.replaceAll(western[i], arabic[i]);
@@ -338,26 +379,35 @@ class AppTranslationService {
 
   /// Locale-safe dynamic API value renderer. Text is translated for Arabic,
   /// while bare numbers/dates/counts are digit-localized for Arabic.
-  /// Reference codes, URLs, and emails stay raw; numeric API values get localized digits.
+  /// Plate numbers are transliterated; reference codes keep digits localized;
+  /// URLs and emails are returned as-is.
   static Future<String> localizedDynamicValueForLanguage(
-    String text,
-    String languageCode,
-  ) async {
+      String text,
+      String languageCode,
+      ) async {
     if (languageCode != 'ar') return text;
     final trimmed = text.trim();
     if (trimmed.isEmpty) return text;
 
-    final translated = await localizedTextForLanguage(text, languageCode);
+    // URLs: don't touch.
+    if (RegExp(r'^https?://', caseSensitive: false).hasMatch(trimmed)) return text;
+    // Emails: don't touch.
+    if (RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(trimmed)) return text;
 
-    // Keep IDs/reference codes, URLs, and emails raw to avoid breaking them.
-    // Phone numbers and bare numeric API values still get Arabic digits.
-    if (_looksLikeReferenceCode(trimmed) ||
-        RegExp(r'^https?://', caseSensitive: false).hasMatch(trimmed) ||
-        RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(trimmed)) {
-      return translated;
+    // Vehicle plate numbers → full Arabic transliteration (letters + digits).
+    if (PlateTransliterator.looksLikePlate(trimmed)) {
+      return localizePlateForArabic(trimmed);
     }
+
+    // Other reference codes (INV-001, PO-002 …): digit-localize only.
+    if (_looksLikeReferenceCode(trimmed)) {
+      return localizeDigitsForLanguage(text, languageCode);
+    }
+
+    final translated = await localizedTextForLanguage(text, languageCode);
     return localizeDigitsForLanguage(translated, languageCode);
   }
+
 
   /// Nullable variant — returns null when input is null.
   static Future<String?> localizedTextNullable(String? text) async {
@@ -655,10 +705,10 @@ mixin TranslatableMixin {
       translatedBranchName:      await tBranch(request.branchName),
       translatedCashierName:     await tPerson(request.cashierName),
       translatedStatus:          await tUiStatus(request.status),
-    //  translatedReason:          await tNotes(request.reason),
-    //  translatedCategoryLabel:   await tNullable(request.categoryLabel),
-     // translatedEmployeeName:    await tNullable(request.employeeName),
-     // translatedRejectionReason: await tNullable(request.rejectionReason),
+      //  translatedReason:          await tNotes(request.reason),
+      //  translatedCategoryLabel:   await tNullable(request.categoryLabel),
+      // translatedEmployeeName:    await tNullable(request.employeeName),
+      // translatedRejectionReason: await tNullable(request.rejectionReason),
     );
   }
 

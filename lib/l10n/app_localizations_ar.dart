@@ -6025,6 +6025,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posOrdersNoTechnicianCommissions => 'لا توجد عمولات فنيين.';
 
   @override
+  String get posOrdersTechnicianCommission => 'عمولة الفني';
+
+  @override
   String get posOrdersAssignedTechnicians => 'الفنيون المعينون';
 
   @override
@@ -6514,4 +6517,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get posPaymentChangeCustomerButton => 'تغيير العميل';
+
+  @override
+  String posOrdersExceedsBy(String amount) {
+    return 'يتجاوز الإجمالي بمقدار $amount';
+  }
+
+  @override
+  String get posReviewUnitExclVat => 'سعر الوحدة (بدون ضريبة)';
+
+  @override
+  String get posReviewGrossBeforeVat => 'الإجمالي قبل الضريبة';
+
+  @override
+  String get posReviewTotalBeforeVat => 'الإجمالي قبل الضريبة (بعد الخصم)';
+
+  @override
+  String get posCommonQty => 'الكمية';
+
+  @override
+  String get posCommonTech => 'الفني';
 }

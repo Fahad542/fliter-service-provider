@@ -2894,6 +2894,7 @@
   "posOrdersNoFurtherEditsAllowed": "لا يُسمح بمزيد من التعديلات",
   "posOrdersPrintInvoiceReceipt": "طباعة الفاتورة والإيصال",
   "posOrdersNoTechnicianCommissions": "لا توجد عمولات فنيين.",
+  "posOrdersTechnicianCommission": "عمولة الفني",
   "posOrdersAssignedTechnicians": "الفنيون المعينون",
   "posOrdersNoTechnicianAssigned": "لا يوجد فني معين",
   "posInvoiceDetailsTitle": "بيانات الفاتورة",
@@ -3148,5 +3149,12 @@
   },
   "posPaymentChangeCustomerTitle": "تغيير العميل",
   "posPaymentChangeCustomerBody": "هل تريد فعلاً تغيير العميل؟ سيتم مسح اختيارات الدفع الخاصة بهذا النوع من العملاء.",
-  "posPaymentChangeCustomerButton": "تغيير العميل"
+  "posPaymentChangeCustomerButton": "تغيير العميل",
+  "posOrdersExceedsBy": "يتجاوز الإجمالي بمقدار {amount}",
+  "@posOrdersExceedsBy": {"description": "Message when payments exceed total.", "placeholders": {"amount": {"type": "String"}}},
+  "posReviewUnitExclVat": "سعر الوحدة (بدون ضريبة)",
+  "posReviewGrossBeforeVat": "الإجمالي قبل الضريبة",
+  "posReviewTotalBeforeVat": "الإجمالي قبل الضريبة (بعد الخصم)",
+  "posCommonQty": "الكمية",
+  "posCommonTech": "الفني"
 }

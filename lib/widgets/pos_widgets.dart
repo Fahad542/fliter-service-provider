@@ -807,6 +807,22 @@ class SearchHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final langCode = Localizations.localeOf(context).languageCode;
+    final isArabic = langCode == 'ar';
+    String digits(Object? value) =>
+        AppTranslationService.localizeDigitsForLanguage(value?.toString() ?? '', langCode);
+    final localizedPlate = digits(plate);
+    final localizedPhone = phone != null ? digits(phone!.trim()) : null;
+    final localizedLastVisit = digits(lastVisit);
+    final localizedOrderNumber = orderNumber != null ? digits(orderNumber) : null;
+    final plateLine = isArabic
+        ? 'اللوحة: $localizedPlate${(localizedPhone != null && localizedPhone.isNotEmpty) ? '  •  $localizedPhone' : ''}'
+        : 'Plate: $localizedPlate${(localizedPhone != null && localizedPhone.isNotEmpty) ? '  •  $localizedPhone' : ''}';
+    final historyLine = orderNumber != null
+        ? (isArabic
+            ? '$localizedLastVisit ($lastService)  •  الطلب: #$localizedOrderNumber'
+            : '$localizedLastVisit ($lastService)  •  Order: #$localizedOrderNumber')
+        : '$localizedLastVisit ($lastService)';
     // Reverting to compact scaling for both mobile and tablet as per user request
     return FractionallySizedBox(
       widthFactor: 0.94,
@@ -919,7 +935,8 @@ class SearchHistoryItem extends StatelessWidget {
                       ],
                       const SizedBox(height: 9),
                       Text(
-                        'Plate: $plate${(phone != null && phone!.trim().isNotEmpty) ? '  •  ${phone!.trim()}' : ''}',
+                        plateLine,
+                        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: Colors.grey.shade600,
                           fontSize: 12,
@@ -946,9 +963,8 @@ class SearchHistoryItem extends StatelessWidget {
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(
-                                orderNumber != null
-                                    ? '$lastVisit ($lastService)  •  Order: #$orderNumber'
-                                    : '$lastVisit ($lastService)',
+                                historyLine,
+                                textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Colors.grey.shade800,
@@ -985,11 +1001,11 @@ class SearchHistoryItem extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Continue Order',
+                    child: Text(
+                      isArabic ? 'متابعة الطلب' : 'Continue Order',
                       maxLines: 1,
                       softWrap: false,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
                         color: AppColors.secondaryLight,
@@ -1012,9 +1028,9 @@ class SearchHistoryItem extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Sales Return',
-                    style: TextStyle(
+                  child: Text(
+                    isArabic ? 'مرتجع المبيعات' : 'Sales Return',
+                    style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 11,
                       color: AppColors.onSecondaryLight,
@@ -3955,13 +3971,16 @@ class _CashierDutyToggle extends StatelessWidget {
     required this.onChanged,
   });
 
-  String get _statusCaption {
-    if (!roleAllowsDuty) return 'Not applicable';
-    if (!technicianOnline) {
-      return 'Unavailable while offline';
+  String _statusCaption(BuildContext context) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    if (!roleAllowsDuty) {
+      return isArabic ? 'غير قابل للتطبيق' : 'Not applicable';
     }
-    if (value) return 'Active';
-    return 'Not available';
+    if (!technicianOnline) {
+      return isArabic ? 'غير متاح أثناء عدم الاتصال' : 'Unavailable while offline';
+    }
+    if (value) return isArabic ? 'نشط' : 'Active';
+    return isArabic ? 'غير متاح' : 'Not available';
   }
 
   @override
@@ -3993,7 +4012,7 @@ class _CashierDutyToggle extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  _statusCaption,
+                  _statusCaption(context),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -4137,8 +4156,8 @@ class TechnicianCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final l10n = AppLocalizations.of(context)!;
     final langCode = Localizations.localeOf(context).languageCode;
+    final l10n = AppLocalizations.of(context)!;
     final presenceDotColor = _cashierPresenceDotColor(tech);
     final hasDepartment = tech.departments.isNotEmpty;
     final departmentText = hasDepartment
@@ -4296,7 +4315,7 @@ class TechnicianCard extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: isTablet ? 4 : 2),
-                Text(
+                LocalizedApiText(
                   tech.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

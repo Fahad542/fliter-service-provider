@@ -14,18 +14,18 @@ import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Order Screen/pos_invoice_payment_dialog.dart';
 import '../Order Screen/pos_order_review_view.dart'
-show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
+    show WalkInInvoiceDetailsDialog, WalkInInvoiceFormResult;
 import '../Promo/promo_code_dialog.dart';
 import '../Promo/promo_view_model.dart';
 import 'takeaway_view_model.dart';
 
 /// Same typography as [PosOrdersView] empty list and catalog empty in [PosProductGridView].
 TextStyle _takeawayCatalogEmptyMessageTextStyle() => TextStyle(
-      fontSize: 17,
-      fontWeight: FontWeight.w700,
-      color: Colors.grey.shade500,
-      height: 1.35,
-    );
+  fontSize: 17,
+  fontWeight: FontWeight.w700,
+  color: Colors.grey.shade500,
+  height: 1.35,
+);
 
 
 String _takeawayLang(BuildContext context) =>
@@ -59,16 +59,16 @@ String _takeawayUnitLabel(BuildContext context, String unit) {
   final normalized = rawUnit.toLowerCase();
   final localizedUnit = lang == 'ar'
       ? const <String, String>{
-          'liter': 'لتر',
-          'litre': 'لتر',
-          'l': 'لتر',
-          'pcs': 'قطعة',
-          'pc': 'قطعة',
-          'piece': 'قطعة',
-          'pieces': 'قطع',
-          'unit': 'وحدة',
-          'units': 'وحدات',
-        }[normalized] ?? AppTranslationService.localizeDigitsForLanguage(rawUnit, lang)
+    'liter': 'لتر',
+    'litre': 'لتر',
+    'l': 'لتر',
+    'pcs': 'قطعة',
+    'pc': 'قطعة',
+    'piece': 'قطعة',
+    'pieces': 'قطع',
+    'unit': 'وحدة',
+    'units': 'وحدات',
+  }[normalized] ?? AppTranslationService.localizeDigitsForLanguage(rawUnit, lang)
       : rawUnit;
   return AppLocalizations.of(context)!.posTakeawayUnit(localizedUnit);
 }
@@ -87,12 +87,12 @@ String _takeawayStockLabel(BuildContext context, TakeawayProduct product) {
 
 class _TakeawayApiLabel extends StatelessWidget {
   const _TakeawayApiLabel(
-    this.text, {
-    this.style,
-    this.textAlign,
-    this.maxLines,
-    this.overflow,
-  });
+      this.text, {
+        this.style,
+        this.textAlign,
+        this.maxLines,
+        this.overflow,
+      });
 
   final String text;
   final TextStyle? style;
@@ -193,8 +193,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
           vm.catalogLoading && vm.catalog == null
               ? const Center(child: CircularProgressIndicator())
               : vm.catalogError != null && vm.catalog == null
-                  ? _buildCatalogError(context, vm.catalogError!)
-                  : _buildProductSection(context, vm, isTablet),
+              ? _buildCatalogError(context, vm.catalogError!)
+              : _buildProductSection(context, vm, isTablet),
         ),
         bottomNavigationBar: (isTablet || vm.cartLineCount == 0)
             ? const SizedBox.shrink()
@@ -232,10 +232,10 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 
   Widget _buildProductSection(
-    BuildContext context,
-    TakeawayViewModel vm,
-    bool isTablet,
-  ) {
+      BuildContext context,
+      TakeawayViewModel vm,
+      bool isTablet,
+      ) {
     if (isTablet) {
       final isPortrait =
           MediaQuery.of(context).orientation == Orientation.portrait;
@@ -438,15 +438,15 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
 
     final promoDiscount = vm.isPromoPercent
         ? (afterOrderDiscount * (vm.promoDiscountValue / 100))
-            .clamp(0, afterOrderDiscount)
-            .toDouble()
+        .clamp(0, afterOrderDiscount)
+        .toDouble()
         : vm.promoDiscountValue.clamp(0, afterOrderDiscount).toDouble();
     final taxable = (afterOrderDiscount - promoDiscount)
         .clamp(0, double.infinity)
         .toDouble();
 
     final vatAmount = taxable * TakeawayViewModel.liveInvoiceVatRate;
-    
+
     Widget buildRow(String label, String value, {Color? color, FontWeight weight = FontWeight.w500}) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -515,23 +515,23 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
           Expanded(
             child: vm.cart.isEmpty
                 ? Center(
-                    child: Text(
-                      AppLocalizations.of(context)!.posTakeawayNoItems,
-                      style: TextStyle(color: Colors.grey.shade500),
-                    ),
-                  )
+              child: Text(
+                AppLocalizations.of(context)!.posTakeawayNoItems,
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+            )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                    itemCount: vm.cart.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) => _TakeawayCartItemCompactTile(
-                      key: ValueKey(vm.cart[index].product.id),
-                      line: vm.cart[index],
-                      currency: currency,
-                      vm: vm,
-                      isTablet: false,
-                    ),
-                  ),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              itemCount: vm.cart.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) => _TakeawayCartItemCompactTile(
+                key: ValueKey(vm.cart[index].product.id),
+                line: vm.cart[index],
+                currency: currency,
+                vm: vm,
+                isTablet: false,
+              ),
+            ),
           ),
           Divider(height: 1, color: Colors.grey.shade200),
           Padding(
@@ -631,7 +631,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                 ],
                 buildRow(AppLocalizations.of(context)!.posTakeawayPriceAfterTotalDiscount, _takeawayMoney(context, afterOrderDiscount)),
                 const SizedBox(height: 8),
-                
+
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -826,13 +826,13 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 
   Widget _buildDeptTab(
-    BuildContext context,
-    TakeawayViewModel vm, {
-    required String label,
-    required String? departmentId,
-    required bool isTablet,
-    required double minWidth,
-  }) {
+      BuildContext context,
+      TakeawayViewModel vm, {
+        required String label,
+        required String? departmentId,
+        required bool isTablet,
+        required double minWidth,
+      }) {
     final selected = departmentId == null || departmentId.isEmpty
         ? vm.selectedDepartmentId == null || vm.selectedDepartmentId!.isEmpty
         : vm.selectedDepartmentId == departmentId;
@@ -867,10 +867,10 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 
   Widget _buildCategoryChips(
-    BuildContext context,
-    TakeawayViewModel vm,
-    bool isTablet,
-  ) {
+      BuildContext context,
+      TakeawayViewModel vm,
+      bool isTablet,
+      ) {
     final subCats = vm.takeawayCategoryChipNames;
     final displaySubCats = ['All', ...subCats];
     return SizedBox(
@@ -905,12 +905,12 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                     ),
                     boxShadow: isSelected
                         ? [
-                            BoxShadow(
-                              color: AppColors.secondaryLight.withOpacity(0.15),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
+                      BoxShadow(
+                        color: AppColors.secondaryLight.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
                         : null,
                   ),
                   child: _TakeawayApiLabel(
@@ -918,7 +918,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                     style: TextStyle(
                       fontSize: isTablet ? 12 : 11,
                       fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                      isSelected ? FontWeight.w700 : FontWeight.w500,
                       color: isSelected ? Colors.white : Colors.grey.shade600,
                     ),
                   ),
@@ -950,11 +950,11 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 
   Widget _buildListBody(
-    BuildContext context,
-    TakeawayViewModel vm,
-    bool isTablet,
-    bool isPortrait,
-  ) {
+      BuildContext context,
+      TakeawayViewModel vm,
+      bool isTablet,
+      bool isPortrait,
+      ) {
     final filtered = vm.visibleProducts;
     final currency = vm.catalog?.currency ?? 'SAR';
 
@@ -1045,12 +1045,12 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 
   Widget _buildProductCardMobile(
-    BuildContext context,
-    TakeawayViewModel vm,
-    TakeawayProduct product,
-    double cartQty,
-    String currency,
-  ) {
+      BuildContext context,
+      TakeawayViewModel vm,
+      TakeawayProduct product,
+      double cartQty,
+      String currency,
+      ) {
     final canSelect = product.isActive && product.qtyOnHand > 0;
     return Material(
       color: Colors.transparent,
@@ -1200,9 +1200,9 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                             false,
                             onTap: cartQty > 0
                                 ? () => vm.bumpProductQuantity(
-                                      product,
-                                      product.allowDecimalQty ? -0.5 : -1,
-                                    )
+                              product,
+                              product.allowDecimalQty ? -0.5 : -1,
+                            )
                                 : null,
                           ),
                           Container(
@@ -1244,12 +1244,12 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 
   Widget _buildProductCardTablet(
-    BuildContext context,
-    TakeawayViewModel vm,
-    TakeawayProduct product,
-    double cartQty,
-    String currency,
-  ) {
+      BuildContext context,
+      TakeawayViewModel vm,
+      TakeawayProduct product,
+      double cartQty,
+      String currency,
+      ) {
     final canSelect = product.isActive && product.qtyOnHand > 0;
     return Stack(
       children: [
@@ -1304,17 +1304,17 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: (product.unit != null &&
-                                    product.unit!.isNotEmpty)
+                                product.unit!.isNotEmpty)
                                 ? Text(
-                                    _takeawayUnitLabel(context, product.unit.toString()),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  )
+                              _takeawayUnitLabel(context, product.unit.toString()),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )
                                 : const SizedBox.shrink(),
                           ),
                         ),
@@ -1365,11 +1365,11 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                 true,
                                 onTap: cartQty > 0
                                     ? () => vm.bumpProductQuantity(
-                                          product,
-                                          product.allowDecimalQty
-                                              ? -0.5
-                                              : -1,
-                                        )
+                                  product,
+                                  product.allowDecimalQty
+                                      ? -0.5
+                                      : -1,
+                                )
                                     : null,
                               ),
                               Expanded(
@@ -1388,7 +1388,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                                   ),
                                   child: Text(
                                     (!product.allowDecimalQty ||
-                                            cartQty % 1 == 0)
+                                        cartQty % 1 == 0)
                                         ? _takeawayQtyText(context, cartQty)
                                         : _takeawayQtyText(context, cartQty),
                                     style: const TextStyle(
@@ -1465,10 +1465,10 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
   }
 
   Widget _buildBottomBar(
-    BuildContext context,
-    TakeawayViewModel vm,
-    bool isTablet,
-  ) {
+      BuildContext context,
+      TakeawayViewModel vm,
+      bool isTablet,
+      ) {
     final currency = vm.catalog?.currency ?? 'SAR';
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -1649,7 +1649,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     vm.vehicleYearController.text = result.year.trim();
     vm.vehicleColorController.text = result.color.trim();
     vm.odometerController.text =
-        result.odometer != 0 ? '${result.odometer}' : '';
+    result.odometer != 0 ? '${result.odometer}' : '';
     vm.refreshPreview();
     ToastService.showSuccess(context, AppLocalizations.of(context)!.posTakeawayCustomerSaved);
   }
@@ -1716,10 +1716,12 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     final res = await vm.submitCheckout();
     if (!context.mounted) return;
     if (res == null || !res.success || vm.lastInvoice == null) {
-      ToastService.showError(
-        context,
-        vm.checkoutError ?? res?.message ?? AppLocalizations.of(context)!.posTakeawayInvoiceFailed,
+      final rawError = vm.checkoutError ?? res?.message ?? AppLocalizations.of(context)!.posTakeawayInvoiceFailed;
+      final localizedError = AppTranslationService.localizeDigitsForLanguage(
+        rawError,
+        _takeawayLang(context),
       );
+      ToastService.showError(context, localizedError);
       return;
     }
 
@@ -1765,8 +1767,8 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
     _discController = TextEditingController(
       text: widget.line.lineDiscountValue > 0
           ? (widget.line.lineDiscountValue % 1 == 0
-              ? widget.line.lineDiscountValue.toInt().toString()
-              : widget.line.lineDiscountValue.toString())
+          ? widget.line.lineDiscountValue.toInt().toString()
+          : widget.line.lineDiscountValue.toString())
           : '',
     );
   }
@@ -1777,8 +1779,8 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
     if (oldWidget.line.lineDiscountValue != widget.line.lineDiscountValue) {
       final text = widget.line.lineDiscountValue > 0
           ? (widget.line.lineDiscountValue % 1 == 0
-              ? widget.line.lineDiscountValue.toInt().toString()
-              : widget.line.lineDiscountValue.toString())
+          ? widget.line.lineDiscountValue.toInt().toString()
+          : widget.line.lineDiscountValue.toString())
           : '';
       if (_discController.text != text) {
         _discController.text = text;
@@ -1804,7 +1806,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
         : line.lineDiscountValue;
     final safeDiscount = min(grossLineTotal, max(0.0, lineDiscountAmount));
     final discountedLineTotal = max(0.0, grossLineTotal - safeDiscount);
-    
+
     return Container(
       padding: EdgeInsets.only(
         left: isTablet ? 14 : 12,
@@ -1982,7 +1984,7 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
               ),
             ],
           ),
-          
+
         ],
       ),
     );

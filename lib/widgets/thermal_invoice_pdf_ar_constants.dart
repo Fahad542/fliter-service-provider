@@ -1,6 +1,36 @@
 // Bilingual labels for thermal invoice PDF matching common KSA bilingual receipts.
 
 abstract final class ThermalInvoicePdfLabels {
+
+  // Customer detail labels
+  static const customerNameAr     = 'الاسم';
+  static const customerMobileAr   = 'الجوال';
+  static const customerTaxIdAr    = 'الرقم الضريبي للعميل';
+  static const customerTypeAr     = 'نوع العميل';
+  static const vehicleAr          = 'المركبة';
+  static const vehicleMakeAr      = 'الماركة';
+  static const vehicleModelAr     = 'الموديل';
+  static const vehicleYearAr      = 'السنة';
+  static const vehiclePlateAr     = 'اللوحة';
+  static const vehicleVinAr       = 'رقم الهيكل';
+  static const vehicleOdometerAr  = 'عداد المسافة';
+
+  // Meta block labels
+  static const branchAr           = 'الفرع';
+  static const vatNoAr            = 'الرقم الضريبي';
+  static const addressAr          = 'العنوان';
+  static const invoiceNoAr        = 'رقم الفاتورة';
+  static const dateAr             = 'التاريخ';
+  static const cashierAr          = 'الكاشير';
+
+  // Section headers
+  static const customerDetailsSectionAr   = 'بيانات العميل';
+  static const customerDetailsSectionEn   = 'CUSTOMER DETAILS';
+  static const maintenanceSectionAr       = 'قائمة الصيانة';
+  static const maintenanceSectionEn       = 'MAINTENANCE CHECKLIST';
+  static const thankYouAr                 = 'شكراً';
+  static const thankYouEn                 = 'Thank you';
+
   static const documentTitleAr = 'فاتورة ضريبية مبسطة';
   static const documentTitleEn = 'Simplified Tax Invoice';
 

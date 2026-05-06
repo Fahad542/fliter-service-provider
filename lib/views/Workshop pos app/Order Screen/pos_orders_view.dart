@@ -7,6 +7,8 @@ import 'dart:ui';
 import '../../../utils/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
+import '../../../utils/plate_transliterator.dart';
 import '../../../utils/invoice_maintenance_checklist.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
@@ -28,11 +30,11 @@ import 'pos_order_review_view.dart'
 
 bool _orderIsListableForOrdersList(PosOrder o) =>
     o.status.toLowerCase() != 'cancelled' &&
-    (o.jobsAggregateBadgeLabel != 'DRAFT' ||
-        (o.isCorporateWalkIn &&
-            (o.isCorporateUnapproved ||
-                o.isWaitingCorporateApproval ||
-                o.isRejectedByCorporate)));
+        (o.jobsAggregateBadgeLabel != 'DRAFT' ||
+            (o.isCorporateWalkIn &&
+                (o.isCorporateUnapproved ||
+                    o.isWaitingCorporateApproval ||
+                    o.isRejectedByCorporate)));
 
 /// Matches [WalkInInvoiceDetailsDialog] / Final Review: walk-in PATCH allowed (not cashier corporate-quote lockout).
 bool _ordersWalkInBillingEditable(PosOrder order) =>
@@ -100,12 +102,12 @@ bool _ordersRetailEmployeeInvoiceReady(PosViewModel vm, PosOrder order) {
 /// Same 6 bilingual rows as the printable invoice / Final Review checklist.
 /// **Save** calls `PATCH /cashier/order/:id/maintenance-checklist` then refreshes orders.
 Future<void> _showOrdersMaintenanceChecklistDialog(
-  BuildContext context,
-  PosOrder order,
-) async {
+    BuildContext context,
+    PosOrder order,
+    ) async {
   final mc = order.maintenanceChecks;
   final checks = (mc != null &&
-          mc.length == InvoiceMaintenanceChecklist.rows.length)
+      mc.length == InvoiceMaintenanceChecklist.rows.length)
       ? List<bool>.from(mc)
       : List<bool>.filled(InvoiceMaintenanceChecklist.rows.length, false);
 
@@ -118,7 +120,7 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
         Future<void> save() async {
           if (savingRef[0]) return;
           final session =
-              Provider.of<SessionService>(context, listen: false);
+          Provider.of<SessionService>(context, listen: false);
           final repo = Provider.of<PosRepository>(context, listen: false);
           final vm = Provider.of<PosViewModel>(context, listen: false);
           savingRef[0] = true;
@@ -172,8 +174,8 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
                 child: Text(
                   AppLocalizations.of(context)!.posOrdersMaintenanceChecklistTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
@@ -196,15 +198,15 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
                   ),
                   const SizedBox(height: 12),
                   for (var i = 0;
-                      i < InvoiceMaintenanceChecklist.rows.length;
-                      i++)
+                  i < InvoiceMaintenanceChecklist.rows.length;
+                  i++)
                     CheckboxListTile(
                       value: checks[i],
                       onChanged: savingRef[0]
                           ? null
                           : (v) {
-                              setModalState(() => checks[i] = v ?? false);
-                            },
+                        setModalState(() => checks[i] = v ?? false);
+                      },
                       title: Text(
                         (Localizations.localeOf(context).languageCode == 'ar'
                             ? InvoiceMaintenanceChecklist.rows[i].ar
@@ -232,7 +234,7 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
           actions: [
             TextButton(
               onPressed:
-                  savingRef[0] ? null : () => Navigator.of(dialogContext).pop(),
+              savingRef[0] ? null : () => Navigator.of(dialogContext).pop(),
               child: Text(AppLocalizations.of(context)!.posCommonCancel),
             ),
             FilledButton(
@@ -245,19 +247,19 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
               ),
               child: savingRef[0]
                   ? const SizedBox(
-                      width: 52,
-                      height: 22,
-                      child: Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    )
+                width: 52,
+                height: 22,
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              )
                   : Text(AppLocalizations.of(context)!.posCommonSave),
             ),
           ],
@@ -312,18 +314,18 @@ class _PosOrdersViewState extends State<PosOrdersView> {
                     : () => vmRefresh.refreshOrdersScreen(),
                 icon: vmRefresh.isOrdersScreenRefreshing
                     ? SizedBox(
-                        width: isBarTablet ? 24 : 22,
-                        height: isBarTablet ? 24 : 22,
-                        child: const CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.black,
-                        ),
-                      )
+                  width: isBarTablet ? 24 : 22,
+                  height: isBarTablet ? 24 : 22,
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.black,
+                  ),
+                )
                     : Icon(
-                        Icons.refresh_rounded,
-                        color: Colors.black,
-                        size: isBarTablet ? 26 : 24,
-                      ),
+                  Icons.refresh_rounded,
+                  color: Colors.black,
+                  size: isBarTablet ? 26 : 24,
+                ),
               );
             },
           ),
@@ -464,8 +466,8 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
     final displayTitle = title == 'All'
         ? l10n.posOrdersTabAll
         : title == 'Pending'
-            ? l10n.posOrdersTabPending
-            : l10n.posOrdersTabCompleted;
+        ? l10n.posOrdersTabPending
+        : l10n.posOrdersTabCompleted;
     return GestureDetector(
       onTap: () {
         _setSelectedTab(title);
@@ -528,7 +530,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
     const draftColumnWidth = 392.0;
 
     final hasAnyListableOrder =
-        vm.orders.any(_orderIsListableForOrdersList);
+    vm.orders.any(_orderIsListableForOrdersList);
 
     if (!hasAnyListableOrder) {
       return ColoredBox(
@@ -637,7 +639,7 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
                               ),
                               itemCount: filteredOrders.length,
                               separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12),
+                              const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final order = filteredOrders[index];
                                 final isSelected =
@@ -681,9 +683,9 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
             child: !selectedInFilter
                 ? const SizedBox.expand()
                 : Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 12, 14, 12),
-                    child: _OrderSummaryPanel(vm: vm),
-                  ),
+              padding: const EdgeInsets.fromLTRB(10, 12, 14, 12),
+              child: _OrderSummaryPanel(vm: vm),
+            ),
           ),
         ),
       ],
@@ -931,8 +933,8 @@ Widget posOrdersJobStatusBadge(BuildContext context, String statusRaw) {
   if (s == 'job_edited') s = 'edited';
   final isRejected =
       s == 'rejected_by_corporate' ||
-      s == 'rejected' ||
-      statusRaw.toLowerCase().contains('rejected');
+          s == 'rejected' ||
+          statusRaw.toLowerCase().contains('rejected');
   final isComplete = s == 'completed' || s == 'invoiced';
   final isEdited = s == 'edited';
   final isCancelled = s == 'cancelled' || s == 'canceled';
@@ -1019,7 +1021,7 @@ class _OrderDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasListable =
-        vm.orders.any(_orderIsListableForOrdersList);
+    vm.orders.any(_orderIsListableForOrdersList);
 
     if (filteredOrders.isEmpty && hasListable) {
       return ColoredBox(
@@ -1044,7 +1046,7 @@ class _OrderDetailPanel extends StatelessWidget {
 
     final sel = vm.selectedOrder;
     final order = sel != null &&
-            filteredOrders.any((o) => o.id == sel.id)
+        filteredOrders.any((o) => o.id == sel.id)
         ? sel
         : null;
 
@@ -1086,61 +1088,61 @@ class _OrderDetailPanel extends StatelessWidget {
             ),
           )
         else
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              const pad = EdgeInsets.fromLTRB(28, 12, 28, 24);
-              const crossSpacing = 16.0;
-              const runSpacing = 16.0;
-              final innerW = constraints.maxWidth - pad.horizontal;
-              final tileW = (innerW - crossSpacing) / 2;
-              final showAdd = _canAddDepartmentToOrder(order);
-              final hasRealJobs =
-                  order.jobs.any((j) => !j.isCancelledJob);
-              final showCorporateProposalCards = order.isCorporateWalkIn &&
-                  !hasRealJobs &&
-                  order.selectedDepartmentNames.isNotEmpty;
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const pad = EdgeInsets.fromLTRB(28, 12, 28, 24);
+                const crossSpacing = 16.0;
+                const runSpacing = 16.0;
+                final innerW = constraints.maxWidth - pad.horizontal;
+                final tileW = (innerW - crossSpacing) / 2;
+                final showAdd = _canAddDepartmentToOrder(order);
+                final hasRealJobs =
+                order.jobs.any((j) => !j.isCancelledJob);
+                final showCorporateProposalCards = order.isCorporateWalkIn &&
+                    !hasRealJobs &&
+                    order.selectedDepartmentNames.isNotEmpty;
 
-              final items = [
-                for (final j in order.jobs.where((j) => !j.isCancelledJob))
-                  _JobCard(order: order, job: j),
-                if (showCorporateProposalCards)
-                  for (final dept in order.selectedDepartmentEntries)
-                    _CorporatePendingJobCard(
-                      order: order,
-                      departmentName: dept['name'] ?? '',
-                      departmentId: dept['id'] ?? '',
-                    ),
-                if (showAdd) _AddDepartmentCard(order: order),
-              ];
-
-              return SingleChildScrollView(
-                padding: pad,
-                child: Column(
-                  children: [
-                    for (int i = 0; i < items.length; i += 2) ...[
-                      if (i > 0) SizedBox(height: runSpacing),
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(child: items[i]),
-                            const SizedBox(width: crossSpacing),
-                            Expanded(
-                              child: i + 1 < items.length
-                                  ? items[i + 1]
-                                  : const SizedBox.shrink(),
-                            ),
-                          ],
-                        ),
+                final items = [
+                  for (final j in order.jobs.where((j) => !j.isCancelledJob))
+                    _JobCard(order: order, job: j),
+                  if (showCorporateProposalCards)
+                    for (final dept in order.selectedDepartmentEntries)
+                      _CorporatePendingJobCard(
+                        order: order,
+                        departmentName: dept['name'] ?? '',
+                        departmentId: dept['id'] ?? '',
                       ),
+                  if (showAdd) _AddDepartmentCard(order: order),
+                ];
+
+                return SingleChildScrollView(
+                  padding: pad,
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < items.length; i += 2) ...[
+                        if (i > 0) SizedBox(height: runSpacing),
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(child: items[i]),
+                              const SizedBox(width: crossSpacing),
+                              Expanded(
+                                child: i + 1 < items.length
+                                    ? items[i + 1]
+                                    : const SizedBox.shrink(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              );
-            },
+                  ),
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }
@@ -1250,7 +1252,7 @@ class _AddDepartmentCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'ADD DEPARTMENT',
+                  AppLocalizations.of(context)!.posOrdersAddDepartment,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
@@ -1291,7 +1293,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
     final deptItems = orderItems.where((item) {
       final itemDeptId = (item['departmentId'] ?? '').toString().trim();
       final itemDeptName =
-          (item['departmentName'] ?? '').toString().trim().toLowerCase();
+      (item['departmentName'] ?? '').toString().trim().toLowerCase();
       if (deptId.isNotEmpty && itemDeptId.isNotEmpty) {
         return itemDeptId == deptId;
       }
@@ -1350,8 +1352,9 @@ class _CorporatePendingJobCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          departmentName.toUpperCase(),
+                        LocalizedApiText(
+                          departmentName,
+                          uppercase: Localizations.localeOf(context).languageCode != 'ar',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1380,13 +1383,13 @@ class _CorporatePendingJobCard extends StatelessWidget {
                         : AppLocalizations.of(context)!.posOrdersProductsAndServices,
                     trailing: hasDeptItems
                         ? Text(
-                            AppLocalizations.of(context)!.posCommonSarAmount(deptTotal.toStringAsFixed(2)),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF1E2124),
-                            ),
-                          )
+                      AppLocalizations.of(context)!.posCommonSarAmount(deptTotal.toStringAsFixed(2)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1E2124),
+                      ),
+                    )
                         : null,
                     onTap: () async {
                       if (isRejectedCorporateOrder) {
@@ -1427,7 +1430,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
                         for (final item in matchedJob.items) {
                           preSelected.add({
                             item.itemType == 'service' ? 'serviceId' : 'productId':
-                                item.productId,
+                            item.productId,
                             'quantity': item.qty,
                             'discountType': item.discountType,
                             'discountValue': item.discountValue ?? 0.0,
@@ -1458,7 +1461,7 @@ class _CorporatePendingJobCard extends StatelessWidget {
                           builder: (_) => PosProductGridView(
                             departmentName: departmentName,
                             departmentId:
-                                departmentId.trim().isNotEmpty ? departmentId : null,
+                            departmentId.trim().isNotEmpty ? departmentId : null,
                             selectedDepartmentIds: order.selectedDepartmentEntries
                                 .map((e) => e['id'] ?? '')
                                 .where((id) => id.trim().isNotEmpty)
@@ -1730,10 +1733,10 @@ void _openJobProductGrid(BuildContext context, PosOrder order, PosOrderJob job) 
 }
 
 Future<void> _onMarkJobComplete(
-  BuildContext context,
-  PosOrder order,
-  PosOrderJob job,
-) async {
+    BuildContext context,
+    PosOrder order,
+    PosOrderJob job,
+    ) async {
   if (order.isCorporateWalkIn &&
       !order.isCorporateBookingOrder &&
       (order.isCorporateUnapproved ||
@@ -1775,9 +1778,9 @@ Future<void> _onMarkJobComplete(
 }
 
 Future<void> _onCancelJob(
-  BuildContext context,
-  PosOrderJob job,
-) async {
+    BuildContext context,
+    PosOrderJob job,
+    ) async {
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
@@ -1869,13 +1872,13 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
                     ),
                     child: _isBusy
                         ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: AppColors.onPrimaryLight,
-                              strokeWidth: 2,
-                            ),
-                          )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: AppColors.onPrimaryLight,
+                        strokeWidth: 2,
+                      ),
+                    )
                         : Text(AppLocalizations.of(context)!.posOrdersYesDeleteBtn, style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 13)),
                   ),
                 ),
@@ -1906,9 +1909,9 @@ class _JobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusForUi =
-        (order.isCorporateWalkIn && order.isRejectedByCorporate)
-            ? order.status
-            : job.status;
+    (order.isCorporateWalkIn && order.isRejectedByCorporate)
+        ? order.status
+        : job.status;
     var st = job.status.toLowerCase().trim();
     if (st == 'complete') st = 'completed';
     if (st == 'job_edited') st = 'edited';
@@ -1926,11 +1929,11 @@ class _JobCard extends StatelessWidget {
     final lineItemCount = jobLineItems.length;
     final linesSubtotalFallback = jobLineItems.fold<double>(
       0.0,
-      (sum, i) => sum + (i.lineTotal > 0 ? i.lineTotal : i.qty * i.unitPrice),
+          (sum, i) => sum + (i.lineTotal > 0 ? i.lineTotal : i.qty * i.unitPrice),
     );
     // Same as DRAFT TOTALS per department row (`job.totalAmount` from API, incl. VAT / job-level pricing).
     final jobTotalDisplay =
-        job.totalAmount > 0 ? job.totalAmount : linesSubtotalFallback;
+    job.totalAmount > 0 ? job.totalAmount : linesSubtotalFallback;
 
     return Align(
       alignment: Alignment.topCenter,
@@ -1952,129 +1955,139 @@ class _JobCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          // 1. Premium Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: (isComplete || isEdited)
-                        ? const Color(0xFFE8F5E9)
-                        : isInProgressCard
-                            ? AppColors.primaryLight.withValues(alpha: 0.28)
-                            : const Color(0xFFFFF3E0),
-                    borderRadius: BorderRadius.circular(12),
+            // 1. Premium Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: (isComplete || isEdited)
+                          ? const Color(0xFFE8F5E9)
+                          : isInProgressCard
+                          ? AppColors.primaryLight.withValues(alpha: 0.28)
+                          : const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _getDepartmentIcon(job.department),
+                      color: (isComplete || isEdited)
+                          ? const Color(0xFF4CAF50)
+                          : isInProgressCard
+                          ? AppColors.primaryLight
+                          : const Color(0xFFFF9800),
+                      size: 18,
+                    ),
                   ),
-                  child: Icon(
-                    _getDepartmentIcon(job.department),
-                    color: (isComplete || isEdited)
-                        ? const Color(0xFF4CAF50)
-                        : isInProgressCard
-                            ? AppColors.primaryLight
-                            : const Color(0xFFFF9800),
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      LocalizedApiText(
-                        job.department,
-                        uppercase: Localizations.localeOf(context).languageCode != 'ar',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.4,
-                          color: Color(0xFF1E2124),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        LocalizedApiText(
+                          job.department,
+                          uppercase: Localizations.localeOf(context).languageCode != 'ar',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.4,
+                            color: Color(0xFF1E2124),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      posOrdersJobStatusBadge(context, statusForUi),
-                    ],
+                        const SizedBox(height: 6),
+                        posOrdersJobStatusBadge(context, statusForUi),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // 2. Action Chips (no Expanded — avoids empty stretch above footer)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _ModernActionChip(
-                  icon: Icons.add_shopping_cart_rounded,
-                  label: hasLineItems
-                      ? AppLocalizations.of(context)!.posOrdersItemCount(lineItemCount)
-                      : AppLocalizations.of(context)!.posOrdersProductsAndServices,
-                  trailing: hasLineItems
-                      ? Text(
-                          AppLocalizations.of(context)!.posCommonSarAmount(jobTotalDisplay.toStringAsFixed(2)),
+            // 2. Action Chips (no Expanded — avoids empty stretch above footer)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ModernActionChip(
+                    icon: Icons.add_shopping_cart_rounded,
+                    label: hasLineItems
+                        ? AppLocalizations.of(context)!.posOrdersItemCount(lineItemCount)
+                        : AppLocalizations.of(context)!.posOrdersProductsAndServices,
+                    trailing: hasLineItems
+                        ? Builder(
+                      builder: (ctx) {
+                        final langCode = Localizations.localeOf(ctx).languageCode;
+                        return Text(
+                          AppLocalizations.of(ctx)!.posCommonSarAmount(
+                            AppTranslationService.localizeDigitsForLanguage(
+                              jobTotalDisplay.toStringAsFixed(2),
+                              langCode,
+                            ),
+                          ),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF1E2124),
                           ),
-                        )
-                      : null,
-                  onTap: isLocked
-                      ? () => ToastService.showError(
-                            context,
-                            AppLocalizations.of(context)!.posOrdersJobCannotBeEdited,
-                          )
-                      : () => _openJobProductGrid(
-                            context,
-                            order,
-                            job,
-                          ),
-                ),
-                const SizedBox(height: 8),
-                _ModernActionChip(
-                  icon: Icons.engineering_rounded,
-                  label: job.distinctActiveTechnicians.isEmpty
-                      ? AppLocalizations.of(context)!.posOrdersAssignTechnicians
-                      : AppLocalizations.of(context)!.posOrdersTechnicianCount(job.distinctActiveTechnicians.length),
-                  onTap: isLocked
-                      ? () => ToastService.showError(
-                            context,
-                            AppLocalizations.of(context)!.posOrdersJobCannotBeEdited,
-                          )
-                      : () => _openJobTechnicianAssignment(
-                            context,
-                            order,
-                            job,
-                          ),
-                ),
-              ],
+                        );
+                      },
+                    )
+                        : null,
+                    onTap: isLocked
+                        ? () => ToastService.showError(
+                      context,
+                      AppLocalizations.of(context)!.posOrdersJobCannotBeEdited,
+                    )
+                        : () => _openJobProductGrid(
+                      context,
+                      order,
+                      job,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _ModernActionChip(
+                    icon: Icons.engineering_rounded,
+                    label: job.distinctActiveTechnicians.isEmpty
+                        ? AppLocalizations.of(context)!.posOrdersAssignTechnicians
+                        : AppLocalizations.of(context)!.posOrdersTechnicianCount(job.distinctActiveTechnicians.length),
+                    onTap: isLocked
+                        ? () => ToastService.showError(
+                      context,
+                      AppLocalizations.of(context)!.posOrdersJobCannotBeEdited,
+                    )
+                        : () => _openJobTechnicianAssignment(
+                      context,
+                      order,
+                      job,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // 3. Footer Action Buttons
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 2, 12, 10),
-            child: Consumer<PosViewModel>(
-              builder: (context, posVm, _) {
-                final completing = posVm.isCashierCompletingJob(job.id);
-                return Row(
-                  children: [
-                    if (!isInvoiced && !isComplete && !isEdited) ...[
-                      Expanded(
-                        child: _JobFooterButton(
-                          label: AppLocalizations.of(context)!.posCommonCancel,
-                        backgroundColor: isCancelled
+            const SizedBox(height: 8),
+            // 3. Footer Action Buttons
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 2, 12, 10),
+              child: Consumer<PosViewModel>(
+                builder: (context, posVm, _) {
+                  final completing = posVm.isCashierCompletingJob(job.id);
+                  return Row(
+                    children: [
+                      if (!isInvoiced && !isComplete && !isEdited) ...[
+                        Expanded(
+                          child: _JobFooterButton(
+                            label: AppLocalizations.of(context)!.posCommonCancel,
+                            backgroundColor: isCancelled
                                 ? const Color(0xFF23262D).withValues(alpha: 0.45)
                                 : const Color(0xFF23262D),
                             textColor: Colors.white,
                             isBusy: false, // Cancellation happens in a dialog now
                             enabled:
-                                !isCancelled && !completing && !isRejectedCorporateOrder,
+                            !isCancelled && !completing && !isRejectedCorporateOrder,
                             onTap: () {
                               if (isRejectedCorporateOrder) {
                                 ToastService.showError(
@@ -2089,58 +2102,58 @@ class _JobCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                       ],
-                    if (!isInvoiced)
-                      Expanded(
-                        child: _JobFooterButton(
-                          label: (isComplete || isEdited)
-                              ? AppLocalizations.of(context)!.posOrdersEdit
-                              : isCancelled
-                                  ? AppLocalizations.of(context)!.posOrdersStatusCancelled
-                                  : AppLocalizations.of(context)!.posOrdersMarkComplete,
-                          backgroundColor: (isComplete || isEdited)
-                              ? const Color(0xFF23262D)
-                              : isCancelled
-                                  ? const Color(0xFFD32F2F)
-                                  : const Color(0xFFFCC247),
-                          textColor: (isComplete || isEdited)
-                              ? Colors.white
-                              : isCancelled
-                                  ? Colors.white
-                                  : const Color(0xFF23262D),
-                          isBusy: (isComplete || isEdited)
-                              ? false
-                              : completing &&
-                                  !isInvoiced &&
-                                  !isComplete &&
-                                  !isEdited &&
-                                  !isCancelled,
-                          enabled: !completing && !isRejectedCorporateOrder,
-                          onTap: (isComplete || isEdited)
-                              ? () {
-                                  if (isRejectedCorporateOrder) {
-                                    ToastService.showError(
-                                      context,
-                                      AppLocalizations.of(context)!.posOrdersRejectedCorporateReadOnly,
-                                    );
-                                    return;
-                                  }
-                                  _openJobProductGrid(
-                                    context,
-                                    order,
-                                    job,
-                                  );
-                                }
-                              : isCancelled
-                                  ? () {}
-                                  : () => _onMarkJobComplete(context, order, job),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                      if (!isInvoiced)
+                        Expanded(
+                          child: _JobFooterButton(
+                            label: (isComplete || isEdited)
+                                ? AppLocalizations.of(context)!.posOrdersEdit
+                                : isCancelled
+                                ? AppLocalizations.of(context)!.posOrdersStatusCancelled
+                                : AppLocalizations.of(context)!.posOrdersMarkComplete,
+                            backgroundColor: (isComplete || isEdited)
+                                ? const Color(0xFF23262D)
+                                : isCancelled
+                                ? const Color(0xFFD32F2F)
+                                : const Color(0xFFFCC247),
+                            textColor: (isComplete || isEdited)
+                                ? Colors.white
+                                : isCancelled
+                                ? Colors.white
+                                : const Color(0xFF23262D),
+                            isBusy: (isComplete || isEdited)
+                                ? false
+                                : completing &&
+                                !isInvoiced &&
+                                !isComplete &&
+                                !isEdited &&
+                                !isCancelled,
+                            enabled: !completing && !isRejectedCorporateOrder,
+                            onTap: (isComplete || isEdited)
+                                ? () {
+                              if (isRejectedCorporateOrder) {
+                                ToastService.showError(
+                                  context,
+                                  AppLocalizations.of(context)!.posOrdersRejectedCorporateReadOnly,
+                                );
+                                return;
+                              }
+                              _openJobProductGrid(
+                                context,
+                                order,
+                                job,
+                              );
+                            }
+                                : isCancelled
+                                ? () {}
+                                : () => _onMarkJobComplete(context, order, job),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -2242,21 +2255,21 @@ class _JobFooterButton extends StatelessWidget {
           alignment: Alignment.center,
           child: isBusy
               ? SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: textColor,
-                  ),
-                )
+            height: 16,
+            width: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: textColor,
+            ),
+          )
               : Text(
-                  label,
-                  style: TextStyle(
-                    color: textColor,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11,
-                  ),
-                ),
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+            ),
+          ),
         ),
       ),
     );
@@ -2350,7 +2363,7 @@ double _draftJobTotalBeforeVat(PosOrderJob job) {
   final lineFallback = dedupeCashierServiceLinesForPosDisplay(job.items)
       .fold<double>(
     0.0,
-    (s, item) => s + _draftLineDisplayTotal(job, item),
+        (s, item) => s + _draftLineDisplayTotal(job, item),
   );
   return lineFallback.clamp(0.0, double.infinity);
 }
@@ -2360,13 +2373,13 @@ double _draftJobTotalInclVat(PosOrderJob job) {
   final beforeVat = _draftJobTotalBeforeVat(job);
   final vatFromLines = dedupeCashierServiceLinesForPosDisplay(job.items).fold<double>(
     0.0,
-    (s, item) => s + item.lineVatAmount,
+        (s, item) => s + item.lineVatAmount,
   );
   final vatAmount = job.vatAmount > 0.0001
       ? job.vatAmount
       : vatFromLines > 0.0001
-          ? vatFromLines
-          : (job.vatPercent > 0 ? beforeVat * (job.vatPercent / 100.0) : 0.0);
+      ? vatFromLines
+      : (job.vatPercent > 0 ? beforeVat * (job.vatPercent / 100.0) : 0.0);
   return job.totalAmount > 0.0001 ? job.totalAmount : (beforeVat + vatAmount);
 }
 
@@ -2379,10 +2392,10 @@ double _draftJobCommissionPreviewBaseTotal(PosOrderJob job) {
 
 /// Preview SAR per technician: `(base × commissionPercent / 100) ÷ technicianCount`.
 double _draftPerTechnicianCommissionPreviewSar(
-  PosOrderJob job,
-  JobTechnician tech,
-  int technicianCount,
-) {
+    PosOrderJob job,
+    JobTechnician tech,
+    int technicianCount,
+    ) {
   if (technicianCount <= 0) return 0;
   final base = _draftJobCommissionPreviewBaseTotal(job);
   return (base * tech.commissionPercent / 100.0) / technicianCount;
@@ -2410,12 +2423,12 @@ Widget _draftDeptTotalsPlainTextRows(BuildContext context, PosOrderJob job) {
   final vatFromLines = dedupeCashierServiceLinesForPosDisplay(job.items)
       .fold<double>(
     0.0,
-    (s, item) => s + item.lineVatAmount,
+        (s, item) => s + item.lineVatAmount,
   );
   final vatAmount = job.vatAmount > 0.0001
       ? job.vatAmount
       : vatFromLines > 0.0001
-          ? vatFromLines
+      ? vatFromLines
       : (pct > 0 ? beforeVat * (pct / 100.0) : 0.0);
   final totalInclVat = _draftJobTotalInclVat(job);
   return Column(
@@ -2426,7 +2439,7 @@ Widget _draftDeptTotalsPlainTextRows(BuildContext context, PosOrderJob job) {
         children: [
           Expanded(child: Text(AppLocalizations.of(context)!.posOrdersTotalBeforeVat, style: labelStyle)),
           Text(
-            '${beforeVat.toStringAsFixed(2)} SAR',
+            AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(beforeVat.toStringAsFixed(2), Localizations.localeOf(context).languageCode)),
             style: valueStyle,
           ),
         ],
@@ -2437,7 +2450,7 @@ Widget _draftDeptTotalsPlainTextRows(BuildContext context, PosOrderJob job) {
         children: [
           Expanded(child: Text(AppLocalizations.of(context)!.posOrdersVatPercent(pctLabel), style: labelStyle)),
           Text(
-            '+ ${vatAmount.toStringAsFixed(2)} SAR',
+            '+ ${AppTranslationService.localizeDigitsForLanguage(vatAmount.toStringAsFixed(2), Localizations.localeOf(context).languageCode)} ${AppLocalizations.of(context)!.posCommonSar}',
             style: valueStyle.copyWith(color: Colors.red.shade700),
           ),
         ],
@@ -2458,7 +2471,7 @@ Widget _draftDeptTotalsPlainTextRows(BuildContext context, PosOrderJob job) {
             ),
           ),
           Text(
-            '${totalInclVat.toStringAsFixed(2)} SAR',
+            AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(totalInclVat.toStringAsFixed(2), Localizations.localeOf(context).languageCode)),
             style: GoogleFonts.manrope(
               fontSize: 10,
               fontWeight: FontWeight.w800,
@@ -2523,12 +2536,12 @@ Widget _orderSummaryHighlightBox({
     borderW = emphasized ? 2 : 1.5;
     boxShadow = emphasized
         ? [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ]
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.18),
+        blurRadius: 8,
+        offset: const Offset(0, 2),
+      ),
+    ]
         : null;
   } else if (useDeptStatusTint) {
     bg = _orderSummaryDeptHeaderFillForStatus(departmentStatusHeaderTint!);
@@ -2544,12 +2557,12 @@ Widget _orderSummaryHighlightBox({
     borderW = emphasized ? 2 : 1.5;
     boxShadow = emphasized
         ? [
-            BoxShadow(
-              color: const Color(0xFFFCC247).withValues(alpha: 0.22),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ]
+      BoxShadow(
+        color: const Color(0xFFFCC247).withValues(alpha: 0.22),
+        blurRadius: 8,
+        offset: const Offset(0, 2),
+      ),
+    ]
         : null;
   }
 
@@ -2575,9 +2588,9 @@ Widget _orderSummaryHighlightBox({
       border: useDeptStatusTint
           ? null
           : Border.all(
-              color: borderColor,
-              width: borderW,
-            ),
+        color: borderColor,
+        width: borderW,
+      ),
       boxShadow: compact || departmentTotalStripe || useDeptStatusTint
           ? null
           : boxShadow,
@@ -2587,9 +2600,9 @@ Widget _orderSummaryHighlightBox({
 }
 
 String? _ordersRequestedPaymentLabelForInvoice(
-  bool? isCorporate,
-  Set<PaymentMethod> methods,
-) {
+    bool? isCorporate,
+    Set<PaymentMethod> methods,
+    ) {
   if (isCorporate == true) {
     if (methods.isEmpty) return 'Corporate';
     if (methods.length > 1) {
@@ -2610,10 +2623,10 @@ String? _ordersRequestedPaymentLabelForInvoice(
 /// the route is unmounted — disposing in `showDialog`'s `finally` caused
 /// `_dependents.isEmpty` when Cancel was pressed.
 Future<List<Map<String, dynamic>>?> _showOrdersSplitPaymentDialog(
-  BuildContext context, {
-  required List<PaymentMethod> methods,
-  required double invoiceTotal,
-}) {
+    BuildContext context, {
+      required List<PaymentMethod> methods,
+      required double invoiceTotal,
+    }) {
   return showDialog<List<Map<String, dynamic>>>(
     context: context,
     barrierDismissible: false,
@@ -2722,7 +2735,7 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
                       child: TextFormField(
                         controller: _controllers[pm],
                         keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
                           isDense: true,
                           labelText: l10n.posOrdersAmountSar,
@@ -2746,8 +2759,8 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   remaining > 0
-                      ? '${l10n.posOrdersAmountSar}: ${remaining.toStringAsFixed(2)} ${l10n.posCommonSar}'
-                      : 'Exceeds total by ${remaining.abs().toStringAsFixed(2)} SAR',
+                      ? l10n.posPaymentRemaining(AppTranslationService.localizeDigitsForLanguage(remaining.toStringAsFixed(2), Localizations.localeOf(context).languageCode))
+                      : AppLocalizations.of(context)!.posOrdersExceedsBy(AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(remaining.abs().toStringAsFixed(2), Localizations.localeOf(context).languageCode))),
                   style: TextStyle(
                     color: remaining > 0 ? Colors.orange.shade700 : Colors.red,
                     fontWeight: FontWeight.w600,
@@ -2769,16 +2782,16 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
           onPressed: remaining.abs() > 0.05
               ? null
               : () {
-                  final result = <Map<String, dynamic>>[];
-                  for (final pm in widget.methods) {
-                    result.add({
-                      'method': pm.label,
-                      'amount':
-                          double.tryParse(_controllers[pm]!.text.trim()) ?? 0.0,
-                    });
-                  }
-                  Navigator.pop(context, result);
-                },
+            final result = <Map<String, dynamic>>[];
+            for (final pm in widget.methods) {
+              result.add({
+                'method': pm.label,
+                'amount':
+                double.tryParse(_controllers[pm]!.text.trim()) ?? 0.0,
+              });
+            }
+            Navigator.pop(context, result);
+          },
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primaryLight,
             foregroundColor: AppColors.onPrimaryLight,
@@ -2794,10 +2807,10 @@ class _OrdersSplitPaymentDialogState extends State<_OrdersSplitPaymentDialog> {
 }
 
 Future<void> _generateInvoiceFromOrdersSummary(
-  BuildContext context,
-  PosViewModel vm,
-  PosOrder order,
-) async {
+    BuildContext context,
+    PosViewModel vm,
+    PosOrder order,
+    ) async {
   if (order.isCorporateWalkIn &&
       !order.isCorporateBookingOrder &&
       (order.isCorporateUnapproved ||
@@ -2862,15 +2875,15 @@ Future<void> _generateInvoiceFromOrdersSummary(
       paymentSplits = methods
           .map(
             (m) => <String, dynamic>{
-              'method': m.label,
-              'amount': (amounts[m] ?? 0),
-            },
-          )
+          'method': m.label,
+          'amount': (amounts[m] ?? 0),
+        },
+      )
           .where((p) => (p['amount'] as num) > 0)
           .toList();
       final splitSum = paymentSplits.fold<double>(
         0,
-        (s, p) => s + ((p['amount'] as num).toDouble()),
+            (s, p) => s + ((p['amount'] as num).toDouble()),
       );
       if ((splitSum - totalAmount).abs() > 0.05) {
         ToastService.showError(
@@ -2910,10 +2923,10 @@ Future<void> _generateInvoiceFromOrdersSummary(
             invoice: inv,
             maintenanceChecksFallback: mcFallback,
             requestedPaymentMethod:
-                _ordersRequestedPaymentLabelForInvoice(
-                  isCorporate,
-                  methodsForDialogLabel,
-                ),
+            _ordersRequestedPaymentLabelForInvoice(
+              isCorporate,
+              methodsForDialogLabel,
+            ),
             onDone: () {},
           ),
         );
@@ -2947,9 +2960,9 @@ class _OrderSummaryPanel extends StatelessWidget {
     final totalJobs = activeJobs.length;
     final completedJobs = activeJobs
         .where((j) {
-          final s = j.status.toLowerCase();
-          return s == 'completed' || s == 'invoiced' || s == 'edited';
-        })
+      final s = j.status.toLowerCase();
+      return s == 'completed' || s == 'invoiced' || s == 'edited';
+    })
         .length;
     final progress = totalJobs > 0 ? completedJobs / totalJobs : 0.0;
     final allDepartmentsComplete =
@@ -2957,7 +2970,7 @@ class _OrderSummaryPanel extends StatelessWidget {
     final meetsPrereq = order.meetsCashierInvoicePrerequisites;
     final billingOk = vm.walkInBillingReadyForInvoice(order);
     final hideRetailPaymentPicker =
-        _ordersIsRetailWalkInBranchEmployee(vm, order);
+    _ordersIsRetailWalkInBranchEmployee(vm, order);
     final employeePayrollReady = _ordersRetailEmployeeInvoiceReady(vm, order);
     final paymentOk =
         vm.invoicePaymentSelectionReady ||
@@ -2988,7 +3001,7 @@ class _OrderSummaryPanel extends StatelessWidget {
 
     final grandTotalFromJobs = activeJobs.fold<double>(
       0.0,
-      (sum, job) => sum + _draftJobTotalInclVat(job),
+          (sum, job) => sum + _draftJobTotalInclVat(job),
     );
     // Keep footer in sync with department sections shown above.
     final grandTotal = grandTotalFromJobs > 0.0001
@@ -3001,8 +3014,8 @@ class _OrderSummaryPanel extends StatelessWidget {
       final dt = (order.totalDiscountType ?? '').toLowerCase();
       final dv = order.totalDiscountValue ?? 0;
       final label = (dt == 'percent' || dt == 'percentage')
-          ? 'Order discount (${dv.toStringAsFixed(0)}%)'
-          : 'Order discount';
+          ? AppLocalizations.of(context)!.posOrdersDeptDiscountPercent(dv.toStringAsFixed(0))
+          : AppLocalizations.of(context)!.posOrdersOrderDiscount;
       detailChildren.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
@@ -3020,7 +3033,7 @@ class _OrderSummaryPanel extends StatelessWidget {
                 ),
               ),
               Text(
-                '− ${orderDiscAmt.toStringAsFixed(2)} SAR',
+                '− ${AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(orderDiscAmt.toStringAsFixed(2), Localizations.localeOf(context).languageCode))}',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -3059,9 +3072,9 @@ class _OrderSummaryPanel extends StatelessWidget {
               onPressed: vm.isLoading
                   ? null
                   : () => vm.sendCorporateOrderForApproval(
-                        context,
-                        orderId: order.id,
-                      ),
+                context,
+                orderId: order.id,
+              ),
               icon: const Icon(Icons.send_rounded, size: 16),
               label: Text(
                 AppLocalizations.of(context)!.posOrdersSendForApproval,
@@ -3103,7 +3116,7 @@ class _OrderSummaryPanel extends StatelessWidget {
                 ),
               ),
               Text(
-                '${grandTotal.toStringAsFixed(2)} SAR',
+                AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(grandTotal.toStringAsFixed(2), Localizations.localeOf(context).languageCode)),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w900,
@@ -3130,9 +3143,9 @@ class _OrderSummaryPanel extends StatelessWidget {
                   onPressed: posVm.isLoading
                       ? null
                       : () => _showOrdersMaintenanceChecklistDialog(
-                            context,
-                            order,
-                          ),
+                    context,
+                    order,
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.secondaryLight,
                     side: BorderSide(
@@ -3181,10 +3194,10 @@ class _OrderSummaryPanel extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: canGenerateInvoice && !invoicingThisOrder
                           ? () => _generateInvoiceFromOrdersSummary(
-                                context,
-                                posVm,
-                                order,
-                              )
+                        context,
+                        posVm,
+                        order,
+                      )
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.secondaryLight,
@@ -3202,24 +3215,24 @@ class _OrderSummaryPanel extends StatelessWidget {
                       ),
                       child: invoicingThisOrder
                           ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: AppColors.onSecondaryLight,
-                              ),
-                            )
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: AppColors.onSecondaryLight,
+                        ),
+                      )
                           : Text(
-                              AppLocalizations.of(context)!.posOrdersGenerateInvoice,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.onSecondaryLight,
-                              ),
-                            ),
+                        AppLocalizations.of(context)!.posOrdersGenerateInvoice,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.onSecondaryLight,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -3319,8 +3332,8 @@ class _DraftDepartmentSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusForUi = (sourceOrder != null &&
-            sourceOrder!.isCorporateWalkIn &&
-            sourceOrder!.isRejectedByCorporate)
+        sourceOrder!.isCorporateWalkIn &&
+        sourceOrder!.isRejectedByCorporate)
         ? sourceOrder!.status
         : job.status;
     final techs = job.distinctActiveTechnicians;
@@ -3419,7 +3432,10 @@ class _DraftDepartmentSection extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        lineTot.toStringAsFixed(2),
+                        AppTranslationService.localizeDigitsForLanguage(
+                          lineTot.toStringAsFixed(2),
+                          Localizations.localeOf(context).languageCode,
+                        ),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -3441,9 +3457,15 @@ class _DraftDepartmentSection extends StatelessWidget {
                         children: [
                           TextSpan(
                             text: AppLocalizations.of(context)!.posOrdersQtyWithoutVat(
+                              AppTranslationService.localizeDigitsForLanguage(
                                 _draftFmtQty(item.qty),
-                                _draftLineUnitPriceExVat(job, item).toStringAsFixed(2),
+                                Localizations.localeOf(context).languageCode,
                               ),
+                              AppTranslationService.localizeDigitsForLanguage(
+                                _draftLineUnitPriceExVat(job, item).toStringAsFixed(2),
+                                Localizations.localeOf(context).languageCode,
+                              ),
+                            ),
                           ),
                           TextSpan(
                             text: '',
@@ -3477,7 +3499,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '− ${discAmt.toStringAsFixed(2)} SAR',
+                            '− ${AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(discAmt.toStringAsFixed(2), Localizations.localeOf(context).languageCode))}',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
@@ -3500,7 +3522,7 @@ class _DraftDepartmentSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'TECHNICIAN COMMISSION',
+                  AppLocalizations.of(context)!.posOrdersTechnicianCommission,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
@@ -3511,17 +3533,17 @@ class _DraftDepartmentSection extends StatelessWidget {
                 const SizedBox(height: 4),
                 ...techs.map((t) {
                   final name =
-                      t.name.trim().isEmpty ? 'Technician' : t.name.trim();
+                  t.name.trim().isEmpty ? 'Technician' : t.name.trim();
                   final n = techs.length;
                   final previewSar =
-                      _draftPerTechnicianCommissionPreviewSar(job, t, n);
+                  _draftPerTechnicianCommissionPreviewSar(job, t, n);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
+                          child: LocalizedApiText(
                             name,
                             style: TextStyle(
                               fontSize: 10,
@@ -3545,7 +3567,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '${previewSar.toStringAsFixed(2)} SAR',
+                          AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(previewSar.toStringAsFixed(2), Localizations.localeOf(context).languageCode)),
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
@@ -3585,7 +3607,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                 ),
               ),
               Text(
-                '− ${displayPromoAmt.toStringAsFixed(2)} SAR',
+                '− ${AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(displayPromoAmt.toStringAsFixed(2), Localizations.localeOf(context).languageCode))}',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -3602,7 +3624,7 @@ class _DraftDepartmentSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  () {
+                      () {
                     final dt = (job.totalDiscountType ?? '').toLowerCase();
                     final dv = job.totalDiscountValue;
                     if (dt == 'percent' || dt == 'percentage') {
@@ -3618,7 +3640,7 @@ class _DraftDepartmentSection extends StatelessWidget {
                 ),
               ),
               Text(
-                '− ${jobDiscAmt.toStringAsFixed(2)} SAR',
+                '− ${AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(jobDiscAmt.toStringAsFixed(2), Localizations.localeOf(context).languageCode))}',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -3704,9 +3726,9 @@ class _HorizontalOrderTile extends StatelessWidget {
     final activeJobs = order.jobs.where((j) => !j.isCancelledJob).toList();
     final completedActive = activeJobs
         .where((j) {
-          final s = j.status.toLowerCase();
-          return s == 'completed' || s == 'invoiced' || s == 'edited';
-        })
+      final s = j.status.toLowerCase();
+      return s == 'completed' || s == 'invoiced' || s == 'edited';
+    })
         .length;
     final jobProgressLabel = '$completedActive/${activeJobs.length}';
     final deptNames = order.selectedDepartmentNames;
@@ -3732,12 +3754,12 @@ class _HorizontalOrderTile extends StatelessWidget {
               ),
               boxShadow: isSelected
                   ? [
-                      BoxShadow(
-                        color: const Color(0xFFFCC247).withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ]
+                BoxShadow(
+                  color: const Color(0xFFFCC247).withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ]
                   : null,
             ),
             child: Column(
@@ -3749,16 +3771,22 @@ class _HorizontalOrderTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Text(
-                        '#${order.id.split('-').last.toUpperCase()}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          height: 1.1,
-                          color: isSelected ? const Color(0xFF23262D).withOpacity(0.7) : Colors.grey.shade500,
-                        ),
+                      child: Builder(
+                        builder: (ctx) {
+                          final langCode = Localizations.localeOf(ctx).languageCode;
+                          final rawId = order.id.split('-').last.toUpperCase();
+                          return Text(
+                            '#${AppTranslationService.localizeDigitsForLanguage(rawId, langCode)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                              color: isSelected ? const Color(0xFF23262D).withOpacity(0.7) : Colors.grey.shade500,
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -3776,78 +3804,115 @@ class _HorizontalOrderTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: Text(
-                        order.vehicle?.plateNo ?? AppLocalizations.of(context)!.posOrdersNoPlate,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                          letterSpacing: 0.5,
-                          color: isSelected ? const Color(0xFF23262D) : const Color(0xFF1E2124),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Builder(
+                        builder: (ctx) {
+                          final langCode = Localizations.localeOf(ctx).languageCode;
+                          final plateRaw = order.vehicle?.plateNo ?? AppLocalizations.of(ctx)!.posOrdersNoPlate;
+                          final plate = langCode == 'ar'
+                              ? PlateTransliterator.localize(plateRaw, langCode)
+                              : plateRaw;
+                          return Text(
+                            plate,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              letterSpacing: 0.5,
+                              color: isSelected ? const Color(0xFF23262D) : const Color(0xFF1E2124),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ),
-                    Text(
-                      rightMetaLabel,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: isSelected ? const Color(0xFF23262D) : const Color(0xFF64748B),
-                      ),
+                    Builder(
+                      builder: (ctx) {
+                        final langCode = Localizations.localeOf(ctx).languageCode;
+                        return Text(
+                          AppTranslationService.localizeDigitsForLanguage(rightMetaLabel, langCode),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: isSelected ? const Color(0xFF23262D) : const Color(0xFF64748B),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
                 if (showDeptLine) ...[
                   const SizedBox(height: 3),
-                  Text(
-                    AppLocalizations.of(context)!.posOrdersDeptNames(deptNames.join(', ')),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 8,
-                      height: 1.1,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? const Color(0xFF23262D).withOpacity(0.78)
-                          : const Color(0xFF475569),
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.posOrdersDeptNames(''),
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 8,
+                          height: 1.1,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? const Color(0xFF23262D).withOpacity(0.78)
+                              : const Color(0xFF475569),
+                        ),
+                      ),
+                      Expanded(
+                        child: LocalizedApiText(
+                          deptNames.join(', '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 8,
+                            height: 1.1,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected
+                                ? const Color(0xFF23262D).withOpacity(0.78)
+                                : const Color(0xFF475569),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _formatDateForStrip(order),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 7,
-                          height: 1,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected ? const Color(0xFF23262D).withOpacity(0.55) : Colors.grey.shade400,
+                Builder(
+                  builder: (ctx) {
+                    final langCode = Localizations.localeOf(ctx).languageCode;
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _formatDateLocalized(order, langCode),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 7,
+                              height: 1,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected ? const Color(0xFF23262D).withOpacity(0.55) : Colors.grey.shade400,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    Text(
-                      ' · ',
-                      style: TextStyle(
-                        fontSize: 7,
-                        height: 1,
-                        color: isSelected ? const Color(0xFF23262D).withOpacity(0.35) : Colors.grey.shade400,
-                      ),
-                    ),
-                    Text(
-                      _formatTime(order),
-                      style: TextStyle(
-                        fontSize: 7,
-                        height: 1,
-                        color: isSelected ? const Color(0xFF23262D).withOpacity(0.6) : Colors.grey.shade400,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                        Text(
+                          ' · ',
+                          style: TextStyle(
+                            fontSize: 7,
+                            height: 1,
+                            color: isSelected ? const Color(0xFF23262D).withOpacity(0.35) : Colors.grey.shade400,
+                          ),
+                        ),
+                        Text(
+                          _formatTimeLocalized(order, langCode),
+                          style: TextStyle(
+                            fontSize: 7,
+                            height: 1,
+                            color: isSelected ? const Color(0xFF23262D).withOpacity(0.6) : Colors.grey.shade400,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -3885,6 +3950,9 @@ class _HorizontalOrderTile extends StatelessWidget {
   }
 
   String _formatDateForStrip(PosOrder order) {
+    // Determine locale from the build context isn't available here directly,
+    // so we detect Arabic by checking if the order tile's context provides it.
+    // We use a helper on the tile itself — see _formatDateLocalized.
     try {
       final dStr = order.date;
       if (dStr.isNotEmpty) {
@@ -3903,6 +3971,32 @@ class _HorizontalOrderTile extends StatelessWidget {
     return '—';
   }
 
+  String _formatDateLocalized(PosOrder order, String langCode) {
+    try {
+      final locale = langCode == 'ar' ? 'ar' : 'en';
+      final dStr = order.date;
+      if (dStr.isNotEmpty) {
+        final dt = DateTime.tryParse(dStr);
+        if (dt != null) {
+          final formatted = DateFormat('dd MMM yyyy', locale).format(dt);
+          return langCode == 'ar'
+              ? AppTranslationService.localizeDigitsForLanguage(formatted, langCode)
+              : formatted;
+        }
+      }
+      final dt = DateTime.tryParse(order.createdAt);
+      if (dt != null) {
+        final formatted = DateFormat('dd MMM yyyy', locale).format(dt);
+        return langCode == 'ar'
+            ? AppTranslationService.localizeDigitsForLanguage(formatted, langCode)
+            : formatted;
+      }
+    } catch (e) {
+      debugPrint('Error formatting date: $e');
+    }
+    return '—';
+  }
+
   String _formatTime(PosOrder order) {
     try {
       if (order.orderDate.isNotEmpty && order.orderTime.isNotEmpty) {
@@ -3913,7 +4007,7 @@ class _HorizontalOrderTile extends StatelessWidget {
         if (dt != null) {
           return DateFormat('hh:mm a').format(dt);
         }
-        
+
         // Fallback: manually parse HH:mm if orderTime is just that
         if (order.orderTime.contains(':')) {
           final parts = order.orderTime.split(':');
@@ -3924,7 +4018,7 @@ class _HorizontalOrderTile extends StatelessWidget {
           return DateFormat('hh:mm a').format(dt);
         }
       }
-      
+
       // Ultimate fallback: check createdAt
       final dt = DateTime.tryParse(order.createdAt);
       if (dt != null) {
@@ -3934,5 +4028,40 @@ class _HorizontalOrderTile extends StatelessWidget {
       debugPrint('Error formatting time: $e');
     }
     return order.orderTime.isNotEmpty ? order.orderTime : '16:55';
+  }
+
+  String _formatTimeLocalized(PosOrder order, String langCode) {
+    try {
+      DateTime? dt;
+      if (order.orderDate.isNotEmpty && order.orderTime.isNotEmpty) {
+        final dateTimeStr = '${order.orderDate} ${order.orderTime}';
+        dt = DateTime.tryParse(dateTimeStr) ?? DateTime.tryParse(order.createdAt);
+        if (dt == null && order.orderTime.contains(':')) {
+          final parts = order.orderTime.split(':');
+          final hour = int.parse(parts[0]);
+          final minute = int.parse(parts[1]);
+          final now = DateTime.now();
+          dt = DateTime(now.year, now.month, now.day, hour, minute);
+        }
+      }
+      dt ??= DateTime.tryParse(order.createdAt);
+
+      if (dt != null) {
+        // Use 24h format for Arabic (more natural) and localize the digits
+        final formatted = langCode == 'ar'
+            ? DateFormat('HH:mm').format(dt)
+            : DateFormat('hh:mm a').format(dt);
+        return langCode == 'ar'
+            ? AppTranslationService.localizeDigitsForLanguage(formatted, langCode)
+            : formatted;
+      }
+    } catch (e) {
+      debugPrint('Error formatting time: $e');
+    }
+    return order.orderTime.isNotEmpty
+        ? (langCode == 'ar'
+        ? AppTranslationService.localizeDigitsForLanguage(order.orderTime, langCode)
+        : order.orderTime)
+        : '16:55';
   }
 }

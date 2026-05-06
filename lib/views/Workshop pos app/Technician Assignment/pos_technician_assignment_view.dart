@@ -834,7 +834,7 @@ class _PosTechnicianAssignmentViewState
                                                   Row(
                                                     children: [
                                                       Expanded(
-                                                        child: Text(
+                                                        child: LocalizedApiText(
                                                           tech.name,
                                                           style: TextStyle(
                                                             fontSize: isTablet

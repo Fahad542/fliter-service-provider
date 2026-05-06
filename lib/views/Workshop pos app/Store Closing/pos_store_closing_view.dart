@@ -4,6 +4,7 @@ import '../../../services/LocalizedApiText.dart';
 import 'package:provider/provider.dart';
 
 import '../../../services/invoice_network_print.dart';
+import '../../../services/locker_translation_mixin.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/toast_service.dart';
 import '../../../utils/pos_tablet_layout.dart';
@@ -42,6 +43,29 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
       // Store-closing GET summary is not called on enter — only [reconcile] hits
       // the API when the user taps Close Shift (submit counter closing).
     });
+  }
+
+
+  String _storeDigits(Object? value) {
+    return AppTranslationService.localizeDigitsForLanguage(
+      value?.toString() ?? '',
+      Localizations.localeOf(context).languageCode,
+    );
+  }
+
+  String _storeMoney(num amount) {
+    return AppLocalizations.of(context)!
+        .posSalesReturnSarAmount(_storeDigits(amount.toStringAsFixed(2)));
+  }
+
+  String _storeSignedAmount(num amount) {
+    final sign = amount >= 0 ? '+' : '';
+    return _storeDigits('$sign${amount.toStringAsFixed(2)}');
+  }
+
+  String _storeExpected(num amount) {
+    return AppLocalizations.of(context)!
+        .posStoreClosingExpectedAmount(_storeDigits(amount.toStringAsFixed(2)));
   }
 
   @override
@@ -286,7 +310,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   controller: closingVm.cashController,
                   icon: Icons.payments_outlined,
                   hint: summary != null
-                      ? AppLocalizations.of(context)!.posStoreClosingExpectedAmount(summary.systemCashGross.toStringAsFixed(2))
+                      ? _storeExpected(summary.systemCashGross)
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -298,7 +322,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   controller: closingVm.bankController,
                   icon: Icons.credit_card_outlined,
                   hint: summary != null
-                      ? AppLocalizations.of(context)!.posStoreClosingExpectedAmount(summary.systemBankGross.toStringAsFixed(2))
+                      ? _storeExpected(summary.systemBankGross)
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -310,7 +334,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   controller: closingVm.corporateController,
                   icon: Icons.business_outlined,
                   hint: summary != null
-                      ? AppLocalizations.of(context)!.posStoreClosingExpectedAmount(summary.systemCorporateGross.toStringAsFixed(2))
+                      ? _storeExpected(summary.systemCorporateGross)
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -327,7 +351,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   controller: closingVm.tamaraController,
                   icon: Icons.receipt_long_outlined,
                   hint: summary != null
-                      ? AppLocalizations.of(context)!.posStoreClosingExpectedAmount(summary.systemTamaraGross.toStringAsFixed(2))
+                      ? _storeExpected(summary.systemTamaraGross)
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -339,7 +363,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   controller: closingVm.tabbyController,
                   icon: Icons.receipt_long_outlined,
                   hint: summary != null
-                      ? AppLocalizations.of(context)!.posStoreClosingExpectedAmount(summary.systemTabbyGross.toStringAsFixed(2))
+                      ? _storeExpected(summary.systemTabbyGross)
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -350,7 +374,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   controller: closingVm.othersController,
                   icon: Icons.groups_outlined,
                   hint: summary != null
-                      ? AppLocalizations.of(context)!.posStoreClosingExpectedAmount(summary.systemOthersGross.toStringAsFixed(2))
+                      ? _storeExpected(summary.systemOthersGross)
                       : null,
                   onChanged: (_) => closingVm.updatePhysicalCount(),
                 ),
@@ -385,7 +409,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                       color: AppColors.secondaryLight),
                 ),
                 Text(
-                  AppLocalizations.of(context)!.posSalesReturnSarAmount(closingVm.physicalTotal.toStringAsFixed(2)),
+                  _storeMoney(closingVm.physicalTotal),
                   style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -414,7 +438,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             ),
           ),
           Text(
-            AppLocalizations.of(context)!.posSalesReturnSarAmount(amount.toStringAsFixed(2)),
+            _storeMoney(amount),
             style: TextStyle(
               fontSize: 12,
               color: bold ? AppColors.secondaryLight : Colors.grey.shade700,
@@ -459,7 +483,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
             decoration: InputDecoration(
               prefixIcon: Icon(icon,
                   color: AppColors.secondaryLight.withOpacity(0.5), size: 20),
-              hintText: hint ?? (isNumeric ? '0.00' : AppLocalizations.of(context)!.posStoreClosingAddNotesHint),
+              hintText: hint ?? (isNumeric ? _storeDigits('0.00') : AppLocalizations.of(context)!.posStoreClosingAddNotesHint),
               hintStyle: TextStyle(
                   fontSize: 13,
                   color: Colors.grey.shade400,
@@ -580,7 +604,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                           color: Colors.grey.shade500,
                           fontWeight: FontWeight.w600)),
                   Text(
-                    closingVm.closingId!,
+                    _storeDigits(closingVm.closingId!),
                     style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.secondaryLight,
@@ -691,7 +715,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
         SizedBox(
           width: 64,
           child: Text(
-            system.toStringAsFixed(2),
+            _storeDigits(system.toStringAsFixed(2)),
             textAlign: TextAlign.right,
             style: TextStyle(
                 fontSize: 13,
@@ -702,7 +726,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
         SizedBox(
           width: 72,
           child: Text(
-            physical.toStringAsFixed(2),
+            _storeDigits(physical.toStringAsFixed(2)),
             textAlign: TextAlign.right,
             style: const TextStyle(
                 fontSize: 13,
@@ -713,7 +737,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
         SizedBox(
           width: 56,
           child: Text(
-            (diff >= 0 ? '+' : '') + diff.toStringAsFixed(2),
+            _storeSignedAmount(diff),
             textAlign: TextAlign.right,
             style: TextStyle(
                 fontWeight: FontWeight.w900, fontSize: 13, color: diffColor),
@@ -758,12 +782,12 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                 ),
               ),
             ),
-            SizedBox(width: 64, child: sumCell(sys.toStringAsFixed(2))),
-            SizedBox(width: 72, child: sumCell(phy.toStringAsFixed(2))),
+            SizedBox(width: 64, child: sumCell(_storeDigits(sys.toStringAsFixed(2)))),
+            SizedBox(width: 72, child: sumCell(_storeDigits(phy.toStringAsFixed(2)))),
             SizedBox(
               width: 56,
               child: sumCell(
-                (dsum >= 0 ? '+' : '') + dsum.toStringAsFixed(2),
+                _storeSignedAmount(dsum),
                 color: diffColor,
               ),
             ),
@@ -790,7 +814,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   ),
                 ),
                 Text(
-                  '− ${AppLocalizations.of(context)!.posSalesReturnSarAmount(report.salesReturnsTotal.toStringAsFixed(2))}',
+                  '− ${_storeMoney(report.salesReturnsTotal)}',
                   textAlign: TextAlign.right,
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
@@ -822,7 +846,7 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                 ),
               ),
               Text(
-                AppLocalizations.of(context)!.posSalesReturnSarAmount(report.systemSales.toStringAsFixed(2)),
+                _storeMoney(report.systemSales),
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,

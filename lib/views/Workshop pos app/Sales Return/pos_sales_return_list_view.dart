@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
@@ -9,6 +10,45 @@ import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import 'sales_return_list_view_model.dart';
 import '../../../models/sales_return_list_model.dart';
+
+
+String _salesReturnLang(BuildContext context) =>
+    Localizations.localeOf(context).languageCode;
+
+String _salesReturnDigits(BuildContext context, Object? value) {
+  return AppTranslationService.localizeDigitsForLanguage(
+    value?.toString() ?? '',
+    _salesReturnLang(context),
+  );
+}
+
+String _salesReturnRef(BuildContext context, String value) =>
+    _salesReturnDigits(context, value);
+
+String _salesReturnMoney(BuildContext context, num amount) {
+  final raw = amount.toStringAsFixed(2);
+  if (_salesReturnLang(context) == 'ar') {
+    return '${_salesReturnDigits(context, raw)} ر.س';
+  }
+  return AppLocalizations.of(context)!.posSalesReturnSarAmount(raw);
+}
+
+String _salesReturnStatus(BuildContext context, String status) {
+  final raw = status.trim().isEmpty ? '—' : status.trim().toUpperCase();
+  return AppTranslationService.syncStatusOrRawForLanguage(
+    raw,
+    _salesReturnLang(context),
+  );
+}
+
+String _salesReturnDate(BuildContext context, DateTime date) {
+  final lang = _salesReturnLang(context);
+  final formatted = DateFormat(
+    'MMM dd, yyyy • hh:mm a',
+    lang == 'ar' ? 'ar' : 'en',
+  ).format(date);
+  return _salesReturnDigits(context, formatted);
+}
 
 class PosSalesReturnListView extends StatefulWidget {
   const PosSalesReturnListView({super.key});
@@ -156,8 +196,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
     final isLandscape = orientation == Orientation.landscape;
 
     final date = DateTime.tryParse(returnInfo.returnDate) ?? DateTime.now();
-    final localeCode = Localizations.localeOf(context).languageCode;
-    final formattedDate = DateFormat('MMM dd, yyyy • hh:mm a', localeCode == 'ar' ? 'ar' : 'en').format(date);
+    final formattedDate = _salesReturnDate(context, date);
 
     return Container(
       decoration: BoxDecoration(
@@ -194,7 +233,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          returnInfo.returnNo,
+                          _salesReturnRef(context, returnInfo.returnNo),
                           style: const TextStyle(
                             color: AppColors.secondaryLight,
                             fontWeight: FontWeight.w900,
@@ -204,7 +243,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
                         ),
                       ),
                       const Spacer(),
-                      _buildStatusBadge(returnInfo.status),
+                      _buildStatusBadge(context, returnInfo.status),
                     ],
                   ),
                   const SizedBox(height: 18),
@@ -229,7 +268,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.posSalesReturnListInvoiceLabel(returnInfo.invoiceNo),
+                              AppLocalizations.of(context)!.posSalesReturnListInvoiceLabel(_salesReturnRef(context, returnInfo.invoiceNo)),
                               style: TextStyle(
                                 fontSize: isLandscape ? 15 : 17,
                                 fontWeight: FontWeight.w800,
@@ -293,7 +332,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            AppLocalizations.of(context)!.posSalesReturnSarAmount(returnInfo.totalAmount.toStringAsFixed(2)),
+                            _salesReturnMoney(context, returnInfo.totalAmount),
                             style: TextStyle(
                               fontSize: isLandscape ? 18 : 20,
                               fontWeight: FontWeight.w900,
@@ -327,7 +366,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
     }
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusBadge(BuildContext context, String status) {
     Color color = _getStatusColor(status);
 
     return Container(
@@ -337,8 +376,8 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: color.withOpacity(0.3), width: 1.5),
       ),
-      child: LocalizedApiText(
-        status.toUpperCase(),
+      child: Text(
+        _salesReturnStatus(context, status),
         style: TextStyle(
           color: color,
           fontSize: 10,
@@ -513,15 +552,15 @@ class _ReturnDetailsDialog extends StatelessWidget {
       spacing: 24,
       runSpacing: 24,
       children: [
-        _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnNoLabel, returnInfo.returnNo, Icons.tag_rounded),
-        _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnInvoiceNoLabel, returnInfo.invoiceNo, Icons.receipt_rounded),
-        _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnOrderIdLabel, returnInfo.orderId, Icons.shopping_bag_rounded),
+        _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnNoLabel, _salesReturnRef(context, returnInfo.returnNo), Icons.tag_rounded),
+        _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnInvoiceNoLabel, _salesReturnRef(context, returnInfo.invoiceNo), Icons.receipt_rounded),
+        _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnOrderIdLabel, _salesReturnRef(context, returnInfo.orderId), Icons.shopping_bag_rounded),
         _buildDetailItem(
           AppLocalizations.of(context)!.posSalesReturnCustomerLabel,
           returnInfo.customerName.isNotEmpty ? returnInfo.customerName : returnInfo.customerId,
           Icons.person_rounded,
         ),
-        _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnTotalRefund, AppLocalizations.of(context)!.posSalesReturnSarAmount(returnInfo.totalAmount.toStringAsFixed(2)), Icons.payments_rounded, isAmount: true),
+        _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnTotalRefund, _salesReturnMoney(context, returnInfo.totalAmount), Icons.payments_rounded, isAmount: true),
         if (returnInfo.reason != null)
           _buildDetailItem(AppLocalizations.of(context)!.posSalesReturnReasonLabel, returnInfo.reason!, Icons.comment_rounded, isFullWidth: true),
       ],
@@ -597,7 +636,7 @@ class _ReturnDetailsDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppLocalizations.of(context)!.posSalesReturnItemId(item.salesOrderItemId),
+                  AppLocalizations.of(context)!.posSalesReturnItemId(_salesReturnRef(context, item.salesOrderItemId)),
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
@@ -623,7 +662,7 @@ class _ReturnDetailsDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                AppLocalizations.of(context)!.posSalesReturnItemQty(item.qty.toString()),
+                AppLocalizations.of(context)!.posSalesReturnItemQty(_salesReturnDigits(context, item.qty)),
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
@@ -632,7 +671,7 @@ class _ReturnDetailsDialog extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                AppLocalizations.of(context)!.posSalesReturnSarAmount(item.lineTotal.toStringAsFixed(2)),
+                _salesReturnMoney(context, item.lineTotal),
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 15,

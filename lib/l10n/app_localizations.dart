@@ -11364,6 +11364,12 @@ abstract class AppLocalizations {
   /// **'No technician commissions.'**
   String get posOrdersNoTechnicianCommissions;
 
+  /// No description provided for @posOrdersTechnicianCommission.
+  ///
+  /// In en, this message translates to:
+  /// **'TECHNICIAN COMMISSION'**
+  String get posOrdersTechnicianCommission;
+
   /// No description provided for @posOrdersAssignedTechnicians.
   ///
   /// In en, this message translates to:
@@ -12239,6 +12245,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change customer'**
   String get posPaymentChangeCustomerButton;
+
+  /// Message when payments exceed total.
+  ///
+  /// In en, this message translates to:
+  /// **'Exceeds total by {amount}'**
+  String posOrdersExceedsBy(String amount);
+
+  /// Receipt item breakdown: unit price label
+  ///
+  /// In en, this message translates to:
+  /// **'Unit (Excl. VAT)'**
+  String get posReviewUnitExclVat;
+
+  /// Receipt item breakdown: gross label
+  ///
+  /// In en, this message translates to:
+  /// **'Gross Before VAT'**
+  String get posReviewGrossBeforeVat;
+
+  /// Receipt item breakdown: total label
+  ///
+  /// In en, this message translates to:
+  /// **'Total Before VAT'**
+  String get posReviewTotalBeforeVat;
+
+  /// Common quantity abbreviation
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get posCommonQty;
+
+  /// Common technician abbreviation
+  ///
+  /// In en, this message translates to:
+  /// **'Tech'**
+  String get posCommonTech;
 }
 
 class _AppLocalizationsDelegate

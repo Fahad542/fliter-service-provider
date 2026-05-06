@@ -446,6 +446,29 @@ class _TranslatedSearchHistoryItem extends StatelessWidget {
   final VoidCallback? onViewHistory;
   final VoidCallback? onSalesReturn;
 
+  String _instantStatus(String status) {
+    if (langCode != 'ar') return status;
+    switch (status.trim().toLowerCase().replaceAll('_', ' ')) {
+      case 'invoiced':
+        return 'مفوتر';
+      case 'completed':
+      case 'complete':
+        return 'مكتمل';
+      case 'pending':
+        return 'قيد الانتظار';
+      case 'draft':
+        return 'مسودة';
+      case 'in progress':
+      case 'inprogress':
+        return 'قيد التنفيذ';
+      case 'cancelled':
+      case 'canceled':
+        return 'ملغي';
+      default:
+        return AppTranslationService.localizeDigitsForLanguage(status, langCode);
+    }
+  }
+
   Future<_TranslatedStrings> _translate() async {
     final results = await Future.wait([
       AppTranslationService.localizedDynamicValueForLanguage(rawVehicle, langCode),
@@ -468,9 +491,7 @@ class _TranslatedSearchHistoryItem extends StatelessWidget {
       initialData: _TranslatedStrings(
         vehicle: AppTranslationService.localizeDigitsForLanguage(rawVehicle, langCode),
         customer: rawCustomer,
-        // Show raw status instantly; the FutureBuilder will update with the
-        // proper Arabic translation once _translate() resolves.
-        lastService: rawLastService,
+        lastService: _instantStatus(rawLastService),
       ),
       builder: (context, snapshot) {
         final t = snapshot.data!;

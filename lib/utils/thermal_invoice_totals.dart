@@ -121,6 +121,7 @@ ThermalInvoiceTotals computeThermalInvoiceTotals(Invoice invoice) {
 /// Line breakdown for detailed goods table (dialog preview only).
 class ThermalInvoiceLineRow {
   final String productName;
+  final String? productNameArabic;
   final double unitPriceExclVat;
   final double qty;
   final double grossBeforeVat;
@@ -131,6 +132,7 @@ class ThermalInvoiceLineRow {
 
   ThermalInvoiceLineRow({
     required this.productName,
+    this.productNameArabic,
     required this.unitPriceExclVat,
     required this.qty,
     required this.grossBeforeVat,
@@ -159,6 +161,7 @@ List<ThermalInvoiceLineRow> computeThermalInvoiceLineRows(Invoice invoice) {
     rows.add(
       ThermalInvoiceLineRow(
         productName: item.productName,
+        productNameArabic: item.productNameArabic,
         unitPriceExclVat: unitExcl,
         qty: item.qty,
         grossBeforeVat: gross,

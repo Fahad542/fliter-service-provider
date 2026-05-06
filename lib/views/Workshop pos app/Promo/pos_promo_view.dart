@@ -15,6 +15,7 @@ import '../More Tab/pos_more_view.dart'; // Added
 import 'promo_code_dialog.dart'; // Added (same folder)
 import 'promo_view_model.dart';
 import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
 
 class PosPromoView extends StatefulWidget {
   const PosPromoView({super.key});
@@ -24,6 +25,40 @@ class PosPromoView extends StatefulWidget {
 }
 
 class _PosPromoViewState extends State<PosPromoView> {
+  String _lang(BuildContext context) => Localizations.localeOf(context).languageCode;
+  bool _isAr(BuildContext context) => _lang(context) == 'ar';
+
+  String _digits(BuildContext context, Object? value) {
+    return AppTranslationService.localizeDigitsForLanguage(
+      value?.toString() ?? '',
+      _lang(context),
+    );
+  }
+
+  String _money(BuildContext context, num amount) {
+    final lang = _lang(context);
+    final v = _digits(context, amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2));
+    return lang == 'ar' ? '$v ر.س' : 'SAR $v';
+  }
+
+  String _discountText(BuildContext context, double discount, bool isPercent) {
+    final amount = discount % 1 == 0 ? discount.toStringAsFixed(0) : discount.toStringAsFixed(2);
+    final d = _digits(context, amount);
+    if (_isAr(context)) {
+      return isPercent ? 'خصم $d٪' : 'خصم ${_money(context, discount)}';
+    }
+    return isPercent ? '$d% OFF' : '${_money(context, discount)} OFF';
+  }
+
+  String _validDiscountText(BuildContext context, Map<String, dynamic> result) {
+    final rawDiscount = result['discount'];
+    final discount = rawDiscount is num
+        ? rawDiscount.toDouble()
+        : double.tryParse(rawDiscount?.toString() ?? '') ?? 0;
+    final isPercent = result['isPercent'] == true;
+    return _discountText(context, discount, isPercent);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -374,7 +409,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 20),
                   const SizedBox(width: 12),
-                  Text(
+                  LocalizedApiText(
                     promoVm.promoErrorMessage!,
                     style: const TextStyle(
                       color: Colors.red,
@@ -422,7 +457,7 @@ class _PosPromoViewState extends State<PosPromoView> {
               SizedBox(width: compact ? 8 : 12),
               Expanded(
                 child: Text(
-                  validResult['message']?.toString() ?? '',
+                  _validDiscountText(context, validResult),
                   style: TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.w800,
@@ -453,19 +488,22 @@ class _PosPromoViewState extends State<PosPromoView> {
           SizedBox(height: gapAfterTitle),
           _buildResultDetail(
             Icons.store,
-            '${AppLocalizations.of(context)!.posPromoStoreLabel} ${validResult['store']}',
+            AppLocalizations.of(context)!.posPromoStoreLabel,
+            validResult['store']?.toString() ?? '',
             compact: compact,
           ),
           SizedBox(height: gapDetail),
           _buildResultDetail(
             Icons.inventory_2,
-            'Products: ${validResult['products']}',
+            AppLocalizations.of(context)!.posPromoProductsLabel,
+            validResult['products']?.toString() ?? '',
             compact: compact,
           ),
           SizedBox(height: gapDetail),
           _buildResultDetail(
             Icons.calendar_today,
-            'Period: ${validResult['period']}',
+            AppLocalizations.of(context)!.posPromoValidityLabel,
+            validResult['period']?.toString() ?? '',
             compact: compact,
           ),
         ],
@@ -475,9 +513,15 @@ class _PosPromoViewState extends State<PosPromoView> {
 
   Widget _buildResultDetail(
     IconData icon,
-    String text, {
+    String label,
+    String value, {
     bool compact = false,
   }) {
+    final style = TextStyle(
+      color: Colors.grey.shade800,
+      fontSize: compact ? 12 : 14,
+      fontWeight: FontWeight.w500,
+    );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -488,13 +532,16 @@ class _PosPromoViewState extends State<PosPromoView> {
         ),
         SizedBox(width: compact ? 8 : 12),
         Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: Colors.grey.shade800,
-              fontSize: compact ? 12 : 14,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Wrap(
+            spacing: 4,
+            runSpacing: 2,
+            children: [
+              Text(label, style: style.copyWith(fontWeight: FontWeight.w700)),
+              LocalizedApiText(
+                _digits(context, value),
+                style: style,
+              ),
+            ],
           ),
         ),
       ],
@@ -569,9 +616,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      promo.isPercent
-                          ? '${promo.discount.toStringAsFixed(0)}% OFF'
-                          : '${CurrencyHelper.symbolForLang(Localizations.localeOf(context).languageCode)} ${promo.discount.toStringAsFixed(0)} OFF',
+                      _discountText(context, promo.discount, promo.isPercent),
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         color: Colors.green,
@@ -582,7 +627,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                 ],
               ),
               const SizedBox(height: 16),
-              Text(
+              LocalizedApiText(
                 promo.title,
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
@@ -593,7 +638,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              Text(
+              LocalizedApiText(
                 promo.description,
                 style: TextStyle(
                   color: Colors.grey.shade500,

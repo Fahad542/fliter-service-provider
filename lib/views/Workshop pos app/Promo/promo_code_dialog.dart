@@ -6,6 +6,7 @@ import '../Home Screen/pos_view_model.dart';
 import 'promo_view_model.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
 
 class PromoCodeDialog extends StatefulWidget {
   final bool isMainTab;
@@ -16,6 +17,40 @@ class PromoCodeDialog extends StatefulWidget {
 }
 
 class _PromoCodeDialogState extends State<PromoCodeDialog> {
+  String _lang(BuildContext context) => Localizations.localeOf(context).languageCode;
+  bool _isAr(BuildContext context) => _lang(context) == 'ar';
+
+  String _digits(BuildContext context, Object? value) {
+    return AppTranslationService.localizeDigitsForLanguage(
+      value?.toString() ?? '',
+      _lang(context),
+    );
+  }
+
+  String _money(BuildContext context, num amount) {
+    final lang = _lang(context);
+    final v = _digits(context, amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2));
+    return lang == 'ar' ? '$v ر.س' : 'SAR $v';
+  }
+
+  String _discountText(BuildContext context, double discount, bool isPercent) {
+    final amount = discount % 1 == 0 ? discount.toStringAsFixed(0) : discount.toStringAsFixed(2);
+    final d = _digits(context, amount);
+    if (_isAr(context)) {
+      return isPercent ? 'خصم $d٪' : 'خصم ${_money(context, discount)}';
+    }
+    return isPercent ? '$d% OFF' : '${_money(context, discount)} OFF';
+  }
+
+  String _validDiscountText(BuildContext context, Map<String, dynamic> result) {
+    final rawDiscount = result['discount'];
+    final discount = rawDiscount is num
+        ? rawDiscount.toDouble()
+        : double.tryParse(rawDiscount?.toString() ?? '') ?? 0;
+    final isPercent = result['isPercent'] == true;
+    return _discountText(context, discount, isPercent);
+  }
+
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -185,7 +220,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      LocalizedApiText(
                                         promo.title,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -195,7 +230,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                                         ),
                                       ),
                                       const SizedBox(height: 2),
-                                      Text(
+                                      LocalizedApiText(
                                         promo.description,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -268,7 +303,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
               ],
               if (promoVm.promoErrorMessage != null) ...[
                 const SizedBox(height: 12),
-                Text(
+                LocalizedApiText(
                   promoVm.promoErrorMessage!,
                   style: TextStyle(color: Colors.red, fontSize: isTablet ? 14 : 13, fontWeight: FontWeight.w600),
                 ),
@@ -294,7 +329,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _buildResultRow(AppLocalizations.of(context)!.posPromoDiscountLabel, promoVm.validResult!['message']),
+                      _buildResultRow(AppLocalizations.of(context)!.posPromoDiscountLabel, _validDiscountText(context, promoVm.validResult!)),
                       const SizedBox(height: 6),
                       _buildResultRow(AppLocalizations.of(context)!.posPromoStoreLabel, promoVm.validResult!['store']),
                       const SizedBox(height: 6),
@@ -378,7 +413,12 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(width: 70, child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))),
-        Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+        Expanded(
+          child: LocalizedApiText(
+            _digits(context, value),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
       ],
     );
   }

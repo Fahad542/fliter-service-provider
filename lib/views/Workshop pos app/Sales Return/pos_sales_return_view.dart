@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
+import '../../../services/locker_translation_mixin.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
@@ -8,6 +9,102 @@ import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../../../models/create_invoice_model.dart';
 import 'sales_return_view_model.dart';
+
+
+String _salesReturnLang(BuildContext context) =>
+    Localizations.localeOf(context).languageCode;
+
+String _salesReturnDigits(BuildContext context, Object? value) {
+  return AppTranslationService.localizeDigitsForLanguage(
+    value?.toString() ?? '',
+    _salesReturnLang(context),
+  );
+}
+
+String _salesReturnRef(BuildContext context, String value) =>
+    _salesReturnDigits(context, value);
+
+
+String _salesReturnWesternDigits(String text) {
+  const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  var out = text;
+  for (var i = 0; i < arabic.length; i++) {
+    out = out.replaceAll(arabic[i], i.toString());
+  }
+  return out;
+}
+
+String _salesReturnMoney(BuildContext context, num amount) {
+  final raw = amount.toStringAsFixed(2);
+  if (_salesReturnLang(context) == 'ar') {
+    return '${_salesReturnDigits(context, raw)} ر.س';
+  }
+  return AppLocalizations.of(context)!.posSalesReturnSarAmount(raw);
+}
+
+String _salesReturnDateText(BuildContext context, String rawDate) {
+  final t = rawDate.trim();
+  if (t.isEmpty) return t;
+  final dt = DateTime.tryParse(t);
+  final raw = dt == null ? t.split('T')[0] : dt.toIso8601String().split('T')[0];
+  return _salesReturnDigits(context, raw);
+}
+
+String _salesReturnLinePrice(BuildContext context, double qty, double unitPrice) {
+  final q = qty % 1 == 0 ? qty.toInt().toString() : qty.toStringAsFixed(1);
+  if (_salesReturnLang(context) == 'ar') {
+    return '${_salesReturnDigits(context, q)} × ${_salesReturnMoney(context, unitPrice)}';
+  }
+  return AppLocalizations.of(context)!.posSalesReturnLinePrice(q, unitPrice.toStringAsFixed(2));
+}
+
+Widget _salesReturnDynamicProductText(
+  BuildContext context,
+  InvoiceItem item, {
+  required TextStyle style,
+  int? maxLines,
+  TextOverflow? overflow,
+}) {
+  final lang = _salesReturnLang(context);
+  final ar = (item.productNameArabic ?? '').trim();
+  if (lang == 'ar' && ar.isNotEmpty) {
+    return Text(
+      _salesReturnDigits(context, ar),
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.right,
+      style: style,
+      maxLines: maxLines,
+      overflow: overflow,
+    );
+  }
+  return LocalizedApiText(
+    item.productName,
+    textDirection: lang == 'ar' ? TextDirection.rtl : null,
+    textAlign: lang == 'ar' ? TextAlign.right : null,
+    style: style,
+    maxLines: maxLines,
+    overflow: overflow,
+  );
+}
+
+void _salesReturnLocalizeSearchFieldDigits(
+  BuildContext context,
+  TextEditingController controller,
+) {
+  if (_salesReturnLang(context) != 'ar') return;
+  final current = controller.text;
+  final localized = _salesReturnDigits(context, current);
+  if (localized == current) return;
+  final selection = controller.selection;
+  controller.value = TextEditingValue(
+    text: localized,
+    selection: selection.isValid
+        ? TextSelection.collapsed(
+            offset: selection.baseOffset.clamp(0, localized.length).toInt(),
+          )
+        : TextSelection.collapsed(offset: localized.length),
+  );
+}
 
 class PosSalesReturnView extends StatefulWidget {
   /// Set to true when pushed via Navigator.push (e.g. from Home Screen).
@@ -45,7 +142,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
       resizeToAvoidBottomInset: false,
       appBar: PosScreenAppBar(
         title: (!isTablet && vm.selectedInvoice != null)
-            ? l10n.posSalesReturnMobileTitle(vm.selectedInvoice!.invoiceNo.isNotEmpty ? vm.selectedInvoice!.invoiceNo : vm.selectedInvoice!.id)
+            ? l10n.posSalesReturnMobileTitle(_salesReturnRef(context, vm.selectedInvoice!.invoiceNo.isNotEmpty ? vm.selectedInvoice!.invoiceNo : vm.selectedInvoice!.id))
             : l10n.posSalesReturnTitle,
         showBackButton: widget.showBackButton || (!isTablet && vm.selectedInvoice != null),
         showHamburger: !widget.showBackButton && !(!isTablet && vm.selectedInvoice != null),
@@ -186,7 +283,8 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                       isDense: true,
                     ),
                     onChanged: (value) {
-                      if (value.trim().isEmpty) {
+                      _salesReturnLocalizeSearchFieldDigits(context, vm.searchController);
+                      if (_salesReturnWesternDigits(value).trim().isEmpty) {
                         vm.clearSearchResults();
                       }
                     },
@@ -285,7 +383,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
             ),
             const SizedBox(height: 12),
             Text(
-              AppLocalizations.of(context)!.posSalesReturnNoInvoicesFound(vm.searchController.text),
+              AppLocalizations.of(context)!.posSalesReturnNoInvoicesFound(_salesReturnRef(context, vm.searchController.text)),
               style: TextStyle(color: Colors.grey.shade500),
             ),
           ],
@@ -352,7 +450,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                inv.invoiceDate.split('T')[0],
+                                _salesReturnDateText(context, inv.invoiceDate),
                                 style: TextStyle(
                                   fontSize: isTablet ? 11 : 12,
                                   color: Colors.grey.shade500,
@@ -389,7 +487,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              inv.invoiceNo.isNotEmpty ? inv.invoiceNo : inv.id,
+                              _salesReturnRef(context, inv.invoiceNo.isNotEmpty ? inv.invoiceNo : inv.id),
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: isTablet ? 14 : 15,
@@ -414,7 +512,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                               ),
                             ),
                             child: Text(
-                              AppLocalizations.of(context)!.posSalesReturnSarAmount(inv.totalAmount.toStringAsFixed(2)),
+                              _salesReturnMoney(context, inv.totalAmount),
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 color: Colors.green.shade700,
@@ -573,7 +671,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        inv.invoiceNo.isNotEmpty ? inv.invoiceNo : inv.id,
+                        _salesReturnRef(context, inv.invoiceNo.isNotEmpty ? inv.invoiceNo : inv.id),
                         style: TextStyle(
                           fontSize: isTablet ? 17 : 19,
                           fontWeight: FontWeight.w900,
@@ -612,7 +710,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              inv.invoiceDate.split('T')[0],
+                              _salesReturnDateText(context, inv.invoiceDate),
                               style: TextStyle(
                                 fontSize: isTablet ? 10 : 11,
                                 color: Colors.white38,
@@ -639,7 +737,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      AppLocalizations.of(context)!.posSalesReturnSarAmount(inv.totalAmount.toStringAsFixed(2)),
+                      _salesReturnMoney(context, inv.totalAmount),
                       style: TextStyle(
                         fontSize: isTablet ? 16 : 17,
                         fontWeight: FontWeight.w900,
@@ -696,7 +794,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            AppLocalizations.of(context)!.posSalesReturnSelectedCount(selectedCount),
+                            _salesReturnDigits(context, AppLocalizations.of(context)!.posSalesReturnSelectedCount(selectedCount)),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -932,8 +1030,9 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            item.productName,
+                          _salesReturnDynamicProductText(
+                            context,
+                            item,
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: isTablet ? 14 : 17,
@@ -941,10 +1040,12 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                                   ? AppColors.primaryLight
                                   : const Color(0xFF1E2124),
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: isTablet ? 3 : 5),
                           Text(
-                            AppLocalizations.of(context)!.posSalesReturnLinePrice(item.qty.toStringAsFixed(0), item.unitPrice.toStringAsFixed(2)),
+                            _salesReturnLinePrice(context, item.qty, item.unitPrice),
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: isTablet ? 12 : 14,
@@ -971,7 +1072,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
                         ),
                       ),
                       child: Text(
-                        AppLocalizations.of(context)!.posSalesReturnSarAmount((item.qty * item.unitPrice).toStringAsFixed(2)),
+                        _salesReturnMoney(context, item.qty * item.unitPrice),
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: isTablet ? 13 : 15,
@@ -1137,7 +1238,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
     // Generate controller with the current value.
     final int currentInt = currentQty.toInt();
     final int maxInt = maxQty.toInt();
-    final String displayVal = currentInt.toString();
+    final String displayVal = _salesReturnDigits(context, currentInt);
 
     final controller = TextEditingController(text: displayVal);
     controller.selection = TextSelection.fromPosition(
@@ -1164,7 +1265,7 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
           child: Focus(
             onFocusChange: (hasFocus) {
               if (!hasFocus) {
-                final parsed = int.tryParse(controller.text);
+                final parsed = int.tryParse(_salesReturnWesternDigits(controller.text));
                 if (parsed != null && parsed >= 1 && parsed <= maxInt) {
                   vm.updateReturnQuantity(itemId, parsed.toDouble());
                 } else {

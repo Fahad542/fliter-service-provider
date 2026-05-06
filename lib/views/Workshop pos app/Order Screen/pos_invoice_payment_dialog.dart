@@ -6,12 +6,13 @@ import 'package:flutter/services.dart';
 import '../../../models/pos_payment_method.dart';
 import '../../../utils/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/locker_translation_mixin.dart';
 import '../../../utils/toast_service.dart';
 
 /// Optional handler to persist PAY draft to `PATCH …/payment-method` before closing.
 typedef InvoicePaymentDraftPersistFn = Future<String?> Function(
-  InvoicePaymentChoiceResult proposal,
-);
+    InvoicePaymentChoiceResult proposal,
+    );
 
 /// Result of [showInvoicePaymentChoiceDialog].
 class InvoicePaymentChoiceResult {
@@ -31,20 +32,20 @@ class InvoicePaymentChoiceResult {
 }
 
 Future<InvoicePaymentChoiceResult?> showInvoicePaymentChoiceDialog(
-  BuildContext context, {
-  bool? initialIsCorporate,
-  Set<PaymentMethod>? initialPayments,
-  Map<PaymentMethod, double>? initialPaymentAmounts,
-  Set<String>? initialEmployeeIds,
-  /// Order grand total for split validation; defaults to 0 if omitted (e.g. hot-reload edge cases).
-  double totalAmount = 0,
+    BuildContext context, {
+      bool? initialIsCorporate,
+      Set<PaymentMethod>? initialPayments,
+      Map<PaymentMethod, double>? initialPaymentAmounts,
+      Set<String>? initialEmployeeIds,
+      /// Order grand total for split validation; defaults to 0 if omitted (e.g. hot-reload edge cases).
+      double totalAmount = 0,
 
-  /// When set (cashier Orders flow): Save calls PATCH draft first; on failure dialog stays open.
-  InvoicePaymentDraftPersistFn? persistDraftFn,
+      /// When set (cashier Orders flow): Save calls PATCH draft first; on failure dialog stays open.
+      InvoicePaymentDraftPersistFn? persistDraftFn,
 
-  /// When set with [persistDraftFn]: clears server draft and closes modal (caller gets `null`).
-  Future<String?> Function()? clearPersistedDraftFn,
-}) {
+      /// When set with [persistDraftFn]: clears server draft and closes modal (caller gets `null`).
+      Future<String?> Function()? clearPersistedDraftFn,
+    }) {
   return showDialog<InvoicePaymentChoiceResult>(
     context: context,
     barrierDismissible: false,
@@ -252,9 +253,15 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     });
   }
 
-  String _amountToText(double v) {
-    if ((v - v.roundToDouble()).abs() < 0.0001) return v.round().toString();
-    return v.toStringAsFixed(2);
+  String _amountToText(double v, {String? languageCode}) {
+    final raw = (v - v.roundToDouble()).abs() < 0.0001
+        ? v.round().toString()
+        : v.toStringAsFixed(2);
+    final lang = languageCode ??
+        (context.mounted
+            ? Localizations.localeOf(context).languageCode
+            : 'en');
+    return AppTranslationService.localizeDigitsForLanguage(raw, lang);
   }
 
   void _syncAmountControllers({
@@ -277,19 +284,18 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
       if (existing != null) continue;
       final initialAmount = seedFromInitial
           ? (widget.initialPaymentAmounts != null
-              ? widget.initialPaymentAmounts![pm]
-              : null)
+          ? widget.initialPaymentAmounts![pm]
+          : null)
           : null;
       _amountControllers[pm] = TextEditingController(
         text: initialAmount != null && initialAmount > 0
-            ? _amountToText(initialAmount)
-            : '',
+            ? _amountToText(initialAmount, languageCode: Localizations.localeOf(context).languageCode) : '',
       );
     }
 
     if (!_isSplitMode && _isCorporate != null && _selected.length == 1) {
       final only = _selected.first;
-      _amountControllers[only]?.text = _amountToText(_safeTotal);
+      _amountControllers[only]?.text = _amountToText(_safeTotal,    languageCode: Localizations.localeOf(context).languageCode);
     }
 
     if (_isSplitMode && fromOneToManySplit) {
@@ -300,11 +306,16 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
   }
 
   double _parseAmount(TextEditingController c) {
-    final raw = c.text.trim().replaceAll(',', '');
+    final raw = c.text
+        .trim()
+        .replaceAll(',', '')
+    // Convert Arabic-Indic digits → ASCII
+        .replaceAllMapped(RegExp(r'[٠-٩]'), (m) {
+      return (m.group(0)!.codeUnitAt(0) - 0x0660).toString();
+    });
     if (raw.isEmpty) return 0;
     return double.tryParse(raw) ?? 0;
   }
-
   double get _splitSum {
     double sum = 0;
     for (final pm in _selected) {
@@ -374,12 +385,12 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
             ),
             boxShadow: isSelected
                 ? [
-                    BoxShadow(
-                      color: AppColors.secondaryLight.withValues(alpha: 0.06),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
+              BoxShadow(
+                color: AppColors.secondaryLight.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ]
                 : null,
           ),
           child: Row(
@@ -392,7 +403,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                     fontWeight: FontWeight.w800,
                     height: 1.2,
                     color:
-                        isSelected ? AppColors.secondaryLight : Colors.grey.shade600,
+                    isSelected ? AppColors.secondaryLight : Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -514,7 +525,12 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  l10n.posPaymentRemaining(_remainingAmount.toStringAsFixed(2)),
+                  l10n.posPaymentRemaining(
+                    AppTranslationService.localizeDigitsForLanguage(
+                      _remainingAmount.toStringAsFixed(2),
+                      Localizations.localeOf(context).languageCode,
+                    ),
+                  ),
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
@@ -538,7 +554,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
       controller: c,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
+        FilteringTextInputFormatter.allow(RegExp(r'^[\d٠-٩]*[.,]?[\d٠-٩]{0,2}$')),
       ],
       onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
@@ -808,25 +824,25 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                     TextButton(
                       style: TextButton.styleFrom(
                         padding:
-                            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       ),
                       onPressed:
-                          _draftSaving || _draftClearing ? null : _submitClearPersistedDraft,
+                      _draftSaving || _draftClearing ? null : _submitClearPersistedDraft,
                       child: _draftClearing
                           ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                           : Text(
-                              l10n.posPaymentClearSaved,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color:
-                                    Colors.orange.shade800.withValues(alpha: 0.9),
-                              ),
-                            ),
+                        l10n.posPaymentClearSaved,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color:
+                          Colors.orange.shade800.withValues(alpha: 0.9),
+                        ),
+                      ),
                     ),
                   const Spacer(),
                   TextButton(
@@ -834,7 +850,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     ),
                     onPressed:
-                        (_draftSaving || _draftClearing) ? null : () => Navigator.of(context).pop(),
+                    (_draftSaving || _draftClearing) ? null : () => Navigator.of(context).pop(),
                     child: Text(
                       l10n.posCommonCancel,
                       style: TextStyle(
@@ -858,22 +874,22 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                       ),
                     ),
                     onPressed:
-                        (_draftSaving ||
-                                _draftClearing ||
-                                !_canSave)
-                            ? null
-                            : _submitSaveDraft,
+                    (_draftSaving ||
+                        _draftClearing ||
+                        !_canSave)
+                        ? null
+                        : _submitSaveDraft,
                     child: _draftSaving
                         ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                         : Text(
-                            l10n.posCommonSave,
-                            style:
-                                TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-                          ),
+                      l10n.posCommonSave,
+                      style:
+                      TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ],
               ),
@@ -917,19 +933,19 @@ class _CustomerTypeCard extends StatelessWidget {
             ),
             boxShadow: selected
                 ? [
-                    BoxShadow(
-                      color: AppColors.secondaryLight.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
+              BoxShadow(
+                color: AppColors.secondaryLight.withValues(alpha: 0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ]
                 : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -946,7 +962,7 @@ class _CustomerTypeCard extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
                   color:
-                      selected ? AppColors.onSecondaryLight : Colors.grey.shade600,
+                  selected ? AppColors.onSecondaryLight : Colors.grey.shade600,
                 ),
               ),
             ],

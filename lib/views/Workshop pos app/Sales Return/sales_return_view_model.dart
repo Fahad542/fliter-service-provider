@@ -108,8 +108,17 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
     return anySelected;
   }
 
+  static String _westernDigits(String text) {
+    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    var out = text;
+    for (var i = 0; i < arabic.length; i++) {
+      out = out.replaceAll(arabic[i], i.toString());
+    }
+    return out;
+  }
+
   Future<void> searchInvoice() async {
-    final query = searchController.text.trim();
+    final query = _westernDigits(searchController.text).trim();
     if (query.isEmpty) return;
 
     _isSearching = true;
@@ -141,9 +150,17 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
             customerId: query,
             nextOilChangeKm: null,
             items: order.items.map((item) {
+              String? productNameArabic;
+              try {
+                final dynamic dynItem = item;
+                productNameArabic = dynItem.productNameArabic as String?;
+              } catch (_) {
+                productNameArabic = null;
+              }
               return InvoiceItem(
                 id: item.id,
                 productName: item.productName,
+                productNameArabic: productNameArabic,
                 qty: item.qty,
                 unitPrice: item.unitPrice,
                 lineTotal: item.lineTotal,

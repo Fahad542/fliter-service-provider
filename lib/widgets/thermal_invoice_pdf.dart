@@ -79,7 +79,7 @@ pw.Document buildThermalInvoicePdfDocument({
   final seller = workshopLine.isNotEmpty ? workshopLine : '—';
   final vatNo = (invoice.branchVatId ?? invoice.workshopTaxId ?? '').trim();
   final addr =
-      (invoice.branchAddress ?? invoice.workshopAddress ?? '').trim();
+  (invoice.branchAddress ?? invoice.workshopAddress ?? '').trim();
   final pdfItemDiscount = thermalR2(t.itemDiscountsTotal);
   final pdfInvoiceDiscount = thermalR2(t.invoiceDiscount);
   final pdfPromoDiscount = thermalR2(t.promoDiscount);
@@ -88,11 +88,11 @@ pw.Document buildThermalInvoicePdfDocument({
 
   const fsMeta = 7.2;
   pw.TextStyle tsLabel() => pw.TextStyle(
-        font: fontBold,
-        fontSize: fsMeta + 0.35,
-        fontWeight: pw.FontWeight.bold,
-        height: 1.05,
-      );
+    font: fontBold,
+    fontSize: fsMeta + 0.35,
+    fontWeight: pw.FontWeight.bold,
+    height: 1.05,
+  );
   pw.TextStyle tsValue() =>
       pw.TextStyle(font: font, fontSize: fsMeta, height: 1.05);
 
@@ -209,12 +209,12 @@ pw.Document buildThermalInvoicePdfDocument({
   }
 
   pw.Widget arabicAboveRichLabelSized(
-    String arabicLines,
-    String englishLabel,
-    String englishValue, {
-    required double enSize,
-    double arabicSize = 6.6,
-  }) {
+      String arabicLines,
+      String englishLabel,
+      String englishValue, {
+        required double enSize,
+        double arabicSize = 6.6,
+      }) {
     final lbl = pw.TextStyle(font: fontBold, fontSize: enSize);
     final val = pw.TextStyle(font: font, fontSize: enSize);
     return pw.Padding(
@@ -265,34 +265,34 @@ pw.Document buildThermalInvoicePdfDocument({
       padding: const pw.EdgeInsets.only(bottom: 0.35),
       child: _thermalInvoicePdfHasArabic(v)
           ? pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(label, style: tsLabel()),
-                pw.SizedBox(width: 3),
-                pw.Expanded(
-                  child: pw.Text(
-                    v,
-                    style: pw.TextStyle(
-                      font: fontArabic,
-                      fontSize: fsMeta + 0.5,
-                      height: 1.05,
-                    ),
-                    textDirection: pw.TextDirection.rtl,
-                    textAlign: pw.TextAlign.left,
-                    maxLines: 6,
-                    softWrap: true,
-                  ),
-                ),
-              ],
-            )
-          : pw.RichText(
-              text: pw.TextSpan(
-                children: [
-                  pw.TextSpan(text: label, style: tsLabel()),
-                  pw.TextSpan(text: v, style: tsValue()),
-                ],
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(label, style: tsLabel()),
+          pw.SizedBox(width: 3),
+          pw.Expanded(
+            child: pw.Text(
+              v,
+              style: pw.TextStyle(
+                font: fontArabic,
+                fontSize: fsMeta + 0.5,
+                height: 1.05,
               ),
+              textDirection: pw.TextDirection.rtl,
+              textAlign: pw.TextAlign.left,
+              maxLines: 6,
+              softWrap: true,
             ),
+          ),
+        ],
+      )
+          : pw.RichText(
+        text: pw.TextSpan(
+          children: [
+            pw.TextSpan(text: label, style: tsLabel()),
+            pw.TextSpan(text: v, style: tsValue()),
+          ],
+        ),
+      ),
     );
     return pad;
   }
@@ -302,36 +302,49 @@ pw.Document buildThermalInvoicePdfDocument({
     return richLabelValue(label, pdfUserLine(rawValue));
   }
 
+// ── Bilingual section header (Arabic / English) ─────────────────────────────
+  pw.Widget bilingualSectionHeader(String ar, String en) => pw.Row(
+    children: [
+      pw.Text(
+        ar,
+        style: pw.TextStyle(font: fontArabic, fontSize: 7.2, height: 1.08),
+        textDirection: pw.TextDirection.rtl,
+      ),
+      pw.Text(' / ', style: pw.TextStyle(font: fontBold, fontSize: 7.6)),
+      pw.Text(en, style: pw.TextStyle(font: fontBold, fontSize: 7.6)),
+    ],
+  );
+
   pw.Widget dashed() => pw.Padding(
-        padding: const pw.EdgeInsets.only(top: 0.35, bottom: 0.9),
-        child: pw.LayoutBuilder(
-          builder: (context, constraints) {
-            const fs = 6.2;
-            final w = constraints?.maxWidth;
-            final count = (w == null || !w.isFinite || w <= 8)
-                ? 56
-                : (w / (fs * 0.42)).floor().clamp(32, 600);
-            return pw.Text(
-              List.filled(count, '-').join(),
-              maxLines: 1,
-              overflow: pw.TextOverflow.clip,
-              style: pw.TextStyle(
-                font: font,
-                fontSize: fs,
-                color: PdfColors.grey600,
-                letterSpacing: 0,
-              ),
-            );
-          },
-        ),
-      );
+    padding: const pw.EdgeInsets.only(top: 0.35, bottom: 0.9),
+    child: pw.LayoutBuilder(
+      builder: (context, constraints) {
+        const fs = 6.2;
+        final w = constraints?.maxWidth;
+        final count = (w == null || !w.isFinite || w <= 8)
+            ? 56
+            : (w / (fs * 0.42)).floor().clamp(32, 600);
+        return pw.Text(
+          List.filled(count, '-').join(),
+          maxLines: 1,
+          overflow: pw.TextOverflow.clip,
+          style: pw.TextStyle(
+            font: font,
+            fontSize: fs,
+            color: PdfColors.grey600,
+            letterSpacing: 0,
+          ),
+        );
+      },
+    ),
+  );
 
   pw.Widget row4(
-    pw.Widget w1,
-    pw.Widget w2,
-    pw.Widget w3,
-    pw.Widget w4,
-  ) {
+      pw.Widget w1,
+      pw.Widget w2,
+      pw.Widget w3,
+      pw.Widget w4,
+      ) {
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -344,11 +357,11 @@ pw.Document buildThermalInvoicePdfDocument({
   }
 
   pw.Widget thermalDetailGrid(
-    List<pw.Widget> cells, {
-    int columnsPerRow = 1,
-    double rowGap = 3,
-    double colGap = 5,
-  }) {
+      List<pw.Widget> cells, {
+        int columnsPerRow = 1,
+        double rowGap = 3,
+        double colGap = 5,
+      }) {
     final cols = columnsPerRow.clamp(1, 12);
     final rows = <pw.Widget>[];
     for (var i = 0; i < cells.length; i += cols) {
@@ -485,39 +498,39 @@ pw.Document buildThermalInvoicePdfDocument({
         }
 
         if (hasMeaningfulCustomerName(invoice.customerName)) {
-          addCustLine('Name: ', invoice.customerName.trim());
+          addCustLine('${ThermalInvoicePdfLabels.customerNameAr} / Name: ', invoice.customerName.trim());
         }
         if (hasAnyText(invoice.customerMobile)) {
-          addCustLine('Mobile: ', invoice.customerMobile!.trim());
+          addCustLine('${ThermalInvoicePdfLabels.customerMobileAr} / Mobile: ', invoice.customerMobile!.trim());
         }
         if (hasAnyText(invoice.customerTaxId)) {
-          addCustLine('Tax ID: ', invoice.customerTaxId!.trim());
+          addCustLine('${ThermalInvoicePdfLabels.customerTaxIdAr} / Tax ID: ', invoice.customerTaxId!.trim());
         }
         addCustLine(
-          'Customer type: ',
+          '${ThermalInvoicePdfLabels.customerTypeAr} / Customer type: ',
           pdfUserLine(invoice.thermalDisplayedCustomerType.trim()),
         );
 
         final hasMake = invoice.vehicleMake.trim().isNotEmpty;
         final hasModel = invoice.vehicleModel.trim().isNotEmpty;
         if (!(hasMake || hasModel) && invoice.vehicleInfo.trim().isNotEmpty) {
-          addCustLine('Vehicle: ', invoice.vehicleInfo.trim());
+          addCustLine('${ThermalInvoicePdfLabels.vehicleAr} / Vehicle: ', invoice.vehicleInfo.trim());
         } else {
-          if (hasMake) addCustLine('Make: ', invoice.vehicleMake.trim());
-          if (hasModel) addCustLine('Model: ', invoice.vehicleModel.trim());
+          if (hasMake) addCustLine('${ThermalInvoicePdfLabels.vehicleMakeAr} / Make: ', invoice.vehicleMake.trim());
+          if (hasModel) addCustLine('${ThermalInvoicePdfLabels.vehicleModelAr} / Model: ', invoice.vehicleModel.trim());
         }
 
         if (hasAnyText(invoice.vehicleYear)) {
-          addCustLine('Year: ', invoice.vehicleYear.trim());
+          addCustLine('${ThermalInvoicePdfLabels.vehicleYearAr} / Year: ', invoice.vehicleYear.trim());
         }
         if (invoice.plateNo.trim().isNotEmpty) {
-          addCustLine('Plate: ', invoice.plateNo.trim());
+          addCustLine('${ThermalInvoicePdfLabels.vehiclePlateAr} / Plate: ', invoice.plateNo.trim());
         }
         if (hasAnyText(invoice.vehicleVin)) {
-          addCustLine('VIN: ', invoice.vehicleVin.trim());
+          addCustLine('${ThermalInvoicePdfLabels.vehicleVinAr} / VIN: ', invoice.vehicleVin.trim());
         }
         if (invoice.odometerReading != null && invoice.odometerReading! > 0) {
-          addCustLine('Odometer: ', '${invoice.odometerReading}');
+          addCustLine('${ThermalInvoicePdfLabels.vehicleOdometerAr} / Odometer: ', '${invoice.odometerReading}');
         }
 
         final chkResolved = InvoiceMaintenanceChecklist.resolvedChecks(
@@ -527,8 +540,8 @@ pw.Document buildThermalInvoicePdfDocument({
         final checklistKids = <pw.Widget>[];
         if (chkResolved != null && chkResolved.any((v) => v)) {
           for (var i = 0;
-              i < InvoiceMaintenanceChecklist.rows.length;
-              i++) {
+          i < InvoiceMaintenanceChecklist.rows.length;
+          i++) {
             final row = InvoiceMaintenanceChecklist.rows[i];
             final checked = chkResolved[i];
             checklistKids.add(
@@ -630,19 +643,19 @@ pw.Document buildThermalInvoicePdfDocument({
               pw.SizedBox(height: 2.5),
               thermalDetailGrid(
                 [
-                  thermalMetaLabelValue('Branch: ', invoice.branchName ?? '-'),
+                  thermalMetaLabelValue('${ThermalInvoicePdfLabels.branchAr} / Branch: ', invoice.branchName ?? '-'),
                   richLabelValue(
-                    'VAT: ',
+                    '${ThermalInvoicePdfLabels.vatNoAr} / VAT: ',
                     vatNo.isEmpty ? '-' : pdfUserLine(vatNo),
                   ),
                   thermalMetaLabelValue(
-                    'Address: ',
+                    '${ThermalInvoicePdfLabels.addressAr} / Address: ',
                     addr.isEmpty ? '-' : addr,
                   ),
-                  richLabelValue('Invoice No: ', pdfUserLine(invoice.invoiceNo)),
-                  richLabelValue('Date: ', pdfUserLine(issued)),
+                  richLabelValue('${ThermalInvoicePdfLabels.invoiceNoAr} / Invoice No: ', pdfUserLine(invoice.invoiceNo)),
+                  richLabelValue('${ThermalInvoicePdfLabels.dateAr} / Date: ', pdfUserLine(issued)),
                   thermalMetaLabelValue(
-                    'Cashier: ',
+                    '${ThermalInvoicePdfLabels.cashierAr} / Cashier: ',
                     invoice.cashierName ?? '-',
                   ),
                 ],
@@ -673,43 +686,43 @@ pw.Document buildThermalInvoicePdfDocument({
               arabicAboveRichLabelSized(
                 ThermalInvoicePdfLabels.totalExclVatAr,
                 '${ThermalInvoicePdfLabels.totalExclVatEn}: ',
-                '${t.grossExVatBeforeDiscount.toStringAsFixed(2)} SR',
+                '${t.grossExVatBeforeDiscount.toStringAsFixed(2)} ر.س',
                 enSize: 7.8,
               ),
               arabicAboveRichLabelSized(
                 ThermalInvoicePdfLabels.itemDiscountAr,
                 '${ThermalInvoicePdfLabels.itemDiscountEn}: ',
-                '${pdfItemDiscount.toStringAsFixed(2)} SR',
+                '${pdfItemDiscount.toStringAsFixed(2)} ر.س',
                 enSize: 7.6,
               ),
               arabicAboveRichLabelSized(
                 ThermalInvoicePdfLabels.invoiceDiscountAr,
                 '${ThermalInvoicePdfLabels.invoiceDiscountEn}: ',
-                '${pdfInvoiceDiscount.toStringAsFixed(2)} SR',
+                '${pdfInvoiceDiscount.toStringAsFixed(2)} ر.س',
                 enSize: 7.6,
               ),
               arabicAboveRichLabelSized(
                 ThermalInvoicePdfLabels.promoDiscountAr,
                 '${ThermalInvoicePdfLabels.promoDiscountEn}: ',
-                '${pdfPromoDiscount.toStringAsFixed(2)} SR',
+                '${pdfPromoDiscount.toStringAsFixed(2)} ر.س',
                 enSize: 7.6,
               ),
               arabicAboveRichLabelSized(
                 ThermalInvoicePdfLabels.taxableAr,
                 '${ThermalInvoicePdfLabels.taxableEn}: ',
-                '${t.totalTaxableAmount.toStringAsFixed(2)} SR',
+                '${t.totalTaxableAmount.toStringAsFixed(2)} ر.س',
                 enSize: 7.6,
               ),
               arabicAboveRichLabelSized(
                 ThermalInvoicePdfLabels.totalVatAr,
                 '${ThermalInvoicePdfLabels.totalVatEn}: ',
-                '${t.vatAmount.toStringAsFixed(2)} SR',
+                '${t.vatAmount.toStringAsFixed(2)} ر.س',
                 enSize: 7.6,
               ),
               arabicAboveRichLabelSized(
                 ThermalInvoicePdfLabels.totalDueAr,
                 '${ThermalInvoicePdfLabels.totalDueEn}: ',
-                '${t.totalInvoiceAmount.toStringAsFixed(2)} SR',
+                '${t.totalInvoiceAmount.toStringAsFixed(2)} ر.س',
                 enSize: 8.2,
                 arabicSize: 6.75,
               ),
@@ -728,9 +741,9 @@ pw.Document buildThermalInvoicePdfDocument({
               ],
               dashed(),
               if (customerKids.isNotEmpty) ...[
-                pw.Text(
-                  'CUSTOMER DETAILS',
-                  style: pw.TextStyle(font: fontBold, fontSize: 8),
+                bilingualSectionHeader(
+                  ThermalInvoicePdfLabels.customerDetailsSectionAr,
+                  ThermalInvoicePdfLabels.customerDetailsSectionEn,
                 ),
                 pw.SizedBox(height: 1.2),
                 thermalDetailGrid(
@@ -742,9 +755,9 @@ pw.Document buildThermalInvoicePdfDocument({
               ],
               if (checklistKids.isNotEmpty) ...[
                 if (customerKids.isNotEmpty) pw.SizedBox(height: 2.5),
-                pw.Text(
-                  'MAINTENANCE CHECKLIST',
-                  style: pw.TextStyle(font: fontBold, fontSize: 8),
+                bilingualSectionHeader(
+                  ThermalInvoicePdfLabels.maintenanceSectionAr,
+                  ThermalInvoicePdfLabels.maintenanceSectionEn,
                 ),
                 pw.SizedBox(height: 1.2),
                 thermalDetailGrid(
@@ -771,12 +784,12 @@ pw.Document buildThermalInvoicePdfDocument({
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
                     pw.Text(
-                      'Thank you',
+                      ThermalInvoicePdfLabels.thankYouEn,
                       style: pw.TextStyle(font: fontBold, fontSize: 8),
                     ),
                     pw.SizedBox(width: 10),
                     pw.Text(
-                      'شكراً',
+                      ThermalInvoicePdfLabels.thankYouAr,
                       style: pw.TextStyle(
                         font: fontArabic,
                         fontSize: 8,
