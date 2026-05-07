@@ -3,36 +3,19 @@ import 'package:flutter/material.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../models/department_model.dart';
 import '../../../services/session_service.dart';
-import '../../../services/locker_translation_mixin.dart';
-import '../More Tab/settings_view_model.dart';
 // import '../../data/repositories/department_repository.dart';
 // import '../../data/repositories/pos_repository.dart';
 // import '../../services/session_service.dart';
 // import '../../models/department_model.dart';
-class DepartmentViewModel extends ChangeNotifier with TranslatableMixin {
+class DepartmentViewModel extends ChangeNotifier {
   final PosRepository _departmentRepository;
   final SessionService _sessionService;
 
   DepartmentViewModel({
     required PosRepository departmentRepository,
     required SessionService sessionService,
-    SettingsViewModel? settingsViewModel,
   })  : _departmentRepository = departmentRepository,
-        _sessionService = sessionService {
-    if (settingsViewModel != null) {
-      bindLocaleRetranslation(settingsViewModel, retranslate);
-    }
-  }
-
-  Future<void> retranslate() async {
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    unbindLocaleRetranslation();
-    super.dispose();
-  }
+        _sessionService = sessionService;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;

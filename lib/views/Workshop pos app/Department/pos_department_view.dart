@@ -8,8 +8,6 @@ import '../../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Navbar/pos_shell.dart';
 import 'department_view_model.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../services/LocalizedApiText.dart';
 
 String _normalizeDeptKeyForExclude(String value) =>
     value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -71,7 +69,6 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
@@ -81,7 +78,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F6),
       appBar: PosScreenAppBar(
-        title: isAddToExisting ? l10n.posDeptAddTitle : l10n.posDeptSelectTitle,
+        title: isAddToExisting ? 'Add Department' : 'Select Depart',
       ),
       body: Consumer<DepartmentViewModel>(
         builder: (context, viewModel, child) {
@@ -94,11 +91,11 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(l10n.posDeptRetry),
+                  Text('Error: ${viewModel.errorMessage}'),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => viewModel.fetchDepartments(),
-                    child: Text(l10n.posDeptRetry),
+                    child: const Text('Retry'),
                   ),
                 ],
               ),
@@ -112,7 +109,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                   context.read<PosViewModel>().editDepartmentId);
 
           if (departments.isEmpty) {
-            return Center(child: Text(l10n.posDeptNoneFound));
+            return const Center(child: Text('No departs found'));
           }
 
           if (!_autoSelectionDone &&
@@ -157,7 +154,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                             ? () {
                                 ToastService.showError(
                                   context,
-                                  l10n.posDeptAlreadyOnOrder,
+                                  'This department is already on this order.',
                                 );
                               }
                             : () {
@@ -219,7 +216,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                                   ),
                                 ),
                                 SizedBox(height: isTablet ? 12 : 10),
-                                LocalizedApiText(
+                                Text(
                                   dept.name,
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     fontWeight:
@@ -283,10 +280,10 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                               ),
                             ),
                             SizedBox(width: isTablet ? 12 : 8),
-                            LocalizedApiText(
+                            Text(
                               viewModel.selectedIndices.length == 1
                                   ? viewModel.selectedDepartments.first.name
-                                  : l10n.posDeptSelectedCount(viewModel.selectedIndices.length),
+                                  : '${viewModel.selectedIndices.length} departments selected',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w700,
                                 fontSize: isTablet ? 15 : 13,
@@ -324,7 +321,6 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
     bool isTablet,
     bool isPlacing,
   ) {
-    final l10n = AppLocalizations.of(context)!;
     return Consumer<PosViewModel>(
       builder: (context, posViewModel, child) {
         final selectedDeptIds = selectedDepartments.map((d) => d.id).toList();
@@ -344,7 +340,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
               if (validIds.isEmpty) {
                 ToastService.showError(
                   context,
-                  l10n.posDeptSelectAtLeastOne,
+                  'Select at least one department to add.',
                 );
                 return;
               }
@@ -370,7 +366,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                 .isEmpty) {
               ToastService.showError(
                 context,
-                l10n.posDeptVehicleRequired,
+                'Please add vehicle number first (Add Customer)',
               );
               return;
             }
@@ -422,7 +418,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              l10n.posDeptChangeDeptTitle,
+                              'Change Department?',
                               style: AppTextStyles.h3.copyWith(
                                 fontSize: isDialogTablet ? 26 : 22,
                                 fontWeight: FontWeight.w800,
@@ -430,7 +426,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                             ),
                             const SizedBox(height: 14),
                             Text(
-                              l10n.posDeptChangeDeptBody,
+                              'Do you really want to change your department?',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: Colors.grey.shade800,
                                 fontSize: isDialogTablet ? 17 : 15,
@@ -439,7 +435,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              l10n.posDeptChangeDeptRefresh,
+                              'Your invoice data will be refreshed.',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: Colors.grey.shade600,
                                 fontSize: isDialogTablet ? 16 : 14,
@@ -464,7 +460,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                                       ),
                                     ),
                                     child: Text(
-                                      l10n.posDeptChangeDeptCancel,
+                                      'Cancel',
                                       style: TextStyle(
                                         color: Colors.grey.shade700,
                                         fontWeight: FontWeight.w700,
@@ -490,7 +486,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                                       ),
                                     ),
                                     child: Text(
-                                      l10n.posDeptChangeDeptContinue,
+                                      'Continue',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: isDialogTablet ? 16 : 14,
@@ -548,7 +544,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
             ),
           )
               : Text(
-            isAddToExistingFlow ? l10n.posDeptAddToOrder : l10n.posDeptOrderPlaced,
+            isAddToExistingFlow ? 'Add to order' : 'Order Placed',
             style: AppTextStyles.button.copyWith(
               fontWeight: FontWeight.w600,
               fontSize: isTablet ? 16 : 14,

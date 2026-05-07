@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../services/currency_helper.dart';
-import '../../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -14,8 +12,6 @@ import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../More Tab/pos_more_view.dart'; // Added
 import 'promo_code_dialog.dart'; // Added (same folder)
 import 'promo_view_model.dart';
-import '../../../services/LocalizedApiText.dart';
-import '../../../services/locker_translation_mixin.dart';
 
 class PosPromoView extends StatefulWidget {
   const PosPromoView({super.key});
@@ -25,40 +21,6 @@ class PosPromoView extends StatefulWidget {
 }
 
 class _PosPromoViewState extends State<PosPromoView> {
-  String _lang(BuildContext context) => Localizations.localeOf(context).languageCode;
-  bool _isAr(BuildContext context) => _lang(context) == 'ar';
-
-  String _digits(BuildContext context, Object? value) {
-    return AppTranslationService.localizeDigitsForLanguage(
-      value?.toString() ?? '',
-      _lang(context),
-    );
-  }
-
-  String _money(BuildContext context, num amount) {
-    final lang = _lang(context);
-    final v = _digits(context, amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2));
-    return lang == 'ar' ? '$v ر.س' : 'SAR $v';
-  }
-
-  String _discountText(BuildContext context, double discount, bool isPercent) {
-    final amount = discount % 1 == 0 ? discount.toStringAsFixed(0) : discount.toStringAsFixed(2);
-    final d = _digits(context, amount);
-    if (_isAr(context)) {
-      return isPercent ? 'خصم $d٪' : 'خصم ${_money(context, discount)}';
-    }
-    return isPercent ? '$d% OFF' : '${_money(context, discount)} OFF';
-  }
-
-  String _validDiscountText(BuildContext context, Map<String, dynamic> result) {
-    final rawDiscount = result['discount'];
-    final discount = rawDiscount is num
-        ? rawDiscount.toDouble()
-        : double.tryParse(rawDiscount?.toString() ?? '') ?? 0;
-    final isPercent = result['isPercent'] == true;
-    return _discountText(context, discount, isPercent);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -76,7 +38,7 @@ class _PosPromoViewState extends State<PosPromoView> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: false,
       appBar: PosScreenAppBar(
-        title: AppLocalizations.of(context)!.posPromoTitle,
+        title: 'Promo Code',
         showBackButton: false,
         showHamburger: true,
         onMenuPressed: () =>
@@ -94,7 +56,7 @@ class _PosPromoViewState extends State<PosPromoView> {
           children: [
             _buildEntrySection(isTablet),
             SizedBox(height: isTablet ? 10 : 20),
-            _buildSectionTitle(AppLocalizations.of(context)!.posPromoAvailablePromotions, Icons.stars_outlined),
+            _buildSectionTitle('Available Promotions', Icons.stars_outlined),
             SizedBox(height: isTablet ? 8 : 14),
             if (promoVm.isLoadingPromos)
               const Center(
@@ -108,7 +70,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: Text(
-                    AppLocalizations.of(context)!.posPromoNoPromotionsAvailable,
+                    'No promotions available',
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                   ),
                 ),
@@ -179,12 +141,12 @@ class _PosPromoViewState extends State<PosPromoView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionTitle(
-            AppLocalizations.of(context)!.posPromoApplyPromoCode,
+            'Apply Promo Code',
             Icons.local_offer_outlined,
           ),
           SizedBox(height: isTablet ? 8 : 16),
           Text(
-            AppLocalizations.of(context)!.posPromoCheckDescription,
+            'Check the validity of a customer provided code.',
             style: AppTextStyles.bodyMedium.copyWith(
               color: Colors.grey,
               fontSize: 13,
@@ -212,7 +174,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                       ),
                       inputFormatters: [EnglishNumberFormatter()],
                       decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.posPromoExampleSave10,
+                        hintText: 'e.g. SAVE10',
                         hintStyle: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 13,
@@ -279,8 +241,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                               color: Colors.white,
                             ),
                           )
-                        : Text(
-                            AppLocalizations.of(context)!.posPromoCheckValidity,
+                        : const Text(
+                            'Check Validity',
                             style: TextStyle(fontWeight: FontWeight.w700),
                           ),
                   ),
@@ -310,7 +272,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                           ),
                           inputFormatters: [EnglishNumberFormatter()],
                           decoration: InputDecoration(
-                            hintText: AppLocalizations.of(context)!.posPromoExampleSave10,
+                            hintText: 'e.g. SAVE10',
                             hintStyle: TextStyle(
                               color: Colors.grey.shade400,
                               fontSize: 13,
@@ -375,8 +337,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                                   color: Colors.white,
                                 ),
                               )
-                            : Text(
-                                AppLocalizations.of(context)!.posPromoCheckValidity,
+                            : const Text(
+                                'Check Validity',
                                 style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                       ),
@@ -409,7 +371,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 20),
                   const SizedBox(width: 12),
-                  LocalizedApiText(
+                  Text(
                     promoVm.promoErrorMessage!,
                     style: const TextStyle(
                       color: Colors.red,
@@ -457,7 +419,7 @@ class _PosPromoViewState extends State<PosPromoView> {
               SizedBox(width: compact ? 8 : 12),
               Expanded(
                 child: Text(
-                  _validDiscountText(context, validResult),
+                  validResult['message']?.toString() ?? '',
                   style: TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.w800,
@@ -467,7 +429,7 @@ class _PosPromoViewState extends State<PosPromoView> {
               ),
               if (onRemove != null)
                 Tooltip(
-                  message: AppLocalizations.of(context)!.posPromoRemovePromoLower,
+                  message: 'Remove promo',
                   child: IconButton(
                     onPressed: onRemove,
                     icon: Icon(
@@ -488,22 +450,19 @@ class _PosPromoViewState extends State<PosPromoView> {
           SizedBox(height: gapAfterTitle),
           _buildResultDetail(
             Icons.store,
-            AppLocalizations.of(context)!.posPromoStoreLabel,
-            validResult['store']?.toString() ?? '',
+            'Store: ${validResult['store']}',
             compact: compact,
           ),
           SizedBox(height: gapDetail),
           _buildResultDetail(
             Icons.inventory_2,
-            AppLocalizations.of(context)!.posPromoProductsLabel,
-            validResult['products']?.toString() ?? '',
+            'Products: ${validResult['products']}',
             compact: compact,
           ),
           SizedBox(height: gapDetail),
           _buildResultDetail(
             Icons.calendar_today,
-            AppLocalizations.of(context)!.posPromoValidityLabel,
-            validResult['period']?.toString() ?? '',
+            'Period: ${validResult['period']}',
             compact: compact,
           ),
         ],
@@ -513,15 +472,9 @@ class _PosPromoViewState extends State<PosPromoView> {
 
   Widget _buildResultDetail(
     IconData icon,
-    String label,
-    String value, {
+    String text, {
     bool compact = false,
   }) {
-    final style = TextStyle(
-      color: Colors.grey.shade800,
-      fontSize: compact ? 12 : 14,
-      fontWeight: FontWeight.w500,
-    );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -532,16 +485,13 @@ class _PosPromoViewState extends State<PosPromoView> {
         ),
         SizedBox(width: compact ? 8 : 12),
         Expanded(
-          child: Wrap(
-            spacing: 4,
-            runSpacing: 2,
-            children: [
-              Text(label, style: style.copyWith(fontWeight: FontWeight.w700)),
-              LocalizedApiText(
-                _digits(context, value),
-                style: style,
-              ),
-            ],
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.grey.shade800,
+              fontSize: compact ? 12 : 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -616,7 +566,9 @@ class _PosPromoViewState extends State<PosPromoView> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      _discountText(context, promo.discount, promo.isPercent),
+                      promo.isPercent
+                          ? '${promo.discount.toStringAsFixed(0)}% OFF'
+                          : 'SAR ${promo.discount.toStringAsFixed(0)} OFF',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         color: Colors.green,
@@ -627,7 +579,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                 ],
               ),
               const SizedBox(height: 16),
-              LocalizedApiText(
+              Text(
                 promo.title,
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
@@ -638,7 +590,7 @@ class _PosPromoViewState extends State<PosPromoView> {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              LocalizedApiText(
+              Text(
                 promo.description,
                 style: TextStyle(
                   color: Colors.grey.shade500,
@@ -673,8 +625,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text(
-                    AppLocalizations.of(context)!.posPromoCheckConditions,
+                  child: const Text(
+                    'Check Conditions',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.secondaryLight,

@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/customer_search_model.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../services/LocalizedApiText.dart';
-import '../../../services/locker_translation_mixin.dart';
 import '../../../models/invoiced_orders_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
-import '../../../utils/toast_service.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +13,7 @@ class PosCustomerHistoryView extends StatefulWidget {
   final String? focusOrderId;
 
   const PosCustomerHistoryView({
-    super.key,
+    super.key, 
     required this.customer,
     this.focusOrderId,
   });
@@ -38,13 +34,12 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final isTablet = MediaQuery.of(context).size.width > 600;
     final customer = widget.customer;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F6),
-      appBar: PosScreenAppBar(title: l10n.posCustomerHistoryTitle),
+      appBar: PosScreenAppBar(title: 'Customer History'),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
             horizontal: isTablet ? 32 : 16, vertical: 24),
@@ -55,7 +50,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
 
             const SizedBox(height: 32),
             Text(
-              l10n.posCustomerPastOrders,
+              'Past Orders',
               style: AppTextStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.w800,
                 fontSize: isTablet ? 26 : 22,
@@ -80,10 +75,10 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 }
                 final orders = snapshot.data?.orders ?? [];
                 if (orders.isEmpty) {
-                  return Center(
+                  return const Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Text(l10n.posCustomerNoHistory),
+                      padding: EdgeInsets.all(32.0),
+                      child: Text('No order history found for this customer.'),
                     ),
                   );
                 }
@@ -158,7 +153,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
     String formattedDate = order.createdAt;
     try {
       final parsed = DateTime.parse(order.createdAt);
-      formattedDate = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode).format(parsed);
+      formattedDate = DateFormat('dd MMM yyyy').format(parsed);
     } catch (_) {}
 
     return Container(
@@ -183,7 +178,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
             children: [
               Expanded(
                 child: Text(
-                  AppLocalizations.of(context)!.posCustomerOrderId(order.id),
+                  'Order #${order.id}',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: isTablet ? 15 : 13,
@@ -197,7 +192,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: LocalizedApiText(
+                child: Text(
                   order.status.toUpperCase(),
                   style: TextStyle(
                     fontSize: isTablet ? 11 : 10,
@@ -216,10 +211,10 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     size: isTablet ? 15 : 13, color: Colors.grey.shade500),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: LocalizedApiText(
+                  child: Text(
                     '${order.vehicle!.make} ${order.vehicle!.model}  •  ${order.vehicle!.plateNo}'
-                        '${(order.vehicle!.year != null && order.vehicle!.year!.isNotEmpty) ? '  ·  ${order.vehicle!.year}' : ''}'
-                        '${(order.vehicle!.vin != null && order.vehicle!.vin!.isNotEmpty) ? '  ·  ${AppLocalizations.of(context)!.posCustomerVin(order.vehicle!.vin!)}' : ''}',
+                    '${(order.vehicle!.year != null && order.vehicle!.year!.isNotEmpty) ? '  ·  ${order.vehicle!.year}' : ''}'
+                    '${(order.vehicle!.vin != null && order.vehicle!.vin!.isNotEmpty) ? '  ·  VIN ${order.vehicle!.vin}' : ''}',
                     style: TextStyle(
                       fontSize: isTablet ? 13 : 12,
                       color: Colors.grey.shade600,
@@ -237,7 +232,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
               Icon(Icons.calendar_today_rounded,
                   size: isTablet ? 13 : 11, color: Colors.grey.shade400),
               const SizedBox(width: 6),
-              LocalizedApiText(
+              Text(
                 formattedDate,
                 style: TextStyle(
                   fontSize: isTablet ? 12 : 11,
@@ -250,8 +245,8 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 Icon(Icons.receipt_long_rounded,
                     size: isTablet ? 13 : 11, color: Colors.grey.shade400),
                 const SizedBox(width: 4),
-                LocalizedApiText(
-                  AppLocalizations.of(context)!.posCustomerInvoice(order.invoiceNo!),
+                Text(
+                  'Invoice: ${order.invoiceNo}',
                   style: TextStyle(
                     fontSize: isTablet ? 12 : 11,
                     color: Colors.grey.shade500,
@@ -267,23 +262,23 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
   }
 
   Widget _buildInvoicedOrderSlot(
-      List<InvoicedOrder> orders,
-      int index,
-      bool isTablet,
-      ) {
+    List<InvoicedOrder> orders,
+    int index,
+    bool isTablet,
+  ) {
     if (index >= orders.length) return const SizedBox.shrink();
     return _buildInvoicedOrderCard(orders[index], isTablet, compact: true);
   }
 
   Widget _buildInvoicedOrderCard(
-      InvoicedOrder order,
-      bool isTablet, {
-        bool compact = false,
-      }) {
+    InvoicedOrder order,
+    bool isTablet, {
+    bool compact = false,
+  }) {
     String formattedDate = order.createdAt;
     try {
       final parsed = DateTime.parse(order.createdAt);
-      formattedDate = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode).format(parsed);
+      formattedDate = DateFormat('dd MMM yyyy').format(parsed);
     } catch (_) {}
 
     final pad = compact
@@ -328,27 +323,26 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
           Row(
             children: [
               Expanded(
-                child: Padding(
+                child: Container(
                   padding: EdgeInsets.symmetric(
-                    vertical: compact ? 2 : (isTablet ? 3 : 2),
+                      horizontal: compact ? 8 : (isTablet ? 10 : 8),
+                      vertical: compact ? 4 : (isTablet ? 5 : 4)),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.receipt_long_rounded,
-                        size: invIcon,
-                        color: AppColors.secondaryLight,
-                      ),
+                      Icon(Icons.receipt_long_rounded,
+                          size: invIcon, color: AppColors.primaryLight),
                       const SizedBox(width: 5),
                       Expanded(
-                        child: LocalizedApiText(
-                          order.invoiceNo.isNotEmpty
-                              ? order.invoiceNo
-                              : AppLocalizations.of(context)!.posCustomerOrderId(order.id),
+                        child: Text(
+                          order.invoiceNo.isNotEmpty ? order.invoiceNo : 'Order #${order.id}',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: invFs,
-                            color: AppColors.secondaryLight,
+                            color: AppColors.primaryLight,
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
@@ -359,8 +353,8 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 ),
               ),
               const SizedBox(width: 8),
-              LocalizedApiText(
-                AppLocalizations.of(context)!.posCustomerAmountSar(order.totalAmount.toStringAsFixed(2)),
+              Text(
+                'SAR ${order.totalAmount.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: totalFs,
@@ -376,7 +370,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                   size: dateIcon, color: Colors.grey.shade400),
               const SizedBox(width: 5),
               Flexible(
-                child: LocalizedApiText(
+                child: Text(
                   formattedDate,
                   style: TextStyle(
                     fontSize: dateFs,
@@ -392,7 +386,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     size: promoIcon, color: Colors.orange.shade400),
                 const SizedBox(width: 4),
                 Flexible(
-                  child: LocalizedApiText(
+                  child: Text(
                     order.promoCodeName!,
                     style: TextStyle(
                       fontSize: promoFs,
@@ -410,7 +404,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
             Divider(color: Colors.grey.shade100, height: 1),
             SizedBox(height: compact ? 8 : 10),
             ...order.items.take(3).map(
-                  (item) => Padding(
+              (item) => Padding(
                 padding: EdgeInsets.only(bottom: compact ? 4 : 6),
                 child: Row(
                   children: [
@@ -424,7 +418,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     ),
                     SizedBox(width: compact ? 6 : 8),
                     Expanded(
-                      child: LocalizedApiText(
+                      child: Text(
                         item.productName,
                         style: TextStyle(
                           fontSize: lineNameFs,
@@ -435,7 +429,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                       ),
                     ),
                     SizedBox(width: compact ? 4 : 8),
-                    LocalizedApiText(
+                    Text(
                       'x${item.qty.toStringAsFixed(item.qty == item.qty.roundToDouble() ? 0 : 1)}',
                       style: TextStyle(
                         fontSize: lineQtyFs,
@@ -444,8 +438,8 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                       ),
                     ),
                     SizedBox(width: compact ? 4 : 8),
-                    LocalizedApiText(
-                      AppLocalizations.of(context)!.posCustomerAmountSar(item.lineTotal.toStringAsFixed(2)),
+                    Text(
+                      'SAR ${item.lineTotal.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: lineTotalFs,
                         color: const Color(0xFF1E2124),
@@ -459,8 +453,8 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
             if (order.items.length > 3)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: LocalizedApiText(
-                  AppLocalizations.of(context)!.posCustomerMoreItems((order.items.length - 3)),
+                child: Text(
+                  '+${order.items.length - 3} more items',
                   style: TextStyle(
                     fontSize: moreFs,
                     color: Colors.grey.shade400,
@@ -468,98 +462,6 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                   ),
                 ),
               ),
-          ],
-          if (order.id.isNotEmpty) ...[
-            SizedBox(height: compact ? 10 : 12),
-            Consumer<PosViewModel>(
-              builder: (context, posVm, _) {
-                final loading = posVm.isInvoiceLoading &&
-                    posVm.loadingOrderId == order.id;
-                return SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: loading
-                        ? null
-                        : () async {
-                      final response =
-                      await posVm.fetchInvoiceByOrder(order.id);
-                      if (!context.mounted) return;
-                      if (response != null &&
-                          response.success &&
-                          response.invoice != null) {
-                        await showDialog<void>(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (ctx) => InvoiceDialog(
-                            invoice: response.invoice!,
-                            maintenanceChecksFallback: null,
-                          ),
-                        );
-                      } else if (response != null && !response.success) {
-                        ToastService.showError(
-                          context,
-                          response.message.isNotEmpty
-                              ? response.message
-                              : AppLocalizations.of(context)!.posCustomerInvoiceLoadError,
-                        );
-                      } else {
-                        ToastService.showError(
-                          context,
-                          AppLocalizations.of(context)!.posCustomerInvoiceLoadError,
-                        );
-                      }
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primaryLight,
-                      foregroundColor: AppColors.secondaryLight,
-                      disabledBackgroundColor:
-                      AppColors.primaryLight.withValues(alpha: 0.55),
-                      disabledForegroundColor: AppColors.secondaryLight
-                          .withValues(alpha: 0.55),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        vertical: compact ? 8 : 10,
-                        horizontal: 12,
-                      ),
-                    ),
-                    child: loading
-                        ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: compact ? 14 : 16,
-                          height: compact ? 14 : 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.secondaryLight,
-                          ),
-                        ),
-                        SizedBox(width: compact ? 8 : 10),
-                        Text(
-                          AppLocalizations.of(context)!.posCustomerLoading,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: compact ? 12 : 14,
-                            color: AppColors.secondaryLight,
-                          ),
-                        ),
-                      ],
-                    )
-                        : Text(
-                      AppLocalizations.of(context)!.posCustomerPrintInvoice,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: compact ? 12 : 14,
-                        color: AppColors.secondaryLight,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
           ],
         ],
       ),
@@ -593,14 +495,15 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
           Container(
             padding: EdgeInsets.all(avatarPad),
             decoration: BoxDecoration(
-              color: AppColors.secondaryLight,
+              gradient: LinearGradient(
+                colors: [AppColors.primaryLight.withValues(alpha: 0.2), AppColors.primaryLight.withValues(alpha: 0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2), width: 1.5),
             ),
-            child: Icon(
-              Icons.person_rounded,
-              color: AppColors.primaryLight,
-              size: avatarIcon,
-            ),
+            child: Icon(Icons.person_rounded, color: AppColors.primaryLight, size: avatarIcon),
           ),
           SizedBox(width: isTablet ? 16 : 20),
           Expanded(
@@ -610,7 +513,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 Row(
                   children: [
                     Flexible(
-                      child: LocalizedApiText(
+                      child: Text(
                         customer.name,
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.w800,
@@ -624,7 +527,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                LocalizedApiText(
+                Text(
                   customer.mobile,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey.shade600,
@@ -633,8 +536,8 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                 ),
                 if (customer.taxId != null && customer.taxId!.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  LocalizedApiText(
-                    AppLocalizations.of(context)!.posCustomerVat(customer.taxId!),
+                  Text(
+                    'VAT: ${customer.taxId}',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.grey.shade600,
                       fontSize: metaFs,
@@ -664,7 +567,7 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
         ),
       ),
       child: Text(
-        isCorporate ? AppLocalizations.of(context)!.posCustomerTypeCorporate : AppLocalizations.of(context)!.posCustomerTypeRegular,
+        customer.customerType.toUpperCase(),
         style: TextStyle(
           color: isCorporate ? Colors.blue.shade700 : Colors.grey.shade700,
           fontSize: isTablet ? 11 : 13,
@@ -675,3 +578,5 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
   }
 
 }
+
+

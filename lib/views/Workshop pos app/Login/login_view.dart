@@ -12,8 +12,6 @@ import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/custom_auth_header.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/custom_text_field.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../services/locker_translation_mixin.dart';
 
 import '../Navbar/pos_shell.dart';
 import 'login_view_model.dart';
@@ -52,8 +50,6 @@ class _LoginViewState extends State<LoginView> {
     if (!_formKey.currentState!.validate()) return;
 
     final loginViewModel = context.read<LoginViewModel>();
-    final l10n = AppLocalizations.of(context)!;
-    final langCode = Localizations.localeOf(context).languageCode;
 
     // Proceed with login
     final success = await loginViewModel.login(
@@ -64,7 +60,7 @@ class _LoginViewState extends State<LoginView> {
     if (success) {
       if (mounted) {
         final autoClosed = loginViewModel.previousSessionAutoClosed;
-        ToastService.showSuccess(context, l10n.posLoginSuccess);
+        ToastService.showSuccess(context, 'Login successful');
         await context.read<SessionService>().saveLastPortal('cashier');
         context.read<PosViewModel>().setShellSelectedIndex(0);
         Navigator.pushReplacement(
@@ -76,7 +72,7 @@ class _LoginViewState extends State<LoginView> {
             if (mounted) {
               ToastService.showInfo(
                 context,
-                l10n.posLoginPreviousShiftAutoClosed,
+                'Previous shift was automatically closed. New shift started.',
               );
             }
           });
@@ -84,12 +80,7 @@ class _LoginViewState extends State<LoginView> {
       }
     } else {
       if (mounted) {
-        ToastService.showError(
-          context,
-          loginViewModel.errorMessage != null
-              ? await AppTranslationService.localizedDynamicValueForLanguage(loginViewModel.errorMessage!, langCode)
-              : l10n.posLoginFailed,
-        );
+        ToastService.showError(context, loginViewModel.errorMessage ?? 'Login failed');
       }
     }
   }
@@ -104,7 +95,6 @@ class _LoginViewState extends State<LoginView> {
       ),
       builder: (context) {
         final isTablet = MediaQuery.of(context).size.width > 600;
-        final l10n = AppLocalizations.of(context)!;
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: PosTabletLayout.textScaler(context),
@@ -132,7 +122,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  l10n.posLoginResetPasswordTitle,
+                  'Reset Password',
                   style: AppTextStyles.h2.copyWith(
                     color: AppColors.secondaryLight,
                     fontSize: isTablet ? 26 : 22,
@@ -140,7 +130,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  l10n.posLoginResetPasswordSubtitle,
+                  'Enter your email or mobile number and we\'ll send you a reset link.',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey,
                     fontSize: isTablet ? 16 : 14,
@@ -148,8 +138,8 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 32),
                 CustomTextField(
-                  label: l10n.posLoginResetPasswordEmailLabel,
-                  hint: l10n.posLoginResetPasswordEmailHint,
+                  label: 'Email',
+                  hint: 'Enter your email',
                   prefixIcon: const Icon(Icons.email_outlined),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -157,10 +147,10 @@ class _LoginViewState extends State<LoginView> {
                 SizedBox(
                   width: double.infinity,
                   child: CustomButton(
-                    text: l10n.posLoginResetPasswordSendButton,
+                    text: 'Send Reset Link',
                     onPressed: () {
                       Navigator.pop(context);
-                      ToastService.showSuccess(context, l10n.posLoginResetPasswordSentSuccess);
+                      ToastService.showSuccess(context, 'Reset link sent! Check your inbox.');
                     },
                   ),
                 ),
@@ -178,7 +168,6 @@ class _LoginViewState extends State<LoginView> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final horizontalPadding = isTablet ? screenWidth * 0.18 : 40.0;
-    final l10n = AppLocalizations.of(context)!;
     
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
@@ -195,7 +184,7 @@ class _LoginViewState extends State<LoginView> {
                 children: [
                   CustomAuthHeader(
                     title: widget.appName,
-                    subtitle: l10n.posLoginTitle,
+                    subtitle: 'Sign in to continue',
                     showBackButton: true,
                     height: MediaQuery.of(context).size.height *
                         (isTablet ? 0.37 : 0.42),
@@ -227,22 +216,22 @@ class _LoginViewState extends State<LoginView> {
                           children: [
                             const SizedBox(height: 8),
                             CustomTextField(
-                              label: l10n.posLoginEmail,
-                              hint: l10n.posLoginEmailHint,
+                              label: 'Email',
+                              hint: 'Enter your email',
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               prefixIcon: const Icon(Icons.email_outlined),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return l10n.posLoginEmailRequired;
+                                  return 'Please enter email';
                                 }
                                 return null;
                               },
                             ),
                             const SizedBox(height: 16),
                             CustomTextField(
-                              label: l10n.posLoginPassword,
-                              hint: l10n.posLoginPasswordHint,
+                              label: 'Password',
+                              hint: 'Enter your password',
                               controller: _passwordController,
                               obscureText:
                                   context.watch<LoginViewModel>().obscurePassword,
@@ -257,7 +246,7 @@ class _LoginViewState extends State<LoginView> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return l10n.posLoginPasswordRequired;
+                                  return 'Please enter password';
                                 }
                                 return null;
                               },
@@ -268,7 +257,7 @@ class _LoginViewState extends State<LoginView> {
                               child: TextButton(
                                 onPressed: _handleForgotPassword,
                                 child: Text(
-                                  l10n.posLoginForgotPassword,
+                                  'Forgot Password?',
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: AppColors.primaryLight,
                                     fontWeight: FontWeight.w600,
@@ -283,7 +272,7 @@ class _LoginViewState extends State<LoginView> {
                                 return SizedBox(
                                   width: double.infinity,
                                   child: CustomButton(
-                                    text: l10n.posLoginSignIn,
+                                    text: 'Sign In',
                                     isLoading: viewModel.isLoading,
                                     onPressed: _handleLogin,
                                   ),

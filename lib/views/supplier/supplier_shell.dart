@@ -22,7 +22,6 @@ import 'Login/supplier_login_view.dart';
 import '../../services/session_service.dart';
 import '../Menu/menu_view.dart';
 import '../../utils/restart_widget.dart';
-import '../../widgets/app_brand_logo.dart';
 
 class SupplierShell extends StatefulWidget {
   const SupplierShell({super.key});
@@ -150,13 +149,16 @@ class _SupplierShellState extends State<SupplierShell> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppBrandLogo(
+              Image.asset(
+                'assets/images/icon.png',
                 height: 36,
                 color: AppColors.primaryLight,
                 fit: BoxFit.contain,
-                colorBlendMode: BlendMode.srcIn,
-                fallbackIcon: Icons.store,
-                fallbackSize: 36,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.store,
+                  color: AppColors.primaryLight,
+                  size: 36,
+                ),
               ),
               const SizedBox(height: 20),
               Row(

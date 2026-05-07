@@ -4,30 +4,13 @@ import 'package:intl/intl.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../models/inventory_sales_api_model.dart';
 import '../../../services/session_service.dart';
-import '../../../services/locker_translation_mixin.dart';
-import '../More Tab/settings_view_model.dart';
 
 /// Drawer tab: sold quantities by product per calendar day for a selected period.
-class InventorySalesViewModel extends ChangeNotifier with TranslatableMixin {
+class InventorySalesViewModel extends ChangeNotifier {
   InventorySalesViewModel({
     required this.posRepository,
     required this.sessionService,
-    SettingsViewModel? settingsViewModel,
-  }) {
-    if (settingsViewModel != null) {
-      bindLocaleRetranslation(settingsViewModel, retranslate);
-    }
-  }
-
-  Future<void> retranslate() async {
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    unbindLocaleRetranslation();
-    super.dispose();
-  }
+  });
 
   final PosRepository posRepository;
   final SessionService sessionService;

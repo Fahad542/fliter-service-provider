@@ -21,8 +21,6 @@ import '../../../models/cashier_complete_job_model.dart'; // Added
 import '../../../models/cashier_corporate_accounts_api_model.dart';
 import '../../../models/order_payment_method_draft.dart';
 import '../Navbar/pos_shell.dart' show navigateToPosShellBroadcastTab;
-import '../../../services/locker_translation_mixin.dart';
-import '../More Tab/settings_view_model.dart';
 
 class _DepartmentPromoState {
   final String code;
@@ -93,33 +91,13 @@ int? _parseYearForBillingApi(String raw) {
   return null;
 }
 
-class PosViewModel extends ChangeNotifier with TranslatableMixin {
+class PosViewModel extends ChangeNotifier {
   final PosRepository posRepository;
   final SessionService sessionService;
   final RealtimeService _realtimeService = RealtimeService();
 
-  PosViewModel({
-    required this.posRepository,
-    required this.sessionService,
-    SettingsViewModel? settingsViewModel,
-  }) {
-    if (settingsViewModel != null) {
-      bindLocaleRetranslation(settingsViewModel, retranslate);
-    }
+  PosViewModel({required this.posRepository, required this.sessionService}) {
     _loadUserInfo();
-  }
-
-  Future<void> retranslate() async {
-    await _applyHeaderTranslations();
-    notifyListeners();
-  }
-
-  /// Called from the drawer header widget with the live widget-tree locale,
-  /// ensuring the profile names are always translated to the correct language
-  /// even on first boot before [SessionService.getLocale] is fully initialised.
-  Future<void> retranslateWithLocale(String langCode) async {
-    await _applyHeaderTranslations(langCodeOverride: langCode);
-    notifyListeners();
   }
 
   Future<void> _loadUserInfo() async {
@@ -128,10 +106,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     });
     final user = await sessionService.getUser();
     if (user != null) {
-      _rawCashierName = user.cashier?.cashierName ?? user.name;
-      _rawWorkshopName = user.workshopName;
-      _rawBranchName = user.branchName;
-      await _applyHeaderTranslations();
+      _cashierName = user.cashier?.cashierName ?? user.name;
+      _workshopName = user.workshopName;
+      _branchName = user.branchName;
       notifyListeners();
     }
     await _initSocket();
@@ -194,9 +171,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   bool _payloadIndicatesBroadcastEnded(Map<String, dynamic> payload) {
     final event = (payload['event'] ??
-        payload['type'] ??
-        payload['action'] ??
-        '')
+            payload['type'] ??
+            payload['action'] ??
+            '')
         .toString()
         .toLowerCase();
     if (event.contains('broadcast') && event.contains('create')) return false;
@@ -216,7 +193,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     if (event.contains('closed')) return true;
 
     final reason =
-    (payload['reason'] ?? payload['closeReason'])?.toString().toLowerCase();
+        (payload['reason'] ?? payload['closeReason'])?.toString().toLowerCase();
     if (reason != null) {
       if (reason.contains('accept')) return true;
       if (reason.contains('reject')) return true;
@@ -264,7 +241,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         final jobKey = 'job:${j.id}';
         final deptId = j.departmentId?.trim();
         final deptKey =
-        (deptId != null && deptId.isNotEmpty) ? 'dept:$deptId' : null;
+            (deptId != null && deptId.isNotEmpty) ? 'dept:$deptId' : null;
         final hasCooldown = _broadcastCooldownEndsAt.containsKey(jobKey) ||
             (deptKey != null &&
                 _broadcastCooldownEndsAt.containsKey(deptKey));
@@ -289,23 +266,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   List<CashierCorporateAccount> _corporateAccounts = [];
   bool _isCorpAccountsLoading = false;
-  /// After one successful GET, do not auto-fetch again while accounts stay empty (avoids a hydrate↔fetch loop).
-  bool _corporateAccountsLoadedOnce = false;
-  bool _corporateAccountsFetchInFlight = false;
 
   List<CashierCorporateAccount> get corporateAccounts => _corporateAccounts;
   bool get isCorpAccountsLoading => _isCorpAccountsLoading;
 
-  /// Loads branch corporate accounts for corporate walk-in / booking payment defaults and Add Customer (Corporate tab).
-  /// [forceRefresh] bypasses the one-shot cache (e.g. user opened Corporate customer tab to pick up newly added accounts).
-  Future<void> fetchCorporateAccounts({
-    bool silent = true,
-    bool forceRefresh = false,
-  }) async {
-    if (_corporateAccountsFetchInFlight) return;
-    if (!forceRefresh && _corporateAccountsLoadedOnce) return;
-
-    _corporateAccountsFetchInFlight = true;
+  Future<void> fetchCorporateAccounts({bool silent = true}) async {
     if (!silent) {
       _isCorpAccountsLoading = true;
       _errorMessage = null;
@@ -317,14 +282,12 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       final response = await posRepository.getCashierCorporateAccounts(token);
       if (response.success) {
         _corporateAccounts = response.accounts;
-        _corporateAccountsLoadedOnce = true;
         _hydrateInvoicePaymentDefaultsForSelectedOrder();
         notifyListeners();
       }
     } catch (e) {
       _errorMessage = _extractErrorMessage(e.toString());
     } finally {
-      _corporateAccountsFetchInFlight = false;
       if (!silent) {
         _isCorpAccountsLoading = false;
         notifyListeners();
@@ -368,7 +331,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   /// Per–walk-in-order billing drafts (Add customer details / Final Review). Not global VM bleed.
   final Map<String, WalkInBillingSnapshot> _walkInBillingSnapshotsByOrderId =
-  <String, WalkInBillingSnapshot>{};
+      <String, WalkInBillingSnapshot>{};
 
   String get customerName => _customerName;
   String get vatNumber => _vatNumber;
@@ -429,19 +392,12 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   String? _errorMessage;
   String? _currentJobId;
   List<PosOrder> _orders = [];
-  static const int _ordersPageSize = 50;
-  int _ordersOffset = 0;
-  bool _ordersHasMore = true;
-  bool _isLoadingMoreOrders = false;
   PosOrder? _selectedOrder;
   OrderStats _orderStats = OrderStats.empty();
   List<SearchedCustomer> _searchedCustomers = [];
   bool _isSearchingCustomer = false;
   int _shellSelectedIndex = 0;
 
-  String? _rawCashierName;
-  String? _rawWorkshopName;
-  String? _rawBranchName;
   String? _cashierName;
   String? _workshopName;
   String? _branchName;
@@ -453,8 +409,6 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   bool get isLoading => _isLoading;
   bool get isOrdersScreenRefreshing => _ordersScreenRefreshInFlight;
   bool get ordersApiFetchCompleted => _ordersApiFetchCompleted;
-  bool get ordersHasMore => _ordersHasMore;
-  bool get isLoadingMoreOrders => _isLoadingMoreOrders;
   bool get isInvoicePanelSaveBusy => _invoicePanelSaveBusy;
   bool get isInvoiceLoading => _isInvoiceLoading;
   String? get loadingOrderId => _loadingOrderId;
@@ -483,8 +437,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   Future<void> _clearStaleDraftIfRetailEmployeeOrderHasServerPayments(
-      String orderId,
-      ) async {
+    String orderId,
+  ) async {
     final id = orderId.trim();
     if (id.isEmpty || _retailEmployeePaymentDraftClearInFlight.contains(id)) {
       return;
@@ -562,7 +516,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     // Corporate walk-in + corporate booking: default invoice payment dialog to corporate
     // methods, prefilling from order/booking payload or corporate account when possible.
     if (o.isCorporateWalkIn || o.isCorporateBookingOrder) {
-      if (_corporateAccounts.isEmpty && !_corporateAccountsLoadedOnce) {
+      if (_corporateAccounts.isEmpty) {
         unawaited(fetchCorporateAccounts(silent: true));
       }
       final preferred = _preferredCorporatePaymentMethodForOrder(o);
@@ -636,8 +590,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       }
     }
     account ??= _corporateAccounts.cast<CashierCorporateAccount?>().firstWhere(
-          (a) =>
-      (a?.companyName.trim().toLowerCase() ?? '') ==
+      (a) =>
+          (a?.companyName.trim().toLowerCase() ?? '') ==
           (order.corporateCompanyName ?? order.customerName).trim().toLowerCase(),
       orElse: () => null,
     );
@@ -921,9 +875,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   /// Live invoice "Total discount" field — must stay in sync with [_globalDiscount] / [_mainTabGlobalDiscount]
   /// after async hydration ( [TextFormField.initialValue] does not update after first frame).
   final TextEditingController _globalDiscountTextController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController _mainTabGlobalDiscountTextController =
-  TextEditingController();
+      TextEditingController();
 
   TextEditingController get homeSearchController => _homeSearchController;
   FocusNode get homeSearchFocusNode => _homeSearchFocusNode;
@@ -937,7 +891,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   void refreshGlobalDiscountFieldText(bool isMainTab) {
     final c = globalDiscountTextController(isMainTab);
     final v =
-    isMainTab ? _mainTabGlobalDiscount : _globalDiscount;
+        isMainTab ? _mainTabGlobalDiscount : _globalDiscount;
     final t = v > 0
         ? (v % 1 == 0 ? v.toInt().toString() : v.toString())
         : '';
@@ -964,28 +918,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     _searchDebounce?.cancel();
     _ordersRealtimeDebounce?.cancel();
     _broadcastCooldownTicker?.cancel();
-    unbindLocaleRetranslation();
     super.dispose();
-  }
-
-
-  Future<void> _applyHeaderTranslations({String? langCodeOverride}) async {
-    // Prefer the override (live widget-tree locale) so the drawer header is
-    // always correct even on first boot, before SessionService has persisted
-    // the locale preference.
-    final langCode = langCodeOverride ?? await SessionService.getLocale();
-    _cashierName = await AppTranslationService.localizedDynamicValueForLanguage(
-      _rawCashierName ?? 'Cashier',
-      langCode,
-    );
-    _workshopName = await AppTranslationService.localizedDynamicValueForLanguage(
-      _rawWorkshopName ?? 'Loading...',
-      langCode,
-    );
-    _branchName = await AppTranslationService.localizedDynamicValueForLanguage(
-      _rawBranchName ?? '...',
-      langCode,
-    );
   }
 
   String get cashierName => _cashierName ?? 'Cashier';
@@ -1095,9 +1028,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     if (_latestBroadcastCooldownKey != null &&
         !_broadcastCooldownEndsAt.containsKey(_latestBroadcastCooldownKey)) {
       _latestBroadcastCooldownKey =
-      _broadcastCooldownEndsAt.keys.isNotEmpty
-          ? _broadcastCooldownEndsAt.keys.first
-          : null;
+          _broadcastCooldownEndsAt.keys.isNotEmpty
+              ? _broadcastCooldownEndsAt.keys.first
+              : null;
     }
     if (_broadcastCooldownEndsAt.isEmpty) {
       _broadcastCooldownTicker?.cancel();
@@ -1393,7 +1326,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   Map<String, List<CartItem>> _groupCartItemsByDepartment(List<String> fallbackDepartmentIds) {
     final fallback =
-    fallbackDepartmentIds.isNotEmpty ? fallbackDepartmentIds.first.trim() : '';
+        fallbackDepartmentIds.isNotEmpty ? fallbackDepartmentIds.first.trim() : '';
     final map = <String, List<CartItem>>{};
     for (final item in _cartItems) {
       final d = item.product.departmentId?.trim() ?? '';
@@ -1498,7 +1431,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     final rawGlobalType =
         sourceJob?.totalDiscountType ?? sourceOrder?.totalDiscountType ?? 'amount';
     final fallbackGlobalType =
-    rawGlobalType.toLowerCase().contains('percent') ? 'percent' : 'amount';
+        rawGlobalType.toLowerCase().contains('percent') ? 'percent' : 'amount';
 
     double effectiveGlobalValue = 0.0;
     String effectiveGlobalType = 'amount';
@@ -1615,10 +1548,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   bool _multisetLineSigsEqual(
-      List<CartItem> a,
-      List<CartItem> b,
-      String defaultDepartmentId,
-      ) {
+    List<CartItem> a,
+    List<CartItem> b,
+    String defaultDepartmentId,
+  ) {
     if (a.length != b.length) return false;
     final sa = a.map((c) => _pricingLineSigFromCartItem(c, defaultDepartmentId)).toList()
       ..sort();
@@ -1631,19 +1564,19 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   bool _jobOrderPricingMatchesPersisted(
-      Map<String, dynamic> body,
-      PosOrderJob job,
-      PosOrder order,
-      ) {
+    Map<String, dynamic> body,
+    PosOrderJob job,
+    PosOrder order,
+  ) {
     final gtv = (body['totalDiscountValue'] as num?)?.toDouble() ?? 0.0;
     final gtt = (body['totalDiscountType'] as String?)?.toLowerCase() ?? 'amount';
     final rawGt =
         job.totalDiscountType ?? order.totalDiscountType ?? 'amount';
     final expT =
-    rawGt.toLowerCase().contains('percent') ? 'percent' : 'amount';
+        rawGt.toLowerCase().contains('percent') ? 'percent' : 'amount';
     if (gtt != expT) return false;
     final expV = job.totalDiscountValue != 0 ||
-        (job.totalDiscountType != null && job.totalDiscountType!.trim().isNotEmpty)
+            (job.totalDiscountType != null && job.totalDiscountType!.trim().isNotEmpty)
         ? job.totalDiscountValue
         : (order.totalDiscountValue ?? 0);
     if (_moneyKey(gtv) != _moneyKey(expV)) return false;
@@ -1679,11 +1612,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   /// completed job **must** get `true` before [updateJobPricing], or the backend will reject.
   /// Do **not** call on open — only after snapshot diff (or technician diff) says there is a change.
   Future<bool> tryMarkCashierJobEditedAfterMeaningfulChange(
-      BuildContext? context, {
-        required String jobId,
-        required String orderId,
-        bool refreshOrdersOnSuccess = true,
-      }) async {
+    BuildContext? context, {
+    required String jobId,
+    required String orderId,
+    bool refreshOrdersOnSuccess = true,
+  }) async {
     if (jobId.trim().isEmpty) return false;
     try {
       final token = await sessionService.getToken();
@@ -1765,17 +1698,17 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   void _applyWalkInOrderSuccess(
-      WalkInCustomerResponse response, {
-        required bool isCorporateFlow,
-        required bool clearCustomerOnSuccess,
-      }) {
+    WalkInCustomerResponse response, {
+    required bool isCorporateFlow,
+    required bool clearCustomerOnSuccess,
+  }) {
     String? maxJobId;
     if (response.order?.departments.isNotEmpty == true) {
       final sorted = [...response.order!.departments]
         ..sort(
-              (a, b) => (int.tryParse(a.jobId ?? '') ?? 0).compareTo(
-            int.tryParse(b.jobId ?? '') ?? 0,
-          ),
+          (a, b) => (int.tryParse(a.jobId ?? '') ?? 0).compareTo(
+                int.tryParse(b.jobId ?? '') ?? 0,
+              ),
         );
       maxJobId = sorted.last.jobId;
     }
@@ -1822,9 +1755,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   /// POST /cashier/walk-in-order — new order + empty jobs (vehicle + departmentIds only).
   /// Corporate accounts use the existing submit-for-approval path instead.
   Future<bool> placeWalkInShellOrder(
-      List<String> departmentIds,
-      BuildContext context,
-      ) async {
+    List<String> departmentIds,
+    BuildContext context,
+  ) async {
     if (departmentIds.isEmpty) {
       if (context.mounted) {
         ToastService.showError(context, 'Select at least one department');
@@ -1893,11 +1826,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   Future<bool> submitWalkInOrder(
-      List<String> departmentIds,
-      BuildContext context, {
-        bool clearCustomerOnSuccess = true,
-        bool forInvoicePanelSave = false,
-      }) async {
+    List<String> departmentIds,
+    BuildContext context, {
+    bool clearCustomerOnSuccess = true,
+    bool forInvoicePanelSave = false,
+  }) async {
     _isLoading = true;
     if (forInvoicePanelSave) _invoicePanelSaveBusy = true;
     _errorMessage = null;
@@ -2091,9 +2024,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
             return false;
           }
           final shellReq =
-          _walkInShellCreateRequest(allDepartmentIds.toList());
+              _walkInShellCreateRequest(allDepartmentIds.toList());
           final shellRes =
-          await posRepository.postWalkInOrder(shellReq.toShellCreateJson(), token);
+              await posRepository.postWalkInOrder(shellReq.toShellCreateJson(), token);
           if (shellRes.success) {
             _applyWalkInOrderSuccess(
               shellRes,
@@ -2124,7 +2057,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
         final shellReq = _walkInShellCreateRequest(allDepartmentIds.toList());
         final shellRes =
-        await posRepository.postWalkInOrder(shellReq.toShellCreateJson(), token);
+            await posRepository.postWalkInOrder(shellReq.toShellCreateJson(), token);
         if (!shellRes.success || shellRes.order == null) {
           _errorMessage = shellRes.message;
           _isLoading = false;
@@ -2152,7 +2085,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
           final jid = deptJob[deptId];
           if (jid == null || jid.isEmpty) {
             _errorMessage =
-            'No job for department $deptId. Use “Add departments” or refresh orders.';
+                'No job for department $deptId. Use “Add departments” or refresh orders.';
             _isLoading = false;
             notifyListeners();
             if (context.mounted) ToastService.showError(context, _errorMessage!);
@@ -2179,9 +2112,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         if (shellRes.order!.departments.isNotEmpty) {
           final sorted = [...shellRes.order!.departments]
             ..sort(
-                  (a, b) => (int.tryParse(a.jobId ?? '') ?? 0).compareTo(
-                int.tryParse(b.jobId ?? '') ?? 0,
-              ),
+              (a, b) => (int.tryParse(a.jobId ?? '') ?? 0).compareTo(
+                    int.tryParse(b.jobId ?? '') ?? 0,
+                  ),
             );
           maxJobId = sorted.last.jobId;
         }
@@ -2258,10 +2191,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   Future<bool> submitEditOrder(
-      List<String> departmentIds,
-      BuildContext context, {
-        bool forInvoicePanelSave = false,
-      }) async {
+    List<String> departmentIds,
+    BuildContext context, {
+    bool forInvoicePanelSave = false,
+  }) async {
     final orderId = _editingOrder?.id ?? '';
     final jobId = _editingCompletingOrderId ?? '';
 
@@ -2292,7 +2225,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
       final deptId = (_editDepartmentId ?? '').trim();
       final fallbackDept =
-      departmentIds.isNotEmpty ? departmentIds.first.trim() : deptId;
+          departmentIds.isNotEmpty ? departmentIds.first.trim() : deptId;
       final defaultDept = deptId.isNotEmpty ? deptId : fallbackDept;
 
       final itemsForJob = _cartItems.where((c) {
@@ -2424,32 +2357,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         throw Exception('Authentication information missing');
       }
 
-      final branchId = user.branchId?.trim() ?? '';
-      final resolvedProductsEndpoint = branchId.isNotEmpty
-          ? '/workshop-staff/branches/$branchId/catalog'
-          : '/workshop-staff/products';
-      final resolvedProductsQuery = <String, String>{
-        if (branchId.isEmpty) 'workshopId': user.workshopId!,
-        if (departmentId != null && departmentId.trim().isNotEmpty)
-          'departmentId': departmentId.trim(),
-      };
-
-      debugPrint(
-        '[POS][PRODUCTS] GET $resolvedProductsEndpoint query=$resolvedProductsQuery '
-        'workshopId=${user.workshopId} branchId=${branchId.isEmpty ? 'MISSING' : branchId}',
-      );
-
       final response = await posRepository.getProducts(
         user.workshopId!,
         token,
         departmentId: departmentId,
         branchId: user.branchId,
-      );
-
-      debugPrint(
-        '[POS][PRODUCTS] response success=${response.success} '
-        'categories=${response.categories.length} '
-        'uncategorized=${response.uncategorizedProducts.length}',
       );
 
       if (response.success) {
@@ -2544,11 +2456,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   List<String> get uniqueCategories {
     final cats = _allProducts
         .where((p) {
-      if (_selectedProductType == 'All') return true;
-      return _selectedProductType == 'Products'
-          ? !p.isService
-          : p.isService;
-    })
+          if (_selectedProductType == 'All') return true;
+          return _selectedProductType == 'Products'
+              ? !p.isService
+              : p.isService;
+        })
         .map((p) => p.category)
         .toSet()
         .toList();
@@ -2560,7 +2472,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     return _allProducts.where((p) {
       final matchesType =
           _selectedProductType == 'All' ||
-              (_selectedProductType == 'Products' ? !p.isService : p.isService);
+          (_selectedProductType == 'Products' ? !p.isService : p.isService);
       final matchesCategory =
           _selectedCategory == 'All' || p.category == _selectedCategory;
       final matchesSearch = p.name.toLowerCase().contains(
@@ -2584,7 +2496,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   /// Gross amount VAT-exclusive (sum of unit price excl. VAT × qty).
   double getSubtotalGross(bool isMainTab) => _getActiveCart(isMainTab).fold(
     0,
-        (sum, item) => sum + item.lineSubtotalExclVat,
+    (sum, item) => sum + item.lineSubtotalExclVat,
   );
 
   double getSubtotalExclVat(bool isMainTab) => getSubtotalGross(isMainTab);
@@ -2592,7 +2504,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   double getTotalIndividualDiscount(bool isMainTab) =>
       _getActiveCart(isMainTab).fold(0, (sum, item) => sum + item.actualDiscountAmount);
 
-  double getPriceAfterItemDiscounts(bool isMainTab) =>
+  double getPriceAfterItemDiscounts(bool isMainTab) => 
       getSubtotalGross(isMainTab) - getTotalIndividualDiscount(isMainTab);
 
   double getTotalGlobalDiscountValue(bool isMainTab) {
@@ -2606,7 +2518,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     }
   }
 
-  double getPriceAfterJobDiscount(bool isMainTab) =>
+  double getPriceAfterJobDiscount(bool isMainTab) => 
       getPriceAfterItemDiscounts(isMainTab) - getTotalGlobalDiscountValue(isMainTab);
 
   double getTotalPromoDiscountValue(bool isMainTab, {String? departmentId}) {
@@ -2626,10 +2538,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   double getPromoDiscountForBase(
-      double baseForPromo, {
-        bool isMainTab = false,
-        String? departmentId,
-      }) {
+    double baseForPromo, {
+    bool isMainTab = false,
+    String? departmentId,
+  }) {
     final promo = _resolvePromoState(isMainTab, departmentId: departmentId);
     final raw = promo.isPercent ? baseForPromo * (promo.discount / 100) : promo.discount;
     return raw.clamp(0, baseForPromo).toDouble();
@@ -2639,12 +2551,12 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       getPriceAfterJobDiscount(isMainTab) - getTotalPromoDiscountValue(isMainTab);
 
   double getTotalTaxValue(bool isMainTab) => getTotalTaxableAmountValue(isMainTab) * 0.15; // 15% VAT
-
+  
   double getTotalAmountValue(bool isMainTab) => getTotalTaxableAmountValue(isMainTab) + getTotalTaxValue(isMainTab);
 
   int getCartCount(bool isMainTab) => _getActiveCart(isMainTab).fold(
     0,
-        (sum, item) => sum + (item.quantity >= 1 ? item.quantity.toInt() : 1),
+    (sum, item) => sum + (item.quantity >= 1 ? item.quantity.toInt() : 1),
   );
 
   void setCategory(String category) {
@@ -2672,7 +2584,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     }
     final activeCart = _getActiveCart(isMainTab);
     final existingIndex = activeCart.indexWhere(
-          (item) => _isSameCartProduct(item.product, product),
+      (item) => _isSameCartProduct(item.product, product),
     );
     if (existingIndex != -1) {
       if (product.isService) {
@@ -2697,7 +2609,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   void removeFromCart(PosProduct product, {bool isMainTab = false}) {
     _getActiveCart(isMainTab).removeWhere(
-          (item) => _isSameCartProduct(item.product, product),
+      (item) => _isSameCartProduct(item.product, product),
     );
     notifyListeners();
   }
@@ -2708,7 +2620,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     }
     final activeCart = _getActiveCart(isMainTab);
     final index = activeCart.indexWhere(
-          (item) => _isSameCartProduct(item.product, product),
+      (item) => _isSameCartProduct(item.product, product),
     );
     if (index != -1) {
       if (product.isService && delta > 0) {
@@ -2746,7 +2658,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
     final activeCart = _getActiveCart(isMainTab);
     final index = activeCart.indexWhere(
-          (item) => _isSameCartProduct(item.product, product),
+      (item) => _isSameCartProduct(item.product, product),
     );
     if (index != -1) {
       activeCart[index].quantity = qty;
@@ -2758,14 +2670,14 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   void setIndividualDiscount(
-      PosProduct product,
-      double discount,
-      bool isPercent,
-      {bool isMainTab = false}
-      ) {
+    PosProduct product,
+    double discount,
+    bool isPercent,
+    {bool isMainTab = false}
+  ) {
     final activeCart = _getActiveCart(isMainTab);
     final index = activeCart.indexWhere(
-          (item) => _isSameCartProduct(item.product, product),
+      (item) => _isSameCartProduct(item.product, product),
     );
     if (index != -1) {
       activeCart[index].discount = discount;
@@ -2776,14 +2688,14 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   /// Per-unit price override for price-editable services (cashier).
   void setServiceUnitPrice(
-      PosProduct product,
-      double? unitPrice, {
-        bool isMainTab = false,
-      }) {
+    PosProduct product,
+    double? unitPrice, {
+    bool isMainTab = false,
+  }) {
     if (!product.isService || !product.isPriceEditable) return;
     final activeCart = _getActiveCart(isMainTab);
     final index = activeCart.indexWhere(
-          (item) => _isSameCartProduct(item.product, product),
+      (item) => _isSameCartProduct(item.product, product),
     );
     if (index == -1) return;
     if (unitPrice == null || unitPrice <= 0) {
@@ -2832,9 +2744,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   void removeDepartmentItemsFromCart(
-      String departmentId, {
-        bool isMainTab = false,
-      }) {
+    String departmentId, {
+    bool isMainTab = false,
+  }) {
     final depId = departmentId.trim();
     if (depId.isEmpty) return;
     final activeCart = _getActiveCart(isMainTab);
@@ -2862,13 +2774,13 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   void applyPromoCode(
-      String code,
-      double discount,
-      bool isPercent, {
-        bool isMainTab = false,
-        String? promoCodeId,
-        String? departmentId,
-      }) {
+    String code,
+    double discount,
+    bool isPercent, {
+    bool isMainTab = false,
+    String? promoCodeId,
+    String? departmentId,
+  }) {
     final targetDepartmentId = (departmentId ?? _getPromoContextDepartmentId(isMainTab))
         ?.trim();
     if (targetDepartmentId != null && targetDepartmentId.isNotEmpty) {
@@ -2925,9 +2837,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       isMainTab ? _mainTabPromoContextDepartmentId : _promoContextDepartmentId;
 
   _DepartmentPromoState _resolvePromoState(
-      bool isMainTab, {
-        String? departmentId,
-      }) {
+    bool isMainTab, {
+    String? departmentId,
+  }) {
     final targetDepartmentId = (departmentId ?? _getPromoContextDepartmentId(isMainTab))
         ?.trim();
     if (targetDepartmentId != null && targetDepartmentId.isNotEmpty) {
@@ -2961,14 +2873,14 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   List<PosOrder> get orders {
     // Globally filter out invoiced orders based on order status
     Iterable<PosOrder> filtered = _orders.where(
-          (o) => o.statusText.toLowerCase() != 'invoiced',
+      (o) => o.statusText.toLowerCase() != 'invoiced',
     );
 
     // 1. Text Search Filter
     if (_orderSearchQuery.isNotEmpty) {
       filtered = filtered.where(
-            (o) =>
-        o.id.toLowerCase().contains(_orderSearchQuery.toLowerCase()) ||
+        (o) =>
+            o.id.toLowerCase().contains(_orderSearchQuery.toLowerCase()) ||
             o.customerName.toLowerCase().contains(
               _orderSearchQuery.toLowerCase(),
             ),
@@ -3037,19 +2949,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     final id = _selectedOrder?.id.trim();
     await fetchOrders(
       silent: true,
-      limit: _ordersPageSize,
-      offset: 0,
       preferredOrderId: id != null && id.isNotEmpty ? id : null,
       ordersScreenRefresh: true,
-    );
-  }
-
-  Future<void> loadMoreOrders() async {
-    if (_isLoadingMoreOrders || !_ordersHasMore) return;
-    await fetchOrders(
-      silent: true,
-      limit: _ordersPageSize,
-      offset: _ordersOffset,
     );
   }
 
@@ -3061,19 +2962,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     String? preferredOrderId,
     bool ordersScreenRefresh = false,
   }) async {
-    final effectiveLimit = limit ?? _ordersPageSize;
-    final effectiveOffset = offset ?? 0;
-    final isAppend = effectiveOffset > 0;
-
-    if (isAppend) {
-      _isLoadingMoreOrders = true;
-      notifyListeners();
-    }
     if (ordersScreenRefresh) {
       _ordersScreenRefreshInFlight = true;
       notifyListeners();
     }
-    if (!silent && !ordersScreenRefresh && !isAppend) {
+    if (!silent && !ordersScreenRefresh) {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
@@ -3088,21 +2981,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       final response = await posRepository.getCashierOrders(
         token,
         status: statusQuery,
-        limit: effectiveLimit,
-        offset: effectiveOffset,
+        limit: limit,
+        offset: offset,
       );
       if (response.success) {
-        if (isAppend) {
-          final existingIds = _orders.map((o) => o.id).toSet();
-          final nextOrders = response.orders
-              .where((o) => !existingIds.contains(o.id))
-              .toList();
-          _orders = [..._orders, ...nextOrders];
-        } else {
-          _orders = response.orders;
-        }
-        _ordersOffset = effectiveOffset + response.orders.length;
-        _ordersHasMore = response.orders.length >= effectiveLimit;
+        _orders = response.orders;
         _orderStats = response.stats;
         _lastCashierOrdersFetchedAt = DateTime.now();
         _syncBroadcastCooldownWithOrdersAfterFetch(_orders);
@@ -3116,8 +2999,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         final preferredId = (preferredOrderId?.trim().isNotEmpty == true)
             ? preferredOrderId!.trim()
             : ((_lastCreatedWalkInOrderId ?? '').trim().isNotEmpty
-            ? _lastCreatedWalkInOrderId!.trim()
-            : null);
+                ? _lastCreatedWalkInOrderId!.trim()
+                : null);
 
         // Always prioritize a caller-requested order selection.
         if (preferredId != null) {
@@ -3133,7 +3016,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
             (_lastCreatedWalkInVehicleNumber ?? '').trim().isNotEmpty) {
           final targetPlate = _lastCreatedWalkInVehicleNumber!.trim().toLowerCase();
           final matches = _orders.where(
-                (o) => o.plateNumber.trim().toLowerCase() == targetPlate,
+            (o) => o.plateNumber.trim().toLowerCase() == targetPlate,
           ).toList();
           if (matches.isNotEmpty) {
             matches.sort((a, b) {
@@ -3151,7 +3034,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
             _selectedOrder = null;
           }
         }
-
+        
         // If no order selected and list not empty, select first
         if (_selectedOrder == null && _orders.isNotEmpty) {
           _selectedOrder = _orders.first;
@@ -3172,11 +3055,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
-      if (!silent && !ordersScreenRefresh && !isAppend) {
+      if (!silent && !ordersScreenRefresh) {
         _isLoading = false;
-      }
-      if (isAppend) {
-        _isLoadingMoreOrders = false;
       }
       if (ordersScreenRefresh) {
         _ordersScreenRefreshInFlight = false;
@@ -3207,10 +3087,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   /// POST …/walk-in-corporate/order/:orderId/start-department
   Future<bool> startCorporateWalkInDepartment(
-      BuildContext context, {
-        required String orderId,
-        required String departmentId,
-      }) async {
+    BuildContext context, {
+    required String orderId,
+    required String departmentId,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -3249,9 +3129,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   Future<bool> sendCorporateOrderForApproval(
-      BuildContext context, {
-        required String orderId,
-      }) async {
+    BuildContext context, {
+    required String orderId,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -3290,9 +3170,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   WalkInCustomerRequest _buildCorporateWalkInApprovalRequest(
-      PosOrder order, {
-        required bool sendForApproval,
-      }) {
+    PosOrder order, {
+    required bool sendForApproval,
+  }) {
     final products = <RequestedProduct>[];
     final services = <RequestedService>[];
     for (final raw in order.items) {
@@ -3306,7 +3186,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       if (departmentId.isEmpty || qty <= 0) continue;
       final discountType = item['discountType']?.toString();
       final discountValue =
-      double.tryParse(item['discountValue']?.toString() ?? '');
+          double.tryParse(item['discountValue']?.toString() ?? '');
       if (itemType == 'service') {
         final sid = (item['serviceId'] ?? item['productId'] ?? '').toString().trim();
         if (sid.isEmpty) continue;
@@ -3497,7 +3377,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     return _allTechnicians
         .where(
           (t) => t.name.toLowerCase().contains(_techSearchQuery.toLowerCase()),
-    )
+        )
         .toList();
   }
 
@@ -3615,8 +3495,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     final plateEff = snap != null
         ? _walkInPickField(snap.vehicleNumber, _vehicleNumber, plateOrder)
         : _vehicleNumber.trim().isNotEmpty
-        ? _vehicleNumber.trim()
-        : plateOrder;
+            ? _vehicleNumber.trim()
+            : plateOrder;
 
     int odoEff = order.odometerReading;
     if (snap != null && snap.odometer != 0) {
@@ -3637,13 +3517,13 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     final vinEff = snap != null
         ? _walkInPickField(snap.vin, _vinNumber, (order.vehicle?.vin ?? '').trim())
         : _vinNumber.trim().isNotEmpty
-        ? _vinNumber.trim()
-        : (order.vehicle?.vin ?? '').trim();
+            ? _vinNumber.trim()
+            : (order.vehicle?.vin ?? '').trim();
     final yearEff = snap != null
         ? _walkInPickField(snap.year, _vehicleYear, (order.vehicle?.year ?? '').trim())
         : _vehicleYear.trim().isNotEmpty
-        ? _vehicleYear.trim()
-        : (order.vehicle?.year ?? '').trim();
+            ? _vehicleYear.trim()
+            : (order.vehicle?.year ?? '').trim();
     final colorEff = snap != null
         ? _walkInPickField(snap.color, _vehicleColor, (order.vehicle?.color ?? '').trim())
         : _vehicleColor.trim();
@@ -3795,12 +3675,12 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   Future<CreateInvoiceResponse?> generateInvoice(
-      String orderId, {
-        String? paymentMethod,
-        List<Map<String, dynamic>>? payments,
-        bool? isCorporate,
-        PosOrder? orderForBilling,
-      }) async {
+    String orderId, {
+    String? paymentMethod,
+    List<Map<String, dynamic>>? payments,
+    bool? isCorporate,
+    PosOrder? orderForBilling,
+  }) async {
     _isInvoiceLoading = true;
     _loadingOrderId = orderId;
     _errorMessage = null;
@@ -3852,7 +3732,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
           }
 
           final patchRes =
-          await posRepository.patchWalkInOrderBilling(orderId, billingBody, token);
+              await posRepository.patchWalkInOrderBilling(orderId, billingBody, token);
           if (patchRes['success'] != true) {
             final msg =
                 patchRes['message']?.toString() ?? 'Failed to update billing details before invoice';
@@ -3910,9 +3790,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
         // Persist payment(s) after create when still needed, then fetch invoice again.
         final payableTotal = (invAfterCreate?.totalAmount ??
-            createResponse.invoice?.totalAmount ??
-            orderCtx?.draftPosOrderTotalDisplay ??
-            0)
+                createResponse.invoice?.totalAmount ??
+                orderCtx?.draftPosOrderTotalDisplay ??
+                0)
             .toDouble();
         final paymentBody = _buildInvoicePaymentBody(
           totalAmount: payableTotal,
@@ -3933,7 +3813,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         }
 
         final skipSecondPayment =
-        _invoiceHasPaymentsCoveringTotal(invAfterCreate, payableTotal);
+            _invoiceHasPaymentsCoveringTotal(invAfterCreate, payableTotal);
 
         final Map<String, dynamic> paymentRes;
         if (skipSecondPayment) {
@@ -3983,18 +3863,18 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         if (mergedInvoice == null) {
           debugPrint(
             'InvoiceFlow: no invoice object after success — '
-                'byOrder=${detailedResponse.invoice != null} '
-                'create=${createResponse.invoice != null} '
-                'payment=${paymentInvoice != null} '
-                'detailedSuccess=${detailedResponse.success}',
+            'byOrder=${detailedResponse.invoice != null} '
+            'create=${createResponse.invoice != null} '
+            'payment=${paymentInvoice != null} '
+            'detailedSuccess=${detailedResponse.success}',
           );
         }
 
         final msg = detailedResponse.message.trim().isNotEmpty
             ? detailedResponse.message
             : (createResponse.message.trim().isNotEmpty
-            ? createResponse.message
-            : (paymentRes['message']?.toString() ?? 'Invoice saved'));
+                ? createResponse.message
+                : (paymentRes['message']?.toString() ?? 'Invoice saved'));
 
         final finalResponse = CreateInvoiceResponse(
           success: true,
@@ -4055,10 +3935,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   }
 
   Future<CashierCompleteJobResponse?> completeCashierJob(
-      String jobId, {
-        bool isMainTab = false,
-        PosOrder? sourceOrder,
-      }) async {
+    String jobId, {
+    bool isMainTab = false,
+    PosOrder? sourceOrder,
+  }) async {
     _cashierCompletingJobId = jobId;
     _isLoading = true;
     _errorMessage = null;
@@ -4124,7 +4004,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       final jobAlreadyHasItems = sourceJob != null && sourceJob.items.isNotEmpty;
       final pricingBodyHasLines =
           ((pricingBody['products'] as List?)?.isNotEmpty ?? false) ||
-              ((pricingBody['services'] as List?)?.isNotEmpty ?? false);
+          ((pricingBody['services'] as List?)?.isNotEmpty ?? false);
       if (itemsForJob.isNotEmpty || !jobAlreadyHasItems || pricingBodyHasLines) {
         await posRepository.updateJobPricing(jobId, pricingBody, token);
       }
@@ -4181,11 +4061,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   /// Broadcast a job to technicians in workshop or on-call duty (POST /cashier/jobs/:jobId/broadcast).
   Future<bool> broadcastJob(
-      BuildContext context,
-      String jobId, {
-        required String dutyMode,
-        String? departmentId,
-      }) async {
+    BuildContext context,
+    String jobId, {
+    required String dutyMode,
+    String? departmentId,
+  }) async {
     if (jobId.isEmpty) {
       if (context.mounted) {
         ToastService.showError(
@@ -4196,7 +4076,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       return false;
     }
     final cooldownKey =
-    broadcastCooldownKey(departmentId: departmentId, jobId: jobId);
+        broadcastCooldownKey(departmentId: departmentId, jobId: jobId);
     if (cooldownKey.isNotEmpty &&
         isBroadcastCooldownActiveForKey(cooldownKey)) {
       if (context.mounted) {
@@ -4239,10 +4119,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   /// Cancel an active broadcast and return job to pending assignment.
   Future<bool> cancelJobBroadcast(
-      BuildContext context,
-      String jobId, {
-        String? departmentId,
-      }) async {
+    BuildContext context,
+    String jobId, {
+    String? departmentId,
+  }) async {
     if (jobId.isEmpty) return false;
     try {
       final token = await sessionService.getToken();
@@ -4291,10 +4171,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   /// PATCH /cashier/job/:jobId/cancel — single job, before invoice.
   Future<bool> cancelCashierJob(
-      BuildContext context,
-      String jobId, [
-        String reason = 'Cancelled by cashier',
-      ]) async {
+    BuildContext context,
+    String jobId, [
+    String reason = 'Cancelled by cashier',
+  ]) async {
     if (jobId.trim().isEmpty) return false;
     final trimmed = reason.trim().isEmpty ? 'Cancelled by cashier' : reason.trim();
     try {
@@ -4327,10 +4207,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   /// POST /cashier/order/:orderId/jobs — add departments to an existing walk-in draft.
   Future<bool> addDepartmentsToWalkInOrder(
-      BuildContext context,
-      String orderId,
-      List<String> departmentIds,
-      ) async {
+    BuildContext context,
+    String orderId,
+    List<String> departmentIds,
+  ) async {
     if (orderId.trim().isEmpty || departmentIds.isEmpty) return false;
     try {
       final token = await sessionService.getToken();
@@ -4394,3 +4274,4 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     }
   }
 }
+

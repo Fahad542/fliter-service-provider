@@ -2,34 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../services/session_service.dart';
-import '../../../services/locker_translation_mixin.dart';
-import '../More Tab/settings_view_model.dart';
 
 
-class LoginViewModel extends ChangeNotifier with TranslatableMixin {
+class LoginViewModel extends ChangeNotifier {
   final AuthRepository _authRepository;
   final SessionService _sessionService;
 
   LoginViewModel({
     required AuthRepository authRepository,
     required SessionService sessionService,
-    SettingsViewModel? settingsViewModel,
   })  : _authRepository = authRepository,
-        _sessionService = sessionService {
-    if (settingsViewModel != null) {
-      bindLocaleRetranslation(settingsViewModel, retranslate);
-    }
-  }
-
-  Future<void> retranslate() async {
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    unbindLocaleRetranslation();
-    super.dispose();
-  }
+        _sessionService = sessionService;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;

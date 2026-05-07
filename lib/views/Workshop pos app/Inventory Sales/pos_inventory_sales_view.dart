@@ -1,12 +1,8 @@
 import 'dart:math' as math;
-import 'dart:ui' show FontFeature;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
-import '../../../l10n/app_localizations.dart';
-import '../../../services/LocalizedApiText.dart';
 
 import '../../../utils/app_colors.dart';
 import '../../../utils/pos_tablet_layout.dart';
@@ -53,23 +49,23 @@ class _InventoryKpiGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final children = [
       _StatCard(
-        label: AppLocalizations.of(context)!.posInvSalesStatTotalUnits,
+        label: 'Total units sold',
         value: _inventoryFmtQty(vm.displayTotalUnits),
       ),
       _StatCard(
-        label: AppLocalizations.of(context)!.posInvSalesStatDistinctItems,
+        label: 'Distinct items',
         value: '${vm.displayDistinctItems}',
       ),
       _StatCard(
-        label: AppLocalizations.of(context)!.posInvSalesStatUniqueProducts,
+        label: 'Unique products',
         value: '${vm.displayUniqueProductsCount}',
       ),
       _StatCard(
-        label: AppLocalizations.of(context)!.posInvSalesStatUniqueServices,
+        label: 'Unique services',
         value: '${vm.displayUniqueServicesCount}',
       ),
       _StatCard(
-        label: AppLocalizations.of(context)!.posInvSalesStatDaysActive,
+        label: 'Days with activity',
         value: '${vm.displayDaysWithActivity}',
       ),
     ];
@@ -259,8 +255,8 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
     if (!_isDraftTimeWindowValid(nextFrom, _draftToMinutes)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.posInvSalesErrStartTimeBeforeEndSameRange),
+        const SnackBar(
+          content: Text('Start time must be on or before end time (same calendar range).'),
         ),
       );
       return;
@@ -298,8 +294,8 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
     if (!_isDraftTimeWindowValid(_draftFromMinutes, nextTo)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.posInvSalesErrEndTimeAfterStartSameRange),
+        const SnackBar(
+          content: Text('End time must be on or after start time (same calendar range).'),
         ),
       );
       return;
@@ -311,7 +307,6 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<InventorySalesViewModel>();
-    final l10n = AppLocalizations.of(context)!;
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
@@ -320,7 +315,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
         appBar: PosScreenAppBar(
-          title: l10n.posInvSalesTitle,
+          title: 'Inventory Sales',
           showBackButton: false,
           showHamburger: true,
           onMenuPressed: () => PosShellScaffoldRegistry.openDrawer(),
@@ -370,7 +365,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
                   color: Colors.red.shade800, size: 22),
               const SizedBox(width: 12),
               Expanded(
-                child: LocalizedApiText(
+                child: Text(
                   vm.errorMessage!,
                   style: TextStyle(
                     color: Colors.red.shade900,
@@ -475,7 +470,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
               ),
               const SizedBox(height: 24),
               Text(
-                AppLocalizations.of(context)!.posInvSalesNoSalesTitle,
+                'No sales in this period',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 20,
@@ -486,7 +481,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
               ),
               const SizedBox(height: 8),
               Text(
-                AppLocalizations.of(context)!.posInvSalesNoSalesSubtitleFriendly,
+                'Try selecting a different date range to see activity.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   height: 1.5,
@@ -585,7 +580,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
                           ),
                           SizedBox(width: tablet ? 12 : 10),
                           Text(
-                            AppLocalizations.of(context)!.posInvSalesByItemPeriod,
+                            'SALES BY ITEM (PERIOD)',
                             style: TextStyle(
                               fontSize: sectionTitleSize,
                               fontWeight: FontWeight.w900,
@@ -595,7 +590,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
                           ),
                           const Spacer(),
                           Text(
-                            AppLocalizations.of(context)!.posInvSalesItemsCount(vm.productsSummary.length),
+                            '${vm.productsSummary.length} ITEMS',
                             style: TextStyle(
                               fontSize: sectionCountSize,
                               fontWeight: FontWeight.w800,
@@ -691,27 +686,27 @@ class _ManualRangeStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fromBtn = _DatePill(
-      title: AppLocalizations.of(context)!.posInvSalesStartDate,
+      title: 'START DATE',
       value: draftFromLabel,
       onTap: onTapFrom,
       icon: Icons.calendar_today_outlined,
       dense: true,
     );
     final toBtn = _DatePill(
-      title: AppLocalizations.of(context)!.posInvSalesEndDate,
+      title: 'END DATE',
       value: draftToLabel,
       onTap: onTapTo,
       icon: Icons.event_available_outlined,
       dense: true,
     );
     final fromTimeBtn = _TimePill(
-      title: AppLocalizations.of(context)!.posInvSalesStartTime,
+      title: 'START TIME',
       value: draftFromTimeLabel,
       onTap: onTapFromTime,
       dense: true,
     );
     final toTimeBtn = _TimePill(
-      title: AppLocalizations.of(context)!.posInvSalesEndTime,
+      title: 'END TIME',
       value: draftToTimeLabel,
       onTap: onTapToTime,
       dense: true,
@@ -738,7 +733,7 @@ class _ManualRangeStrip extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       child: Text(
-        AppLocalizations.of(context)!.posInvSalesClear,
+        'Clear',
         style: TextStyle(fontWeight: FontWeight.w800, fontSize: lblSz),
       ),
     );
@@ -760,7 +755,7 @@ class _ManualRangeStrip extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       child: Text(
-        AppLocalizations.of(context)!.posInvSalesApply,
+        'Apply',
         style: TextStyle(fontWeight: FontWeight.w800, fontSize: lblSz),
       ),
     );
@@ -855,7 +850,7 @@ class _StatCard extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.center,
-            child: LocalizedApiText(
+            child: Text(
               value,
               maxLines: 1,
               textAlign: TextAlign.center,
@@ -944,7 +939,7 @@ class _DatePill extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    LocalizedApiText(
+                    Text(
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1038,7 +1033,7 @@ class _TimePill extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    LocalizedApiText(
+                    Text(
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1086,7 +1081,7 @@ class _PeriodProductsHeadWide extends StatelessWidget {
           Expanded(
             flex: _kFlexItem,
             child: Text(
-              AppLocalizations.of(context)!.posInvSalesColItemName,
+              'ITEM NAME',
               maxLines: 1,
               softWrap: false,
               overflow: TextOverflow.ellipsis,
@@ -1097,7 +1092,7 @@ class _PeriodProductsHeadWide extends StatelessWidget {
           Expanded(
             flex: _kFlexDept,
             child: Text(
-              AppLocalizations.of(context)!.posInvSalesColDepartment,
+              'DEPARTMENT',
               maxLines: 1,
               softWrap: false,
               overflow: TextOverflow.ellipsis,
@@ -1108,7 +1103,7 @@ class _PeriodProductsHeadWide extends StatelessWidget {
           Expanded(
             flex: _kFlexType,
             child: Text(
-              AppLocalizations.of(context)!.posInvSalesColType,
+              'TYPE',
               maxLines: 1,
               softWrap: false,
               overflow: TextOverflow.ellipsis,
@@ -1121,7 +1116,7 @@ class _PeriodProductsHeadWide extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.only(left: _kInvSkuLeftInset),
               child: Text(
-                AppLocalizations.of(context)!.posInvSalesColSkuShort,
+                'SKU',
                 maxLines: 1,
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
@@ -1133,7 +1128,7 @@ class _PeriodProductsHeadWide extends StatelessWidget {
           Expanded(
             flex: _kFlexQty,
             child: Text(
-              AppLocalizations.of(context)!.posInvSalesColQtyShort,
+              'QTY',
               textAlign: TextAlign.end,
               maxLines: 1,
               softWrap: false,
@@ -1194,7 +1189,7 @@ class _PeriodProductsRowWide extends StatelessWidget {
           children: [
             Expanded(
               flex: _kFlexItem,
-              child: LocalizedApiText(
+              child: Text(
                 row.productName,
                 maxLines: 1,
                 softWrap: false,
@@ -1210,7 +1205,7 @@ class _PeriodProductsRowWide extends StatelessWidget {
             const SizedBox(width: _kInvTableColGap),
             Expanded(
               flex: _kFlexDept,
-              child: LocalizedApiText(
+              child: Text(
                 deptLabel,
                 maxLines: 1,
                 softWrap: false,
@@ -1221,7 +1216,7 @@ class _PeriodProductsRowWide extends StatelessWidget {
             const SizedBox(width: _kInvTableColGap),
             Expanded(
               flex: _kFlexType,
-              child: LocalizedApiText(
+              child: Text(
                 typeLabel,
                 maxLines: 1,
                 softWrap: false,
@@ -1234,7 +1229,7 @@ class _PeriodProductsRowWide extends StatelessWidget {
               flex: _kFlexSku,
               child: Padding(
                 padding: const EdgeInsets.only(left: _kInvSkuLeftInset),
-                child: LocalizedApiText(
+                child: Text(
                   skuText,
                   maxLines: 1,
                   softWrap: false,
@@ -1246,7 +1241,7 @@ class _PeriodProductsRowWide extends StatelessWidget {
             const SizedBox(width: _kInvTableColGap),
             Expanded(
               flex: _kFlexQty,
-              child: LocalizedApiText(
+              child: Text(
                 _qtyLine(row.totalQty),
                 textAlign: TextAlign.end,
                 maxLines: 1,
@@ -1282,7 +1277,7 @@ class _ErrorBlock extends StatelessWidget {
         children: [
           Icon(Icons.cloud_off_rounded, size: 68, color: Colors.grey.shade400),
           const SizedBox(height: 16),
-          LocalizedApiText(
+          SelectableText(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.red.shade800, height: 1.35),
@@ -1291,7 +1286,7 @@ class _ErrorBlock extends StatelessWidget {
           FilledButton.icon(
             onPressed: () => onRetry(),
             icon: const Icon(Icons.refresh_rounded),
-            label: Text(AppLocalizations.of(context)!.posInvSalesRetry),
+            label: const Text('Retry'),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.secondaryLight,
               foregroundColor: Colors.white,

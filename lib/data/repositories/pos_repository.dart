@@ -718,15 +718,13 @@ class PosRepository {
     }
   }
 
-  Future<ProductsResponse> getProducts(String workshopId, String token, {String? departmentId, String? branchId, int? limit, int? offset}) async {
+  Future<ProductsResponse> getProducts(String workshopId, String token, {String? departmentId, String? branchId}) async {
     try {
       if (branchId != null && branchId.isNotEmpty) {
         final queryParams = <String, String>{};
         if (departmentId != null && departmentId.isNotEmpty) {
           queryParams['departmentId'] = departmentId;
         }
-        if (limit != null) queryParams['limit'] = limit.toString();
-        if (offset != null) queryParams['offset'] = offset.toString();
         
         final response = await _apiService.getWithQueryParams(
           ApiConstants.branchCatalogEndpoint(branchId),
@@ -739,8 +737,6 @@ class PosRepository {
         if (departmentId != null && departmentId.isNotEmpty) {
           queryParams['departmentId'] = departmentId;
         }
-        if (limit != null) queryParams['limit'] = limit.toString();
-        if (offset != null) queryParams['offset'] = offset.toString();
         final response = await _apiService.getWithQueryParams(
           ApiConstants.productsEndpoint,
           queryParams,

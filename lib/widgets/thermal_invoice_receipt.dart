@@ -1,25 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../l10n/app_localizations.dart';
 
 import '../models/create_invoice_model.dart';
 import '../utils/app_formatters.dart';
 import '../utils/invoice_maintenance_checklist.dart';
 import '../utils/thermal_invoice_totals.dart';
-import 'thermal_invoice_pdf_ar_constants.dart';
-import '../services/LocalizedApiText.dart';
 
 const double kThermalPaperWidth = 380;
-
-
-bool _thermalReceiptIsAr(BuildContext context) =>
-    Localizations.maybeLocaleOf(context)?.languageCode == 'ar';
-
-
-String _thermalReceiptMoney(BuildContext context, double value) =>
-    _thermalReceiptIsAr(context)
-        ? '${value.toStringAsFixed(2)} ر.س'
-        : '${value.toStringAsFixed(2)} SR';
 
 String paymentMethodLabelAr(String method) {
   final m = method.trim().toLowerCase();
@@ -113,9 +100,10 @@ class ThermalInvoiceReceipt extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          cText('Simplified Tax Invoice', headEn),
           cText(
-            AppLocalizations.of(context)!.posReceiptSimplifiedTaxInvoice,
-            _thermalReceiptIsAr(context) ? headAr.copyWith(color: Colors.grey.shade900) : headEn,
+            'فاتورة ضريبية مبسطة',
+            headAr.copyWith(color: Colors.grey.shade900),
           ),
           const SizedBox(height: 6),
           cText(seller, headEn.copyWith(fontSize: 12)),
@@ -125,7 +113,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
             children: [
               Expanded(
                 child:
-                    Text('${AppLocalizations.of(context)!.posReceiptBranch}:\n${invoice.branchName ?? '-'}', style: body, textAlign: _thermalReceiptIsAr(context) ? TextAlign.right : TextAlign.left, textDirection: _thermalReceiptIsAr(context) ? TextDirection.rtl : TextDirection.ltr),
+                    Text('Branch:\n${invoice.branchName ?? '-'}', style: body),
               ),
               Expanded(
                 child: Text(
@@ -139,7 +127,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${AppLocalizations.of(context)!.posReceiptAddress}:\n${addr.isEmpty ? '-' : addr}',
+            'Address:\n${addr.isEmpty ? '-' : addr}',
             style: body,
           ),
           Text(
@@ -150,7 +138,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${AppLocalizations.of(context)!.posReceiptVatNumber}: ${vatNo.isEmpty ? '-' : vatNo}',
+            'VAT Number: ${vatNo.isEmpty ? '-' : vatNo}',
             style: bodyBold,
           ),
           Text(
@@ -160,7 +148,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
             style: bodyBold,
           ),
           const SizedBox(height: 4),
-          Text('${AppLocalizations.of(context)!.posReceiptInvoiceNo}: ${invoice.invoiceNo}', style: bodyBold, textAlign: _thermalReceiptIsAr(context) ? TextAlign.right : TextAlign.left, textDirection: _thermalReceiptIsAr(context) ? TextDirection.rtl : TextDirection.ltr),
+          Text('Invoice No: ${invoice.invoiceNo}', style: bodyBold),
           Text(
             'رقم الفاتورة : ${invoice.invoiceNo}',
             textAlign: TextAlign.right,
@@ -168,39 +156,38 @@ class ThermalInvoiceReceipt extends StatelessWidget {
             style: bodyBold,
           ),
           thermalDashedRule(),
-          Text('${AppLocalizations.of(context)!.posReceiptDate}: $issued', style: body, textAlign: _thermalReceiptIsAr(context) ? TextAlign.right : TextAlign.left, textDirection: _thermalReceiptIsAr(context) ? TextDirection.rtl : TextDirection.ltr),
+          Text('Date: $issued', style: body),
           const SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
-                  '${AppLocalizations.of(context)!.posReceiptCounter}:\n${invoice.branchName ?? '-'}',
+                  'Counter:\n${invoice.branchName ?? '-'}',
                   style: body,
                 ),
               ),
               Expanded(
                 child: Text(
-                  '${AppLocalizations.of(context)!.posReceiptCashier}:\n${invoice.cashierName ?? '-'}',
+                  'Cashier:\n${invoice.cashierName ?? '-'}',
                   style: body,
                   textAlign: TextAlign.right,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
           thermalDashedRule(),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 flex: 5,
-                child: Text(AppLocalizations.of(context)!.posReceiptItem, style: bodyBold, textAlign: _thermalReceiptIsAr(context) ? TextAlign.right : TextAlign.left),
+                child: Text('Item\nالصنف', style: bodyBold),
               ),
               SizedBox(
                 width: 28,
                 child: Text(
-                  AppLocalizations.of(context)!.posReceiptQty,
+                  'Qty\nعدد',
                   style: bodyBold,
                   textAlign: TextAlign.center,
                 ),
@@ -208,7 +195,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: Text(
-                  AppLocalizations.of(context)!.posReceiptUnitPrice,
+                  'Unit Price\nسعر الوحدة',
                   style: bodyBold,
                   textAlign: TextAlign.right,
                 ),
@@ -216,7 +203,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: Text(
-                  AppLocalizations.of(context)!.posReceiptTotal,
+                  'Total\nالإجمالي',
                   style: bodyBold,
                   textAlign: TextAlign.right,
                 ),
@@ -224,52 +211,29 @@ class ThermalInvoiceReceipt extends StatelessWidget {
             ],
           ),
           thermalDashedRule(),
-          ..._itemRows(context, body),
+          ..._itemRows(body),
           thermalDashedRule(),
           _moneyRow(
-            context,
-            AppLocalizations.of(context)!.posReceiptTotalExcludingVat,
+            'Total (Excluding VAT)',
             t.grossExVatBeforeDiscount,
             bodyBold,
           ),
-          _discountSummaryBilingual(
-            context,
-            ThermalInvoicePdfLabels.itemDiscountAr,
-            ThermalInvoicePdfLabels.itemDiscountEn,
-            thermalR2(t.itemDiscountsTotal),
-            body,
-          ),
-          _discountSummaryBilingual(
-            context,
-            ThermalInvoicePdfLabels.invoiceDiscountAr,
-            ThermalInvoicePdfLabels.invoiceDiscountEn,
-            thermalR2(t.invoiceDiscount),
-            body,
-          ),
-          _discountSummaryBilingual(
-            context,
-            ThermalInvoicePdfLabels.promoDiscountAr,
-            ThermalInvoicePdfLabels.promoDiscountEn,
-            thermalR2(t.promoDiscount),
-            body,
-          ),
+          _moneyRow('Discount', t.totalDiscountLine, body),
           _moneyRow(
-            context,
-            AppLocalizations.of(context)!.posReceiptTotalTaxableAmountExclVat,
+            'Total Taxable Amount (Excl. VAT)',
             t.totalTaxableAmount,
             body,
           ),
-          _moneyRow(context, AppLocalizations.of(context)!.posReceiptTotalVat15, t.vatAmount, body),
+          _moneyRow('Total VAT (15%)', t.vatAmount, body),
           _moneyRow(
-            context,
-            AppLocalizations.of(context)!.posReceiptTotalAmountDue,
+            'Total Amount Due',
             t.totalInvoiceAmount,
             bodyBold.copyWith(fontSize: 11),
             emphasize: true,
           ),
           const SizedBox(height: 6),
           Text(
-            _thermalReceiptIsAr(context) ? '${paymentMethodLabelAr(paymentMethodText)} : ${t.totalInvoiceAmount.toStringAsFixed(2)} ر.س' : 'Payment: $paymentMethodText — ${t.totalInvoiceAmount.toStringAsFixed(2)} SR',
+            'Payment: $paymentMethodText — ${t.totalInvoiceAmount.toStringAsFixed(2)} SR',
             style: bodyBold,
           ),
           Text(
@@ -282,7 +246,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
               invoice.odometerReading! > 0) ...[
             thermalDashedRule(),
             Text(
-              '${AppLocalizations.of(context)!.posReceiptNextOilChangeOdometer}: ${invoice.odometerReading}',
+              'Next Oil Change / Odometer: ${invoice.odometerReading}',
               style: body,
             ),
             Text(
@@ -293,16 +257,16 @@ class ThermalInvoiceReceipt extends StatelessWidget {
             ),
           ],
           thermalDashedRule(),
-          cText(AppLocalizations.of(context)!.posReceiptCustomerDetails, bodyBold.copyWith(fontSize: 11)),
+          cText('CUSTOMER DETAILS', bodyBold.copyWith(fontSize: 11)),
           cText('************', body.copyWith(letterSpacing: 2)),
           const SizedBox(height: 4),
-          Text('${AppLocalizations.of(context)!.posReceiptName}: ${invoice.customerName}', style: body, textAlign: _thermalReceiptIsAr(context) ? TextAlign.right : TextAlign.left, textDirection: _thermalReceiptIsAr(context) ? TextDirection.rtl : TextDirection.ltr),
-          Text('${AppLocalizations.of(context)!.posReceiptMobile}: ${invoice.customerMobile ?? '-'}', style: body, textAlign: _thermalReceiptIsAr(context) ? TextAlign.right : TextAlign.left, textDirection: _thermalReceiptIsAr(context) ? TextDirection.rtl : TextDirection.ltr),
+          Text('Name: ${invoice.customerName}', style: body),
+          Text('Mobile: ${invoice.customerMobile ?? '-'}', style: body),
           Text(
-            '${AppLocalizations.of(context)!.posReceiptVehicleNo}: ${invoice.plateNo.isNotEmpty ? invoice.plateNo : '-'}',
+            'Vehicle No: ${invoice.plateNo.isNotEmpty ? invoice.plateNo : '-'}',
             style: body,
           ),
-          Text('${AppLocalizations.of(context)!.posReceiptOdometer}: ${invoice.odometerReading ?? '-'}', style: body, textAlign: _thermalReceiptIsAr(context) ? TextAlign.right : TextAlign.left, textDirection: _thermalReceiptIsAr(context) ? TextDirection.rtl : TextDirection.ltr),
+          Text('Odometer: ${invoice.odometerReading ?? '-'}', style: body),
           thermalDashedRule(),
           Center(
             child: QrImageView(
@@ -319,7 +283,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
                   InvoiceMaintenanceChecklist.rows.length &&
               invoice.maintenanceChecklistChecks!.any((v) => v)) ...[
             thermalDashedRule(),
-            cText(AppLocalizations.of(context)!.posReceiptMaintenanceChecklist, bodyBold.copyWith(fontSize: 11)),
+            cText('Maintenance checklist', bodyBold.copyWith(fontSize: 11)),
             const SizedBox(height: 4),
             for (var i = 0; i < InvoiceMaintenanceChecklist.rows.length; i++)
               if (invoice.maintenanceChecklistChecks![i])
@@ -347,7 +311,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
           ],
           const SizedBox(height: 8),
           cText(
-            AppLocalizations.of(context)!.posReceiptThankYou,
+            'Thank you — شكراً لزيارتكم',
             body.copyWith(fontSize: 10),
           ),
         ],
@@ -355,7 +319,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
     );
   }
 
-  List<Widget> _itemRows(BuildContext context, TextStyle body) {
+  List<Widget> _itemRows(TextStyle body) {
     final out = <Widget>[];
     accumulateInvoiceItems(invoice, (item) {
       final qty = item.qty % 1 == 0
@@ -371,9 +335,8 @@ class ThermalInvoiceReceipt extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              LocalizedApiText(
-                item.productName,
-                uppercase: !_thermalReceiptIsAr(context),
+              Text(
+                item.productName.toUpperCase(),
                 style: body.copyWith(fontWeight: FontWeight.w700, fontSize: 10),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -383,7 +346,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
                 children: [
                   Expanded(
                     flex: 5,
-                    child: LocalizedApiText(
+                    child: Text(
                       item.productName,
                       style: body.copyWith(
                         fontSize: 9,
@@ -409,7 +372,7 @@ class ThermalInvoiceReceipt extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: Text(
-                      _thermalReceiptMoney(context, total),
+                      '${total.toStringAsFixed(2)} SR',
                       style: body.copyWith(fontWeight: FontWeight.w700),
                       textAlign: TextAlign.right,
                     ),
@@ -424,54 +387,13 @@ class ThermalInvoiceReceipt extends StatelessWidget {
     return out;
   }
 
-  /// Matches thermal PDF summary: Arabic line above, English label + amount row.
-  Widget _discountSummaryBilingual(
-    BuildContext context,
-    String ar,
-    String en,
-    double value,
-    TextStyle style,
-  ) {
-    final vStr = _thermalReceiptMoney(context, value);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_thermalReceiptIsAr(context))
-            Text(
-              ar,
-              textAlign: TextAlign.right,
-              textDirection: TextDirection.rtl,
-              style: style.copyWith(fontSize: 9, height: 1.15),
-            ),
-          if (_thermalReceiptIsAr(context)) const SizedBox(height: 2),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(_thermalReceiptIsAr(context) ? '$ar:' : '$en:', textAlign: _thermalReceiptIsAr(context) ? TextAlign.right : TextAlign.left, textDirection: _thermalReceiptIsAr(context) ? TextDirection.rtl : TextDirection.ltr, style: style),
-              ),
-              Text(
-                vStr,
-                style: style.copyWith(fontWeight: FontWeight.w800),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _moneyRow(
-    BuildContext context,
     String label,
     double value,
     TextStyle style, {
     bool emphasize = false,
   }) {
-    final vStr = _thermalReceiptMoney(context, value);
+    final vStr = '${value.toStringAsFixed(2)} SR';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(

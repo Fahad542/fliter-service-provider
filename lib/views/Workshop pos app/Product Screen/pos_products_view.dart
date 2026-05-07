@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
@@ -8,7 +7,6 @@ import '../Home Screen/pos_view_model.dart';
 import '../../../models/pos_product_model.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../Promo/pos_promo_view.dart';
-import '../../../services/LocalizedApiText.dart';
 
 class PosProductsView extends StatefulWidget {
   final List<String>? preSelectedProducts;
@@ -65,7 +63,7 @@ class _PosProductsViewState extends State<PosProductsView> {
       appBar: PosAppBar(
         userName: vm.cashierName,
         infoTitle: vm.workshopName,
-        infoBranch: '${AppLocalizations.of(context)!.posProductsBranchPrefix} ${vm.branchName}',
+        infoBranch: 'Branch: ${vm.branchName}',
         infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
         showDrawer: false,
         showGlobalLeft: true,
@@ -132,7 +130,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       const Icon(Icons.error_outline, size: 48, color: Colors.red),
                       const SizedBox(height: 16),
                       Text(
-                        AppLocalizations.of(context)!.posProductsFailedLoadProducts,
+                        'Failed to load products',
                         style: AppTextStyles.h2.copyWith(color: AppColors.secondaryLight),
                       ),
                       const SizedBox(height: 8),
@@ -144,7 +142,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () => vm.fetchProducts(),
-                        child: Text(AppLocalizations.of(context)!.posCommonRetry),
+                        child: const Text('Retry'),
                       ),
                     ],
                   ),
@@ -160,7 +158,7 @@ class _PosProductsViewState extends State<PosProductsView> {
                       Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade300),
                       const SizedBox(height: 12),
                       Text(
-                        AppLocalizations.of(context)!.posProductNoProductsFound,
+                        'No products found',
                         style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
                       ),
                     ],

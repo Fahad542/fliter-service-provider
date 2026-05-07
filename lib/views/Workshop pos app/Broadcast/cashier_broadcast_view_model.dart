@@ -6,10 +6,8 @@ import '../../../data/repositories/pos_repository.dart';
 import '../../../models/cashier_active_broadcasts_model.dart';
 import '../../../services/realtime_service.dart';
 import '../../../services/session_service.dart';
-import '../../../services/locker_translation_mixin.dart';
-import '../../../l10n/app_localizations_en.dart';
 
-class CashierBroadcastViewModel extends ChangeNotifier with TranslatableMixin {
+class CashierBroadcastViewModel extends ChangeNotifier {
   CashierBroadcastViewModel({
     required this.posRepository,
     required this.sessionService,
@@ -27,15 +25,6 @@ class CashierBroadcastViewModel extends ChangeNotifier with TranslatableMixin {
   int activeCountMeta = 0;
   bool isLoading = false;
   String? errorMessage;
-
-  Future<void> retranslate() async {
-    AppTranslationService.clearCache();
-    notifyListeners();
-  }
-
-  void bindSettingsViewModel(Listenable settingsViewModel) {
-    bindLocaleRetranslation(settingsViewModel, retranslate);
-  }
 
   Timer? _tick;
   Timer? _socketDebounce;
@@ -69,7 +58,7 @@ class CashierBroadcastViewModel extends ChangeNotifier with TranslatableMixin {
     try {
       final token = await sessionService.getToken(role: 'cashier');
       if (token == null) {
-        errorMessage = AppLocalizationsEn().posBroadcastSessionExpired;
+        errorMessage = 'Session expired. Please sign in again.';
         return;
       }
       final res = await posRepository.getCashierActiveBroadcasts(token);
@@ -161,7 +150,6 @@ class CashierBroadcastViewModel extends ChangeNotifier with TranslatableMixin {
 
   @override
   void dispose() {
-    unbindLocaleRetranslation();
     _tick?.cancel();
     _socketDebounce?.cancel();
     _backgroundPoll?.cancel();

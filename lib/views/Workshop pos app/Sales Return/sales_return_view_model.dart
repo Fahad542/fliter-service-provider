@@ -6,10 +6,8 @@ import '../../../../data/repositories/pos_repository.dart';
 import '../../../../models/create_invoice_model.dart';
 import '../../../../models/submit_sales_return_model.dart';
 import '../../../../utils/toast_service.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../../../services/locker_translation_mixin.dart';
 
-class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
+class SalesReturnViewModel extends ChangeNotifier {
   final SessionService sessionService;
   final PosRepository posRepository;
 
@@ -42,45 +40,12 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
   File? _proofImage;
   bool _isSubmitting = false;
 
-  final List<String> returnReasonOptions = const [
+  final List<String> returnReasonOptions = [
     'Defective Product/Service',
     'Customer Cancellation',
     'Wrong Item / Service',
-    'Other',
+    'Other'
   ];
-
-  void bindSettingsViewModel(Listenable settingsViewModel) {
-    bindLocaleRetranslation(settingsViewModel, retranslate);
-  }
-
-  Future<void> retranslate() async {
-    notifyListeners();
-  }
-
-  String localizedReturnReason(BuildContext context, String reason) {
-    final l10n = AppLocalizations.of(context)!;
-    switch (reason) {
-      case 'Defective Product/Service':
-        return l10n.posSalesReturnReasonDefective;
-      case 'Customer Cancellation':
-        return l10n.posSalesReturnReasonCancellation;
-      case 'Wrong Item / Service':
-        return l10n.posSalesReturnReasonWrongItem;
-      case 'Other':
-        return l10n.posSalesReturnReasonOther;
-      default:
-        return reason;
-    }
-  }
-
-  String? localizedSearchError(BuildContext context) {
-    if (_searchError == null) return null;
-    final l10n = AppLocalizations.of(context)!;
-    if (_searchError == 'Error fetching invoices. Ensure customer ID is correct.') {
-      return l10n.posSalesReturnErrorFetchInvoices;
-    }
-    return _searchError;
-  }
 
   // Getters
   bool get isSearching => _isSearching;
@@ -94,31 +59,8 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
   File? get proofImage => _proofImage;
   bool get isSubmitting => _isSubmitting;
 
-  /// True when at least one line is selected and every selected line has return qty > 0 (and at most invoice qty).
-  bool get canSubmitReturn {
-    final inv = _selectedInvoice;
-    if (inv == null) return false;
-    var anySelected = false;
-    for (final item in inv.items) {
-      if (!(_selectedItems[item.id] ?? false)) continue;
-      anySelected = true;
-      final q = _returnQuantities[item.id];
-      if (q == null || q <= 0 || q > item.qty) return false;
-    }
-    return anySelected;
-  }
-
-  static String _westernDigits(String text) {
-    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    var out = text;
-    for (var i = 0; i < arabic.length; i++) {
-      out = out.replaceAll(arabic[i], i.toString());
-    }
-    return out;
-  }
-
   Future<void> searchInvoice() async {
-    final query = _westernDigits(searchController.text).trim();
+    final query = searchController.text.trim();
     if (query.isEmpty) return;
 
     _isSearching = true;
@@ -148,19 +90,10 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
             plateNo: '',
             salesOrderId: order.id,
             customerId: query,
-            nextOilChangeKm: null,
             items: order.items.map((item) {
-              String? productNameArabic;
-              try {
-                final dynamic dynItem = item;
-                productNameArabic = dynItem.productNameArabic as String?;
-              } catch (_) {
-                productNameArabic = null;
-              }
               return InvoiceItem(
                 id: item.id,
                 productName: item.productName,
-                productNameArabic: productNameArabic,
                 qty: item.qty,
                 unitPrice: item.unitPrice,
                 lineTotal: item.lineTotal,
@@ -237,15 +170,7 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
     
     final selectedItemsCount = _selectedItems.values.where((v) => v).length;
     if (selectedItemsCount == 0) {
-      ToastService.showError(context, AppLocalizations.of(context)!.posSalesReturnErrorSelectItem);
-      return;
-    }
-
-    if (!canSubmitReturn) {
-      ToastService.showError(
-        context,
-        AppLocalizations.of(context)!.posSalesReturnErrorQty,
-      );
+      ToastService.showError(context, 'Please select at least one item to return');
       return;
     }
 
@@ -254,24 +179,20 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
 
     try {
       final token = await sessionService.getToken();
-      if (token == null) throw Exception(AppLocalizations.of(context)!.posSalesReturnAuthTokenNotFound);
+      if (token == null) throw Exception('Authentication token not found');
 
       const defaultReason = 'Defective Product/Service';
 
       final List<SalesReturnItem> returnItems = [];
       _selectedItems.forEach((itemId, isSelected) {
-        if (!isSelected) return;
-        final q = _returnQuantities[itemId];
-        if (q == null || q <= 0) return;
-        returnItems.add(SalesReturnItem(
-          salesOrderItemId: itemId,
-          qty: q,
-          reason: _returnReasons[itemId] ?? defaultReason,
-        ));
+        if (isSelected && _returnQuantities.containsKey(itemId)) {
+          returnItems.add(SalesReturnItem(
+            salesOrderItemId: itemId,
+            qty: _returnQuantities[itemId] ?? 1.0,
+            reason: _returnReasons[itemId] ?? defaultReason,
+          ));
+        }
       });
-      if (returnItems.isEmpty) {
-        throw Exception(AppLocalizations.of(context)!.posSalesReturnErrorNoValidLines);
-      }
 
       final request = SubmitSalesReturnRequest(
         invoiceId: _selectedInvoice!.id,
@@ -285,7 +206,7 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
 
       if (response.success) {
         if (context.mounted) {
-          ToastService.showSuccess(context, AppLocalizations.of(context)!.posSalesReturnSuccessSubmitted);
+          ToastService.showSuccess(context, 'Return request submitted successfully');
         }
 
         // Reset state on success
@@ -298,7 +219,7 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
 
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, AppLocalizations.of(context)!.posSalesReturnErrorSubmit(e.toString()));
+        ToastService.showError(context, 'Failed to submit request: ${e.toString()}');
       }
     } finally {
       if (context.mounted) {
@@ -310,9 +231,7 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
 
   @override
   void dispose() {
-    unbindLocaleRetranslation();
     searchController.dispose();
     super.dispose();
   }
-
 }

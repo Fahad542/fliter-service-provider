@@ -2,9 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/app_colors.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../services/LocalizedApiText.dart';
-import '../../../services/locker_translation_mixin.dart';
 import '../../../utils/app_text_styles.dart';
 import '../More Tab/settings_view_model.dart';
 import '../../../widgets/pos_widgets.dart';
@@ -28,8 +25,6 @@ class PosHomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final langCode = Localizations.localeOf(context).languageCode;
     final isTablet = MediaQuery.of(context).size.width > 600;
     final vm = context.watch<PosViewModel>();
 
@@ -43,132 +38,131 @@ class PosHomeView extends StatelessWidget {
         appBar: PosAppBar(
           userName: vm.cashierName,
           infoTitle: vm.workshopName,
-          infoBranch: l10n.posHomeBranchPrefix(vm.branchName),
-          infoTime: AppTranslationService.localizeDigitsForLanguage(DateFormat('dd MMM yyyy · hh:mm a', langCode).format(DateTime.now()), langCode),
+          infoBranch: 'Branch: ${vm.branchName}',
+          infoTime: DateFormat('dd MMM yyyy · hh:mm a').format(DateTime.now()),
           onMenuPressed: () => PosShellScaffoldRegistry.openDrawer(),
         ),
         body: wrapPosShellRailBody(
           context,
           GestureDetector(
-            onTap: () {
-              if (vm.homeSearchController.text.isEmpty) {
-                vm.homeSearchFocusNode.unfocus();
-              }
-            },
-            child: Column(
-              children: [
-                // 2. Custom Info Bar (Merged into AppBar)
+          onTap: () {
+            if (vm.homeSearchController.text.isEmpty) {
+              vm.homeSearchFocusNode.unfocus();
+            }
+          },
+          child: Column(
+            children: [
+              // 2. Custom Info Bar (Merged into AppBar)
 
-                // 3. Main Content
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 24),
-                  child: Column(
-                    children: [
-                      SizedBox(height: isTablet ? 18 : 24),
-                      // Title
-                      RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: l10n.posHomeTitleFilter,
-                              style: AppTextStyles.h1.copyWith(
-                                color: AppColors.primaryLight,
-                                fontSize: isTablet ? 36 : 34,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            TextSpan(
-                              text: l10n.posHomeTitlePos,
-                              style: AppTextStyles.h1.copyWith(
-                                color: AppColors.secondaryLight,
-                                fontSize: isTablet ? 36 : 34,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.posHomeSubtitle,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: Colors.grey,
-                          fontSize: 15,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Search bar
-                      PosSearchBar(
-                        controller: vm.homeSearchController,
-                        focusNode: vm.homeSearchFocusNode,
-                        hintText:
-                        l10n.posHomeSearchHint,
-                        onChanged: (val) => vm.handleSearchDebounce(val),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+              // 3. Main Content
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 24),
+                child: Column(
+                  children: [
+                    SizedBox(height: isTablet ? 18 : 24),
+                    // Title
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
                         children: [
-                          _buildActionChip(
-                            context: context,
-                            icon: Icons.add,
-                            label: l10n.posHomeNewWalkIn,
-                            onTap: () {
-                              context.read<PosViewModel>().clearCustomerData();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                  const PosAddCustomerView(initialTab: 0),
-                                ),
-                              );
-                            },
+                          TextSpan(
+                            text: 'Workshop ',
+                            style: AppTextStyles.h1.copyWith(
+                              color: AppColors.primaryLight,
+                              fontSize: isTablet ? 36 : 34,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                          const SizedBox(width: 12),
-                          _buildActionChip(
-                            context: context,
-                            icon: Icons.business,
-                            label: l10n.posHomeCorporateBooking,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                  const PosCorporateBookingsView(),
-                                ),
-                              );
-                            },
+                          TextSpan(
+                            text: 'POS',
+                            style: AppTextStyles.h1.copyWith(
+                              color: AppColors.secondaryLight,
+                              fontSize: isTablet ? 36 : 34,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                    ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Search by customer number, vehicle number,\nphone number or customer name',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Colors.grey,
+                        fontSize: 15,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Search bar
+                    PosSearchBar(
+                      controller: vm.homeSearchController,
+                      focusNode: vm.homeSearchFocusNode,
+                      hintText:
+                          'Search customer no / vehicle / mobile / plate...',
+                      onChanged: (val) => vm.handleSearchDebounce(val),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildActionChip(
+                          context: context,
+                          icon: Icons.add,
+                          label: 'New walk-in',
+                          onTap: () {
+                            context.read<PosViewModel>().clearCustomerData();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const PosAddCustomerView(initialTab: 0),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                        _buildActionChip(
+                          context: context,
+                          icon: Icons.business,
+                          label: 'Corporate booking',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const PosCorporateBookingsView(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+
+              if (vm.homeSearchController.text.isNotEmpty ||
+                  vm.homeSearchFocusNode.hasFocus)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildSearchResults(context, isTablet),
                   ),
                 ),
-
-                if (vm.homeSearchController.text.isNotEmpty ||
-                    vm.homeSearchFocusNode.hasFocus)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _buildSearchResults(context, isTablet),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
+        ),
         ),
       ),
     );
   }
 
   Widget _buildSearchResults(BuildContext context, bool isTablet) {
-    final l10n = AppLocalizations.of(context)!;
     return Consumer<PosViewModel>(
       builder: (context, vm, child) {
         if (vm.isSearchingCustomer) {
@@ -185,7 +179,7 @@ class PosHomeView extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(6, 10, 6, 14),
                 child: Text(
-                  l10n.posHomeRecentSearches,
+                  'Recent Searches',
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontSize: isTablet ? 16 : 14,
                     fontWeight: FontWeight.w600,
@@ -206,28 +200,22 @@ class PosHomeView extends StatelessWidget {
                           ? customer.orders.first
                           : null;
                       final vehicle = latestOrder?.vehicle;
-                      final langCode = Localizations.localeOf(context).languageCode;
 
-                      // Raw API strings that need Arabic translation
-                      final rawVehicle = vehicle != null
-                          ? '${vehicle.make} ${vehicle.model}'
-                          '${(vehicle.year != null && vehicle.year!.isNotEmpty) ? ' · ${vehicle.year}' : ''}'
-                          : l10n.posHomeNoVehicle;
-                      final rawStatus = latestOrder?.status.toUpperCase() ?? l10n.posCommonNotAvailable;
-
-                      return _TranslatedSearchHistoryItem(
-                        langCode: langCode,
-                        rawVehicle: rawVehicle,
-                        plate: vehicle?.plateNo ?? l10n.posCommonNotAvailable,
-                        rawCustomer: customer.name,
+                      return SearchHistoryItem(
+                        vehicle: vehicle != null
+                            ? '${vehicle.make} ${vehicle.model}'
+                                '${(vehicle.year != null && vehicle.year!.isNotEmpty) ? ' · ${vehicle.year}' : ''}'
+                            : 'No Vehicle',
+                        plate: vehicle?.plateNo ?? 'N/A',
+                        customer: customer.name,
                         phone: customer.mobile,
                         lastVisit: latestOrder != null
-                          ? AppTranslationService.localizeDigitsForLanguage(vm.formatDate(latestOrder.createdAt), langCode)
-                            : l10n.posCommonNotAvailable,
-                        rawLastService: rawStatus,
+                            ? vm.formatDate(latestOrder.createdAt)
+                            : 'N/A',
+                        lastService: latestOrder?.status.toUpperCase() ?? 'N/A',
                         orderNumber: latestOrder?.id,
                         isCorporate:
-                        customer.customerType.toLowerCase() == 'corporate',
+                            customer.customerType.toLowerCase() == 'corporate',
                         onContinue: () {
                           final posVm = context.read<PosViewModel>();
                           final isCorporateCustomer =
@@ -337,7 +325,7 @@ class PosHomeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  l10n.posHomeNoResults,
+                  'No results found',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.grey.shade400,
                     fontWeight: FontWeight.w600,
@@ -345,7 +333,7 @@ class PosHomeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  l10n.posHomeNoResultsHint,
+                  'Try searching with a different name or number',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: Colors.grey.shade400,
                   ),
@@ -404,122 +392,4 @@ class PosHomeView extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Async-translating wrapper for SearchHistoryItem.
-//
-// WHY: SearchHistoryItem accepts plain String fields. API data arrives in
-// English and must be translated to Arabic on the fly when the locale is Arabic.
-// Using FutureBuilder here keeps the translation logic out of pos_widgets.dart
-// and out of the ViewModel — each card translates independently, shows the
-// raw (English) string instantly via initialData, then updates once the
-// translation resolves. Re-renders automatically on locale switch because the
-// ValueKey changes (langCode is part of the key).
-// ─────────────────────────────────────────────────────────────────────────────
-class _TranslatedSearchHistoryItem extends StatelessWidget {
-  const _TranslatedSearchHistoryItem({
-    required this.langCode,
-    required this.rawVehicle,
-    required this.plate,
-    required this.rawCustomer,
-    required this.phone,
-    required this.lastVisit,
-    required this.rawLastService,
-    required this.isCorporate,
-    this.orderNumber,
-    this.onContinue,
-    this.onViewHistory,
-    this.onSalesReturn,
-  });
-
-  final String langCode;
-  final String rawVehicle;
-  final String plate;
-  final String rawCustomer;
-  final String phone;
-  final String lastVisit;
-  final String rawLastService;
-  final bool isCorporate;
-  final String? orderNumber;
-  final VoidCallback? onContinue;
-  final VoidCallback? onViewHistory;
-  final VoidCallback? onSalesReturn;
-
-  String _instantStatus(String status) {
-    if (langCode != 'ar') return status;
-    switch (status.trim().toLowerCase().replaceAll('_', ' ')) {
-      case 'invoiced':
-        return 'مفوتر';
-      case 'completed':
-      case 'complete':
-        return 'مكتمل';
-      case 'pending':
-        return 'قيد الانتظار';
-      case 'draft':
-        return 'مسودة';
-      case 'in progress':
-      case 'inprogress':
-        return 'قيد التنفيذ';
-      case 'cancelled':
-      case 'canceled':
-        return 'ملغي';
-      default:
-        return AppTranslationService.localizeDigitsForLanguage(status, langCode);
-    }
-  }
-
-  Future<_TranslatedStrings> _translate() async {
-    final results = await Future.wait([
-      AppTranslationService.localizedDynamicValueForLanguage(rawVehicle, langCode),
-      AppTranslationService.localizedDynamicValueForLanguage(rawCustomer, langCode),
-      AppTranslationService.localizedStatusForLanguage(rawLastService, langCode),
-    ]);
-    return _TranslatedStrings(
-      vehicle: results[0],
-      customer: results[1],
-      lastService: results[2],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<_TranslatedStrings>(
-      // Key ensures translation re-runs when the locale changes.
-      key: ValueKey<String>('$langCode::$rawVehicle::$rawCustomer::$rawLastService'),
-      future: _translate(),
-      initialData: _TranslatedStrings(
-        vehicle: AppTranslationService.localizeDigitsForLanguage(rawVehicle, langCode),
-        customer: rawCustomer,
-        lastService: _instantStatus(rawLastService),
-      ),
-      builder: (context, snapshot) {
-        final t = snapshot.data!;
-        return SearchHistoryItem(
-          vehicle: t.vehicle,
-          plate: plate,
-          customer: t.customer,
-          phone: phone,
-          lastVisit: lastVisit,
-          lastService: t.lastService,
-          orderNumber: orderNumber,
-          isCorporate: isCorporate,
-          onContinue: onContinue,
-          onViewHistory: onViewHistory,
-          onSalesReturn: onSalesReturn,
-        );
-      },
-    );
-  }
-}
-
-class _TranslatedStrings {
-  const _TranslatedStrings({
-    required this.vehicle,
-    required this.customer,
-    required this.lastService,
-  });
-  final String vehicle;
-  final String customer;
-  final String lastService;
 }

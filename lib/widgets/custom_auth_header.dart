@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../views/Workshop pos app/More Tab/settings_view_model.dart';
-import 'app_brand_logo.dart';
 
 class CustomAuthHeader extends StatelessWidget {
   final String title;
@@ -74,13 +73,12 @@ class CustomAuthHeader extends StatelessWidget {
                     ),
 
                   // Logo – dead center
-                  const SizedBox(
+                  SizedBox(
                     height: 45,
-                    child: AppBrandLogo(
-                      height: 45,
+                    child: Image.asset(
+                      'assets/images/icon.png',
                       color: Colors.black,
                       fit: BoxFit.contain,
-                      fallbackSize: 36,
                     ),
                   ),
 

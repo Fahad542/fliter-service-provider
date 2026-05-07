@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../views/Workshop pos app/More Tab/settings_view_model.dart';
 import '../utils/app_text_styles.dart';
-import 'app_brand_logo.dart';
 
 Future<void> _makePhoneCall(String url) async {
   if (await canLaunchUrl(Uri.parse(url))) {
@@ -27,14 +26,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: height + 25,
       title: Padding(
         padding: const EdgeInsets.only(top: 25),
-        child: const SizedBox(
+        child: SizedBox(
           height: 45,
-          child: AppBrandLogo(
-            height: 45,
+          child: Image.asset(
+            'assets/images/icon.png',
             color: Colors.black,
             fit: BoxFit.contain,
-            fallbackIcon: Icons.store_mall_directory_rounded,
-            fallbackSize: 36,
           ),
         ),
       ),

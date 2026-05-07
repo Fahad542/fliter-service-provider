@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../services/LocalizedApiText.dart';
-import '../../../services/locker_translation_mixin.dart';
 import 'package:provider/provider.dart';
 
 import '../../../utils/app_colors.dart';
@@ -213,7 +210,7 @@ class _PosTechnicianAssignmentViewState
         // Edit order: call PATCH edit API, reuse existing jobId
         final existingJobId = posVm.editingCompletingOrderId ?? '';
         if (existingJobId.isEmpty) {
-          ToastService.showError(context, AppLocalizations.of(context)!.posTechnicianFailedJobEdit);
+          ToastService.showError(context, 'Failed to get job ID for edit');
           return;
         }
         final success = await posVm.submitEditOrder(
@@ -234,14 +231,14 @@ class _PosTechnicianAssignmentViewState
         if (!success) return;
         jobIdToUse = posVm.currentJobId ?? '';
         if (jobIdToUse.isEmpty) {
-          ToastService.showError(context, AppLocalizations.of(context)!.posTechnicianFailedOrderId);
+          ToastService.showError(context, 'Failed to get order ID');
           return;
         }
       }
     }
 
     if (jobIdToUse.trim().isEmpty) {
-      ToastService.showError(context, AppLocalizations.of(context)!.posTechnicianJobNotFound);
+      ToastService.showError(context, 'Job not found for this assignment.');
       return;
     }
 
@@ -286,7 +283,7 @@ class _PosTechnicianAssignmentViewState
             ToastService.showError(
               context,
               posVm.errorMessage ??
-                  AppLocalizations.of(context)!.posTechnicianUnlockFailed,
+                  'Could not unlock job to change technicians. Try again.',
             );
             return;
           }
@@ -355,8 +352,8 @@ class _PosTechnicianAssignmentViewState
         serverMsg.isNotEmpty
             ? serverMsg
             : (assignVm.selectedTechnicianIds.isEmpty
-                ? AppLocalizations.of(context)!.posTechAssignSuccessEmpty
-                : AppLocalizations.of(context)!.posTechAssignSuccess),
+                ? 'All technicians removed from this job'
+                : 'Technicians assigned successfully'),
       );
       if (oid != null && oid.isNotEmpty) {
         await posVm.fetchOrders(silent: true, preferredOrderId: oid);
@@ -392,7 +389,7 @@ class _PosTechnicianAssignmentViewState
     } else {
       ToastService.showError(
         context,
-        vm.assignmentMessage ?? AppLocalizations.of(context)!.posTechnicianAssignFailed,
+        vm.assignmentMessage ?? 'Failed to assign technicians',
       );
     }
     } finally {
@@ -416,7 +413,7 @@ class _PosTechnicianAssignmentViewState
     if (isEditMode) {
       final existingJobId = posVm.editingCompletingOrderId ?? '';
       if (existingJobId.isEmpty) {
-        ToastService.showError(context, AppLocalizations.of(context)!.posTechnicianFailedJobEdit);
+        ToastService.showError(context, 'Failed to get job ID for edit');
         return null;
       }
       final success = await posVm.submitEditOrder(
@@ -438,7 +435,7 @@ class _PosTechnicianAssignmentViewState
     if (!success) return null;
     final jobIdToUse = posVm.currentJobId ?? '';
     if (jobIdToUse.isEmpty) {
-      ToastService.showError(context, AppLocalizations.of(context)!.posTechnicianFailedOrderId);
+      ToastService.showError(context, 'Failed to get order ID');
       return null;
     }
     _cachedJobIdFromSave = jobIdToUse;
@@ -468,7 +465,7 @@ class _PosTechnicianAssignmentViewState
               return Scaffold(
               backgroundColor: const Color(0xFFFBF9F6),
               appBar: PosScreenAppBar(
-                title: AppLocalizations.of(context)!.posTechnicianAssignmentTitle,
+                title: 'Technician Assignment',
                 titleFontWeight: FontWeight.w800,
                 actions: [
                   // if (widget.departmentName != null &&
@@ -508,7 +505,7 @@ class _PosTechnicianAssignmentViewState
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(AppLocalizations.of(context)!.posTechnicianErrorPrefix(vm.errorMessage ?? '')),
+                          Text('Error: ${vm.errorMessage}'),
                           const SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: () {
@@ -519,7 +516,7 @@ class _PosTechnicianAssignmentViewState
                                 vm.fetchCashierTechnicians();
                               }
                             },
-                            child: Text(AppLocalizations.of(context)!.posTechAssignRetry),
+                            child: const Text('Retry'),
                           ),
                         ],
                       ),
@@ -598,7 +595,7 @@ class _PosTechnicianAssignmentViewState
                                 child: TextField(
                                   onChanged: assignVm.setSearchQuery,
                                   decoration: InputDecoration(
-                                    hintText: AppLocalizations.of(context)!.posTechnicianSearchHint,
+                                    hintText: 'Search technicians...',
                                     hintStyle: TextStyle(
                                       color: Colors.grey.shade400,
                                     ),
@@ -637,8 +634,8 @@ class _PosTechnicianAssignmentViewState
                                 ),
                                 child: Text(
                                   assignVm.showAllTechnicians
-                                      ? AppLocalizations.of(context)!.posTechAssignOnlineOnly
-                                      : AppLocalizations.of(context)!.posTechAssignShowAll,
+                                      ? 'Online Only'
+                                      : 'Show All',
                                   style: const TextStyle(
                                     color: AppColors.secondaryLight,
                                     fontWeight: FontWeight.w700,
@@ -665,7 +662,7 @@ class _PosTechnicianAssignmentViewState
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      AppLocalizations.of(context)!.posTechnicianLoading,
+                                      'Loading technicians…',
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
@@ -676,8 +673,8 @@ class _PosTechnicianAssignmentViewState
                                 ),
                               )
                             : technicians.isEmpty
-                                ? Center(
-                                    child: Text(AppLocalizations.of(context)!.posTechAssignNoResults),
+                                ? const Center(
+                                    child: Text('No technicians found'),
                                   )
                                 : GridView.builder(
                                 padding: EdgeInsets.symmetric(
@@ -797,7 +794,7 @@ class _PosTechnicianAssignmentViewState
                                                     MainAxisAlignment.center,
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  LocalizedApiText(
+                                                  Text(
                                                     tech.assignmentStatusDisplayLabel,
                                                     style: TextStyle(
                                                       fontSize: isTablet
@@ -817,7 +814,7 @@ class _PosTechnicianAssignmentViewState
                                                       tech.formattedLastSeen
                                                           .isNotEmpty)
                                                     Text(
-                                                      AppLocalizations.of(context)!.posTechnicianLastSeen(AppTranslationService.localizeDigitsForLanguage(tech.formattedLastSeen, Localizations.localeOf(context).languageCode)),
+                                                      'Last seen: ${tech.formattedLastSeen}',
                                                       style: TextStyle(
                                                         fontSize: isTablet
                                                             ? 11
@@ -834,7 +831,7 @@ class _PosTechnicianAssignmentViewState
                                                   Row(
                                                     children: [
                                                       Expanded(
-                                                        child: LocalizedApiText(
+                                                        child: Text(
                                                           tech.name,
                                                           style: TextStyle(
                                                             fontSize: isTablet
@@ -857,7 +854,7 @@ class _PosTechnicianAssignmentViewState
                                                       .departments
                                                       .isNotEmpty) ...[
                                                     const SizedBox(height: 2),
-                                                    LocalizedApiText(
+                                                    Text(
                                                       tech.departments
                                                           .map((d) => d.name)
                                                           .join(' • '),
@@ -892,7 +889,7 @@ class _PosTechnicianAssignmentViewState
                                                       ),
                                                       const SizedBox(width: 3),
                                                       Text(
-                                                        AppTranslationService.localizeDigitsForLanguage(AppLocalizations.of(context)!.posTechnicianSlots(tech.slotsUsed, tech.totalSlots), Localizations.localeOf(context).languageCode),
+                                                        'Slots: ${tech.slotsUsed}/${tech.totalSlots}',
                                                         style: TextStyle(
                                                           fontSize: isTablet
                                                               ? 12
@@ -1045,7 +1042,7 @@ class _PosTechnicianAssignmentViewState
                                                     const SizedBox(width: 6),
                                                     Flexible(
                                                       child: Text(
-                                                        AppLocalizations.of(context)!.posTechnicianWait(AppTranslationService.localizeDigitsForLanguage(cooldownLabel, Localizations.localeOf(context).languageCode)),
+                                                        'Wait $cooldownLabel',
                                                         maxLines: 1,
                                                         overflow:
                                                             TextOverflow.ellipsis,
@@ -1057,8 +1054,8 @@ class _PosTechnicianAssignmentViewState
                                                     ),
                                                   ],
                                                 )
-                                              : Text(
-                                                  AppLocalizations.of(context)!.posTechnicianBroadcast,
+                                              : const Text(
+                                                  'Broadcast',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -1092,8 +1089,8 @@ class _PosTechnicianAssignmentViewState
                                         color: Colors.white,
                                         strokeWidth: 2.5,
                                       ),
-                                    ) : Text(
-                                      AppLocalizations.of(context)!.posTechnicianSave,
+                                    ) : const Text(
+                                      'Save Technicians',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,

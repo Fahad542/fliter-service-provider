@@ -1,17 +1,14 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/store_closing_model.dart';
 import '../../../utils/toast_service.dart';
 import '../../../data/repositories/pos_repository.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../services/locker_translation_mixin.dart';
 import '../../../services/session_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
-class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
+class StoreClosingViewModel extends ChangeNotifier {
   final PosRepository posRepository = PosRepository();
   final SessionService sessionService = SessionService();
 
@@ -37,6 +34,9 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
 
   bool _isLoadingSummary = false;
   bool get isLoadingSummary => _isLoadingSummary;
+
+  bool _isGeneratingReport = false;
+  bool get isGeneratingReport => _isGeneratingReport;
 
   bool _isReconciling = false;
   bool get isReconciling => _isReconciling;
@@ -83,7 +83,7 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
 
     try {
       final token = await sessionService.getToken();
-      if (token == null) throw Exception(AppLocalizations.of(context)!.posSalesReturnTokenNotFound);
+      if (token == null) throw Exception('Token not found');
 
       final body = <String, dynamic>{
         'physicalCash': double.tryParse(cashController.text) ?? 0,
@@ -114,14 +114,14 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
         );
         _isReconciled = true;
         if (context.mounted) {
-          ToastService.showSuccess(context, AppLocalizations.of(context)!.posStoreClosingVmSuccess);
+          ToastService.showSuccess(context, 'Shift closed successfully!');
         }
       } else {
-        throw Exception(response['message'] ?? AppLocalizations.of(context)!.posStoreClosingVmCounterFailed);
+        throw Exception(response['message'] ?? 'Counter closing failed');
       }
     } catch (e) {
       if (context.mounted) {
-        ToastService.showError(context, AppLocalizations.of(context)!.posStoreClosingVmFailed(e.toString()));
+        ToastService.showError(context, 'Failed to close shift: $e');
       }
     } finally {
       _isReconciling = false;
@@ -129,159 +129,130 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
     }
   }
 
-  String get closingReportPdfFileName =>
-      'Store_Closing_Report_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf';
+  Future<void> buildReport(BuildContext context) async {
+    if (_report == null) return;
 
-  /// Same PDF bytes used by the store‑closing preview dialog and [Printing.layoutPdf].
-  Future<Uint8List> buildClosingReportPdfBytes() async {
-    if (_report == null) {
-      throw StateError('No closing report to export.');
+    _isGeneratingReport = true;
+    notifyListeners();
+
+    try {
+      final pdf = pw.Document();
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context ctx) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Store Closing Report',
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 20),
+                pw.Text('Branch: ${_report!.branch}'),
+                pw.Text('Cashier: ${_report!.cashierName}'),
+                pw.Text('Date: ${DateFormat('dd MMM, yyyy hh:mm a').format(_report!.timestamp)}'),
+                if (_closingId != null) pw.Text('Closing ID: $_closingId'),
+                pw.SizedBox(height: 20),
+                pw.Divider(),
+                pw.SizedBox(height: 10),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Expanded(child: pw.Text('Category',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.SizedBox(
+                        width: 80,
+                        child: pw.Text('System',
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.SizedBox(
+                        width: 80,
+                        child: pw.Text('Physical',
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.SizedBox(
+                        width: 80,
+                        child: pw.Text('Difference',
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  ],
+                ),
+                pw.SizedBox(height: 10),
+                pw.Divider(),
+                pw.SizedBox(height: 10),
+                _buildPdfRow('Cash Account', _report!.systemCash, _report!.physicalCash, _report!.cashDiff),
+                _buildPdfRow('Bank / Cards', _report!.systemBank, _report!.physicalBank, _report!.bankDiff),
+                _buildPdfRow('Corporate', _report!.systemCorporate, _report!.physicalCorporate, _report!.corporateDiff),
+                _buildPdfRow('Tamara', _report!.systemTamara, _report!.physicalTamara, _report!.tamaraDiff),
+                _buildPdfRow('Tabby', _report!.systemTabby, _report!.physicalTabby, _report!.tabbyDiff),
+                _buildPdfRow('Others (Employees)', _report!.systemOthers, _report!.physicalOthers, _report!.othersDiff),
+                pw.SizedBox(height: 20),
+                pw.Divider(),
+                pw.SizedBox(height: 10),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Total Difference:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                    pw.Text('SAR ${_report!.netDifference.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+                pw.SizedBox(height: 8),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Total Sales Return:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                    pw.Text(
+                        _report!.salesReturnsTotal > 0
+                            ? '- SAR ${_report!.salesReturnsTotal.toStringAsFixed(2)}'
+                            : 'SAR ${_report!.salesReturnsTotal.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+                pw.SizedBox(height: 6),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('System Total Sales (before returns):',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                    pw.Text('SAR ${_report!.grossSystemSales.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+                pw.SizedBox(height: 6),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Grand Total (net):',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                    pw.Text('SAR ${_report!.systemSales.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => pdf.save(),
+        name: 'Store_Closing_Report_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
+      );
+
+      if (context.mounted) {
+        ToastService.showSuccess(context, 'Reconciliation Report PDF Generated!');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ToastService.showError(context, 'Failed to generate PDF: $e');
+      }
+    } finally {
+      _isGeneratingReport = false;
+      notifyListeners();
     }
-
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context ctx) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('تقرير إغلاق المتجر / Store Closing Report',
-                  style: pw.TextStyle(
-                      fontSize: 24, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 20),
-              pw.Text('الفرع / Branch: ${_report!.branch}'),
-              pw.Text('أمين الصندوق / Cashier: ${_report!.cashierName}'),
-              pw.Text(
-                  'التاريخ / Date: ${DateFormat('dd MMM, yyyy hh:mm a').format(_report!.timestamp)}'),
-              if (_closingId != null) pw.Text('رقم الإغلاق / Closing ID: $_closingId'),
-              pw.SizedBox(height: 20),
-              pw.Divider(),
-              pw.SizedBox(height: 10),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Expanded(
-                      child: pw.Text('الفئة / Category',
-                          style:
-                              pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.SizedBox(
-                      width: 80,
-                      child: pw.Text('النظام / System',
-                          textAlign: pw.TextAlign.right,
-                          style:
-                              pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.SizedBox(
-                      width: 80,
-                      child: pw.Text('الفعلي / Physical',
-                          textAlign: pw.TextAlign.right,
-                          style:
-                              pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.SizedBox(
-                      width: 80,
-                      child: pw.Text('الفرق / Difference',
-                          textAlign: pw.TextAlign.right,
-                          style:
-                              pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                ],
-              ),
-              pw.SizedBox(height: 10),
-              pw.Divider(),
-              pw.SizedBox(height: 10),
-              _buildPdfRow('حساب النقد / Cash Account', _report!.systemCashGross,
-                  _report!.physicalCash, _report!.cashDiff),
-              _buildPdfRow('البنك / البطاقات / Bank / Cards', _report!.systemBankGross,
-                  _report!.physicalBank, _report!.bankDiff),
-              _buildPdfRow('الشركات / Corporate', _report!.systemCorporateGross,
-                  _report!.physicalCorporate, _report!.corporateDiff),
-              _buildPdfRow('تمارا / Tamara', _report!.systemTamaraGross,
-                  _report!.physicalTamara, _report!.tamaraDiff),
-              _buildPdfRow('تابي / Tabby', _report!.systemTabbyGross,
-                  _report!.physicalTabby, _report!.tabbyDiff),
-              _buildPdfRow('أخرى (الموظفون) / Others (Employees)', _report!.systemOthersGross,
-                  _report!.physicalOthers, _report!.othersDiff),
-              pw.SizedBox(height: 12),
-              pw.Divider(),
-              pw.SizedBox(height: 10),
-              _buildPdfTotalsFooter(_report!),
-            ],
-          );
-        },
-      ),
-    );
-
-    return pdf.save();
-  }
-
-  pw.Widget _buildPdfTotalsFooter(StoreClosingReport r) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-      children: [
-        _buildPdfRow(
-          'الإجمالي / Total',
-          r.systemBucketsSumGross,
-          r.physicalTotal,
-          r.diffBucketsSum,
-        ),
-        if (r.salesReturnsTotal > 0.001) ...[
-          pw.SizedBox(height: 8),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  'خصم: إجمالي مرتجعات المبيعات / Less: Total sales return',
-                  style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              pw.SizedBox(
-                width: 80,
-                child: pw.Text(
-                  '− SAR ${r.salesReturnsTotal.toStringAsFixed(2)}',
-                  textAlign: pw.TextAlign.right,
-                  style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 80, child: pw.Text('')),
-              pw.SizedBox(width: 80, child: pw.Text('')),
-            ],
-          ),
-        ],
-        pw.SizedBox(height: 10),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Expanded(
-              child: pw.Text(
-                'الإجمالي الكلي / Grand Total',
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            pw.SizedBox(
-              width: 240,
-              child: pw.Text(
-                'SAR ${r.systemSales.toStringAsFixed(2)}',
-                textAlign: pw.TextAlign.right,
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 
   pw.Widget _buildPdfRow(String label, double system, double physical, double diff) {
@@ -314,17 +285,8 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
     notifyListeners();
   }
 
-  void bindSettingsViewModel(Listenable settingsViewModel) {
-    bindLocaleRetranslation(settingsViewModel, retranslate);
-  }
-
-  Future<void> retranslate() async {
-    notifyListeners();
-  }
-
   @override
   void dispose() {
-    unbindLocaleRetranslation();
     cashController.dispose();
     bankController.dispose();
     corporateController.dispose();
@@ -334,5 +296,4 @@ class StoreClosingViewModel extends ChangeNotifier with TranslatableMixin {
     notesController.dispose();
     super.dispose();
   }
-
 }

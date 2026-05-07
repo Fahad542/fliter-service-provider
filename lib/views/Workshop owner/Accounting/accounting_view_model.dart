@@ -3,7 +3,7 @@ import '../../../../models/workshop_owner_models.dart';
 import '../../../../data/repositories/owner_repository.dart';
 import '../../../../services/session_service.dart';
 import '../../../services/locker_translation_mixin.dart';
-import '../../Workshop pos app/More Tab/settings_view_model.dart';
+import '../../../views/Workshop pos app/More Tab/settings_view_model.dart';
 
 // ---------------------------------------------------------------------------
 // AccountingViewModel

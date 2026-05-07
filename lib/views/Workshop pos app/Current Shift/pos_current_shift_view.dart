@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../services/LocalizedApiText.dart';
-import '../../../services/locker_translation_mixin.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -10,44 +7,6 @@ import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import 'current_shift_view_model.dart';
-
-
-String _shiftLang(BuildContext context) =>
-    Localizations.localeOf(context).languageCode;
-
-String _shiftDigits(BuildContext context, Object? value) {
-  return AppTranslationService.localizeDigitsForLanguage(
-    value?.toString() ?? '',
-    _shiftLang(context),
-  );
-}
-
-String _shiftStatusLabel(BuildContext context, String status) {
-  final lang = _shiftLang(context);
-  final s = status.trim().toLowerCase().replaceAll('_', ' ');
-  if (lang == 'ar') {
-    if (s == 'active' || s == 'open' || s == 'opened') return 'نشط';
-    if (s == 'inactive' || s == 'closed') return 'غير نشط';
-    if (s == 'pending') return 'قيد الانتظار';
-  }
-  return status.trim().isEmpty ? '—' : status.trim().toUpperCase();
-}
-
-String _shiftElapsedText(BuildContext context, String raw) {
-  final lang = _shiftLang(context);
-  var text = raw.trim();
-  if (text.isEmpty) return '—';
-  if (lang == 'ar') {
-    text = text
-        .replaceAll(RegExp(r'\bhours?\b', caseSensitive: false), 'س')
-        .replaceAll(RegExp(r'\bhrs?\b', caseSensitive: false), 'س')
-        .replaceAll(RegExp(r'\bh\b', caseSensitive: false), 'س')
-        .replaceAll(RegExp(r'\bminutes?\b', caseSensitive: false), 'د')
-        .replaceAll(RegExp(r'\bmins?\b', caseSensitive: false), 'د')
-        .replaceAll(RegExp(r'\bm\b', caseSensitive: false), 'د');
-  }
-  return _shiftDigits(context, text);
-}
 
 class PosCurrentShiftView extends StatefulWidget {
   const PosCurrentShiftView({super.key});
@@ -66,22 +25,21 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<CurrentShiftViewModel>();
-    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PosScreenAppBar(
-        title: l10n.posCurrentShiftTitle,
+        title: 'Current Shift',
         showBackButton: false,
         showHamburger: true,
         onMenuPressed: () =>
             PosShellScaffoldRegistry.openDrawer(),
       ),
-      body: wrapPosShellRailBody(context, _buildBody(vm, l10n)),
+      body: wrapPosShellRailBody(context, _buildBody(vm)),
     );
   }
 
-  Widget _buildBody(CurrentShiftViewModel vm, AppLocalizations l10n) {
+  Widget _buildBody(CurrentShiftViewModel vm) {
     if (vm.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryLight),
@@ -95,7 +53,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
           children: [
             const Icon(Icons.error_outline_rounded, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            LocalizedApiText(vm.errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.grey), textAlign: TextAlign.center),
+            Text(vm.errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => vm.fetchCurrentSession(),
@@ -103,7 +61,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
                 backgroundColor: AppColors.secondaryLight,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(l10n.posCurrentShiftRetry, style: const TextStyle(color: Colors.white)),
+              child: const Text('Retry', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -112,14 +70,14 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
 
     final session = vm.currentSession;
     if (session == null) {
-      return Center(child: Text(l10n.posCurrentShiftNoActiveSession));
+      return const Center(child: Text('No active session.'));
     }
 
     // Attempt to format the date
     String parsedDate = session.openedAt;
     try {
       final dateTime = DateTime.parse(session.openedAt);
-      parsedDate = _shiftDigits(context, DateFormat('dd MMM yyyy, hh:mm a', _shiftLang(context)).format(dateTime));
+      parsedDate = DateFormat('dd MMM yyyy, hh:mm a').format(dateTime);
     } catch (_) {}
 
     return RefreshIndicator(
@@ -155,7 +113,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.posCurrentShiftDetails,
+                          'SHIFT DETAILS',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.6),
                             fontSize: 11,
@@ -173,9 +131,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                _shiftStatusLabel(context, session.status),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                session.status.toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.greenAccent,
                                   fontSize: 10,
@@ -196,26 +152,26 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    _buildInfoTile(l10n.posCurrentShiftLabelCashier, session.cashierName, Icons.person_rounded),
+                    _buildInfoTile('Cashier', session.cashierName, Icons.person_rounded),
                     Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1), margin: const EdgeInsets.symmetric(horizontal: 20)),
-                    _buildInfoTile(l10n.posCurrentShiftLabelSessionId, '#${_shiftDigits(context, session.posSessionId)}', Icons.tag_rounded),
+                    _buildInfoTile('Session ID', '#${session.posSessionId}', Icons.tag_rounded),
                   ],
                 ),
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    _buildInfoTile(l10n.posCurrentShiftLabelBranch, session.branchName, Icons.storefront_rounded),
+                    _buildInfoTile('Branch', session.branchName, Icons.storefront_rounded),
                     Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1), margin: const EdgeInsets.symmetric(horizontal: 20)),
-                    _buildInfoTile(l10n.posCurrentShiftLabelElapsedTime, _shiftElapsedText(context, session.elapsedTime), Icons.timer_rounded),
+                    _buildInfoTile('Elapsed Time', session.elapsedTime, Icons.timer_rounded),
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          _buildDetailRow(l10n.posCurrentShiftLabelOpenedAt, parsedDate, Icons.access_time_rounded),
+          _buildDetailRow('Opened At', parsedDate, Icons.access_time_rounded),
           const Divider(height: 32),
-          _buildDetailRow(l10n.posCurrentShiftLabelBranchAddress, session.branchAddress, Icons.location_on_rounded),
+          _buildDetailRow('Branch Address', session.branchAddress, Icons.location_on_rounded),
         ],
       ),
     );
@@ -237,11 +193,9 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
             ],
           ),
           const SizedBox(height: 6),
-          LocalizedApiText(
-            _shiftDigits(context, value),
+          Text(
+            value,
             style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -266,7 +220,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
             children: [
               Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
-              LocalizedApiText(_shiftDigits(context, value), style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text(value, style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w800)),
             ],
           ),
         ),

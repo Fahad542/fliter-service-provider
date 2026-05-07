@@ -4,9 +4,6 @@ import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../Home Screen/pos_view_model.dart';
 import 'promo_view_model.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../services/LocalizedApiText.dart';
-import '../../../services/locker_translation_mixin.dart';
 
 class PromoCodeDialog extends StatefulWidget {
   final bool isMainTab;
@@ -17,40 +14,6 @@ class PromoCodeDialog extends StatefulWidget {
 }
 
 class _PromoCodeDialogState extends State<PromoCodeDialog> {
-  String _lang(BuildContext context) => Localizations.localeOf(context).languageCode;
-  bool _isAr(BuildContext context) => _lang(context) == 'ar';
-
-  String _digits(BuildContext context, Object? value) {
-    return AppTranslationService.localizeDigitsForLanguage(
-      value?.toString() ?? '',
-      _lang(context),
-    );
-  }
-
-  String _money(BuildContext context, num amount) {
-    final lang = _lang(context);
-    final v = _digits(context, amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2));
-    return lang == 'ar' ? '$v ر.س' : 'SAR $v';
-  }
-
-  String _discountText(BuildContext context, double discount, bool isPercent) {
-    final amount = discount % 1 == 0 ? discount.toStringAsFixed(0) : discount.toStringAsFixed(2);
-    final d = _digits(context, amount);
-    if (_isAr(context)) {
-      return isPercent ? 'خصم $d٪' : 'خصم ${_money(context, discount)}';
-    }
-    return isPercent ? '$d% OFF' : '${_money(context, discount)} OFF';
-  }
-
-  String _validDiscountText(BuildContext context, Map<String, dynamic> result) {
-    final rawDiscount = result['discount'];
-    final discount = rawDiscount is num
-        ? rawDiscount.toDouble()
-        : double.tryParse(rawDiscount?.toString() ?? '') ?? 0;
-    final isPercent = result['isPercent'] == true;
-    return _discountText(context, discount, isPercent);
-  }
-
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -139,14 +102,14 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    AppLocalizations.of(context)!.posPromoApplyPromoCode,
+                    'Apply Promo Code',
                     style: AppTextStyles.h3.copyWith(fontSize: isTablet ? 22 : 20),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               Text(
-                AppLocalizations.of(context)!.posPromoSelectPromoBelow,
+                'Select any promo code below to apply discount instantly.',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: Colors.grey,
                   fontSize: isTablet ? 15 : 13,
@@ -162,7 +125,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                     if (promoVm.availablePromotions.isEmpty) {
                       return Center(
                         child: Text(
-                          AppLocalizations.of(context)!.posPromoNoPromoCodesAvailable,
+                          'No promo codes available.',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Colors.grey.shade500,
                           ),
@@ -220,7 +183,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      LocalizedApiText(
+                                      Text(
                                         promo.title,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -230,7 +193,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                                         ),
                                       ),
                                       const SizedBox(height: 2),
-                                      LocalizedApiText(
+                                      Text(
                                         promo.description,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -258,7 +221,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
               ),
               const SizedBox(height: 12),
               Text(
-                AppLocalizations.of(context)!.posPromoEnterCodeManually,
+                'Or enter code manually',
                 style: AppTextStyles.bodySmall.copyWith(color: Colors.grey),
               ),
               const SizedBox(height: 8),
@@ -269,7 +232,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                 readOnly: shouldLockInput,
                 style: TextStyle(fontSize: isTablet ? 17 : 15),
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.posPromoExampleSave10,
+                  hintText: 'e.g. SAVE10',
                   hintStyle: TextStyle(fontSize: isTablet ? 16 : 14),
                   filled: true,
                   fillColor:
@@ -291,8 +254,8 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                       Icons.delete_outline_rounded,
                       color: Colors.red,
                     ),
-                    label: Text(
-                      AppLocalizations.of(context)!.posPromoRemovePromo,
+                    label: const Text(
+                      'Remove Promo',
                       style: TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.w700,
@@ -303,7 +266,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
               ],
               if (promoVm.promoErrorMessage != null) ...[
                 const SizedBox(height: 12),
-                LocalizedApiText(
+                Text(
                   promoVm.promoErrorMessage!,
                   style: TextStyle(color: Colors.red, fontSize: isTablet ? 14 : 13, fontWeight: FontWeight.w600),
                 ),
@@ -325,18 +288,18 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                         children: [
                           const Icon(Icons.check_circle, color: Colors.green, size: 20),
                           const SizedBox(width: 8),
-                          Text(AppLocalizations.of(context)!.posPromoValidPromoCode, style: AppTextStyles.bodyMedium.copyWith(color: Colors.green, fontWeight: FontWeight.bold)),
+                          Text('Valid Promo Code', style: AppTextStyles.bodyMedium.copyWith(color: Colors.green, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _buildResultRow(AppLocalizations.of(context)!.posPromoDiscountLabel, _validDiscountText(context, promoVm.validResult!)),
+                      _buildResultRow('Discount:', promoVm.validResult!['message']),
                       const SizedBox(height: 6),
-                      _buildResultRow(AppLocalizations.of(context)!.posPromoStoreLabel, promoVm.validResult!['store']),
+                      _buildResultRow('Store:', promoVm.validResult!['store']),
                       const SizedBox(height: 6),
-                      _buildResultRow(AppLocalizations.of(context)!.posPromoProductsLabel, promoVm.validResult!['products']),
+                      _buildResultRow('Products:', promoVm.validResult!['products']),
                       const SizedBox(height: 6),
                       if (promoVm.validResult!['period'] != null)
-                        _buildResultRow(AppLocalizations.of(context)!.posPromoValidityLabel, promoVm.validResult!['period']),
+                        _buildResultRow('Validity:', promoVm.validResult!['period']),
                     ],
                   ),
                 ),
@@ -359,7 +322,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: Text(AppLocalizations.of(context)!.posCommonCancel, style: TextStyle(fontSize: isTablet ? 16 : 14)),
+                      child: Text('Cancel', style: TextStyle(fontSize: isTablet ? 16 : 14)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -390,7 +353,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                       child: promoVm.isLoading
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                           : Text(
-                              promoVm.validResult == null ? AppLocalizations.of(context)!.posPromoCheckCode : AppLocalizations.of(context)!.posPromoApplyDiscount,
+                              promoVm.validResult == null ? 'Check Code' : 'Apply Discount',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: isTablet ? 16 : 14,
@@ -413,12 +376,7 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(width: 70, child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))),
-        Expanded(
-          child: LocalizedApiText(
-            _digits(context, value),
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-          ),
-        ),
+        Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
       ],
     );
   }

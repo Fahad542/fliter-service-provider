@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
+// import 'data/repositories/filter_repository.dart';
 import 'views/Workshop pos app/More Tab/settings_view_model.dart';
 import 'views/Workshop pos app/Home Screen/pos_view_model.dart';
 import 'views/Menu/menu_view.dart';
 import 'utils/app_theme.dart';
-import 'utils/toast_service.dart';
 import 'data/repositories/auth_repository.dart';
 import 'services/session_service.dart';
 import 'views/Workshop pos app/Login/login_view_model.dart';
@@ -16,9 +16,11 @@ import 'views/Workshop pos app/Navbar/pos_shell.dart';
 import 'views/Workshop Owner/owner_shell.dart';
 import 'views/Technician App/technician_shell.dart';
 import 'views/Locker App/Dashboard/locker_dashboard_view.dart';
+// import 'data/repositories/department_repository.dart';
 import 'data/repositories/pos_repository.dart';
 import 'data/repositories/owner_repository.dart';
 import 'data/repositories/technician_repository.dart';
+// import 'views/Department/department_view_model.dart';
 import 'views/Workshop pos app/Technician Screen/technician_view_model.dart';
 import 'views/Workshop pos app/Corporate Bookings/corporate_booking_view_model.dart';
 import 'views/Workshop pos app/Notifications/notifications_view_model.dart';
@@ -391,7 +393,6 @@ class _MyAppState extends State<MyApp> {
       child: Consumer<SettingsViewModel>(
         builder: (context, settings, child) {
           return MaterialApp(
-            scaffoldMessengerKey: ToastService.scaffoldMessengerKey,
             title: 'Workshop Owner',
             debugShowCheckedModeBanner: false,
             // Theme Configuration

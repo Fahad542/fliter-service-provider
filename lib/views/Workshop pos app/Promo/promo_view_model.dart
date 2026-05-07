@@ -4,7 +4,6 @@ import '../../../../services/session_service.dart';
 import '../../../../utils/toast_service.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../Home Screen/pos_view_model.dart';
-import '../../../../services/locker_translation_mixin.dart';
 
 class AvailablePromotion {
   final String code;
@@ -28,7 +27,7 @@ class AvailablePromotion {
   });
 }
 
-class PromoViewModel extends ChangeNotifier with TranslatableMixin {
+class PromoViewModel extends ChangeNotifier {
   final SessionService sessionService;
   final PosRepository posRepository;
 
@@ -36,14 +35,6 @@ class PromoViewModel extends ChangeNotifier with TranslatableMixin {
     required this.sessionService,
     required this.posRepository,
   });
-
-  void bindSettingsViewModel(Listenable settingsViewModel) {
-    bindLocaleRetranslation(settingsViewModel, retranslate);
-  }
-
-  Future<void> retranslate() async {
-    notifyListeners();
-  }
 
   bool _isLoading = false;
   String? _promoErrorMessage;
@@ -71,7 +62,7 @@ class PromoViewModel extends ChangeNotifier with TranslatableMixin {
       if (response.success && response.promoCodes != null) {
         _availablePromotions = response.promoCodes!.map((code) => AvailablePromotion(
           code: code.code,
-          title: code.discountLabel ?? (code.isPercent ? '${code.discount}% Discount' : 'SAR ${code.discount} Discount'), // TODO: use CurrencyHelper when context available
+          title: code.discountLabel ?? (code.isPercent ? '${code.discount}% Discount' : 'SAR ${code.discount} Discount'),
           description: code.description ?? 'Promotional discount',
           discount: code.discount,
           isPercent: code.isPercent,
@@ -126,7 +117,7 @@ class PromoViewModel extends ChangeNotifier with TranslatableMixin {
         };
         // Don't apply to cart yet, let user confirm first.
       } else {
-        final msg = response.message.isNotEmpty ? response.message : await t('Invalid Promo Code');
+        final msg = response.message.isNotEmpty ? response.message : 'Invalid Promo Code';
         _promoErrorMessage = msg;
         posVm.clearPromoCode(isMainTab: isMainTab);
         _validResult = null;
@@ -222,7 +213,7 @@ class PromoViewModel extends ChangeNotifier with TranslatableMixin {
       notifyListeners();
       _applyMockPromo(posVm);
     } else {
-      _promoErrorMessage = await t('Invalid or Expired Promo Code');
+      _promoErrorMessage = 'Invalid or Expired Promo Code';
       _isLoading = false;
       notifyListeners();
     }
@@ -240,7 +231,6 @@ class PromoViewModel extends ChangeNotifier with TranslatableMixin {
 
   @override
   void dispose() {
-    unbindLocaleRetranslation();
     promoController.dispose();
     super.dispose();
   }

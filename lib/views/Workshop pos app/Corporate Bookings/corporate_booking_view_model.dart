@@ -3,10 +3,8 @@ import '../../../data/repositories/pos_repository.dart';
 import '../../../models/corporate_booking_model.dart';
 import '../../../services/realtime_service.dart';
 import '../../../services/session_service.dart';
-import '../../../services/locker_translation_mixin.dart';
-import '../../../l10n/app_localizations_en.dart';
 
-class CorporateBookingViewModel extends ChangeNotifier with TranslatableMixin {
+class CorporateBookingViewModel extends ChangeNotifier {
   final PosRepository _repository;
   final SessionService _sessionService;
 
@@ -24,15 +22,6 @@ class CorporateBookingViewModel extends ChangeNotifier with TranslatableMixin {
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-
-  Future<void> retranslate() async {
-    AppTranslationService.clearCache();
-    notifyListeners();
-  }
-
-  void bindSettingsViewModel(Listenable settingsViewModel) {
-    bindLocaleRetranslation(settingsViewModel, retranslate);
-  }
 
   String _currentFilter = 'Pending'; // 'Today', 'Pending', 'All'
   String get currentFilter => _currentFilter;
@@ -93,7 +82,7 @@ class CorporateBookingViewModel extends ChangeNotifier with TranslatableMixin {
     try {
       final token = await _sessionService.getToken();
       if (token == null) {
-        throw Exception(AppLocalizationsEn().posCorporateAuthTokenNotFound);
+        throw Exception('Authentication token not found');
       }
 
       final user = await _sessionService.getUser();
@@ -104,7 +93,7 @@ class CorporateBookingViewModel extends ChangeNotifier with TranslatableMixin {
       if (response.success) {
         _allBookings = response.bookings;
       } else {
-        _errorMessage = AppLocalizationsEn().posCorporateLoadError;
+        _errorMessage = 'Failed to load bookings';
       }
     } catch (e) {
       _errorMessage = e.toString();
@@ -204,15 +193,15 @@ class CorporateBookingViewModel extends ChangeNotifier with TranslatableMixin {
     try {
       final token = await _sessionService.getToken();
       if (token == null) {
-         throw Exception(AppLocalizationsEn().posCorporateAuthTokenNotFound);
+         throw Exception('Authentication token not found');
       }
       final success = await _repository.approveCorporateBooking(bookingId, token);
       if (success) {
         final index = _allBookings.indexWhere((b) => b.id == bookingId);
         if (index != -1) {
           _allBookings[index] = _allBookings[index].copyWith(
-            status: AppLocalizationsEn().posCorporateStatusApproved, 
-            statusDisplay: AppLocalizationsEn().posCorporateStatusApproved,
+            status: 'Approved', 
+            statusDisplay: 'Approved',
           );
         }
       }
@@ -232,7 +221,7 @@ class CorporateBookingViewModel extends ChangeNotifier with TranslatableMixin {
     try {
       final token = await _sessionService.getToken();
       if (token == null) {
-         throw Exception(AppLocalizationsEn().posCorporateAuthTokenNotFound);
+         throw Exception('Authentication token not found');
       }
       final success = await _repository.rejectCorporateBooking(bookingId, reason, token);
       if (success) {
@@ -253,7 +242,6 @@ class CorporateBookingViewModel extends ChangeNotifier with TranslatableMixin {
 
   @override
   void dispose() {
-    unbindLocaleRetranslation();
     unbindRealtime();
     super.dispose();
   }
