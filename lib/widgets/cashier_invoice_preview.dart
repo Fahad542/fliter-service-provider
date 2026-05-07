@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../models/create_invoice_model.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_formatters.dart';
+import '../utils/plate_transliterator.dart';
 import '../utils/invoice_maintenance_checklist.dart';
 import '../utils/thermal_invoice_totals.dart';
 import '../services/locker_translation_mixin.dart';
@@ -413,6 +414,9 @@ class CashierInvoicePreview extends StatelessWidget {
               // Six flex columns — wider minimum; horizontal scroll when narrow.
               const minInfoTableWidth = 600.0;
               final tableW = cw < minInfoTableWidth ? minInfoTableWidth : cw;
+              final rawPlate = invoice.plateNo.trim();
+              final plateLettersFirst =
+                  rawPlate.isEmpty ? null : formatVehiclePlateLettersFirst(rawPlate);
               final infoTable = Table(
                 border: tableBorder,
                 columnWidths: const {
@@ -444,9 +448,13 @@ class CashierInvoicePreview extends StatelessWidget {
                       ),
                       _infoCell(
                         label: 'Plate / اللوحة',
-                        value: invoice.plateNo.trim().isEmpty
-                            ? '—'
-                            : invoice.plateNo.trim(),
+                        value: plateLettersFirst ?? '—',
+                        valueArabic: plateLettersFirst == null
+                            ? null
+                            : PlateTransliterator.localize(
+                                plateLettersFirst,
+                                'ar',
+                              ),
                       ),
                       _infoCell(
                         label: 'Year / السنة',

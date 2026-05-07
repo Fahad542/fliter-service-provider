@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import '../models/create_invoice_model.dart';
 import '../services/locker_translation_mixin.dart';
 import '../utils/app_formatters.dart';
+import '../utils/plate_transliterator.dart';
 import '../utils/bundle_brand_logo.dart';
 import '../utils/invoice_maintenance_checklist.dart';
 import '../utils/thermal_invoice_totals.dart';
@@ -418,6 +419,40 @@ pw.Document buildThermalInvoicePdfDocument({
     );
   }
 
+  /// Matches POS / cashier preview: letters-first Latin + MoI Arabic line (not generic translation).
+  pw.Widget richPlateLineBilingual(String label, String plateRawTrimmed) {
+    final formatted = formatVehiclePlateLettersFirst(plateRawTrimmed);
+    final latin =
+        formatted.isEmpty ? pdfUserLine(plateRawTrimmed) : pdfUserLine(formatted);
+    final plateAr = PlateTransliterator.localize(
+      formatted.isEmpty ? plateRawTrimmed : formatted,
+      'ar',
+    );
+    if (plateAr.isEmpty) return richLabelValue(label, latin);
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 0.55),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text(
+            plateAr,
+            style: pw.TextStyle(
+              font: fontArabic,
+              fontSize: fsMeta + 0.1,
+              height: 1.05,
+            ),
+            textDirection: pw.TextDirection.rtl,
+            textAlign: pw.TextAlign.left,
+            maxLines: 6,
+            softWrap: true,
+          ),
+          richLabelValue(label, latin),
+        ],
+      ),
+    );
+  }
+
   /// Branch / address / cashier — Arabic dynamic value above English when available.
   pw.Widget thermalMetaLabelValue(String label, String rawValue) {
     return richLabelValueBilingual(label, pdfUserLine(rawValue));
@@ -657,7 +692,12 @@ pw.Document buildThermalInvoicePdfDocument({
           addCustLine('${ThermalInvoicePdfLabels.vehicleYearAr} / Year: ', invoice.vehicleYear.trim());
         }
         if (invoice.plateNo.trim().isNotEmpty) {
-          addCustLine('${ThermalInvoicePdfLabels.vehiclePlateAr} / Plate: ', invoice.plateNo.trim());
+          customerKids.add(
+            richPlateLineBilingual(
+              '${ThermalInvoicePdfLabels.vehiclePlateAr} / Plate: ',
+              invoice.plateNo.trim(),
+            ),
+          );
         }
         if (hasAnyText(invoice.vehicleVin)) {
           addCustLine('${ThermalInvoicePdfLabels.vehicleVinAr} / VIN: ', invoice.vehicleVin.trim());

@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 
 import '../models/create_invoice_model.dart';
 import '../utils/app_formatters.dart';
+import '../utils/plate_transliterator.dart';
 import '../utils/bundle_brand_logo.dart';
 import '../utils/thermal_invoice_totals.dart';
 import '../utils/thermal_receipt_logo_preprocess.dart';
@@ -211,9 +212,6 @@ pw.Document buildWhatsAppSimplifiedTaxInvoicePdfDocument({
   String phoneShown() =>
       formatInvoiceMobileForDisplay(invoice.customerMobile);
 
-  String plateShown() =>
-      invoice.plateNo.trim().isNotEmpty ? _a4Clean(invoice.plateNo) : '—';
-
   String mileageShown() => invoice.odometerReading != null &&
           invoice.odometerReading! > 0
       ? '${invoice.odometerReading}'
@@ -276,6 +274,82 @@ pw.Document buildWhatsAppSimplifiedTaxInvoicePdfDocument({
             ),
           ),
           pw.Expanded(flex: 6, child: valueWidget),
+        ],
+      ),
+      inset: 5,
+    );
+  }
+
+  /// Same plate display as POS list / cashier preview: letters-first Latin + Arabic line.
+  pw.Widget plateInvoiceCell() {
+    final raw = invoice.plateNo.trim();
+    if (raw.isEmpty) {
+      return labelValueBi(
+        ThermalInvoicePdfLabels.custPlateAr,
+        ThermalInvoicePdfLabels.custPlateEn,
+        '—',
+      );
+    }
+    final enFmt = formatVehiclePlateLettersFirst(raw);
+    final en = thermalSafeText(enFmt);
+    final ar = PlateTransliterator.localize(enFmt, 'ar');
+
+    final valStyleLatin =
+        pw.TextStyle(font: font, fontSize: 8.6, color: _ink, height: 1.06);
+    final valStyleAr = pw.TextStyle(
+      font: fontArabic,
+      fontSize: 8,
+      color: _ink,
+      height: 1.06,
+    );
+
+    final valueColumn = pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.end,
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Text(en, style: valStyleLatin, textAlign: pw.TextAlign.right),
+        pw.SizedBox(height: 2),
+        pw.Text(
+          ar,
+          style: valStyleAr,
+          textDirection: pw.TextDirection.rtl,
+          textAlign: pw.TextAlign.right,
+        ),
+      ],
+    );
+
+    return _cellPad(
+      pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Expanded(
+            flex: 5,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  ThermalInvoicePdfLabels.custPlateAr,
+                  style: pw.TextStyle(
+                    font: fontArabic,
+                    fontSize: 7.8,
+                    height: 1.08,
+                  ),
+                  textDirection: pw.TextDirection.rtl,
+                  textAlign: pw.TextAlign.left,
+                ),
+                pw.SizedBox(height: 1),
+                pw.Text(
+                  ThermalInvoicePdfLabels.custPlateEn,
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 7.9,
+                    color: _ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          pw.Expanded(flex: 6, child: valueColumn),
         ],
       ),
       inset: 5,
@@ -487,12 +561,7 @@ pw.Document buildWhatsAppSimplifiedTaxInvoicePdfDocument({
                       : _a4Clean(invoice.vehicleModel),
                   valueMayArabic: true,
                 ),
-                labelValueBi(
-                  ThermalInvoicePdfLabels.custPlateAr,
-                  ThermalInvoicePdfLabels.custPlateEn,
-                  plateShown(),
-                  valueMayArabic: true,
-                ),
+                plateInvoiceCell(),
               ],
             ),
             pw.TableRow(
