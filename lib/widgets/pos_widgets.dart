@@ -29,6 +29,7 @@ import 'thermal_printer_wifi_dialog.dart';
 import '../l10n/app_localizations.dart';
 import '../services/LocalizedApiText.dart';
 import '../services/locker_translation_mixin.dart';
+import '../utils/plate_transliterator.dart';
 import 'cashier_invoice_preview.dart';
 
 /// Drawer menu (hamburger) is always available on tablet; the left rail was removed.
@@ -48,6 +49,24 @@ String _posWidgetMoney(BuildContext context, num amount, {bool negative = false}
   if (!negative) return money;
   return Localizations.localeOf(context).languageCode == 'ar' ? '$money-' : '-$money';
 }
+
+String _orderCardJobProgressLabel(PosOrder order) {
+  final activeJobs = order.jobs.where((j) => !j.isCancelledJob).toList();
+  final completedActive = activeJobs
+      .where((j) {
+        final s = j.status.toLowerCase();
+        return s == 'completed' || s == 'invoiced' || s == 'edited';
+      })
+      .length;
+  return '$completedActive/${activeJobs.length}';
+}
+
+bool _orderCardIsCorporateOrder(PosOrder order) =>
+    order.isCorporateWalkIn || order.isCorporateBookingOrder;
+
+bool _orderCardShowCorporateLine(PosOrder order) =>
+    _orderCardIsCorporateOrder(order) &&
+    order.selectedDepartmentNames.isNotEmpty;
 
 
 // ── Reusable POS Screen AppBar (Back + Title + Global Icon) ──
@@ -1426,19 +1445,103 @@ class _OrderItemCardState extends State<OrderItemCard> {
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            widget.order.plateNumber.trim().isNotEmpty
-                                ? widget.order.plateNumber.toUpperCase()
-                                : '—',
-                            style: TextStyle(
-                              fontSize: widget.isTablet ? 13 : 13,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1E2124),
-                              height: 1.1,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                'assets/images/car icon.png',
+                                width: 18,
+                                height: 18,
+                                color: const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Builder(
+                                  builder: (ctx) {
+                                    final langCode =
+                                        Localizations.localeOf(ctx).languageCode;
+                                    final plateRaw =
+                                        widget.order.plateNumber.trim();
+                                    if (plateRaw.isEmpty) {
+                                      return Text(
+                                        AppLocalizations.of(ctx)!
+                                            .posOrdersNoPlate,
+                                        style: TextStyle(
+                                          fontSize:
+                                              widget.isTablet ? 13 : 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF1E2124),
+                                          height: 1.1,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      );
+                                    }
+                                    final formatted =
+                                        formatVehiclePlateLettersFirst(
+                                            plateRaw);
+                                    final plate = langCode == 'ar'
+                                        ? PlateTransliterator.localize(
+                                            formatted, langCode)
+                                        : formatted;
+                                    return Text(
+                                      plate,
+                                      style: TextStyle(
+                                        fontSize:
+                                            widget.isTablet ? 13 : 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF1E2124),
+                                        height: 1.1,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    );
+                                  },
+                                ),
+                              ),
+                              Builder(
+                                builder: (ctx) {
+                                  final langCode =
+                                      Localizations.localeOf(ctx).languageCode;
+                                  final label = _orderCardJobProgressLabel(
+                                      widget.order);
+                                  return Text(
+                                    AppTranslationService
+                                        .localizeDigitsForLanguage(
+                                      label,
+                                      langCode,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize:
+                                          widget.isTablet ? 10 : 10,
+                                      fontWeight: FontWeight.w900,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
+                          if (_orderCardShowCorporateLine(widget.order)) ...[
+                            const SizedBox(height: 3),
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(
+                                  start: 22),
+                              child: Text(
+                                AppLocalizations.of(context)!
+                                    .posPaymentCorporate,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize:
+                                      widget.isTablet ? 9 : 8,
+                                  height: 1.1,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1504,7 +1607,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                   ],
                 ),
                 SizedBox(height: widget.isTablet ? 5 : 4),
-                if (widget.order.isCorporateWalkIn &&
+                if (_orderCardIsCorporateOrder(widget.order) &&
                     widget.order.selectedDepartmentNames.isNotEmpty) ...[
                   Container(
                     width: double.infinity,
@@ -1521,7 +1624,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Selected departments',
+                          AppLocalizations.of(context)!
+                              .posOrdersSelectedDepartments,
                           style: TextStyle(
                             fontSize: widget.isTablet ? 10 : 9,
                             color: const Color(0xFF475569),
@@ -1560,7 +1664,7 @@ class _OrderItemCardState extends State<OrderItemCard> {
                   ),
                   SizedBox(height: widget.isTablet ? 6 : 5),
                 ],
-                if (widget.order.isCorporateWalkIn &&
+                if (_orderCardIsCorporateOrder(widget.order) &&
                     widget.order.selectedDepartmentNames.isEmpty) ...[
                   Container(
                     width: double.infinity,
@@ -1574,7 +1678,8 @@ class _OrderItemCardState extends State<OrderItemCard> {
                       border: Border.all(color: const Color(0xFFFEF08A)),
                     ),
                     child: Text(
-                      'Departments not returned in order list payload.',
+                      AppLocalizations.of(context)!
+                          .posOrdersDeptNotReturnedInPayload,
                       style: TextStyle(
                         fontSize: widget.isTablet ? 10 : 9,
                         color: const Color(0xFF854D0E),
