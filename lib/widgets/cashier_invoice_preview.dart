@@ -33,10 +33,20 @@ String _employeesSummary(Invoice invoice) {
   return names.join(', ');
 }
 
-String _branchRibbonText(Invoice i) {
+
+
+/// Ribbon line like reference invoices: workshop + branch when both differ.
+String _branchRibbonDisplay(Invoice i) {
   final b = (i.branchName ?? '').trim();
-  if (b.isEmpty) return '—';
-  return b.toUpperCase();
+  final w = (i.workshopName ?? '').trim();
+  if (b.isNotEmpty &&
+      w.isNotEmpty &&
+      b.toLowerCase() != w.toLowerCase()) {
+    return '${b.toUpperCase()} • ${w.toUpperCase()}';
+  }
+  if (b.isNotEmpty) return b.toUpperCase();
+  if (w.isNotEmpty) return w.toUpperCase();
+  return '—';
 }
 
 String _fmtQty(double q) =>
@@ -155,25 +165,26 @@ List<Widget> _maintenanceChecklistBlock(List<bool> checks) {
     Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-      color: AppColors.primaryLight,
-      child: const Column(
+      color: Color(0xFFE2E8F0),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            'Maintenance checklist',
+            'Check list',
             style: TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 12,
-              color: AppColors.onPrimaryLight,
+              color: Colors.grey.shade900,
             ),
           ),
           Text(
-            'قائمة الصيانة',
+            'قائمة الفحص',
             textDirection: TextDirection.rtl,
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 10,
-              color: AppColors.onPrimaryLight,
+              color: Colors.grey.shade800,
+              height: 1.1,
             ),
           ),
         ],
@@ -267,90 +278,118 @@ class CashierInvoicePreview extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Transform.translate(
-                        offset: const Offset(-6, 0),
+                      Expanded(
+                        flex: 5,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Transform.translate(
-                              offset: const Offset(-3, 0),
+                              offset: const Offset(-2, 0),
                               child: Image.asset(
                                 kThermalInvoiceLogoAsset,
-                                height: 40,
+                                height: 34,
                                 fit: BoxFit.contain,
                                 filterQuality: FilterQuality.high,
                                 errorBuilder: (context, error, stackTrace) =>
-                                const SizedBox(height: 40),
+                                    const SizedBox(height: 34),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      _workshopHeaderSingleLine(
-                                          invoice.workshopName),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 22,
-                                        height: 1.05,
-                                        color: Colors.white,
-                                      ),
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Simplified TAX Invoice / فاتورة ضريبية مبسطة',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                      color: white70,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Text(
-                                    'Invoice No / رقم الفاتورة: ${invoice.invoiceNo}',
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: white70,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Date / التاريخ: $dateStr',
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: white70,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    timeStr != null
-                                        ? 'Time / الوقت: $timeStr'
-                                        : 'Time / الوقت: —',
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: white70,
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 6),
+                            Text(
+                              'FILTER',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 26,
+                                height: 1.0,
+                                color: AppColors.primaryLight,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'فلتر',
+                              textDirection: TextDirection.rtl,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                                height: 1.05,
+                                color: AppColors.primaryLight,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              (_workshopHeaderSingleLine(invoice.workshopName) ==
+                                          'FILTER'
+                                  ? 'Car Services'
+                                  : _workshopHeaderSingleLine(
+                                      invoice.workshopName)),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                height: 1.1,
+                                color: Colors.white,
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 5,
+                        child: Align(
+                          alignment: Alignment.topRight,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Simplified TAX Invoice',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                'فاتورة ضريبية مبسطة',
+                                textDirection: TextDirection.rtl,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  height: 1.05,
+                                  color: white70,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Invoice No / رقم الفاتورة\n${invoice.invoiceNo}',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: white70,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Tax No / الرقم الضريبي للعميل\n${_dash(invoice.customerTaxId)}',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: white70,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -379,27 +418,62 @@ class CashierInvoicePreview extends StatelessWidget {
             margin: const EdgeInsets.only(top: 10),
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             color: AppColors.primaryLight,
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Branch / الفرع',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 9.5,
-                    color: AppColors.onPrimaryLight,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Branch / الفرع',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 9.5,
+                          color: AppColors.onPrimaryLight,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _branchRibbonDisplay(invoice),
+                        textAlign: TextAlign.start,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          letterSpacing: 0.35,
+                          color: AppColors.onPrimaryLight,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  _branchRibbonText(invoice),
-                  textAlign: TextAlign.start,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                    letterSpacing: 0.35,
-                    color: AppColors.onPrimaryLight,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'Date / التاريخ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 9.5,
+                        color: AppColors.onPrimaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppTranslationService.localizeDigitsForLanguage(
+                        dateStr,
+                        Localizations.maybeLocaleOf(context)?.languageCode ??
+                            'en',
+                      ),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        letterSpacing: 0.3,
+                        color: AppColors.onPrimaryLight,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -417,6 +491,25 @@ class CashierInvoicePreview extends StatelessWidget {
               final rawPlate = invoice.plateNo.trim();
               final plateLettersFirst =
                   rawPlate.isEmpty ? null : formatVehiclePlateLettersFirst(rawPlate);
+              final localizedTime = timeStr == null
+                  ? '—'
+                  : AppTranslationService.localizeDigitsForLanguage(
+                      timeStr,
+                      Localizations.maybeLocaleOf(context)?.languageCode ?? 'en',
+                    );
+              final nextKm = invoice.nextOilChangeKm;
+              final nextKmStr =
+                  nextKm != null && nextKm > 0 ? '$nextKm' : '—';
+              final cashierName = _dash(invoice.cashierName);
+              final emp = _employeesSummary(invoice);
+              final cashierStaff = (cashierName == '—' && emp == '—')
+                  ? '—'
+                  : (emp == '—'
+                      ? cashierName
+                      : (cashierName == '—'
+                          ? emp
+                          : '$cashierName\n$emp'));
+
               final infoTable = Table(
                 border: tableBorder,
                 columnWidths: const {
@@ -439,10 +532,6 @@ class CashierInvoicePreview extends StatelessWidget {
                         value: _dash(invoice.customerMobile ?? ''),
                       ),
                       _infoCell(
-                        label: 'Tax ID / الرقم الضريبي',
-                        value: _dash(invoice.customerTaxId),
-                      ),
-                      _infoCell(
                         label: 'Model / الموديل',
                         value: _dash(invoice.vehicleModel),
                       ),
@@ -460,6 +549,13 @@ class CashierInvoicePreview extends StatelessWidget {
                         label: 'Year / السنة',
                         value: _dash(invoice.vehicleYear),
                       ),
+                      _infoCell(
+                        label: 'Time / الوقت',
+                        value: localizedTime,
+                        valueArabic: localizedTime == '—'
+                            ? null
+                            : _arDigits(localizedTime),
+                      ),
                     ],
                   ),
                   TableRow(
@@ -471,14 +567,20 @@ class CashierInvoicePreview extends StatelessWidget {
                       _infoCell(
                         label: 'Mileage / العداد',
                         value:
-                        invoice.odometerReading != null &&
-                            invoice.odometerReading! > 0
-                            ? '${invoice.odometerReading}'
-                            : '—',
+                            invoice.odometerReading != null &&
+                                    invoice.odometerReading! > 0
+                                ? '${invoice.odometerReading}'
+                                : '—',
                         valueArabic: invoice.odometerReading != null &&
-                            invoice.odometerReading! > 0
+                                invoice.odometerReading! > 0
                             ? _arDigits('${invoice.odometerReading}')
                             : '—',
+                      ),
+                      _infoCell(
+                        label: 'Next change (km)\nالتغيير القادم (كم)',
+                        value: nextKmStr,
+                        valueArabic:
+                            nextKmStr == '—' ? null : _arDigits(nextKmStr),
                       ),
                       _infoCell(
                         label: 'Make / الشركة المصنّعة',
@@ -492,12 +594,8 @@ class CashierInvoicePreview extends StatelessWidget {
                         valueArabic: _paymentMethodArabic(paymentMethodText),
                       ),
                       _infoCell(
-                        label: 'Employees / الموظفون',
-                        value: _employeesSummary(invoice),
-                      ),
-                      _infoCell(
                         label: 'Cashier / الكاشير',
-                        value: _dash(invoice.cashierName),
+                        value: cashierStaff,
                       ),
                     ],
                   ),
