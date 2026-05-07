@@ -22,6 +22,9 @@ import '../views/Workshop pos app/Department/pos_department_view.dart';
 import '../views/Workshop pos app/Technician Assignment/pos_technician_assignment_view.dart';
 import '../views/Workshop pos app/Add Customer Screen/pos_add_customer_view.dart';
 import '../services/invoice_network_print.dart';
+import '../services/bevatel_developer_whatsapp_service.dart';
+import '../utils/invoice_preview_capture_pdf.dart';
+import 'bevatel_chat_settings_dialog.dart';
 import 'thermal_printer_wifi_dialog.dart';
 import '../l10n/app_localizations.dart';
 import '../services/LocalizedApiText.dart';
@@ -3715,12 +3718,14 @@ void _showCommissionPopup(BuildContext context, dynamic commissionData) {
 class _InvoiceThermalActionBar extends StatefulWidget {
   final Invoice invoice;
   final String paymentMethodText;
+  final GlobalKey previewCaptureKey;
   final VoidCallback? onDone;
   final List<bool>? maintenanceChecksFallback;
 
   const _InvoiceThermalActionBar({
     required this.invoice,
     required this.paymentMethodText,
+    required this.previewCaptureKey,
     this.onDone,
     this.maintenanceChecksFallback,
   });
@@ -3733,6 +3738,35 @@ class _InvoiceThermalActionBar extends StatefulWidget {
 class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
   bool _printing = false;
   bool _doneBusy = false;
+  bool _whatsappBusy = false;
+
+  Future<void> _openBevatelSettings() async {
+    await showBevatelChatSettingsDialog(context);
+  }
+
+  Future<void> _sendInvoiceWhatsApp() async {
+    if (!mounted || _whatsappBusy) return;
+    setState(() => _whatsappBusy = true);
+    try {
+      final rasterPdf = await InvoicePreviewCapturePdf.repaintBoundaryKeyToPdf(
+        repaintBoundaryKey: widget.previewCaptureKey,
+        context: context,
+      );
+      await BevatelDeveloperWhatsappService.sendInvoiceTemplate(
+        invoice: widget.invoice,
+        paymentMethodText: widget.paymentMethodText,
+        maintenanceChecksFallback: widget.maintenanceChecksFallback,
+        pdfDocumentOverride: rasterPdf,
+      );
+      if (!mounted) return;
+      ToastService.showSuccess(context, 'Invoice sent on WhatsApp.');
+    } catch (e) {
+      if (!mounted) return;
+      ToastService.showError(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _whatsappBusy = false);
+    }
+  }
 
   Future<void> _openThermalSettings() async {
     final ok = await showThermalPrinterWifiDialog(context);
@@ -3774,6 +3808,8 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
 
   @override
   Widget build(BuildContext context) {
+    final idle = !_printing && !_doneBusy && !_whatsappBusy;
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
@@ -3788,7 +3824,7 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
               child: GestureDetector(
                 onLongPress: _printing ? null : _openThermalSettings,
                 child: ElevatedButton(
-                  onPressed: (_printing || _doneBusy) ? null : _sendToThermalPrinter,
+                  onPressed: idle ? _sendToThermalPrinter : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E3237),
                     foregroundColor: Colors.white,
@@ -3818,35 +3854,64 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: (_printing || _doneBusy) ? null : _onDonePressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryLight,
-                foregroundColor: AppColors.secondaryLight,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                elevation: 0,
-              ),
-              child: _doneBusy
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.secondaryLight,
-                      ),
+          const SizedBox(width: 6),
+          Tooltip(
+            message:
+                'Send digital invoice PDF on WhatsApp (Bevatel). Uses on-screen preview when possible.',
+            child: SizedBox(
+              height: 48,
+              width: 48,
+              child: _whatsappBusy
+                  ? const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
-                      'Done',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
+                  : IconButton.filled(
+                      style: IconButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
                       ),
+                      onPressed: idle ? _sendInvoiceWhatsApp : null,
+                      icon: const Icon(Icons.chat_rounded, size: 22),
                     ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Tooltip(
+              message:
+                  'Tap: close invoice. Long‑press: Bevatel API & WhatsApp template settings.',
+              child: GestureDetector(
+                onLongPress: idle ? _openBevatelSettings : null,
+                child: ElevatedButton(
+                  onPressed: idle ? _onDonePressed : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryLight,
+                    foregroundColor: AppColors.secondaryLight,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _doneBusy
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.secondaryLight,
+                          ),
+                        )
+                      : const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          ),
+                        ),
+                ),
+              ),
             ),
           ),
         ],
@@ -3855,7 +3920,7 @@ class _InvoiceThermalActionBarState extends State<_InvoiceThermalActionBar> {
   }
 }
 
-class InvoiceDialog extends StatelessWidget {
+class InvoiceDialog extends StatefulWidget {
   final Invoice invoice;
   final VoidCallback? onDone;
   final String? requestedPaymentMethod;
@@ -3870,10 +3935,19 @@ class InvoiceDialog extends StatelessWidget {
   });
 
   @override
+  State<InvoiceDialog> createState() => _InvoiceDialogState();
+}
+
+class _InvoiceDialogState extends State<InvoiceDialog> {
+  final GlobalKey _previewCaptureKey = GlobalKey();
+
+  @override
   Widget build(BuildContext context) {
-    final paymentMethodText = invoice.payments.isNotEmpty
-        ? invoice.payments.map((p) => p.method).join(', ')
-        : (invoice.paymentMethod ?? requestedPaymentMethod ?? 'Unpaid');
+    final paymentMethodText = widget.invoice.payments.isNotEmpty
+        ? widget.invoice.payments.map((p) => p.method).join(', ')
+        : (widget.invoice.paymentMethod ??
+            widget.requestedPaymentMethod ??
+            'Unpaid');
 
     final mq = MediaQuery.sizeOf(context);
     final shellMaxW = mq.width.clamp(280.0, 940.0);
@@ -3913,19 +3987,24 @@ class InvoiceDialog extends StatelessWidget {
                   ),
                   child: Align(
                     alignment: Alignment.topCenter,
-                    child: CashierInvoicePreview(
-                      invoice: invoice,
-                      paymentMethodText: paymentMethodText,
-                      maintenanceChecksFallback: maintenanceChecksFallback,
+                    child: RepaintBoundary(
+                      key: _previewCaptureKey,
+                      child: CashierInvoicePreview(
+                        invoice: widget.invoice,
+                        paymentMethodText: paymentMethodText,
+                        maintenanceChecksFallback:
+                            widget.maintenanceChecksFallback,
+                      ),
                     ),
                   ),
                 ),
               ),
               _InvoiceThermalActionBar(
-                invoice: invoice,
+                invoice: widget.invoice,
                 paymentMethodText: paymentMethodText,
-                onDone: onDone,
-                maintenanceChecksFallback: maintenanceChecksFallback,
+                previewCaptureKey: _previewCaptureKey,
+                onDone: widget.onDone,
+                maintenanceChecksFallback: widget.maintenanceChecksFallback,
               ),
             ],
           ),
