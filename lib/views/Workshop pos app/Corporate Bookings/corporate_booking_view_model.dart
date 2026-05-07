@@ -34,7 +34,7 @@ class CorporateBookingViewModel extends ChangeNotifier with TranslatableMixin {
     bindLocaleRetranslation(settingsViewModel, retranslate);
   }
 
-  String _currentFilter = 'Pending'; // 'Today', 'Pending', 'All'
+  String _currentFilter = 'All'; // 'Today', 'Pending', 'All'
   String get currentFilter => _currentFilter;
 
   bool _isCompletedBooking(CorporateBooking booking) {

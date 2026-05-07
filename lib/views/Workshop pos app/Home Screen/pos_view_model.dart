@@ -343,6 +343,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   int _odometerReading = 0;
   String _vehicleYear = '';
   String _vehicleColor = '';
+  bool _billingCustomerIsEmployee = false;
+  String? _billingEmployeeId;
+  String? _billingEmployeeType;
   String? _previousOrderId;
   /// Last order returned from a successful walk-in shell / create (for jobId lookup by department).
   WalkInOrder? _lastPlacedWalkInOrder;
@@ -703,6 +706,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     _odometerReading = 0;
     _vehicleYear = '';
     _vehicleColor = '';
+    _billingCustomerIsEmployee = false;
+    _billingEmployeeId = null;
+    _billingEmployeeType = null;
   }
 
   void _applyWalkInSnapshotToVm(WalkInBillingSnapshot s) {
@@ -1255,6 +1261,9 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     String? previousOrderId,
     String vehicleYear = '',
     String vehicleColor = '',
+    bool billingCustomerIsEmployee = false,
+    String? billingEmployeeId,
+    String? billingEmployeeType,
   }) {
     _customerName = name;
     _vatNumber = vat;
@@ -1267,6 +1276,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     _previousOrderId = previousOrderId;
     _vehicleYear = vehicleYear;
     _vehicleColor = vehicleColor;
+    _billingCustomerIsEmployee = billingCustomerIsEmployee;
+    final bid = billingEmployeeId?.trim();
+    _billingEmployeeId = (bid != null && bid.isNotEmpty) ? bid : null;
+    final bet = billingEmployeeType?.trim();
+    _billingEmployeeType = (bet != null && bet.isNotEmpty) ? bet : null;
     notifyListeners();
   }
 
@@ -1340,6 +1354,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     required CashierCorporateAccount? selectedCorporateData,
     required VoidCallback onSuccess,
     required Function(String) onError,
+    bool billingCustomerIsEmployee = false,
+    String? billingEmployeeId,
+    String? billingEmployeeType,
+    String vehicleYear = '',
   }) {
     if (isNormal) {
       _corporateAccountId = null;
@@ -1352,6 +1370,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         make: make,
         model: model,
         odometer: int.tryParse(odometerStr) ?? 0,
+        vehicleYear: vehicleYear,
+        billingCustomerIsEmployee: billingCustomerIsEmployee,
+        billingEmployeeId: billingEmployeeId,
+        billingEmployeeType: billingEmployeeType,
       );
     } else {
       if (selectedCorporateData == null) {
@@ -1368,6 +1390,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         make: make,
         model: model,
         odometer: int.tryParse(odometerStr) ?? 0,
+        vehicleYear: vehicleYear,
+        billingCustomerIsEmployee: billingCustomerIsEmployee,
+        billingEmployeeId: billingEmployeeId,
+        billingEmployeeType: billingEmployeeType,
       );
     }
     onSuccess();
@@ -1794,8 +1820,45 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       _currentJobId = maxJobId ?? response.order?.jobId ?? response.order?.id;
     }
     _isLoading = false;
+    final oid = (response.order?.id ?? '').trim();
+    final shouldSeedBilling =
+        clearCustomerOnSuccess && oid.isNotEmpty && !isCorporateFlow;
+
+    final snapName = _customerName;
+    final snapMobile = _mobile;
+    final snapVat = _vatNumber;
+    final snapVehicle = _vehicleNumber;
+    final snapVin = _vinNumber;
+    final snapMake = _make;
+    final snapModel = _model;
+    final snapOdom = _odometerReading;
+    final snapYear = _vehicleYear;
+    final snapColor = _vehicleColor;
+    final snapEmp = _billingCustomerIsEmployee;
+    final snapEid = _billingEmployeeId;
+    final snapEt = _billingEmployeeType;
+
     if (clearCustomerOnSuccess) {
       clearCustomerData();
+    }
+
+    if (shouldSeedBilling) {
+      updateWalkInBillingContact(
+        forOrderId: oid,
+        name: snapName,
+        mobile: snapMobile,
+        vat: snapVat,
+        vehicleNumber: snapVehicle,
+        vin: snapVin,
+        make: snapMake,
+        model: snapModel,
+        odometer: snapOdom,
+        year: snapYear,
+        color: snapColor,
+        billingCustomerIsEmployee: snapEmp,
+        billingEmployeeId: snapEid,
+        billingEmployeeType: snapEt,
+      );
     }
     notifyListeners();
   }
@@ -1810,6 +1873,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
   WalkInCustomerRequest _walkInShellCreateRequest(List<String> departmentIds) {
     return WalkInCustomerRequest(
+      customerName: _walkInTrimOrNull(_customerName),
+      mobile: _walkInTrimOrNull(_mobile),
       vehicleNumber: _vehicleNumber,
       vinNumber: _walkInTrimOrNull(_vinNumber),
       make: _walkInTrimOrNull(_make),
@@ -3366,6 +3431,18 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
           ? order.corporateAccountId!.trim()
           : null,
       sendForApproval: sendForApproval,
+      isCorporate: order.posCustomerKind?.trim().toLowerCase() == 'corporate',
+      payments: order.posPayments != null && order.posPayments!.isNotEmpty
+          ? order.posPayments!
+              .where((p) => p.method.trim().isNotEmpty && p.amount > 0)
+              .map(
+                (p) => RequestedPayment(
+                  method: p.method.trim(),
+                  amount: p.amount,
+                ),
+              )
+              .toList()
+          : null,
     );
   }
 

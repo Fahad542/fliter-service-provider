@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import '../../../models/cashier_active_broadcasts_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
-import '../../Technician App/Notifications/notifications_view.dart';
+import '../Notifications/notifications_view.dart';
+import '../../../widgets/notification_toolbar_icon.dart';
+import '../../../widgets/global_locale_toolbar_icon.dart';
 import 'cashier_broadcast_view_model.dart';
 import '../../../services/LocalizedApiText.dart';
 import '../../../services/locker_translation_mixin.dart';
@@ -249,20 +251,11 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
         ),
         centerTitle: true,
         actions: [
-          GestureDetector(
+          const GlobalLocaleToolbarIcon(),
+          NotificationToolbarIcon(
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute<void>(builder: (_) => const NotificationsView()),
-            ),
-            child: Container(
-              width: 40,
-              height: 40,
-              margin: const EdgeInsets.only(right: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.35),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.notifications_outlined, size: 22, color: AppColors.secondaryLight),
             ),
           ),
         ],

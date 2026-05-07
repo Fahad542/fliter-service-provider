@@ -19,6 +19,7 @@ import 'views/Locker App/Dashboard/locker_dashboard_view.dart';
 import 'data/repositories/pos_repository.dart';
 import 'data/repositories/owner_repository.dart';
 import 'data/repositories/technician_repository.dart';
+import 'data/network/base_api_service.dart';
 import 'views/Workshop pos app/Technician Screen/technician_view_model.dart';
 import 'views/Workshop pos app/Corporate Bookings/corporate_booking_view_model.dart';
 import 'views/Workshop pos app/Notifications/notifications_view_model.dart';
@@ -71,13 +72,29 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late Future<String?> _startScreenFuture;
 
   @override
   void initState() {
     super.initState();
 
+    BaseApiService.setUnauthorizedHandler(_handleUnauthorizedResponse);
     _startScreenFuture = _resolveStartScreen(SessionService());
+  }
+
+  Future<void> _handleUnauthorizedResponse() async {
+    final sessionService = SessionService();
+    await sessionService.clearAllSessions();
+
+    final navigator = _navigatorKey.currentState;
+    final context = _navigatorKey.currentContext;
+    if (navigator == null || context == null) return;
+
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const MenuView()),
+      (route) => false,
+    );
   }
 
   @override
@@ -391,6 +408,7 @@ class _MyAppState extends State<MyApp> {
       child: Consumer<SettingsViewModel>(
         builder: (context, settings, child) {
           return MaterialApp(
+            navigatorKey: _navigatorKey,
             scaffoldMessengerKey: ToastService.scaffoldMessengerKey,
             title: 'Workshop Owner',
             debugShowCheckedModeBanner: false,

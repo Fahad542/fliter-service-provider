@@ -999,7 +999,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get empRoleSupplier => 'SUPPLIER';
 
   @override
-  String get posAddCustomerTitle => 'Add New Customer';
+  String get posAddCustomerTitle => 'Add New Order';
 
   @override
   String get posAddCustomerTabNormal => 'Normal Customer';
@@ -1030,6 +1030,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posAddCustomerFieldModel => 'Model';
 
   @override
+  String get posAddCustomerFieldYear => 'Year';
+
+  @override
   String get posAddCustomerFieldOdometer => 'Odometer';
 
   @override
@@ -1054,8 +1057,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posAddCustomerFieldNA => 'N/A';
 
   @override
+  String get posAddCustomerSectionCustomerInfo => 'Customer Information';
+
+  @override
+  String get posAddCustomerFieldCustomerName => 'Customer Name';
+
+  @override
   String get posAddCustomerValidationVehicleRequired =>
       'Please enter vehicle number';
+
+  @override
+  String get posAddCustomerValidationVehiclePlateMaxFourDigits =>
+      'Saudi plates allow at most 4 digits after the 3 letters';
+
+  @override
+  String get posAddCustomerValidationVehiclePlateMaxThreeLetters =>
+      'Saudi plates allow exactly 3 letters before the digits';
 
   @override
   String get posAddCustomerValidationRequired => 'Required';
@@ -1069,6 +1086,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get posAddCustomerValidationInvalidNumberShort => 'Invalid number';
+
+  @override
+  String get posAddCustomerValidationMobileRequired => 'Enter mobile number';
+
+  @override
+  String get posAddCustomerValidationMobileSaudi =>
+      'Enter a valid Saudi number (e.g. 05X XXX XXXX)';
+
+  @override
+  String get posAddCustomerValidationMobilePakistan =>
+      'Enter a valid Pakistan mobile (e.g. 03XX XXXXXXX)';
 
   @override
   String get posMonitoringTitle => 'POS Monitoring';

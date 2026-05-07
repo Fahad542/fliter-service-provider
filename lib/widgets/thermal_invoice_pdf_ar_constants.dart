@@ -47,8 +47,77 @@ abstract final class ThermalInvoicePdfLabels {
   static const columnTotalAr = 'الإجمالي';
   static const columnTotalEn = 'Total';
 
-  /// Summary section — Arabic paragraph(s) then English line + trailing amount row.
-  static const totalExclVatAr = 'الإجمالي\n(غير شاملة ضريبة القيمة المضافة)';
+  /// A4 WhatsApp simplified tax invoice — full goods/services grid (Arabic header above English).
+  static const goodsServicesAr = 'البضائع / الخدمات';
+  static const goodsServicesEn = 'Goods / Services';
+
+  static const unitPriceExclFullAr = 'سعر الوحدة (بدون ضريبة)\nريال سعودي';
+  static const unitPriceExclFullEn = 'Unit Price (Excl. VAT)\n(SAR)';
+
+  static const quantityFullAr = 'الكمية';
+  static const quantityFullEn = 'Quantity';
+
+  static const discountColAr = 'الخصم';
+  static const discountColEn = 'Discount';
+
+  static const totalBeforeTaxColAr = 'الإجمالي قبل الضريبة';
+  static const totalBeforeTaxColEn = 'Total Before Tax';
+
+  static const vatPercentColAr = 'ضريبة القيمة المضافة';
+  static const vatPercentColEn = 'VAT';
+
+  static const totalWithVatColAr = 'الإجمالي مع الضريبة';
+  static const totalWithVatColEn = 'Total With VAT';
+
+  static const invoiceNoLabelAr = 'رقم الفاتورة';
+  static const invoiceNoLabelEn = 'Invoice Number';
+
+  static const vatRegLabelAr =
+      'رقم تسجيل ضريبة القيمة المضافة'; // shortened in UI vs official long form OK
+  static const vatRegLabelEn = 'VAT Registration Number';
+
+  static const dateLabelAr = 'التاريخ';
+  static const dateLabelEn = 'Date';
+
+  static const cashierLabelAr = 'أمين الصندوق';
+  static const cashierLabelEn = 'Cashier';
+
+  static const branchLabelAr = 'الفرع';
+  static const branchLabelEn = 'Branch';
+
+  static const locationLabelAr = 'الموقع';
+  static const locationLabelEn = 'Location';
+
+  /// Customer vehicle block — labels match bilingual tax invoice layout.
+  static const custNameAr = 'الاسم';
+  static const custNameEn = 'Name';
+
+  static const custPhoneAr = 'الهاتف';
+  static const custPhoneEn = 'Phone';
+
+  static const custPlateAr = 'رقم اللوحة';
+  static const custPlateEn = 'Plate';
+
+  static const custTimeAr = 'الوقت';
+  static const custTimeEn = 'Time';
+
+  static const mileageAr = 'عداد الكيلومترات';
+  static const mileageEn = 'Mileage';
+
+  static const custModelAr = 'الموديل';
+  static const custModelEn = 'Model';
+
+  static const vinAr = 'رقم الهيكل';
+  static const vinEn = 'VIN';
+
+  static const custMakeAr = 'الطراز';
+  static const custMakeEn = 'Make';
+
+  static const custYearAr = 'سنة الصنع';
+  static const custYearEn = 'Year';
+
+  /// Summary section — Arabic + English + amount row ([thermal_invoice_pdf] stacks Arabic then EN).
+  static const totalExclVatAr = 'الإجمالي (غير شاملة ضريبة القيمة المضافة)';
   static const totalExclVatEn = 'Total (Excluding VAT)';
 
   /// Line-item / per-article discounts (excludes invoice-level & promo).
@@ -64,7 +133,7 @@ abstract final class ThermalInvoicePdfLabels {
   static const promoDiscountEn = 'Promo Code Discount';
 
   static const taxableAr =
-      'الإجمالي الخاضع للضريبة\n(غير شاملة ضريبة القيمة المضافة)';
+      'الإجمالي الخاضع للضريبة (غير شاملة ضريبة القيمة المضافة)';
   static const taxableEn = 'Total Taxable Amount (Excluding VAT)';
 
   static const totalVatAr = 'مجموع ضريبة القيمة المضافة';

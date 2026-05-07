@@ -2003,7 +2003,7 @@ abstract class AppLocalizations {
   /// No description provided for @posAddCustomerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add New Customer'**
+  /// **'Add New Order'**
   String get posAddCustomerTitle;
 
   /// No description provided for @posAddCustomerTabNormal.
@@ -2060,6 +2060,12 @@ abstract class AppLocalizations {
   /// **'Model'**
   String get posAddCustomerFieldModel;
 
+  /// No description provided for @posAddCustomerFieldYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get posAddCustomerFieldYear;
+
   /// No description provided for @posAddCustomerFieldOdometer.
   ///
   /// In en, this message translates to:
@@ -2108,11 +2114,35 @@ abstract class AppLocalizations {
   /// **'N/A'**
   String get posAddCustomerFieldNA;
 
+  /// No description provided for @posAddCustomerSectionCustomerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Information'**
+  String get posAddCustomerSectionCustomerInfo;
+
+  /// No description provided for @posAddCustomerFieldCustomerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Name'**
+  String get posAddCustomerFieldCustomerName;
+
   /// No description provided for @posAddCustomerValidationVehicleRequired.
   ///
   /// In en, this message translates to:
   /// **'Please enter vehicle number'**
   String get posAddCustomerValidationVehicleRequired;
+
+  /// No description provided for @posAddCustomerValidationVehiclePlateMaxFourDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'Saudi plates allow at most 4 digits after the 3 letters'**
+  String get posAddCustomerValidationVehiclePlateMaxFourDigits;
+
+  /// No description provided for @posAddCustomerValidationVehiclePlateMaxThreeLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'Saudi plates allow exactly 3 letters before the digits'**
+  String get posAddCustomerValidationVehiclePlateMaxThreeLetters;
 
   /// No description provided for @posAddCustomerValidationRequired.
   ///
@@ -2137,6 +2167,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid number'**
   String get posAddCustomerValidationInvalidNumberShort;
+
+  /// No description provided for @posAddCustomerValidationMobileRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter mobile number'**
+  String get posAddCustomerValidationMobileRequired;
+
+  /// No description provided for @posAddCustomerValidationMobileSaudi.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Saudi number (e.g. 05X XXX XXXX)'**
+  String get posAddCustomerValidationMobileSaudi;
+
+  /// No description provided for @posAddCustomerValidationMobilePakistan.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Pakistan mobile (e.g. 03XX XXXXXXX)'**
+  String get posAddCustomerValidationMobilePakistan;
 
   /// No description provided for @posMonitoringTitle.
   ///

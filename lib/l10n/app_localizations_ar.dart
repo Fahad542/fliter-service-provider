@@ -989,7 +989,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get empRoleSupplier => 'مورّد';
 
   @override
-  String get posAddCustomerTitle => 'إضافة عميل جديد';
+  String get posAddCustomerTitle => 'إضافة طلب جديد';
 
   @override
   String get posAddCustomerTabNormal => 'عميل عادي';
@@ -1020,6 +1020,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posAddCustomerFieldModel => 'الطراز';
 
   @override
+  String get posAddCustomerFieldYear => 'السنة';
+
+  @override
   String get posAddCustomerFieldOdometer => 'عداد المسافة';
 
   @override
@@ -1044,8 +1047,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posAddCustomerFieldNA => 'غير متوفر';
 
   @override
+  String get posAddCustomerSectionCustomerInfo => 'معلومات العميل';
+
+  @override
+  String get posAddCustomerFieldCustomerName => 'اسم العميل';
+
+  @override
   String get posAddCustomerValidationVehicleRequired =>
       'يرجى إدخال رقم المركبة';
+
+  @override
+  String get posAddCustomerValidationVehiclePlateMaxFourDigits =>
+      'تسمح لوحات المركبات السعودية بحد أقصى 4 أرقامٍ بعد الحروف الثلاث';
+
+  @override
+  String get posAddCustomerValidationVehiclePlateMaxThreeLetters =>
+      'لوحات المركبات السعودية تسمح بثلاثة أحرف بالضبط قبل الأرقام';
 
   @override
   String get posAddCustomerValidationRequired => 'مطلوب';
@@ -1058,6 +1075,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get posAddCustomerValidationInvalidNumberShort => 'رقم غير صحيح';
+
+  @override
+  String get posAddCustomerValidationMobileRequired => 'أدخل رقم الجوال';
+
+  @override
+  String get posAddCustomerValidationMobileSaudi =>
+      'أدخل رقم جوال سعودي صالح (مثال: 05X XXX XXXX)';
+
+  @override
+  String get posAddCustomerValidationMobilePakistan =>
+      'أدخل رقم جوال باكستاني صالح (مثال: 03XX XXXXXXX)';
 
   @override
   String get posMonitoringTitle => 'مراقبة نقاط البيع';

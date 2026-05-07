@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,12 @@ import 'api_response.dart';
 
 class BaseApiService {
   static const int _logChunkSize = 800;
+  static Future<void> Function()? _onUnauthorized;
+  static bool _isHandlingUnauthorized = false;
+
+  static void setUnauthorizedHandler(Future<void> Function() handler) {
+    _onUnauthorized = handler;
+  }
 
   void _debugPrintLong(String text) {
     if (!kDebugMode) return;
@@ -211,11 +218,25 @@ class BaseApiService {
         throw BadRequestException(errorMessage);
       case 401:
       case 403:
+        _triggerUnauthorizedHandler();
         throw UnauthorisedException(errorMessage);
       case 500:
       default:
         throw FetchDataException(errorMessage);
     }
+  }
+
+  void _triggerUnauthorizedHandler() {
+    if (_isHandlingUnauthorized) return;
+    final handler = _onUnauthorized;
+    if (handler == null) return;
+
+    _isHandlingUnauthorized = true;
+    unawaited(
+      handler().whenComplete(() {
+        _isHandlingUnauthorized = false;
+      }),
+    );
   }
 }
 

@@ -215,10 +215,16 @@ class PosHomeView extends StatelessWidget {
                           : l10n.posHomeNoVehicle;
                       final rawStatus = latestOrder?.status.toUpperCase() ?? l10n.posCommonNotAvailable;
 
+                      final plateRaw = vehicle?.plateNo;
+                      final plateDisplay = (plateRaw == null ||
+                              plateRaw.trim().isEmpty)
+                          ? l10n.posCommonNotAvailable
+                          : formatVehiclePlateLettersFirst(plateRaw);
+
                       return _TranslatedSearchHistoryItem(
                         langCode: langCode,
                         rawVehicle: rawVehicle,
-                        plate: vehicle?.plateNo ?? l10n.posCommonNotAvailable,
+                        plate: plateDisplay,
                         rawCustomer: customer.name,
                         phone: customer.mobile,
                         lastVisit: latestOrder != null
@@ -291,29 +297,35 @@ class PosHomeView extends StatelessWidget {
                     final i2 = i0 + 2;
                     final n = vm.searchedCustomers.length;
 
+                    // Fixed row height avoids IntrinsicHeight + FractionallySizedBox (ParentData / semantics issues).
+                    final screenH = MediaQuery.sizeOf(context).height;
+                    final rowH = (screenH * 0.30).clamp(235.0, 295.0);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: i0 < n
-                                ? buildCustomerCard(i0)
-                                : const SizedBox.shrink(),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: i1 < n
-                                ? buildCustomerCard(i1)
-                                : const SizedBox.shrink(),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: i2 < n
-                                ? buildCustomerCard(i2)
-                                : const SizedBox.shrink(),
-                          ),
-                        ],
+                      child: SizedBox(
+                        height: rowH,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: i0 < n
+                                  ? buildCustomerCard(i0)
+                                  : const SizedBox.shrink(),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: i1 < n
+                                  ? buildCustomerCard(i1)
+                                  : const SizedBox.shrink(),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: i2 < n
+                                  ? buildCustomerCard(i2)
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },

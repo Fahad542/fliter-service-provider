@@ -64,12 +64,49 @@ class NotificationsView extends StatelessWidget {
           ),
           body: vm.notifications.isEmpty
               ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: vm.notifications.length,
-                  itemBuilder: (context, index) {
-                    final notification = vm.notifications[index];
-                    return _buildNotificationCard(notification);
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth > 600;
+                    final list = vm.notifications;
+                    final hGap = isWide ? 8.0 : 6.0;
+                    final vGap = isWide ? 8.0 : 6.0;
+                    final pad = EdgeInsets.fromLTRB(
+                      isWide ? 16 : 12,
+                      isWide ? 12 : 10,
+                      isWide ? 16 : 12,
+                      isWide ? 20 : 14,
+                    );
+                    final rowCount = (list.length + 1) ~/ 2;
+                    return ListView.separated(
+                      padding: pad,
+                      itemCount: rowCount,
+                      separatorBuilder: (_, _) => SizedBox(height: vGap),
+                      itemBuilder: (context, rowIndex) {
+                        final i = rowIndex * 2;
+                        final left = list[i];
+                        final right = i + 1 < list.length ? list[i + 1] : null;
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Align(
+                                alignment: AlignmentDirectional.topCenter,
+                                child: _buildNotificationCard(left),
+                              ),
+                            ),
+                            SizedBox(width: hGap),
+                            Expanded(
+                              child: right != null
+                                  ? Align(
+                                      alignment: AlignmentDirectional.topCenter,
+                                      child: _buildNotificationCard(right),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        );
+                      },
+                    );
                   },
                 ),
         );
@@ -94,8 +131,8 @@ class NotificationsView extends StatelessWidget {
 
   Widget _buildNotificationCard(TechNotification notification) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -104,48 +141,52 @@ class NotificationsView extends StatelessWidget {
         ],
         border: Border.all(color: Colors.black.withOpacity(0.05)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.flash_on_rounded, color: AppColors.primaryLight, size: 18),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.flash_on_rounded, color: AppColors.primaryLight, size: 17),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  notification.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 13),
+                ),
+              ),
+              if (!notification.isRead)
+                Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: const BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
+                ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      notification.title,
-                      style: const TextStyle(color: AppColors.secondaryLight, fontWeight: FontWeight.w900, fontSize: 14),
-                    ),
-                    if (!notification.isRead)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  notification.message,
-                  style: TextStyle(color: Colors.black54, fontSize: 13, height: 1.4, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '2 minutes ago',
-                  style: TextStyle(color: Colors.black26, fontSize: 10, fontWeight: FontWeight.w700),
-                ),
-              ],
+          const SizedBox(height: 6),
+          Text(
+            notification.message,
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.black54, fontSize: 12, height: 1.28, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Text(
+              '2 minutes ago',
+              style: TextStyle(color: Colors.black26, fontSize: 10, fontWeight: FontWeight.w700),
             ),
           ),
         ],

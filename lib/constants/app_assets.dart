@@ -1,7 +1,7 @@
-/// Single source of truth for bundled brand logo paths (pubspec `flutter.assets`).
-const String kAppBrandLogoAsset = 'assets/images/icon.png';
+/// Single source of truth for bundled brand logo paths.
+const String kAppBrandLogoAsset = 'assets/images/Icon.png';
 
-/// Tried in order when the primary PNG is missing from the release bundle.
+/// Fallback candidates if primary logo is unavailable.
 const List<String> kAppBrandLogoAssetCandidates = [
   kAppBrandLogoAsset,
   'assets/images/icons.png',

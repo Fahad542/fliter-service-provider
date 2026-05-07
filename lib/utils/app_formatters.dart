@@ -18,24 +18,150 @@ String formatInvoiceLegalDate(String? invoiceDateIso) {
   return '—';
 }
 
-/// Clock time when the invoice was **issued** (print / system time). Uses [DateTime.toLocal]
-/// after parsing (handles UTC `Z` from API). Returns `null` for legacy rows with no `issuedAt`
-/// — caller should hide the time line.
-String? formatInvoiceIssuedAtClock(String? issuedAtIso) {
-  final raw = issuedAtIso?.trim() ?? '';
-  if (raw.isEmpty) return null;
-  final d = DateTime.tryParse(raw);
-  if (d == null) return null;
-  return DateFormat.jm().format(d.toLocal());
-}
-
-/// Full date+time for thermal receipts (`dd/MM/yyyy hh:mm:ss a` local).
+/// Full date+time when the invoice was **issued** (`dd/MM/yyyy hh:mm a` local; no seconds).
+/// Returns `null` when [issuedAtIso] is empty or unparseable.
 String? formatInvoiceIssuedAtDateTime(String? issuedAtIso) {
   final raw = issuedAtIso?.trim() ?? '';
   if (raw.isEmpty) return null;
   final d = DateTime.tryParse(raw);
   if (d == null) return null;
-  return DateFormat('dd/MM/yyyy hh:mm:ss a').format(d.toLocal());
+  return DateFormat('dd/MM/yyyy hh:mm a').format(d.toLocal());
+}
+
+/// Clock time only (`hh:mm a` local; no seconds). Returns `null` for legacy rows with no `issuedAt`.
+String? formatInvoiceIssuedAtClock(String? issuedAtIso) {
+  final raw = issuedAtIso?.trim() ?? '';
+  if (raw.isEmpty) return null;
+  final d = DateTime.tryParse(raw);
+  if (d == null) return null;
+  return DateFormat('hh:mm a').format(d.toLocal());
+}
+
+/// Same digit rules as WhatsApp/Bevatel E.164: returns `966` + NSN, digits only, or `null`.
+String? normalizeSaudiMobileTo966Digits(String? raw) {
+  var d = raw == null
+      ? ''
+      : RegExp(r'\d').allMatches(raw).map((m) => m.group(0)!).join();
+  if (d.isEmpty) return null;
+  if (d.length == 10 && d.startsWith('05')) {
+    d = '966${d.substring(1)}';
+  }
+  if (d.length == 9 && d.startsWith('5')) {
+    d = '966$d';
+  }
+  if (d.length == 10 && d.startsWith('5')) {
+    d = '966$d';
+  }
+  if (d.length == 10 && d.startsWith('3') && !d.startsWith('35')) {
+    d = '9665${d.substring(1)}';
+  }
+  if (!d.startsWith('966')) {
+    return null;
+  }
+  if (d.length > 12) {
+    d = d.substring(0, 12);
+  }
+  if (d.length < 11) {
+    return null;
+  }
+  return d;
+}
+
+/// Shows **+966** with spacing (e.g. `+966 56 535 6263`) for KSA mobiles. Otherwise trimmed [raw] or `—`.
+String formatInvoiceMobileForDisplay(String? raw) {
+  final d = normalizeSaudiMobileTo966Digits(raw);
+  if (d == null) {
+    final t = raw?.trim() ?? '';
+    return t.isEmpty ? '—' : t;
+  }
+  final nsn = d.substring(3);
+  if (nsn.length == 9) {
+    return '+966 ${nsn.substring(0, 2)} ${nsn.substring(2, 5)} ${nsn.substring(5, 9)}';
+  }
+  return '+$d';
+}
+
+/// Display helper: Saudi plates are usually stored as **digits then letters** (e.g. `1234 - DDS`).
+/// UI can show **[letters] - [digits]** for quicker alphabet scanning.
+///
+/// Recognizes leading digits + trailing letters, or leading letters + trailing digits.
+/// Otherwise returns [raw] trimmed unchanged.
+String formatVehiclePlateLettersFirst(String? raw) {
+  final original = (raw ?? '').trim();
+  if (original.isEmpty) return original;
+
+  final converted = EnglishNumberFormatter.convert(original);
+  final n = converted.replaceAll(RegExp(r'[\s\-\|]'), '');
+  if (n.isEmpty) return original;
+
+  bool isDigit(String c) => RegExp(r'^[0-9]$').hasMatch(c);
+  bool isLatinLetter(String c) => RegExp(r'^[A-Za-z]$').hasMatch(c);
+  bool isArabicLetter(String c) => RegExp(r'^[\u0621-\u064A]$').hasMatch(c);
+  bool isLetterChar(String c) => isLatinLetter(c) || isArabicLetter(c);
+
+  String upperLatin(String s) {
+    final b = StringBuffer();
+    for (final ch in s.split('')) {
+      if (RegExp(r'^[a-z]$').hasMatch(ch)) {
+        b.write(ch.toUpperCase());
+      } else {
+        b.write(ch);
+      }
+    }
+    return b.toString();
+  }
+
+  if (isDigit(n[0])) {
+    var i = 0;
+    while (i < n.length && isDigit(n[i])) i++;
+    final digitPart = n.substring(0, i);
+    final letterPart = n.substring(i);
+    if (digitPart.isNotEmpty &&
+        letterPart.isNotEmpty &&
+        letterPart.split('').every(isLetterChar)) {
+      return '${upperLatin(letterPart)} - $digitPart';
+    }
+  } else if (isLetterChar(n[0])) {
+    var i = 0;
+    while (i < n.length && isLetterChar(n[i])) i++;
+    final letterPart = n.substring(0, i);
+    final rest = n.substring(i);
+    if (letterPart.isNotEmpty &&
+        rest.isNotEmpty &&
+        rest.split('').every(isDigit)) {
+      return '${upperLatin(letterPart)} - $rest';
+    }
+  }
+
+  return original;
+}
+
+/// Saudi plate as **digits (3–4) + letters (3)** for validation and APIs, regardless of UI order
+/// (`1234 - ABC` vs `ABC - 1234`).
+String canonicalSaudiPlateForApi(String? raw) {
+  final converted = EnglishNumberFormatter.convert((raw ?? '').trim());
+  if (converted.isEmpty) return '';
+  final n = converted.replaceAll(RegExp(r'[\s\-\|]'), '');
+  if (n.isEmpty) return '';
+
+  final digits = StringBuffer();
+  final letters = StringBuffer();
+  for (final ch in n.split('')) {
+    if (RegExp(r'^[0-9]$').hasMatch(ch)) {
+      digits.write(ch);
+      continue;
+    }
+    if (RegExp(r'^[a-zA-Z]$').hasMatch(ch)) {
+      letters.write(ch.toUpperCase());
+      continue;
+    }
+    if (RegExp(r'^[\u0621-\u064A]$').hasMatch(ch)) {
+      letters.write(ch);
+    }
+  }
+  if (letters.isEmpty) return digits.toString();
+  if (digits.isEmpty) return letters.toString();
+  return '${digits.toString()}${letters.toString()}';
 }
 
 /// Allows non-negative decimal quantities: digits, optional single `.`, limited fractional digits.

@@ -26,6 +26,10 @@ class WalkInCustomerRequest {
   /// - false / null => keep as `unapproved`
   /// - true => transition to `waiting for corporate approval`
   final bool? sendForApproval;
+  /// Payment customer type used by cashier payment draft.
+  final bool? isCorporate;
+  /// Optional payment draft rows to persist with corporate walk-in approval payload.
+  final List<RequestedPayment>? payments;
 
   WalkInCustomerRequest({
     this.orderId,
@@ -51,6 +55,8 @@ class WalkInCustomerRequest {
     this.totalAmount,
     this.corporateAccountId,
     this.sendForApproval,
+    this.isCorporate,
+    this.payments,
   });
 
   Map<String, dynamic> toJson() {
@@ -63,7 +69,7 @@ class WalkInCustomerRequest {
 
     if (orderId != null && orderId!.isNotEmpty) data['orderId'] = orderId;
 
-    // Standard POST /cashier/walk-in-order: do not send customerName / vatNumber / mobile.
+    // Standard POST /cashier/walk-in-order: customerName/mobile optional unless corporate.
     // Corporate submit-for-approval: customerName required (validated in view model); VAT/mobile optional.
     if (isCorporateSubmit) {
       if (customerName != null && customerName!.trim().isNotEmpty) {
@@ -71,6 +77,13 @@ class WalkInCustomerRequest {
       }
       if (vatNumber != null && vatNumber!.trim().isNotEmpty) {
         data['vatNumber'] = vatNumber!.trim();
+      }
+      if (mobile != null && mobile!.trim().isNotEmpty) {
+        data['mobile'] = mobile!.trim();
+      }
+    } else {
+      if (customerName != null && customerName!.trim().isNotEmpty) {
+        data['customerName'] = customerName!.trim();
       }
       if (mobile != null && mobile!.trim().isNotEmpty) {
         data['mobile'] = mobile!.trim();
@@ -111,12 +124,18 @@ class WalkInCustomerRequest {
       if (sendForApproval != null) {
         data['sendForApproval'] = sendForApproval;
       }
+      if (isCorporate != null) {
+        data['isCorporate'] = isCorporate;
+      }
+      if (payments != null && payments!.isNotEmpty) {
+        data['payments'] = payments!.map((p) => p.toJson()).toList();
+      }
     }
 
     return data;
   }
 
-  /// First walk-in create: vehicle + departments only (no lines, totals, or customer fields).
+  /// First walk-in create: vehicle + departments; optional customerName / mobile when set on [WalkInCustomerRequest].
   /// Throws if [vehicleNumber] is missing or [departmentIds] is empty.
   Map<String, dynamic> toShellCreateJson() {
     final plate = vehicleNumber?.trim() ?? '';
@@ -126,14 +145,35 @@ class WalkInCustomerRequest {
     if (departmentIds.isEmpty) {
       throw StateError('departmentIds is required for walk-in shell create');
     }
+    final cn = customerName?.trim() ?? '';
+    final mob = mobile?.trim() ?? '';
     return {
       'vehicleNumber': plate,
       'departmentIds': departmentIds,
+      if (cn.isNotEmpty) 'customerName': cn,
+      if (mob.isNotEmpty) 'mobile': mob,
       if (make != null && make!.trim().isNotEmpty) 'make': make!.trim(),
       if (model != null && model!.trim().isNotEmpty) 'model': model!.trim(),
       if (odometerReading != null && odometerReading! > 0)
         'odometerReading': odometerReading,
       if (vinNumber != null && vinNumber!.trim().isNotEmpty) 'vinNumber': vinNumber!.trim(),
+    };
+  }
+}
+
+class RequestedPayment {
+  final String method;
+  final double amount;
+
+  RequestedPayment({
+    required this.method,
+    required this.amount,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'method': method,
+      'amount': amount,
     };
   }
 }

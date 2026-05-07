@@ -9,6 +9,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
 import '../../../services/locker_translation_mixin.dart';
 import '../../../utils/plate_transliterator.dart';
+import '../../../utils/app_formatters.dart';
 import '../../../utils/invoice_maintenance_checklist.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
@@ -3781,8 +3782,10 @@ class _HorizontalOrderTile extends StatelessWidget {
         .length;
     final jobProgressLabel = '$completedActive/${activeJobs.length}';
     final deptNames = order.selectedDepartmentNames;
-    final showDeptLine = order.isCorporateWalkIn && deptNames.isNotEmpty;
-    final rightMetaLabel = showDeptLine ? AppLocalizations.of(context)!.posOrdersDeptCount(deptNames.length) : jobProgressLabel;
+    final isCorporateOrder =
+        order.isCorporateWalkIn || order.isCorporateBookingOrder;
+    final showCorporateLine = isCorporateOrder && deptNames.isNotEmpty;
+    final rightMetaLabel = jobProgressLabel;
     final canCancel = posOrderCanCashierCancel(order);
 
     return Stack(
@@ -3855,18 +3858,39 @@ class _HorizontalOrderTile extends StatelessWidget {
                     Expanded(
                       child: Builder(
                         builder: (ctx) {
-                          final langCode = Localizations.localeOf(ctx).languageCode;
-                          final plateRaw = order.vehicle?.plateNo ?? AppLocalizations.of(ctx)!.posOrdersNoPlate;
+                          final langCode =
+                              Localizations.localeOf(ctx).languageCode;
+                          final plateRaw = order.vehicle?.plateNo;
+                          if (plateRaw == null || plateRaw.trim().isEmpty) {
+                            return Text(
+                              AppLocalizations.of(ctx)!.posOrdersNoPlate,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                                letterSpacing: 0.5,
+                                color: isSelected
+                                    ? const Color(0xFF23262D)
+                                    : const Color(0xFF1E2124),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          }
+                          final formatted =
+                              formatVehiclePlateLettersFirst(plateRaw);
                           final plate = langCode == 'ar'
-                              ? PlateTransliterator.localize(plateRaw, langCode)
-                              : plateRaw;
+                              ? PlateTransliterator.localize(
+                                  formatted, langCode)
+                              : formatted;
                           return Text(
                             plate,
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
                               fontSize: 12,
                               letterSpacing: 0.5,
-                              color: isSelected ? const Color(0xFF23262D) : const Color(0xFF1E2124),
+                              color: isSelected
+                                  ? const Color(0xFF23262D)
+                                  : const Color(0xFF1E2124),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -3889,38 +3913,23 @@ class _HorizontalOrderTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (showDeptLine) ...[
+                if (showCorporateLine) ...[
                   const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.posOrdersDeptNames(''),
-                        maxLines: 1,
-                        style: TextStyle(
-                          fontSize: 8,
-                          height: 1.1,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected
-                              ? const Color(0xFF23262D).withOpacity(0.78)
-                              : const Color(0xFF475569),
-                        ),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 22),
+                    child: Text(
+                      AppLocalizations.of(context)!.posPaymentCorporate,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 8,
+                        height: 1.1,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? const Color(0xFF23262D).withOpacity(0.78)
+                            : const Color(0xFF475569),
                       ),
-                      Expanded(
-                        child: LocalizedApiText(
-                          deptNames.join(', '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 8,
-                            height: 1.1,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? const Color(0xFF23262D).withOpacity(0.78)
-                                : const Color(0xFF475569),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
                 const SizedBox(height: 4),
@@ -3998,28 +4007,6 @@ class _HorizontalOrderTile extends StatelessWidget {
     );
   }
 
-  String _formatDateForStrip(PosOrder order) {
-    // Determine locale from the build context isn't available here directly,
-    // so we detect Arabic by checking if the order tile's context provides it.
-    // We use a helper on the tile itself — see _formatDateLocalized.
-    try {
-      final dStr = order.date;
-      if (dStr.isNotEmpty) {
-        final dt = DateTime.tryParse(dStr);
-        if (dt != null) {
-          return DateFormat('dd MMM yyyy').format(dt);
-        }
-      }
-      final dt = DateTime.tryParse(order.createdAt);
-      if (dt != null) {
-        return DateFormat('dd MMM yyyy').format(dt);
-      }
-    } catch (e) {
-      debugPrint('Error formatting date: $e');
-    }
-    return '—';
-  }
-
   String _formatDateLocalized(PosOrder order, String langCode) {
     try {
       final locale = langCode == 'ar' ? 'ar' : 'en';
@@ -4044,39 +4031,6 @@ class _HorizontalOrderTile extends StatelessWidget {
       debugPrint('Error formatting date: $e');
     }
     return '—';
-  }
-
-  String _formatTime(PosOrder order) {
-    try {
-      if (order.orderDate.isNotEmpty && order.orderTime.isNotEmpty) {
-        // Try parsing combining date and time
-        final dateTimeStr = '${order.orderDate} ${order.orderTime}';
-        // Check if it's already in a parsable format
-        final dt = DateTime.tryParse(dateTimeStr) ?? DateTime.tryParse(order.createdAt);
-        if (dt != null) {
-          return DateFormat('hh:mm a').format(dt);
-        }
-
-        // Fallback: manually parse HH:mm if orderTime is just that
-        if (order.orderTime.contains(':')) {
-          final parts = order.orderTime.split(':');
-          final hour = int.parse(parts[0]);
-          final minute = int.parse(parts[1]);
-          final now = DateTime.now();
-          final dt = DateTime(now.year, now.month, now.day, hour, minute);
-          return DateFormat('hh:mm a').format(dt);
-        }
-      }
-
-      // Ultimate fallback: check createdAt
-      final dt = DateTime.tryParse(order.createdAt);
-      if (dt != null) {
-        return DateFormat('hh:mm a').format(dt);
-      }
-    } catch (e) {
-      debugPrint('Error formatting time: $e');
-    }
-    return order.orderTime.isNotEmpty ? order.orderTime : '16:55';
   }
 
   String _formatTimeLocalized(PosOrder order, String langCode) {

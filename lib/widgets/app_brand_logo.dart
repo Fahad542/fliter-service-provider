@@ -30,7 +30,7 @@ class AppBrandLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      kAppBrandLogoAsset,
+      "assets/images/icons.png",
       height: height,
       width: width,
       fit: fit,

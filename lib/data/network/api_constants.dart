@@ -1,14 +1,13 @@
 class ApiConstants {
 
  //static const String baseUrl = 'http://localhost:3000';
-  static const String baseUrl = 'https://filterbackend-production.up.railway.app';
+static const String baseUrl = 'https://filterbackend-production.up.railway.app';
 
   //// workshop pos ////
   static const String loginEndpoint = '/auth/cashier/login';
   static const String servicesEndpoint = '/services';
   static const String walkInCustomerEndpoint = '/cashier/walk-in-order';
-  static const String cashierWalkInCorporateUnapprovedEndpoint =
-      '/cashier/walk-in-corporate/unapproved';
+  static const String cashierWalkInCorporateUnapprovedEndpoint = '/cashier/walk-in-corporate/unapproved';
   static String cashierWalkInCorporateSendForApprovalEndpoint(String orderId) =>
       '/cashier/walk-in-corporate/order/$orderId/send-for-approval';
   static String cashierWalkInCorporateStartDepartmentEndpoint(String orderId) =>
@@ -17,24 +16,15 @@ class ApiConstants {
   static String assignTechnicianEndpoint(String jobId) =>
       '/cashier/job/$jobId/assign';
 
-  /// When true, [PosRepository.assignTechnicians] sends `sync: true` so the server should treat
-  /// `employeeIds` as the **full desired roster** (remove unliste\],]d, add missing). Required for
-  /// “keep Zaid only” after Jabbar+Taha were assigned — add-only APIs return “No new assignments”.
-  /// Backend DTO must accept `sync`; set to false if validation rejects unknown fields.
+
   static const bool cashierAssignSendSyncReplace = true;
   /// Broadcast job to workshop / on-call technicians (plural `jobs` per backend).
-  static String cashierJobBroadcastEndpoint(String jobId) =>
-      '/cashier/jobs/$jobId/broadcast';
-  static String cashierJobBroadcastCancelEndpoint(String jobId) =>
-      '/cashier/jobs/$jobId/broadcast/cancel';
-  static const String cashierBroadcastsActiveEndpoint =
-      '/cashier/broadcasts/active';
-  static String cashierCompleteJobEndpoint(String jobId) =>
-      '/cashier/job/$jobId/complete-cashier'; // newly added mapping
-  static String cashierJobPricingEndpoint(String jobId) =>
-      '/cashier/job/$jobId/pricing';
-  static String cashierCompleteReadyEndpoint(String jobId) =>
-      '/cashier/job/$jobId/complete-ready';
+  static String cashierJobBroadcastEndpoint(String jobId) => '/cashier/jobs/$jobId/broadcast';
+  static String cashierJobBroadcastCancelEndpoint(String jobId) => '/cashier/jobs/$jobId/broadcast/cancel';
+  static const String cashierBroadcastsActiveEndpoint = '/cashier/broadcasts/active';
+  static String cashierCompleteJobEndpoint(String jobId) => '/cashier/job/$jobId/complete-cashier'; // newly added mapping
+  static String cashierJobPricingEndpoint(String jobId) => '/cashier/job/$jobId/pricing';
+  static String cashierCompleteReadyEndpoint(String jobId) => '/cashier/job/$jobId/complete-ready';
   /// PATCH — transitions a **completed** job to **edited** when the call succeeds.
   ///
   /// **Contract (cashier POS):**
@@ -42,35 +32,26 @@ class ApiConstants {
   /// - **POST /cashier/job/:id/pricing** is rejected while the job is still `completed` — call this
   ///   first when saving real edits (or retry once if pricing returns that error).
   /// - No-op saves: skip pricing POST entirely (client detects unchanged snapshot).
-  static String cashierJobMarkEditedEndpoint(String jobId) =>
-      '/cashier/job/$jobId/mark-edited';
+  static String cashierJobMarkEditedEndpoint(String jobId) => '/cashier/job/$jobId/mark-edited';
   static const String cashierOrdersEndpoint = '/cashier/orders';
-  static String cancelOrderEndpoint(String orderId) =>
-      '/cashier/order/$orderId/cancel';
+  static String cancelOrderEndpoint(String orderId) => '/cashier/order/$orderId/cancel';
   /// Standard walk-in only (no corporateAccountId): attach customer / vehicle before invoice.
-  static String cashierOrderBillingEndpoint(String orderId) =>
-      '/cashier/order/$orderId/billing';
+  static String cashierOrderBillingEndpoint(String orderId) => '/cashier/order/$orderId/billing';
   /// PATCH — cashier payment modal draft (`customerKind` + split `payments`) before invoice create.
-  static String cashierOrderPaymentMethodEndpoint(String orderId) =>
-      '/cashier/order/$orderId/payment-method';
+  static String cashierOrderPaymentMethodEndpoint(String orderId) => '/cashier/order/$orderId/payment-method';
 
   /// Six bilingual checklist rows ({ checks: boolean[6] }) before invoicing — printed on invoice.
-  static String cashierOrderMaintenanceChecklistEndpoint(String orderId) =>
-      '/cashier/order/$orderId/maintenance-checklist';
+  static String cashierOrderMaintenanceChecklistEndpoint(String orderId) => '/cashier/order/$orderId/maintenance-checklist';
   /// POST — add pending jobs for extra departments (walk_in / walk_in_corporate only).
-  static String cashierOrderJobsEndpoint(String orderId) =>
-      '/cashier/order/$orderId/jobs';
+  static String cashierOrderJobsEndpoint(String orderId) => '/cashier/order/$orderId/jobs';
   /// GET — cashier assign picker; pass [departmentId] as query param.
   static const String cashierTechniciansEndpoint = '/cashier/technicians';
   /// PATCH body `{ "status": "online" | "offline" }` — [employeeId] = [technicians].[id] from GET.
-  static String cashierTechnicianOnlineStatusEndpoint(String employeeId) =>
-      '/cashier/technicians/$employeeId/online-status';
+  static String cashierTechnicianOnlineStatusEndpoint(String employeeId) => '/cashier/technicians/$employeeId/online-status';
   /// PATCH body `{ "dutyMode": "workshop" | "on_call" | "inactive" }`.
-  static String cashierTechnicianDutyStatusEndpoint(String employeeId) =>
-      '/cashier/technicians/$employeeId/duty-status';
+  static String cashierTechnicianDutyStatusEndpoint(String employeeId) => '/cashier/technicians/$employeeId/duty-status';
   /// PATCH — cancel a single job before invoice.
-  static String cashierJobCancelEndpoint(String jobId) =>
-      '/cashier/job/$jobId/cancel';
+  static String cashierJobCancelEndpoint(String jobId) => '/cashier/job/$jobId/cancel';
   static String editOrderEndpoint(String orderId, String jobId) =>
       '/cashier/order/$orderId/job/$jobId/edit';
   static String invoicedOrdersEndpoint(String customerId) =>
@@ -79,36 +60,25 @@ class ApiConstants {
   static const String openSessionEndpoint = '/cashier/session/open';
   static const String closeSessionEndpoint = '/cashier/session/close';
   static const String currentSessionEndpoint = '/cashier/session/current';
-  /// POST — creates invoice from completed jobs. Server finalizes `edited` jobs first
-  /// via `complete-cashier` with an empty body (recalc only), then includes them; failures
-  /// surface the same validation errors (e.g. missing tech/lines).
   static const String createInvoiceEndpoint = '/cashier/invoice/create';
-  static String invoicePaymentEndpoint(String orderId) =>
-      '/cashier/invoice/$orderId/payment';
+  static String invoicePaymentEndpoint(String orderId) => '/cashier/invoice/$orderId/payment';
   static const String getInvoiceByOrderEndpoint = '/cashier/invoice/by-order';
   static const String submitSalesReturnEndpoint = '/cashier/return/submit';
   static const String salesReturnListEndpoint = '/cashier/return/list';
   static const String promoCodeApplyEndpoint = '/cashier/promo-code/apply';
   static const String expenseCategoriesEndpoint = '/cashier/expense-categories';
-  /// Branch employees for cashier POS (payments, petty cash, advances).
-  /// Optional query: `?employeeType=staff` | `technician`; omit for all active branch employees.
   static const String cashierEmployeesEndpoint = '/cashier/employees';
   /// Deprecated for new code — backend aliases to [cashierEmployeesEndpoint]; kept for compatibility.
   static const String expenseBranchEmployeesEndpoint = '/cashier/expense/branch-employees';
   static const String expenseHistoryEndpoint = '/cashier/expense/history';
   static const String expenseSubmitEndpoint = '/cashier/expense/submit';
-  static const String pettyCashRequestFundEndpoint =
-      '/cashier/petty-cash/request';
+  static const String pettyCashRequestFundEndpoint = '/cashier/petty-cash/request';
   static const String walletBalanceEndpoint = '/cashier/wallet/balance';
-  static const String cashierCorporateAccountsEndpoint =
-      '/cashier/corporate-accounts';
+  static const String cashierCorporateAccountsEndpoint = '/cashier/corporate-accounts';
   static const String corporateBookingsEndpoint = '/cashier/corporate-bookings';
-  static String corporateWalkInOrderEndpoint(String orderId) =>
-      '/corporate/walk-in-orders/$orderId';
-  static String approveCorporateBookingEndpoint(String id) =>
-      '/cashier/corporate-bookings/$id/approve';
-  static String rejectCorporateBookingEndpoint(String id) =>
-      '/cashier/corporate-bookings/$id/reject';
+  static String corporateWalkInOrderEndpoint(String orderId) => '/corporate/walk-in-orders/$orderId';
+  static String approveCorporateBookingEndpoint(String id) => '/cashier/corporate-bookings/$id/approve';
+  static String rejectCorporateBookingEndpoint(String id) => '/cashier/corporate-bookings/$id/reject';
   static const String storeClosingEndpoint = '/cashier/store-closing';
   static const String counterClosingEndpoint = '/cashier/counter-closing';
   static const String cashierPromoCodesEndpoint = '/cashier/promo-codes';
@@ -148,8 +118,7 @@ class ApiConstants {
   static const String categoriesEndpoint = '/workshop-staff/categories';
   static const String getSubCategoriesEndpoint = '/workshop-staff/sub-categories';
   static const String techniciansEndpoint = '/workshop-staff/technicians';
-  static String workshopStaffTechnicianByIdEndpoint(String id) =>
-      '/workshop-staff/technician/$id';
+  static String workshopStaffTechnicianByIdEndpoint(String id) => '/workshop-staff/technician/$id';
   static const String employeesEndpoint = '/workshop-staff/employees';
   static const String referrersEndpoint = '/workshop-staff/referrers';
   static const String productsEndpoint = '/workshop-staff/products';
@@ -185,21 +154,14 @@ class ApiConstants {
   static const String technicianDutyStatusEndpoint = '/technician/duty-status';
   static const String technicianAssignedOrdersEndpoint = '/technician/assigned-orders';
   static String technicianOrderDetailsEndpoint(String jobId) => '/technician/orders/$jobId';
-  static String technicianCompleteOrderEndpoint(String jobId) =>
-      '/technician/orders/$jobId/complete';
-  static String technicianAcceptOrderEndpoint(String jobId) =>
-      '/technician/orders/$jobId/accept';
-  static String technicianCancelOrderEndpoint(String jobId) =>
-      '/technician/orders/$jobId/cancel';
-  static String technicianStartOrderEndpoint(String jobId) =>
-      '/technician/orders/$jobId/start';
-  static const String technicianCommissionHistoryEndpoint =
-      '/technician/commission-history';
+  static String technicianCompleteOrderEndpoint(String jobId) => '/technician/orders/$jobId/complete';
+  static String technicianAcceptOrderEndpoint(String jobId) => '/technician/orders/$jobId/accept';
+  static String technicianCancelOrderEndpoint(String jobId) => '/technician/orders/$jobId/cancel';
+  static String technicianStartOrderEndpoint(String jobId) => '/technician/orders/$jobId/start';
+  static const String technicianCommissionHistoryEndpoint = '/technician/commission-history';
   static const String technicianBroadcastsEndpoint = '/technician/broadcasts';
-  static String technicianBroadcastAcceptEndpoint(String jobId) =>
-      '/technician/broadcasts/$jobId/accept';
-  static String technicianBroadcastRejectEndpoint(String jobId) =>
-      '/technician/broadcasts/$jobId/reject';
+  static String technicianBroadcastAcceptEndpoint(String jobId) => '/technician/broadcasts/$jobId/accept';
+  static String technicianBroadcastRejectEndpoint(String jobId) => '/technician/broadcasts/$jobId/reject';
 
   //// super admin /////
   static const String superAdminLoginEndpoint = '/auth/admin/login';
@@ -218,36 +180,27 @@ class ApiConstants {
 
   static const String lockerLoginEndpoint = '/auth/login';
   static const String lockerDashboardEndpoint = '/locker/dashboard';
-  static const String lockerCollectionRequestsEndpoint =
-      '/locker/collection-requests';
+  static const String lockerCollectionRequestsEndpoint = '/locker/collection-requests';
 
   /// Single collection request detail / assignment targets this path + [requestId].
-  static String lockerCollectionRequestById(String requestId) =>
-      '$lockerCollectionRequestsEndpoint/$requestId';
+  static String lockerCollectionRequestById(String requestId) => '$lockerCollectionRequestsEndpoint/$requestId';
 
   /// Assign a field officer to a pending collection request.
-  static String lockerAssignOfficerEndpoint(String requestId) =>
-      '$lockerCollectionRequestsEndpoint/$requestId/assign';
+  static String lockerAssignOfficerEndpoint(String requestId) => '$lockerCollectionRequestsEndpoint/$requestId/assign';
 
   static const String lockerFieldOfficersEndpoint = '/locker/field-officers';
-  static const String lockerRecordCollectionEndpoint =
-      '/locker/record-collection';
-  static const String lockerFinancialHistoryEndpoint =
-      '/locker/financial/history';
-  static const String lockerFinancialAnalyticsEndpoint =
-      '/locker/financial/analytics';
+  static const String lockerRecordCollectionEndpoint = '/locker/record-collection';
+  static const String lockerFinancialHistoryEndpoint = '/locker/financial/history';
+  static const String lockerFinancialAnalyticsEndpoint = '/locker/financial/analytics';
   static const String lockerApprovalsEndpoint = '/locker/approvals';
-  static const String lockerApproveDifferenceEndpoint =
-      '/locker/approve-difference';
+  static const String lockerApproveDifferenceEndpoint = '/locker/approve-difference';
   static const String lockerBranchesEndpoint = '/locker/branches';
 
   // Notifications
   static const String lockerNotificationsEndpoint = '/locker/notifications';
 
   /// Path-based paginated endpoint: /locker/get_notifications/:page/:limit
-  static String lockerGetNotificationsEndpoint(int page, int limit) =>
-      '/locker/get_notifications/$page/$limit';
+  static String lockerGetNotificationsEndpoint(int page, int limit) => '/locker/get_notifications/$page/$limit';
 
-  static const String lockerNotificationsMarkReadEndpoint =
-      '/locker/notifications/mark-read';
+  static const String lockerNotificationsMarkReadEndpoint = '/locker/notifications/mark-read';
 }

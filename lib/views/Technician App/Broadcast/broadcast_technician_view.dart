@@ -5,6 +5,8 @@ import '../../../models/technician_broadcast_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Notifications/notifications_view.dart';
+import '../../../widgets/notification_toolbar_icon.dart';
+import '../../../widgets/global_locale_toolbar_icon.dart';
 import '../technician_view_model.dart';
 
 /// Lists cashier-triggered broadcasts from GET /technician/broadcasts with Accept / Reject.
@@ -233,20 +235,11 @@ class _BroadcastTechnicianViewState extends State<BroadcastTechnicianView> {
         ),
         centerTitle: true,
         actions: [
-          GestureDetector(
+          const GlobalLocaleToolbarIcon(),
+          NotificationToolbarIcon(
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute<void>(builder: (_) => const NotificationsView()),
-            ),
-            child: Container(
-              width: 40,
-              height: 40,
-              margin: const EdgeInsets.only(right: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.35),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.notifications_outlined, size: 22, color: AppColors.secondaryLight),
             ),
           ),
         ],

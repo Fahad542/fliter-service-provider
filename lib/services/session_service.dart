@@ -45,6 +45,26 @@ class SessionService {
     await prefs.remove('${role}_user_data');
   }
 
+  Future<void> clearAllSessions() async {
+    final prefs = await SharedPreferences.getInstance();
+    const roles = <String>[
+      'cashier',
+      'owner',
+      'tech',
+      'locker',
+      'supplier',
+      'admin',
+      'super_admin',
+      'super-admin',
+    ];
+
+    for (final role in roles) {
+      await prefs.remove('${role}_auth_token');
+      await prefs.remove('${role}_user_data');
+    }
+    await prefs.remove('last_portal');
+  }
+
   Future<bool> isLoggedIn({String role = 'cashier'}) async {
     final token = await getToken(role: role);
     return token != null;

@@ -163,11 +163,17 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                         )
                       : (bookings.isEmpty
                             ? _buildEmptyState(isTablet)
-                            : ListView.builder(
+                            : GridView.builder(
                                 physics: const BouncingScrollPhysics(),
                                 padding: EdgeInsets.symmetric(
                                   horizontal: isTablet ? 32 : 20,
                                   vertical: 8,
+                                ),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: isTablet ? 1.9 : 1.55,
                                 ),
                                 itemCount: bookings.length,
                                 itemBuilder: (context, index) {
@@ -283,7 +289,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -294,33 +300,36 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
         border: Border.all(color: Colors.grey.shade100, width: 1),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ─── Header Section ───
             Container(
               padding: EdgeInsets.symmetric(
-                horizontal: isTablet ? 24 : 16,
-                vertical: 16,
+                horizontal: isTablet ? 18 : 14,
+                vertical: 12,
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border(bottom: BorderSide(color: Colors.grey.shade50)),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade200),
+                      color: AppColors.primaryLight.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primaryLight.withValues(alpha: 0.35),
+                      ),
                     ),
                     child: Icon(
                       Icons.corporate_fare_rounded,
                       size: isTablet ? 24 : 20,
-                      color: AppColors.secondaryLight,
+                      color: AppColors.primaryLight,
                     ),
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
@@ -328,128 +337,75 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        LocalizedApiText(
-                          booking.companyName?.toString() ?? '',
-                          style: TextStyle(
-                            fontSize: isTablet ? 18 : 16,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1E2124),
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.tag,
-                              size: 12,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(width: 4),
-                            LocalizedApiText(
-                              booking.id.toString(),
-                              style: TextStyle(
-                                fontSize: isTablet ? 12 : 11,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
+                            Expanded(
+                              child: LocalizedApiText(
+                                booking.vehiclePlate?.toString() ?? '-',
+                                style: TextStyle(
+                                  fontSize: isTablet ? 15 : 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF1E2124),
+                                  letterSpacing: -0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 10),
+                            _buildStatusBadge(_statusText(booking), isTablet),
                           ],
+                        ),
+                        const SizedBox(height: 6),
+                        LocalizedApiText(
+                          booking.vehicleName?.toString() ?? '-',
+                          style: TextStyle(
+                            fontSize: isTablet ? 12 : 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey.shade800,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        LocalizedApiText(
+                          _formatDate(booking.bookedDateTime, 'MMM dd, hh:mm a'),
+                          style: TextStyle(
+                            fontSize: isTablet ? 10 : 9,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
-                  _buildStatusBadge(_statusText(booking), isTablet),
                 ],
-              ),
-            ),
-
-            // ─── Detail Grid Section ───
-            Padding(
-              padding: EdgeInsets.all(isTablet ? 24 : 16),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoTag(
-                          AppLocalizations.of(context)!.posCorporateCardLabelVehicle,
-                          booking.vehicleName?.toString() ?? '',
-                          Icons.directions_car_rounded,
-                          isTablet,
-                          translateValue: true,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoTag(
-                          AppLocalizations.of(context)!.posCorporateCardLabelPlate,
-                          booking.vehiclePlate,
-                          Icons.pin_outlined,
-                          isTablet,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoTag(
-                          AppLocalizations.of(context)!.posCorporateCardLabelDepartment,
-                          booking.department?.toString() ?? '',
-                          Icons.category_rounded,
-                          isTablet,
-                          translateValue: true,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoTag(
-                          AppLocalizations.of(context)!.posCorporateCardLabelDate,
-                          _formatDate(booking.bookedDateTime, 'MMM dd, hh:mm a'),
-                          Icons.event_available_rounded,
-                          isTablet,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // ─── Actions Divider ───
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
-              child: Container(
-                height: 1,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.grey.shade100,
-                      Colors.grey.shade200,
-                      Colors.grey.shade100,
-                    ],
-                  ),
-                ),
               ),
             ),
 
             // ─── Actions Bottom Row ───
             Padding(
-              padding: EdgeInsets.all(isTablet ? 24 : 16),
+              padding: EdgeInsets.fromLTRB(
+                isTablet ? 16 : 12,
+                isTablet ? 10 : 8,
+                isTablet ? 16 : 12,
+                isTablet ? 12 : 10,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     flex: 1,
-                    child: OutlinedButton(
+                    child: ElevatedButton(
                       onPressed: () => _viewDetails(context, booking, isTablet),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.grey.shade700,
-                        side: BorderSide(color: Colors.grey.shade300),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondaryLight,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
                         padding: EdgeInsets.symmetric(
-                          vertical: isTablet ? 14 : 12,
+                          vertical: isTablet ? 10 : 8,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -458,144 +414,79 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       child: Text(
                         AppLocalizations.of(context)!.posCorporateActionDetails,
                         style: TextStyle(
-                          fontSize: isTablet ? 13 : 12,
+                            fontSize: isTablet ? 12 : 11,
                           fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                         maxLines: 1,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  if (_canReviewBooking(booking)) ...[
-                    Expanded(
-                      flex: 1,
-                      child: ElevatedButton(
-                        onPressed: () => _showReasonDialog(
-                          context,
-                          booking,
-                          AppLocalizations.of(context)!.posCorporateActionReject,
-                          isTablet,
+                  Expanded(
+                    flex: 1,
+                    child: ElevatedButton(
+                      onPressed: isRedirecting
+                          ? null
+                          : () async {
+                              if (_canReviewBooking(booking)) {
+                                final vm = Provider.of<CorporateBookingViewModel>(
+                                  context,
+                                  listen: false,
+                                );
+                                final success = await vm.approveBooking(booking.id);
+                                if (!success) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          vm.errorMessage ??
+                                              AppLocalizations.of(context)!.posCorporateApproveError,
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                                vm.setFilter('All');
+                              }
+
+                              if (_isApproved(booking) && context.mounted) {
+                                _navigateToProductGrid(context, booking);
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryLight,
+                        foregroundColor: AppColors.secondaryLight,
+                        elevation: 0,
+                        padding: EdgeInsets.symmetric(
+                          vertical: isTablet ? 10 : 8,
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryLight,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: EdgeInsets.symmetric(
-                            vertical: isTablet ? 14 : 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context)!.posCorporateActionReject,
-                          style: TextStyle(
-                            fontSize: isTablet ? 13 : 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final vm = Provider.of<CorporateBookingViewModel>(
-                            context,
-                            listen: false,
-                          );
-                          final success = await vm.approveBooking(booking.id);
-                          if (!success) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    vm.errorMessage ??
-                                        AppLocalizations.of(context)!.posCorporateApproveError,
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          } else {
-                            // After approve, land user on All list so "Continue" is immediately visible.
-                            vm.setFilter('All');
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight,
-                          foregroundColor: AppColors.secondaryLight,
-                          elevation: 0,
-                          padding: EdgeInsets.symmetric(
-                            vertical: isTablet ? 14 : 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context)!.posCorporateActionApprove,
-                          style: TextStyle(
-                            color: AppColors.secondaryLight,
-                            fontSize: isTablet ? 14 : 13,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
-                          ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                    ),
-                  ] else if (_isApproved(booking)) ...[
-                    Expanded(
-                      flex: 3,
-                      child: ElevatedButton(
-                        onPressed: isRedirecting
-                            ? null
-                            : () => _navigateToProductGrid(context, booking),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryLight,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: EdgeInsets.symmetric(
-                            vertical: isTablet ? 14 : 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: isRedirecting
-                            ? SizedBox(
-                                width: isTablet ? 18 : 16,
-                                height: isTablet ? 18 : 16,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(context)!.posCorporateActionContinue,
-                                    style: TextStyle(
-                                      fontSize: isTablet ? 14 : 13,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.2,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: isTablet ? 18 : 16,
-                                  ),
-                                ],
+                      child: isRedirecting
+                          ? SizedBox(
+                              width: isTablet ? 18 : 16,
+                              height: isTablet ? 18 : 16,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.secondaryLight,
                               ),
-                      ),
+                            )
+                          : Text(
+                              AppLocalizations.of(context)!.posCorporateActionContinue,
+                              style: TextStyle(
+                                color: AppColors.secondaryLight,
+                                fontSize: isTablet ? 12 : 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
                     ),
-                  ] else ...[
-                    const Expanded(flex: 3, child: SizedBox.shrink()),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -650,7 +541,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: isTablet ? 10 : 9,
+                    fontSize: isTablet ? 9 : 8,
                     color: Colors.grey.shade500,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.2,
@@ -661,7 +552,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     ? LocalizedApiText(
                         value,
                         style: TextStyle(
-                          fontSize: isTablet ? 12 : 11,
+                          fontSize: isTablet ? 11 : 10,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF1E2124),
                         ),
@@ -671,7 +562,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     : LocalizedApiText(
                         value,
                         style: TextStyle(
-                          fontSize: isTablet ? 12 : 11,
+                          fontSize: isTablet ? 11 : 10,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF1E2124),
                         ),
@@ -689,16 +580,20 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   Widget _buildStatusBadge(String status, bool isTablet) {
     Color bgColor;
     Color textColor;
+    final s = status.toLowerCase();
 
-    if (status.contains('Waiting') || status.contains('Pending')) {
-      bgColor = Colors.orange.shade50;
-      textColor = Colors.orange.shade700;
-    } else if (status.contains('In Progress')) {
-      bgColor = Colors.blue.shade50;
-      textColor = Colors.blue.shade700;
-    } else if (status.contains('Completed')) {
+    if (s.contains('cancelled') || s.contains('canceled') || s.contains('rejected')) {
+      bgColor = Colors.red.shade50;
+      textColor = Colors.red.shade700;
+    } else if (s.contains('approved') || s.contains('completed')) {
       bgColor = Colors.green.shade50;
       textColor = Colors.green.shade700;
+    } else if (s.contains('waiting') || s.contains('pending')) {
+      bgColor = Colors.orange.shade50;
+      textColor = Colors.orange.shade700;
+    } else if (s.contains('in progress')) {
+      bgColor = Colors.blue.shade50;
+      textColor = Colors.blue.shade700;
     } else {
       bgColor = Colors.grey.shade100;
       textColor = Colors.grey.shade700;
@@ -707,7 +602,6 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
     // Translate status display string for UI
     final l10n = AppLocalizations.of(_scaffoldContext)!;
     String displayStatus;
-    final s = status.toLowerCase();
     if (s.contains('cancelled') || s.contains('canceled')) {
       displayStatus = l10n.posCorporateStatusCancelled;
     } else if (s.contains('rejected')) {
@@ -805,7 +699,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                           ),
                           const SizedBox(height: 6),
                           LocalizedApiText(
-                            booking.companyName?.toString() ?? '',
+                            booking.vehiclePlate?.toString() ?? '-',
                             style: TextStyle(
                               color: const Color(0xFF1E2124),
                               fontSize: isTablet ? 24 : 20,
@@ -1047,16 +941,21 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                 child: Row(
                   children: [
                     Expanded(
-                      flex: 1,
-                      child: TextButton(
+                      child: ElevatedButton(
                         onPressed: () => Navigator.pop(ctx),
-                        style: TextButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondaryLight,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          foregroundColor: Colors.grey.shade600,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         child: Text(
                           AppLocalizations.of(context)!.posCorporateActionClose,
                           style: TextStyle(
+                            color: Colors.white,
                             fontSize: isTablet ? 15 : 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1066,7 +965,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     const SizedBox(width: 12),
                     if (_canReviewBooking(booking))
                       Expanded(
-                        flex: 2,
+                        flex: 1,
                         child: ElevatedButton(
                           onPressed: () async {
                             final vm = Provider.of<CorporateBookingViewModel>(
@@ -1117,7 +1016,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       )
                     else if (_isApproved(booking))
                       Expanded(
-                        flex: 2,
+                        flex: 1,
                         child: ElevatedButton(
                           onPressed: _redirectingBookingId == booking.id.toString()
                               ? null
@@ -1126,8 +1025,8 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                             _navigateToProductGrid(context, booking);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.secondaryLight,
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.primaryLight,
+                            foregroundColor: AppColors.secondaryLight,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -1140,34 +1039,25 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                   height: isTablet ? 18 : 16,
                                   child: const CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: AppColors.secondaryLight,
                                   ),
                                 )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!.posCorporateActionContinue,
-                                      style: TextStyle(
-                                        fontSize: isTablet ? 15 : 14,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.5,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Icon(
-                                      Icons.arrow_forward_rounded,
-                                      size: isTablet ? 18 : 16,
-                                    ),
-                                  ],
+                              : Text(
+                                  AppLocalizations.of(context)!.posCorporateActionContinue,
+                                  style: TextStyle(
+                                    color: AppColors.secondaryLight,
+                                    fontSize: isTablet ? 15 : 14,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
                                 ),
                         ),
                       )
                     else
-                      const Expanded(flex: 2, child: SizedBox.shrink()),
+                      const Expanded(flex: 1, child: SizedBox.shrink()),
                   ],
                 ),
               ),

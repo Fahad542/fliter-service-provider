@@ -108,7 +108,6 @@ class CustomAuthHeader extends StatelessWidget {
                                 'assets/images/global.png',
                                 width: iconSize,
                                 height: iconSize,
-                                color: Colors.black,
                                 errorBuilder: (context, error, stackTrace) =>
                                     Icon(Icons.language, size: iconSize, color: Colors.black),
                               ),

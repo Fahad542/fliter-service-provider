@@ -188,12 +188,18 @@ String buildInvoiceThermalTerminalPreview({
   }
 
   emitSummaryRow('Total (Excl VAT)', _sr(t.grossExVatBeforeDiscount));
-  sb.writeln(_line(ThermalInvoicePdfLabels.itemDiscountAr));
-  emitSummaryRow('Item Discount', _sr(_r2(t.itemDiscountsTotal)));
-  sb.writeln(_line(ThermalInvoicePdfLabels.invoiceDiscountAr));
-  emitSummaryRow('Invoice Discount', _sr(_r2(t.invoiceDiscount)));
-  sb.writeln(_line(ThermalInvoicePdfLabels.promoDiscountAr));
-  emitSummaryRow('Promo Code Discount', _sr(_r2(t.promoDiscount)));
+  if (t.itemDiscountsTotal > 0.001) {
+    sb.writeln(_line(ThermalInvoicePdfLabels.itemDiscountAr));
+    emitSummaryRow('Item Discount', _sr(_r2(t.itemDiscountsTotal)));
+  }
+  if (t.invoiceDiscount > 0.001) {
+    sb.writeln(_line(ThermalInvoicePdfLabels.invoiceDiscountAr));
+    emitSummaryRow('Invoice Discount', _sr(_r2(t.invoiceDiscount)));
+  }
+  if (t.promoDiscount > 0.001) {
+    sb.writeln(_line(ThermalInvoicePdfLabels.promoDiscountAr));
+    emitSummaryRow('Promo Code Discount', _sr(_r2(t.promoDiscount)));
+  }
   emitSummaryRow('Taxable (Excl VAT)', _sr(t.totalTaxableAmount));
   emitSummaryRow('Total VAT', _sr(t.vatAmount));
   emitSummaryRow('Total Amount Due', _sr(t.totalInvoiceAmount), bold: true);
@@ -561,21 +567,27 @@ Future<List<int>> buildInvoiceEscPosBytes({
   }
 
   emitSummaryRow('Total (Excl VAT)', _sr(grossExVatBeforeDiscount));
-  emitBilingualDiscountBlock(
-    ThermalInvoicePdfLabels.itemDiscountAr,
-    'Item Discount',
-    itemDiscountsTotal,
-  );
-  emitBilingualDiscountBlock(
-    ThermalInvoicePdfLabels.invoiceDiscountAr,
-    'Invoice Discount',
-    invoiceDiscount,
-  );
-  emitBilingualDiscountBlock(
-    ThermalInvoicePdfLabels.promoDiscountAr,
-    'Promo Code Discount',
-    promoDiscount,
-  );
+  if (itemDiscountsTotal > 0.001) {
+    emitBilingualDiscountBlock(
+      ThermalInvoicePdfLabels.itemDiscountAr,
+      'Item Discount',
+      itemDiscountsTotal,
+    );
+  }
+  if (invoiceDiscount > 0.001) {
+    emitBilingualDiscountBlock(
+      ThermalInvoicePdfLabels.invoiceDiscountAr,
+      'Invoice Discount',
+      invoiceDiscount,
+    );
+  }
+  if (promoDiscount > 0.001) {
+    emitBilingualDiscountBlock(
+      ThermalInvoicePdfLabels.promoDiscountAr,
+      'Promo Code Discount',
+      promoDiscount,
+    );
+  }
   emitSummaryRow('Taxable (Excl VAT)', _sr(totalTaxableAmount));
   emitSummaryRow('Total VAT', _sr(vatAmount));
   emitSummaryRow('Total Amount Due', _sr(totalInvoiceAmount), emphasis: true);

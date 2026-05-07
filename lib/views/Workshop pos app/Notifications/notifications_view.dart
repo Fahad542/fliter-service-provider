@@ -31,11 +31,43 @@ class NotificationsView extends StatelessWidget {
         body: Consumer<NotificationsViewModel>(
           builder: (context, vm, child) {
             final notifications = vm.notifications;
-            return ListView.builder(
-              padding: const EdgeInsets.all(24),
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                return _buildNotificationCard(context, notifications[index], isTablet);
+            final hGap = isTablet ? 8.0 : 6.0;
+            final vGap = isTablet ? 8.0 : 6.0;
+            final pad = EdgeInsets.fromLTRB(
+              isTablet ? 16 : 12,
+              isTablet ? 12 : 10,
+              isTablet ? 16 : 12,
+              isTablet ? 20 : 14,
+            );
+            final rowCount = (notifications.length + 1) ~/ 2;
+            return ListView.separated(
+              padding: pad,
+              itemCount: rowCount,
+              separatorBuilder: (_, _) => SizedBox(height: vGap),
+              itemBuilder: (context, rowIndex) {
+                final i = rowIndex * 2;
+                final left = notifications[i];
+                final right = i + 1 < notifications.length ? notifications[i + 1] : null;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: AlignmentDirectional.topCenter,
+                        child: _buildNotificationCard(context, left, isTablet),
+                      ),
+                    ),
+                    SizedBox(width: hGap),
+                    Expanded(
+                      child: right != null
+                          ? Align(
+                              alignment: AlignmentDirectional.topCenter,
+                              child: _buildNotificationCard(context, right, isTablet),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                );
               },
             );
           },
@@ -45,9 +77,10 @@ class NotificationsView extends StatelessWidget {
   }
 
   Widget _buildNotificationCard(BuildContext context, NotificationModel notification, bool isTablet) {
+    final pad = isTablet ? 12.0 : 10.0;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: EdgeInsets.all(pad),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -58,83 +91,88 @@ class NotificationsView extends StatelessWidget {
             offset: const Offset(0, 2),
           ),
         ],
-        border: notification.isRead 
-            ? null 
+        border: notification.isRead
+            ? null
             : Border.all(color: AppColors.primaryLight.withOpacity(0.3), width: 1),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon with Secondary Background and Primary Color
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: AppColors.secondaryLight,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              notification.icon,
-              color: AppColors.primaryLight,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: LocalizedApiText(
-                        notification.title,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        LocalizedApiText(
-                          notification.time,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.grey.shade400,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        if (!notification.isRead) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primaryLight,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(isTablet ? 8 : 7),
+                decoration: const BoxDecoration(
+                  color: AppColors.secondaryLight,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 4),
-                LocalizedApiText(
-                  notification.message,
+                child: Icon(
+                  notification.icon,
+                  color: AppColors.primaryLight,
+                  size: isTablet ? 19 : 17,
+                ),
+              ),
+              SizedBox(width: isTablet ? 10 : 8),
+              Expanded(
+                child: LocalizedApiText(
+                  notification.title,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                    height: 1.3,
+                    fontWeight: FontWeight.w700,
+                    fontSize: isTablet ? 14 : 13,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isTablet ? 6 : 5),
+          LocalizedApiText(
+            notification.message,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: Colors.grey.shade600,
+              fontSize: isTablet ? 13 : 12,
+              height: 1.25,
+            ),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            softWrap: true,
+          ),
+          SizedBox(height: isTablet ? 6 : 5),
+          Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Flexible(
+                  child: LocalizedApiText(
+                    notification.time,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.grey.shade500,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
                   ),
                 ),
+                if (!notification.isRead) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryLight,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
               ],
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
     );
   }
 }

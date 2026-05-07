@@ -232,27 +232,30 @@ class ThermalInvoiceReceipt extends StatelessWidget {
             t.grossExVatBeforeDiscount,
             bodyBold,
           ),
-          _discountSummaryBilingual(
-            context,
-            ThermalInvoicePdfLabels.itemDiscountAr,
-            ThermalInvoicePdfLabels.itemDiscountEn,
-            thermalR2(t.itemDiscountsTotal),
-            body,
-          ),
-          _discountSummaryBilingual(
-            context,
-            ThermalInvoicePdfLabels.invoiceDiscountAr,
-            ThermalInvoicePdfLabels.invoiceDiscountEn,
-            thermalR2(t.invoiceDiscount),
-            body,
-          ),
-          _discountSummaryBilingual(
-            context,
-            ThermalInvoicePdfLabels.promoDiscountAr,
-            ThermalInvoicePdfLabels.promoDiscountEn,
-            thermalR2(t.promoDiscount),
-            body,
-          ),
+          if (t.itemDiscountsTotal > 0.001)
+            _discountSummaryBilingual(
+              context,
+              ThermalInvoicePdfLabels.itemDiscountAr,
+              ThermalInvoicePdfLabels.itemDiscountEn,
+              thermalR2(t.itemDiscountsTotal),
+              body,
+            ),
+          if (t.invoiceDiscount > 0.001)
+            _discountSummaryBilingual(
+              context,
+              ThermalInvoicePdfLabels.invoiceDiscountAr,
+              ThermalInvoicePdfLabels.invoiceDiscountEn,
+              thermalR2(t.invoiceDiscount),
+              body,
+            ),
+          if (t.promoDiscount > 0.001)
+            _discountSummaryBilingual(
+              context,
+              ThermalInvoicePdfLabels.promoDiscountAr,
+              ThermalInvoicePdfLabels.promoDiscountEn,
+              thermalR2(t.promoDiscount),
+              body,
+            ),
           _moneyRow(
             context,
             AppLocalizations.of(context)!.posReceiptTotalTaxableAmountExclVat,

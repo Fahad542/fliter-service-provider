@@ -49,6 +49,7 @@ class MenuView extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
+
                   CustomAuthHeader(
                     title: 'ALL Apps',
                     subtitle: 'Please choose one of these apps',
