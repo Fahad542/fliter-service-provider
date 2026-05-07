@@ -222,7 +222,7 @@ class PosHomeView extends StatelessWidget {
                         rawCustomer: customer.name,
                         phone: customer.mobile,
                         lastVisit: latestOrder != null
-                            ? AppTranslationService.localizeDigitsForLanguage(vm.formatDate(latestOrder.createdAt), langCode)
+                          ? AppTranslationService.localizeDigitsForLanguage(vm.formatDate(latestOrder.createdAt), langCode)
                             : l10n.posCommonNotAvailable,
                         rawLastService: rawStatus,
                         orderNumber: latestOrder?.id,

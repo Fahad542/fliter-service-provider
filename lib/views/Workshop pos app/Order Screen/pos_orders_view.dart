@@ -417,9 +417,12 @@ class _PosOrdersViewState extends State<PosOrdersView> {
             child: ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(12),
-              itemCount: visibleOrders.length,
+              itemCount: visibleOrders.length + (vm.ordersHasMore ? 1 : 0),
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
+                if (index >= visibleOrders.length) {
+                  return _OrdersLoadMoreRow(vm: vm);
+                }
                 final order = visibleOrders[index];
                 return OrderItemCard(order: order, isTablet: false);
               },
@@ -427,6 +430,48 @@ class _PosOrdersViewState extends State<PosOrdersView> {
           ),
         ),
       ],
+    );
+  }
+}
+
+
+class _OrdersLoadMoreRow extends StatelessWidget {
+  final PosViewModel vm;
+  final bool compact;
+
+  const _OrdersLoadMoreRow({required this.vm, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: compact ? 4 : 8),
+      child: Center(
+        child: vm.isLoadingMoreOrders
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              )
+            : OutlinedButton(
+                onPressed: vm.loadMoreOrders,
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 10 : 16,
+                    vertical: compact ? 8 : 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.posPettyCashLoadMore,
+                  style: TextStyle(
+                    fontSize: compact ? 11 : 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+      ),
     );
   }
 }
@@ -637,10 +682,14 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
                                 12,
                                 16,
                               ),
-                              itemCount: filteredOrders.length,
+                              itemCount: filteredOrders.length +
+                                  (vm.ordersHasMore ? 1 : 0),
                               separatorBuilder: (_, __) =>
-                              const SizedBox(height: 12),
+                                  const SizedBox(height: 12),
                               itemBuilder: (context, index) {
+                                if (index >= filteredOrders.length) {
+                                  return _OrdersLoadMoreRow(vm: vm, compact: true);
+                                }
                                 final order = filteredOrders[index];
                                 final isSelected =
                                     vm.selectedOrder?.id == order.id;

@@ -33,6 +33,99 @@ TextStyle _posCatalogEmptyMessageTextStyle() => TextStyle(
   height: 1.35,
 );
 
+String? _cleanProductArabicName(Object? value) {
+  final v = value?.toString().trim();
+  if (v == null || v.isEmpty || v.toLowerCase() == 'null') return null;
+  return v;
+}
+
+Widget _productTitleText(
+  BuildContext context,
+  PosProduct product, {
+  TextStyle? style,
+  int? maxLines,
+  TextOverflow? overflow,
+  TextAlign? textAlign,
+}) {
+  final langCode = Localizations.localeOf(context).languageCode;
+  final backendArabic = langCode == 'ar'
+      ? _cleanProductArabicName(product.productNameArabic)
+      : null;
+
+  if (backendArabic != null) {
+    return Text(
+      backendArabic,
+      style: style,
+      maxLines: maxLines,
+      overflow: overflow,
+      textAlign: textAlign,
+    );
+  }
+
+  return LocalizedApiText(
+    product.name,
+    style: style,
+    maxLines: maxLines,
+    overflow: overflow,
+    textAlign: textAlign,
+  );
+}
+
+
+class _LoadMoreProductsTile extends StatelessWidget {
+  final bool isTablet;
+  final int remainingCount;
+  final VoidCallback onPressed;
+
+  const _LoadMoreProductsTile({
+    required this.isTablet,
+    required this.remainingCount,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = remainingCount > ProductGridViewModel.productPageSize
+        ? '+${ProductGridViewModel.productPageSize}'
+        : '+$remainingCount';
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+        child: Container(
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 18 : 14,
+            vertical: isTablet ? 18 : 14,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.expand_more_rounded, color: AppColors.secondaryLight),
+              const SizedBox(width: 8),
+              Text(
+                'Load More $label',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: isTablet ? 14 : 13,
+                  color: AppColors.secondaryLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class PosProductGridView extends StatefulWidget {
   final String? departmentName;
   final String? departmentId;
@@ -636,8 +729,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: LocalizedApiText(
-            product.name,
+          title: _productTitleText(
+            context,
+            product,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -2127,6 +2221,11 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       return _buildEmptyState(vm);
     }
 
+    final visibleProducts = filteredProducts
+        .take(gridVm.visibleProductLimit)
+        .toList(growable: false);
+    final hasLocalMore = visibleProducts.length < filteredProducts.length;
+
     final isPortrait =
         MediaQuery.orientationOf(context) == Orientation.portrait;
 
@@ -2136,23 +2235,57 @@ class _PosProductGridViewState extends State<PosProductGridView> {
       gridVm: gridVm,
     );
 
+    Future<void> refreshProducts() async {
+      gridVm.resetVisibleProducts(notify: false);
+      final deptId = _activeDepartmentTabId ??
+          ((widget.departmentId != null && widget.departmentId != 'All')
+              ? widget.departmentId
+              : null);
+      await context.read<PosViewModel>().fetchProducts(departmentId: deptId);
+    }
+
+    Widget productCardFor(PosProduct product, bool tabletCard) {
+      return Consumer<PosViewModel>(
+        builder: (context, vm, child) {
+          final activeCart =
+              widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
+          final cartItemIndex = activeCart.indexWhere(
+            (i) =>
+                i.product.id == product.id &&
+                i.product.isServiceType == product.isServiceType &&
+                (i.product.departmentId ?? '') ==
+                    (product.departmentId ?? ''),
+          );
+          final qty = cartItemIndex != -1
+              ? activeCart[cartItemIndex].quantity
+              : 0.0;
+          return _buildProductCard(product, qty, tabletCard);
+        },
+      );
+    }
+
     final Widget listPane;
     if (filteredProducts.isEmpty) {
-      listPane = Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Text(
+      listPane = ListView(
+        primary: false,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        children: [
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
+          Text(
             AppLocalizations.of(context)!.posProductNoProductsMatch,
             textAlign: TextAlign.center,
             style: _posCatalogEmptyMessageTextStyle(),
           ),
-        ),
+        ],
       );
     } else if (isTablet) {
       listPane = GridView.builder(
         primary: false,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        physics: const BouncingScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         clipBehavior: Clip.hardEdge,
         padding: const EdgeInsets.fromLTRB(22, 8, 22, 100),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -2161,55 +2294,37 @@ class _PosProductGridViewState extends State<PosProductGridView> {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
-        itemCount: filteredProducts.length,
+        itemCount: visibleProducts.length + (hasLocalMore ? 1 : 0),
         itemBuilder: (context, index) {
-          final product = filteredProducts[index];
-          return Consumer<PosViewModel>(
-            builder: (context, vm, child) {
-              final activeCart =
-              widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
-              final cartItemIndex = activeCart.indexWhere(
-                    (i) =>
-                i.product.id == product.id &&
-                    i.product.isServiceType == product.isServiceType &&
-                    (i.product.departmentId ?? '') ==
-                        (product.departmentId ?? ''),
-              );
-              final qty = cartItemIndex != -1
-                  ? activeCart[cartItemIndex].quantity
-                  : 0.0;
-              return _buildProductCard(product, qty, true);
-            },
-          );
+          if (index >= visibleProducts.length) {
+            return _LoadMoreProductsTile(
+              isTablet: true,
+              remainingCount: filteredProducts.length - visibleProducts.length,
+              onPressed: gridVm.loadMoreProducts,
+            );
+          }
+          return productCardFor(visibleProducts[index], true);
         },
       );
     } else {
       listPane = ListView.separated(
         primary: false,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        physics: const BouncingScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        itemCount: filteredProducts.length,
+        itemCount: visibleProducts.length + (hasLocalMore ? 1 : 0),
         separatorBuilder: (context, index) => const SizedBox(height: 6),
         itemBuilder: (context, index) {
-          final product = filteredProducts[index];
-          return Consumer<PosViewModel>(
-            builder: (context, vm, child) {
-              final activeCart =
-              widget.isMainTab ? vm.mainTabCartItems : vm.cartItems;
-              final cartItemIndex = activeCart.indexWhere(
-                    (i) =>
-                i.product.id == product.id &&
-                    i.product.isServiceType == product.isServiceType &&
-                    (i.product.departmentId ?? '') ==
-                        (product.departmentId ?? ''),
-              );
-              final qty = cartItemIndex != -1
-                  ? activeCart[cartItemIndex].quantity
-                  : 0.0;
-              return _buildProductCard(product, qty, false);
-            },
-          );
+          if (index >= visibleProducts.length) {
+            return _LoadMoreProductsTile(
+              isTablet: false,
+              remainingCount: filteredProducts.length - visibleProducts.length,
+              onPressed: gridVm.loadMoreProducts,
+            );
+          }
+          return productCardFor(visibleProducts[index], false);
         },
       );
     }
@@ -2219,7 +2334,13 @@ class _PosProductGridViewState extends State<PosProductGridView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           header,
-          Expanded(child: listPane),
+          Expanded(
+            child: RefreshIndicator(
+              color: AppColors.primaryLight,
+              onRefresh: refreshProducts,
+              child: listPane,
+            ),
+          ),
         ],
       ),
     );
@@ -2470,8 +2591,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     padding: EdgeInsets.only(
                                       right: cartQty > 0 && !widget.isReadOnly ? 44 : 0,
                                     ),
-                                    child: LocalizedApiText(
-                                      product.name,
+                                    child: _productTitleText(
+                                      context,
+                                      product,
                                       style: AppTextStyles.bodyMedium.copyWith(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
@@ -2644,8 +2766,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       children: [
                         SizedBox(
                           height: 36,
-                          child: LocalizedApiText(
-                            product.name,
+                          child: _productTitleText(
+                            context,
+                            product,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
@@ -2873,8 +2996,9 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        LocalizedApiText(
-                            item.product.name,
+                        _productTitleText(
+                            context,
+                            item.product,
                             style: TextStyle(
                               fontSize: isTablet ? 17 : 13,
                               fontWeight: FontWeight.w700,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class PosProduct {
   final String id;
   final String name;
+  final String? productNameArabic;
   final String? unit;
   /// VAT-inclusive catalog price (salePrice / sellingPrice from backend).
   final double price;
@@ -25,6 +26,7 @@ class PosProduct {
   PosProduct({
     required this.id,
     required this.name,
+    this.productNameArabic,
     this.unit,
     required this.price,
     double? priceBeforeVat,
@@ -71,6 +73,46 @@ class PosProduct {
     return decimalUnits.contains(u);
   }
 
+
+  static String? _cleanArabicName(Object? value) {
+    final v = value?.toString().trim();
+    if (v == null || v.isEmpty || v.toLowerCase() == 'null') return null;
+    return v;
+  }
+
+  static String? _parseArabicName(Map<String, dynamic> json) {
+    final direct = _cleanArabicName(json['productNameArabic']) ??
+        _cleanArabicName(json['product_name_arabic']) ??
+        _cleanArabicName(json['productNameAr']) ??
+        _cleanArabicName(json['product_name_ar']) ??
+        _cleanArabicName(json['nameArabic']) ??
+        _cleanArabicName(json['name_arabic']) ??
+        _cleanArabicName(json['nameAr']) ??
+        _cleanArabicName(json['name_ar']) ??
+        _cleanArabicName(json['arabicName']) ??
+        _cleanArabicName(json['arabic_name']);
+    if (direct != null) return direct;
+
+    for (final key in const ['product', 'service', 'item']) {
+      final nested = json[key];
+      if (nested is Map) {
+        final parsed = _parseArabicName(Map<String, dynamic>.from(nested));
+        if (parsed != null) return parsed;
+      }
+    }
+
+    final translations = json['translations'];
+    if (translations is Map) {
+      final ar = translations['ar'] ?? translations['arabic'];
+      if (ar is Map) {
+        return _cleanArabicName(ar['name']) ??
+            _cleanArabicName(ar['productName']) ??
+            _cleanArabicName(ar['title']);
+      }
+    }
+    return null;
+  }
+
   /// Prefer live balance keys from cashier catalog; adoption/opening last (legacy shapes).
   static int _parseCatalogStockQty(Map<String, dynamic> json) {
     const liveKeys = <String>[
@@ -110,6 +152,7 @@ class PosProduct {
     final product = PosProduct(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
+      productNameArabic: _parseArabicName(json),
       unit: json['unit'],
       price: inclVat,
       priceBeforeVat: exclVat,

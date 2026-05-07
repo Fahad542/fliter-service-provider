@@ -113,6 +113,7 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
 
   bool get _isSplitMode => _selected.length > 1;
   double get _safeTotal => widget.totalAmount > 0 ? widget.totalAmount : 0.0;
+  String _languageCode = 'en';
 
   @override
   void initState() {
@@ -125,6 +126,17 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     } else {
       _selected = {};
     }
+    // Do not read Localizations/Theme here. initState cannot depend on inherited widgets.
+    _syncAmountControllers(seedFromInitial: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextLanguageCode = Localizations.localeOf(context).languageCode;
+    if (_languageCode == nextLanguageCode) return;
+    _languageCode = nextLanguageCode;
+    // Safe place to apply locale-specific digit formatting to initial/auto-filled amounts.
     _syncAmountControllers(seedFromInitial: true);
   }
 
@@ -257,11 +269,10 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
     final raw = (v - v.roundToDouble()).abs() < 0.0001
         ? v.round().toString()
         : v.toStringAsFixed(2);
-    final lang = languageCode ??
-        (context.mounted
-            ? Localizations.localeOf(context).languageCode
-            : 'en');
-    return AppTranslationService.localizeDigitsForLanguage(raw, lang);
+    return AppTranslationService.localizeDigitsForLanguage(
+      raw,
+      languageCode ?? _languageCode,
+    );
   }
 
   void _syncAmountControllers({
@@ -289,13 +300,13 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
           : null;
       _amountControllers[pm] = TextEditingController(
         text: initialAmount != null && initialAmount > 0
-            ? _amountToText(initialAmount, languageCode: Localizations.localeOf(context).languageCode) : '',
+            ? _amountToText(initialAmount) : '',
       );
     }
 
     if (!_isSplitMode && _isCorporate != null && _selected.length == 1) {
       final only = _selected.first;
-      _amountControllers[only]?.text = _amountToText(_safeTotal,    languageCode: Localizations.localeOf(context).languageCode);
+      _amountControllers[only]?.text = _amountToText(_safeTotal);
     }
 
     if (_isSplitMode && fromOneToManySplit) {

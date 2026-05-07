@@ -429,6 +429,10 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   String? _errorMessage;
   String? _currentJobId;
   List<PosOrder> _orders = [];
+  static const int _ordersPageSize = 50;
+  int _ordersOffset = 0;
+  bool _ordersHasMore = true;
+  bool _isLoadingMoreOrders = false;
   PosOrder? _selectedOrder;
   OrderStats _orderStats = OrderStats.empty();
   List<SearchedCustomer> _searchedCustomers = [];
@@ -449,6 +453,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   bool get isLoading => _isLoading;
   bool get isOrdersScreenRefreshing => _ordersScreenRefreshInFlight;
   bool get ordersApiFetchCompleted => _ordersApiFetchCompleted;
+  bool get ordersHasMore => _ordersHasMore;
+  bool get isLoadingMoreOrders => _isLoadingMoreOrders;
   bool get isInvoicePanelSaveBusy => _invoicePanelSaveBusy;
   bool get isInvoiceLoading => _isInvoiceLoading;
   String? get loadingOrderId => _loadingOrderId;
@@ -2418,11 +2424,32 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         throw Exception('Authentication information missing');
       }
 
+      final branchId = user.branchId?.trim() ?? '';
+      final resolvedProductsEndpoint = branchId.isNotEmpty
+          ? '/workshop-staff/branches/$branchId/catalog'
+          : '/workshop-staff/products';
+      final resolvedProductsQuery = <String, String>{
+        if (branchId.isEmpty) 'workshopId': user.workshopId!,
+        if (departmentId != null && departmentId.trim().isNotEmpty)
+          'departmentId': departmentId.trim(),
+      };
+
+      debugPrint(
+        '[POS][PRODUCTS] GET $resolvedProductsEndpoint query=$resolvedProductsQuery '
+        'workshopId=${user.workshopId} branchId=${branchId.isEmpty ? 'MISSING' : branchId}',
+      );
+
       final response = await posRepository.getProducts(
         user.workshopId!,
         token,
         departmentId: departmentId,
         branchId: user.branchId,
+      );
+
+      debugPrint(
+        '[POS][PRODUCTS] response success=${response.success} '
+        'categories=${response.categories.length} '
+        'uncategorized=${response.uncategorizedProducts.length}',
       );
 
       if (response.success) {
@@ -3010,8 +3037,19 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     final id = _selectedOrder?.id.trim();
     await fetchOrders(
       silent: true,
+      limit: _ordersPageSize,
+      offset: 0,
       preferredOrderId: id != null && id.isNotEmpty ? id : null,
       ordersScreenRefresh: true,
+    );
+  }
+
+  Future<void> loadMoreOrders() async {
+    if (_isLoadingMoreOrders || !_ordersHasMore) return;
+    await fetchOrders(
+      silent: true,
+      limit: _ordersPageSize,
+      offset: _ordersOffset,
     );
   }
 
@@ -3023,11 +3061,19 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     String? preferredOrderId,
     bool ordersScreenRefresh = false,
   }) async {
+    final effectiveLimit = limit ?? _ordersPageSize;
+    final effectiveOffset = offset ?? 0;
+    final isAppend = effectiveOffset > 0;
+
+    if (isAppend) {
+      _isLoadingMoreOrders = true;
+      notifyListeners();
+    }
     if (ordersScreenRefresh) {
       _ordersScreenRefreshInFlight = true;
       notifyListeners();
     }
-    if (!silent && !ordersScreenRefresh) {
+    if (!silent && !ordersScreenRefresh && !isAppend) {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
@@ -3042,11 +3088,21 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       final response = await posRepository.getCashierOrders(
         token,
         status: statusQuery,
-        limit: limit,
-        offset: offset,
+        limit: effectiveLimit,
+        offset: effectiveOffset,
       );
       if (response.success) {
-        _orders = response.orders;
+        if (isAppend) {
+          final existingIds = _orders.map((o) => o.id).toSet();
+          final nextOrders = response.orders
+              .where((o) => !existingIds.contains(o.id))
+              .toList();
+          _orders = [..._orders, ...nextOrders];
+        } else {
+          _orders = response.orders;
+        }
+        _ordersOffset = effectiveOffset + response.orders.length;
+        _ordersHasMore = response.orders.length >= effectiveLimit;
         _orderStats = response.stats;
         _lastCashierOrdersFetchedAt = DateTime.now();
         _syncBroadcastCooldownWithOrdersAfterFetch(_orders);
@@ -3116,8 +3172,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
-      if (!silent && !ordersScreenRefresh) {
+      if (!silent && !ordersScreenRefresh && !isAppend) {
         _isLoading = false;
+      }
+      if (isAppend) {
+        _isLoadingMoreOrders = false;
       }
       if (ordersScreenRefresh) {
         _ordersScreenRefreshInFlight = false;

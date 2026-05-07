@@ -4,10 +4,13 @@ import '../../../../services/locker_translation_mixin.dart';
 
 class ProductGridViewModel extends ChangeNotifier with TranslatableMixin {
   static const String allFilter = 'All';
+  static const int productPageSize = 12;
+
   String _selectedDepartment = allFilter;
   String _selectedCategory = allFilter;
   String _selectedSubCategory = allFilter;
   String _searchQuery = '';
+  int _visibleProductLimit = productPageSize;
   final TextEditingController searchController = TextEditingController();
 
   void bindSettingsViewModel(Listenable settingsViewModel) {
@@ -22,33 +25,49 @@ class ProductGridViewModel extends ChangeNotifier with TranslatableMixin {
   String get selectedCategory => _selectedCategory;
   String get selectedSubCategory => _selectedSubCategory;
   String get searchQuery => _searchQuery;
+  int get visibleProductLimit => _visibleProductLimit;
+
+  void resetVisibleProducts({bool notify = true}) {
+    _visibleProductLimit = productPageSize;
+    if (notify) notifyListeners();
+  }
+
+  void loadMoreProducts() {
+    _visibleProductLimit += productPageSize;
+    notifyListeners();
+  }
 
   void setDepartment(String department) {
     _selectedDepartment = department;
     _selectedCategory = allFilter;
     _selectedSubCategory = allFilter;
+    resetVisibleProducts(notify: false);
     notifyListeners();
   }
 
   void setCategory(String category) {
     _selectedCategory = category;
     _selectedSubCategory = allFilter; // Reset subcategory when category changes
+    resetVisibleProducts(notify: false);
     notifyListeners();
   }
 
   void setSubCategory(String subCategory) {
     _selectedSubCategory = subCategory;
+    resetVisibleProducts(notify: false);
     notifyListeners();
   }
 
   void setSearchQuery(String query) {
     _searchQuery = query;
+    resetVisibleProducts(notify: false);
     notifyListeners();
   }
 
   void clearSearch() {
     searchController.clear();
     _searchQuery = '';
+    resetVisibleProducts(notify: false);
     notifyListeners();
   }
 
