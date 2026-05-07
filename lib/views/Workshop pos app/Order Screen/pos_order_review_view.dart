@@ -21,8 +21,18 @@ import '../../../services/session_service.dart';
 
 // ── Mock data models used exclusively for this review screen ─────────────────
 
+String? _firstNonEmptyStringFromDynamic(List<dynamic> values) {
+  for (final value in values) {
+    if (value == null) continue;
+    final text = value.toString().trim();
+    if (text.isNotEmpty) return text;
+  }
+  return null;
+}
+
 class ReviewLineItem {
   final String name;
+  final String? nameArabic;
   final String technicianName;
   /// VAT-inclusive catalog unit price (stored as-is for reference).
   final double unitPrice;
@@ -33,6 +43,7 @@ class ReviewLineItem {
 
   ReviewLineItem({
     required this.name,
+    this.nameArabic,
     required this.technicianName,
     required this.unitPrice,
     required this.qty,
@@ -42,6 +53,14 @@ class ReviewLineItem {
   });
 
   static double _r2(double v) => (v * 100).roundToDouble() / 100;
+
+  String displayName(BuildContext context) {
+    if (Localizations.localeOf(context).languageCode == 'ar') {
+      final ar = nameArabic?.trim();
+      if (ar != null && ar.isNotEmpty) return ar;
+    }
+    return name;
+  }
 
   /// Unit price excluding VAT.
   double get unitPriceExclVat => _r2(unitPrice / 1.15);
@@ -1455,6 +1474,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         return job.items.map((item) {
           return ReviewLineItem(
             name: item.productName,
+            nameArabic: item.productNameArabic,
             technicianName: job.department,
             unitPrice: item.unitPrice,
             qty: item.qty.toInt(),
@@ -1472,6 +1492,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             : (priceDynamic as double? ?? 0.0);
         return ReviewLineItem(
           name: item['productName'] ?? item['name'] ?? AppLocalizations.of(context)!.posReviewItemFallback,
+          nameArabic: _firstNonEmptyStringFromDynamic([item['productNameArabic'], item['product_name_arabic'], item['nameArabic'], item['name_arabic'], item['name_ar']]),
           technicianName: widget.order.jobs.any((j) => !j.isCancelledJob)
               ? widget.order.jobs.firstWhere((j) => !j.isCancelledJob).department
               : AppLocalizations.of(context)!.posReviewTechnicianFallback,
@@ -2614,7 +2635,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   weight: i == 0 ? FontWeight.w800 : FontWeight.w500),
               _reviewBodyCell(i == 0 ? job.id : '', isTablet),
               _reviewBodyCell(i == 0 ? job.status.toUpperCase() : '', isTablet, maxLines: 2),
-              _reviewBodyCell(item.productName, isTablet, weight: FontWeight.w600),
+              _reviewBodyCell(item.displayName(context), isTablet, weight: FontWeight.w600),
               _reviewBodyCell(qtyStr, isTablet, align: TextAlign.end),
               _reviewBodyCell(item.lineTotal.toStringAsFixed(2), isTablet,
                   align: TextAlign.end, weight: FontWeight.w800),
@@ -3189,7 +3210,7 @@ class _ItemRow extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  item.name,
+                  item.displayName(context),
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: isTablet ? 15 : 14, color: const Color(0xFF1E2124)),
                 ),
               ),
@@ -4156,7 +4177,7 @@ class _MockInvoicePrintDialog extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                '${item.qty}x  ${item.name}',
+                                '${item.qty}x  ${item.displayName(context)}',
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: Colors.black87,

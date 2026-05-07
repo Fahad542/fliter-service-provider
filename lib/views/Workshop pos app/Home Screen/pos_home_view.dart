@@ -39,7 +39,7 @@ class PosHomeView extends StatelessWidget {
       ).copyWith(textScaler: PosTabletLayout.textScaler(context)),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         appBar: PosAppBar(
           userName: vm.cashierName,
           infoTitle: vm.workshopName,
@@ -49,118 +49,124 @@ class PosHomeView extends StatelessWidget {
         ),
         body: wrapPosShellRailBody(
           context,
-          GestureDetector(
-            onTap: () {
-              if (vm.homeSearchController.text.isEmpty) {
-                vm.homeSearchFocusNode.unfocus();
-              }
-            },
-            child: Column(
-              children: [
-                // 2. Custom Info Bar (Merged into AppBar)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSearchMode = vm.homeSearchController.text.isNotEmpty ||
+                  vm.homeSearchFocusNode.hasFocus;
+              final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+              final headerMaxHeight = isSearchMode
+                  ? (keyboardOpen
+                  ? (constraints.maxHeight * 0.52).clamp(100.0, 300.0)
+                  : (constraints.maxHeight * 0.42).clamp(160.0, 360.0))
+                  : constraints.maxHeight;
 
-                // 3. Main Content
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 24),
-                  child: Column(
-                    children: [
-                      SizedBox(height: isTablet ? 18 : 24),
-                      // Title
-                      RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
+              return Column(
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: headerMaxHeight),
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                      physics: const ClampingScrollPhysics(),
+                      clipBehavior: Clip.hardEdge,
+                      padding: EdgeInsets.zero,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 24),
+                        child: Column(
                           children: [
-                            TextSpan(
-                              text: l10n.posHomeTitleFilter,
-                              style: AppTextStyles.h1.copyWith(
-                                color: AppColors.primaryLight,
-                                fontSize: isTablet ? 36 : 34,
-                                fontWeight: FontWeight.w700,
+                            SizedBox(height: keyboardOpen ? 10 : (isTablet ? 18 : 24)),
+                            RichText(
+                              textAlign: TextAlign.center,
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: l10n.posHomeTitleFilter,
+                                    style: AppTextStyles.h1.copyWith(
+                                      color: AppColors.primaryLight,
+                                      fontSize: keyboardOpen ? 30 : (isTablet ? 36 : 34),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: l10n.posHomeTitlePos,
+                                    style: AppTextStyles.h1.copyWith(
+                                      color: AppColors.secondaryLight,
+                                      fontSize: keyboardOpen ? 30 : (isTablet ? 36 : 34),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            TextSpan(
-                              text: l10n.posHomeTitlePos,
-                              style: AppTextStyles.h1.copyWith(
-                                color: AppColors.secondaryLight,
-                                fontSize: isTablet ? 36 : 34,
-                                fontWeight: FontWeight.w700,
+                            SizedBox(height: keyboardOpen ? 4 : 8),
+                            Text(
+                              l10n.posHomeSubtitle,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: Colors.grey,
+                                fontSize: keyboardOpen ? 13 : 15,
                               ),
+                              textAlign: TextAlign.center,
                             ),
+                            SizedBox(height: keyboardOpen ? 12 : 24),
+                            PosSearchBar(
+                              controller: vm.homeSearchController,
+                              focusNode: vm.homeSearchFocusNode,
+                              hintText: l10n.posHomeSearchHint,
+                              onChanged: (val) => vm.handleSearchDebounce(val),
+                            ),
+                            SizedBox(height: keyboardOpen ? 8 : 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildActionChip(
+                                  context: context,
+                                  icon: Icons.add,
+                                  label: l10n.posHomeNewWalkIn,
+                                  onTap: () {
+                                    context.read<PosViewModel>().clearCustomerData();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                        const PosAddCustomerView(initialTab: 0),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 12),
+                                _buildActionChip(
+                                  context: context,
+                                  icon: Icons.business,
+                                  label: l10n.posHomeCorporateBooking,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                        const PosCorporateBookingsView(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: keyboardOpen ? 8 : 12),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.posHomeSubtitle,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: Colors.grey,
-                          fontSize: 15,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Search bar
-                      PosSearchBar(
-                        controller: vm.homeSearchController,
-                        focusNode: vm.homeSearchFocusNode,
-                        hintText:
-                        l10n.posHomeSearchHint,
-                        onChanged: (val) => vm.handleSearchDebounce(val),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildActionChip(
-                            context: context,
-                            icon: Icons.add,
-                            label: l10n.posHomeNewWalkIn,
-                            onTap: () {
-                              context.read<PosViewModel>().clearCustomerData();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                  const PosAddCustomerView(initialTab: 0),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 12),
-                          _buildActionChip(
-                            context: context,
-                            icon: Icons.business,
-                            label: l10n.posHomeCorporateBooking,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                  const PosCorporateBookingsView(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                  ),
-                ),
-
-                if (vm.homeSearchController.text.isNotEmpty ||
-                    vm.homeSearchFocusNode.hasFocus)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _buildSearchResults(context, isTablet),
                     ),
                   ),
-              ],
-            ),
+                  if (isSearchMode)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: _buildSearchResults(context, isTablet),
+                      ),
+                    )
+                  else
+                    const Expanded(child: SizedBox.shrink()),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -195,7 +201,7 @@ class PosHomeView extends StatelessWidget {
               ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
+                  padding: EdgeInsets.fromLTRB(2, 0, 2, MediaQuery.viewInsetsOf(context).bottom > 0 ? 24 : 12),
                   itemCount: isTablet
                       ? (vm.searchedCustomers.length / 3).ceil()
                       : vm.searchedCustomers.length,
@@ -217,7 +223,7 @@ class PosHomeView extends StatelessWidget {
 
                       final plateRaw = vehicle?.plateNo;
                       final plateDisplay = (plateRaw == null ||
-                              plateRaw.trim().isEmpty)
+                          plateRaw.trim().isEmpty)
                           ? l10n.posCommonNotAvailable
                           : formatVehiclePlateLettersFirst(plateRaw);
 
@@ -228,7 +234,7 @@ class PosHomeView extends StatelessWidget {
                         rawCustomer: customer.name,
                         phone: customer.mobile,
                         lastVisit: latestOrder != null
-                          ? AppTranslationService.localizeDigitsForLanguage(vm.formatDate(latestOrder.createdAt), langCode)
+                            ? AppTranslationService.localizeDigitsForLanguage(vm.formatDate(latestOrder.createdAt), langCode)
                             : l10n.posCommonNotAvailable,
                         rawLastService: rawStatus,
                         orderNumber: latestOrder?.id,
@@ -299,7 +305,7 @@ class PosHomeView extends StatelessWidget {
 
                     // Fixed row height avoids IntrinsicHeight + FractionallySizedBox (ParentData / semantics issues).
                     final screenH = MediaQuery.sizeOf(context).height;
-                    final rowH = (screenH * 0.30).clamp(235.0, 295.0);
+                    final rowH = (screenH * 0.34).clamp(265.0, 340.0);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: SizedBox(

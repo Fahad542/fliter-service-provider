@@ -5,6 +5,10 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
 
 
+String _detailsItemName(BuildContext context, PosOrderJobItem item) {
+  return item.displayNameForLanguage(Localizations.localeOf(context).languageCode);
+}
+
 String _detailsStatusLabel(BuildContext context, String status) {
   final l10n = AppLocalizations.of(context)!;
   var s = status.trim().toLowerCase().replaceAll(' ', '_');
@@ -364,10 +368,8 @@ class PosOrderDetailsView extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: LocalizedApiText(
-                              item.productName.isNotEmpty
-                                  ? item.productName
-                                  : item.productId,
+                            child: Text(
+                              _detailsItemName(context, item),
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: isTablet ? 14 : 12.5,

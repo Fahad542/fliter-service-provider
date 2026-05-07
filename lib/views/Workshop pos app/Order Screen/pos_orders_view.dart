@@ -51,6 +51,21 @@ bool _ordersIsRetailWalkInBranchEmployee(PosViewModel vm, PosOrder order) {
 }
 
 
+
+bool _ordersMaybeLoadMore(ScrollNotification notification, PosViewModel vm) {
+  if (notification.metrics.axis != Axis.vertical) return false;
+  final nearBottom = notification.metrics.pixels >=
+      notification.metrics.maxScrollExtent - 240;
+  if (nearBottom && vm.ordersHasMore && !vm.isLoadingMoreOrders) {
+    vm.loadMoreOrders();
+  }
+  return false;
+}
+
+String _ordersItemDisplayName(BuildContext context, PosOrderJobItem item) {
+  return item.displayNameForLanguage(Localizations.localeOf(context).languageCode);
+}
+
 String _ordersTranslatedStatusLabel(BuildContext context, String statusRaw) {
   final l10n = AppLocalizations.of(context)!;
   var s = statusRaw.trim().toLowerCase().replaceAll(' ', '_');
@@ -415,18 +430,21 @@ class _PosOrdersViewState extends State<PosOrdersView> {
           child: RefreshIndicator(
             color: AppColors.primaryLight,
             onRefresh: onRefresh,
-            child: ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(12),
-              itemCount: visibleOrders.length + (vm.ordersHasMore ? 1 : 0),
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                if (index >= visibleOrders.length) {
-                  return _OrdersLoadMoreRow(vm: vm);
-                }
-                final order = visibleOrders[index];
-                return OrderItemCard(order: order, isTablet: false);
-              },
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) => _ordersMaybeLoadMore(notification, vm),
+              child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(12),
+                itemCount: visibleOrders.length + (vm.isLoadingMoreOrders ? 1 : 0),
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  if (index >= visibleOrders.length) {
+                    return _OrdersLoadMoreRow(vm: vm);
+                  }
+                  final order = visibleOrders[index];
+                  return OrderItemCard(order: order, isTablet: false);
+                },
+              ),
             ),
           ),
         ),
@@ -675,32 +693,36 @@ class _OrdersTabletLayoutState extends State<_OrdersTabletLayout> {
                           child: RefreshIndicator(
                             color: AppColors.primaryLight,
                             onRefresh: () => widget.vm.refreshOrdersScreen(),
-                            child: ListView.separated(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(
-                                14,
-                                8,
-                                12,
-                                16,
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: (notification) =>
+                                  _ordersMaybeLoadMore(notification, vm),
+                              child: ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                  14,
+                                  8,
+                                  12,
+                                  16,
+                                ),
+                                itemCount: filteredOrders.length +
+                                    (vm.isLoadingMoreOrders ? 1 : 0),
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  if (index >= filteredOrders.length) {
+                                    return _OrdersLoadMoreRow(vm: vm, compact: true);
+                                  }
+                                  final order = filteredOrders[index];
+                                  final isSelected =
+                                      vm.selectedOrder?.id == order.id;
+                                  return _HorizontalOrderTile(
+                                    order: order,
+                                    isSelected: isSelected,
+                                    fullWidth: true,
+                                    onTap: () => vm.selectOrder(order),
+                                  );
+                                },
                               ),
-                              itemCount: filteredOrders.length +
-                                  (vm.ordersHasMore ? 1 : 0),
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                if (index >= filteredOrders.length) {
-                                  return _OrdersLoadMoreRow(vm: vm, compact: true);
-                                }
-                                final order = filteredOrders[index];
-                                final isSelected =
-                                    vm.selectedOrder?.id == order.id;
-                                return _HorizontalOrderTile(
-                                  order: order,
-                                  isSelected: isSelected,
-                                  fullWidth: true,
-                                  onTap: () => vm.selectOrder(order),
-                                );
-                              },
                             ),
                           ),
                         ),
@@ -3469,8 +3491,8 @@ class _DraftDepartmentSection extends StatelessWidget {
                         ),
                       ),
                       Expanded(
-                        child: LocalizedApiText(
-                          item.productName,
+                        child: Text(
+                          _ordersItemDisplayName(context, item),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,

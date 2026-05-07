@@ -432,7 +432,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
   String? _errorMessage;
   String? _currentJobId;
   List<PosOrder> _orders = [];
-  static const int _ordersPageSize = 50;
+  static const int _ordersPageSize = 10;
   int _ordersOffset = 0;
   bool _ordersHasMore = true;
   bool _isLoadingMoreOrders = false;
@@ -3167,7 +3167,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
           _orders = response.orders;
         }
         _ordersOffset = effectiveOffset + response.orders.length;
-        _ordersHasMore = response.orders.length >= effectiveLimit;
+        if (response.total > 0) {
+          _ordersHasMore = _ordersOffset < response.total;
+        } else {
+          _ordersHasMore = response.orders.length >= effectiveLimit;
+        }
         _orderStats = response.stats;
         _lastCashierOrdersFetchedAt = DateTime.now();
         _syncBroadcastCooldownWithOrdersAfterFetch(_orders);

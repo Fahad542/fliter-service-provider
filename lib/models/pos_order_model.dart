@@ -494,6 +494,7 @@ class PosOrderJobItem {
   final String itemType;
   final String productId;
   final String productName;
+  final String? productNameArabic;
   final String departmentId;
   final String departmentName;
   final double qty;
@@ -511,6 +512,7 @@ class PosOrderJobItem {
     required this.itemType,
     required this.productId,
     required this.productName,
+    this.productNameArabic,
     required this.departmentId,
     required this.departmentName,
     required this.qty,
@@ -532,6 +534,22 @@ class PosOrderJobItem {
       itemType: json['itemType'] ?? '',
       productId: json['productId']?.toString() ?? '',
       productName: json['productName'] ?? '',
+      productNameArabic: _firstNonEmptyString([
+        json['productNameArabic'],
+        json['product_name_arabic'],
+        json['productNameAr'],
+        json['product_name_ar'],
+        json['nameArabic'],
+        json['name_arabic'],
+        json['nameAr'],
+        json['name_ar'],
+        json['arabicName'],
+        json['arabic_name'],
+        _asMap(json['product'])['productNameArabic'],
+        _asMap(json['product'])['nameArabic'],
+        _asMap(json['service'])['productNameArabic'],
+        _asMap(json['service'])['nameArabic'],
+      ]),
       departmentId:
           json['departmentId']?.toString() ??
           json['department_id']?.toString() ??
@@ -553,6 +571,21 @@ class PosOrderJobItem {
       discountType: json['discountType']?.toString(),
       discountValue: double.tryParse(json['discountValue']?.toString() ?? '0') ?? 0.0,
     );
+  }
+
+  String displayNameForLanguage(String languageCode) {
+    if (languageCode == 'ar') {
+      final ar = productNameArabic?.trim();
+      if (ar != null && ar.isNotEmpty) return ar;
+    }
+    return productName.trim().isNotEmpty ? productName : productId;
+  }
+
+  /// UI helper: uses backend Arabic product name from GET /cashier/orders
+  /// when the current locale is Arabic; otherwise falls back to English/name/id.
+  /// This avoids per-item LocalizedApiText async translation in Orders screens.
+  String displayName(BuildContext context) {
+    return displayNameForLanguage(Localizations.localeOf(context).languageCode);
   }
 }
 
