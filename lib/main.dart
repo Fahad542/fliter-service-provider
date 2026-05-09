@@ -8,6 +8,7 @@ import 'views/Workshop pos app/More Tab/settings_view_model.dart';
 import 'views/Workshop pos app/Home Screen/pos_view_model.dart';
 import 'views/Menu/menu_view.dart';
 import 'utils/app_theme.dart';
+import 'utils/app_arabic_font_fallbacks.dart';
 import 'utils/toast_service.dart';
 import 'data/repositories/auth_repository.dart';
 import 'services/session_service.dart';
@@ -432,12 +433,18 @@ class _MyAppState extends State<MyApp> {
 
             /// Technician broadcast modal above any screen (tabs + pushed routes) when active.
             builder: (context, child) {
-              return Stack(
+              final stack = Stack(
                 fit: StackFit.expand,
                 children: [
                   if (child != null) child,
                   const BroadcastOverlay(),
                 ],
+              );
+              final fb = appArabicFontFallbacks();
+              if (fb.isEmpty) return stack;
+              return DefaultTextStyle.merge(
+                style: TextStyle(fontFamilyFallback: fb),
+                child: stack,
               );
             },
 

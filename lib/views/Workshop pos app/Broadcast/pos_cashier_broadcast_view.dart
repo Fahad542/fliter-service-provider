@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../models/cashier_active_broadcasts_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../Notifications/notifications_view.dart';
 import '../../../widgets/notification_toolbar_icon.dart';
 import '../../../widgets/global_locale_toolbar_icon.dart';
@@ -135,7 +136,7 @@ class _PosCashierBroadcastViewState extends State<PosCashierBroadcastView> {
         if (vm.isLoading && list.isEmpty)
           const SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
+            child: _BroadcastShimmerGrid(),
           )
         else if (vm.errorMessage != null && list.isEmpty)
           SliverFillRemaining(
@@ -480,6 +481,89 @@ class _BroadcastCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _BroadcastShimmerGrid extends StatelessWidget {
+  const _BroadcastShimmerGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 520;
+            final cols = isWide ? 2 : 1;
+            return GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: isWide ? 3.0 : 2.35,
+              ),
+              itemCount: isWide ? 6 : 4,
+              itemBuilder: (_, __) => const _BroadcastCardShimmer(),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _BroadcastCardShimmer extends StatelessWidget {
+  const _BroadcastCardShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 9, 10, 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE8ECF3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                PosShimmerBox(width: 36, height: 36, radius: 10),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      PosShimmerBox(width: double.infinity, height: 12, radius: 6),
+                      SizedBox(height: 8),
+                      PosShimmerBox(width: 120, height: 10, radius: 5),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 10),
+                PosShimmerBox(width: 46, height: 16, radius: 8),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const PosShimmerBox(width: double.infinity, height: 8, radius: 4),
+            const SizedBox(height: 12),
+            Row(
+              children: const [
+                PosShimmerBox(width: 86, height: 20, radius: 10),
+                Spacer(),
+                PosShimmerBox(width: 68, height: 20, radius: 10),
+              ],
+            ),
+          ],
         ),
       ),
     );

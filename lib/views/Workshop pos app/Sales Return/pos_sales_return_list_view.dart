@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import 'sales_return_list_view_model.dart';
@@ -113,7 +114,7 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
 
   Widget _buildBody(SalesReturnListViewModel vm, bool isTablet) {
     if (vm.isLoading && vm.returns.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return _SalesReturnListShimmer(isTablet: isTablet);
     }
 
     if (vm.error != null && vm.returns.isEmpty) {
@@ -180,7 +181,9 @@ class _PosSalesReturnListViewState extends State<PosSalesReturnListView> {
           return const Center(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
-              child: CircularProgressIndicator(),
+              child: PosShimmer(
+                child: PosShimmerBox(width: 42, height: 14, radius: 7),
+              ),
             ),
           );
         }
@@ -681,6 +684,71 @@ class _ReturnDetailsDialog extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _SalesReturnListShimmer extends StatelessWidget {
+  const _SalesReturnListShimmer({required this.isTablet});
+
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    final orientation = MediaQuery.of(context).orientation;
+    final isLandscape = orientation == Orientation.landscape;
+    return PosShimmer(
+      child: GridView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(isTablet ? 24 : 16),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isTablet ? (isLandscape ? 3 : 2) : 1,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          mainAxisExtent: isTablet ? (isLandscape ? 225 : 240) : 210,
+        ),
+        itemCount: isTablet ? 6 : 4,
+        itemBuilder: (_, __) => Container(
+          padding: EdgeInsets.all(isTablet ? 24 : 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  PosShimmerBox(width: 92, height: 24, radius: 10),
+                  Spacer(),
+                  PosShimmerBox(width: 74, height: 24, radius: 10),
+                ],
+              ),
+              SizedBox(height: 22),
+              Row(
+                children: [
+                  PosShimmerBox(width: 48, height: 48, radius: 14),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        PosShimmerLine(width: double.infinity, height: 15),
+                        SizedBox(height: 8),
+                        PosShimmerLine(width: 140, height: 12),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Spacer(),
+              PosShimmerLine(width: 160, height: 13),
+            ],
+          ),
+        ),
       ),
     );
   }

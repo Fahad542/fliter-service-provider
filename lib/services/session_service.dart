@@ -108,6 +108,6 @@ class SessionService {
   /// Returns the persisted locale language code, defaulting to 'en'.
   static Future<String> getLocale() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('app_locale') ?? 'en';
+    return prefs.getString('app_locale') ?? 'ar';
   }
 }

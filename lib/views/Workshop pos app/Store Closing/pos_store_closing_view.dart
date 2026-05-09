@@ -12,6 +12,7 @@ import '../../../utils/app_text_styles.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../Menu/menu_view.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../widgets/thermal_printer_wifi_dialog.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Login/login_view_model.dart';
@@ -895,12 +896,13 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   shadowColor: AppColors.primaryLight.withOpacity(0.3),
                 ),
                 child: closingVm.isReconciling
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.secondaryLight))
+                    ? const PosShimmer(
+                        child: PosShimmerBox(
+                          width: 20,
+                          height: 20,
+                          radius: 10,
+                        ),
+                      )
                     : Text(AppLocalizations.of(context)!.posStoreClosingCloseShift,
                         style: TextStyle(
                             fontSize: 15,
@@ -965,12 +967,11 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                       elevation: 2,
                     ),
                     child: _closingThermalPrintBusy
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.onSecondaryLight,
+                        ? const PosShimmer(
+                            child: PosShimmerBox(
+                              width: 22,
+                              height: 22,
+                              radius: 11,
                             ),
                           )
                         : Text(

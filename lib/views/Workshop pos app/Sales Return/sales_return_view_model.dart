@@ -172,6 +172,22 @@ class SalesReturnViewModel extends ChangeNotifier with TranslatableMixin {
         }).toList();
       } else {
         _searchResults = [];
+        // Backend signals cross-branch (or any other guarded refusal) via `message`.
+        // Surface it both as the inline error banner and a global toast.
+        final backendMessage = response.message?.trim();
+        if (backendMessage != null && backendMessage.isNotEmpty) {
+          _searchError = backendMessage;
+          // Defer the toast one frame so the active route (e.g. Sales Return view that
+          // was just pushed) is mounted and provides the Overlay/ScaffoldMessenger the
+          // toast renders into. Without this, a toast emitted during a route transition
+          // can be swallowed.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final ctx = ToastService.scaffoldMessengerKey.currentContext;
+            if (ctx != null) {
+              ToastService.showError(ctx, backendMessage);
+            }
+          });
+        }
       }
 
     } catch (e) {

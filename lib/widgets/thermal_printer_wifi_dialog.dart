@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/app_button_busy.dart';
+import '../utils/app_colors.dart';
 
 import '../services/thermal_printer_settings.dart';
 
@@ -151,12 +153,15 @@ class _ThermalPrinterWifiDialogState extends State<_ThermalPrinterWifiDialog> {
           child: Text(AppLocalizations.of(context)!.posCommonCancel),
         ),
         FilledButton(
+          style: AppButtonBusy.filledLocked(
+            backgroundColor: AppColors.primaryLight,
+            foregroundColor: AppColors.onPrimaryLight,
+          ),
           onPressed: _saving ? null : _onSave,
           child: _saving
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+              ? AppButtonBusy.loaderOnFill(
+                  AppColors.primaryLight,
+                  strokeWidth: 2,
                 )
               : Text(widget.primaryButtonLabel == 'Save' ? AppLocalizations.of(context)!.posCommonSave : widget.primaryButtonLabel),
         ),

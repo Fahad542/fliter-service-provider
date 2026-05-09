@@ -8,45 +8,35 @@ import '../utils/plate_transliterator.dart';
 import '../utils/invoice_maintenance_checklist.dart';
 import '../utils/thermal_invoice_totals.dart';
 import '../services/locker_translation_mixin.dart';
+import '../services/LocalizedApiText.dart';
 import 'thermal_invoice_pdf_ar_constants.dart';
-
-String _workshopHeaderSingleLine(String? workshopName) {
-  final s = (workshopName ?? '').trim();
-  if (s.isEmpty) return 'FILTER';
-  return s.toUpperCase();
-}
 
 String _dash(String? s) {
   final v = (s ?? '').trim();
   return v.isEmpty ? '—' : v;
 }
 
-String _employeesSummary(Invoice invoice) {
-  final names = <String>{};
-  for (final d in invoice.departments) {
-    for (final c in d.commissions) {
-      final n = c.technicianName.trim();
-      if (n.isNotEmpty) names.add(n);
-    }
-  }
-  if (names.isEmpty) return '—';
-  return names.join(', ');
+List<String> _branchRibbonSegments(Invoice i) {
+  final raw = _invoiceBranchDisplayRaw(i).trim();
+  if (raw.isEmpty) return const [];
+  final byBullet =
+      raw.split('•').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  if (byBullet.length >= 2) return byBullet;
+  return [raw];
 }
 
-
-
-/// Ribbon line like reference invoices: workshop + branch when both differ.
-String _branchRibbonDisplay(Invoice i) {
+/// Prefer rich branch line for splitting (Arabic/workshop combos).
+String _invoiceBranchDisplayRaw(Invoice i) {
   final b = (i.branchName ?? '').trim();
   final w = (i.workshopName ?? '').trim();
   if (b.isNotEmpty &&
       w.isNotEmpty &&
       b.toLowerCase() != w.toLowerCase()) {
-    return '${b.toUpperCase()} • ${w.toUpperCase()}';
+    return '$b • $w';
   }
-  if (b.isNotEmpty) return b.toUpperCase();
-  if (w.isNotEmpty) return w.toUpperCase();
-  return '—';
+  if (b.isNotEmpty) return b;
+  if (w.isNotEmpty) return w;
+  return '';
 }
 
 String _fmtQty(double q) =>
@@ -66,21 +56,11 @@ String _sarStringAr(String sarText) {
   return '${_arDigits(n)} ر.س';
 }
 
-String _paymentMethodArabic(String raw) {
-  final p = raw.trim().toLowerCase();
-  if (p.isEmpty || p == '—' || p == '-') return '—';
-  if (p.contains('split')) return 'دفع مقسم';
-  if (p.contains('cash')) return 'نقداً';
-  if (p.contains('card') || p.contains('mada') || p.contains('visa') ||
-      p.contains('master')) return 'بطاقة';
-  if (p.contains('bank') || p.contains('transfer')) return 'تحويل بنكي';
-  if (p.contains('employee')) return 'الموظفين';
-  if (p.contains('monthly')) return 'فوترة شهرية';
-  if (p.contains('corporate') || p.contains('company')) return 'شركة';
-  if (p.contains('wallet')) return 'محفظة';
-  if (p.contains('tabby')) return 'تابي';
-  if (p.contains('tamara')) return 'تمارا';
-  return raw;
+String _invoicePreviewArabicMirrorText(String raw) {
+  final v = raw.trim();
+  if (v.isEmpty || v == '—' || v == '-') return '';
+  final ar = AppTranslationService.localizeDigitsForLanguage(v, 'ar').trim();
+  return ar == v ? '' : ar;
 }
 
 /// Prefer API [Invoice.maintenanceChecklistChecks]; else [fallback]; else all false.
@@ -100,34 +80,51 @@ List<bool> _displayMaintenanceChecks(
   return List<bool>.filled(InvoiceMaintenanceChecklist.rows.length, false);
 }
 
-const _kMaintenanceChecklistColumns = 3;
+const _kMaintenanceChecklistColumns = 2;
 
 List<Widget> _maintenanceChecklistBlock(List<bool> checks) {
-  Widget item(int i) {
+  Widget checkItem(int idx) {
+    final row = InvoiceMaintenanceChecklist.rows[idx];
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-      child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${checks[i] ? '☑' : '☐'} ${InvoiceMaintenanceChecklist.rows[i].en}',
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade900,
-              height: 1.2,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  row.en,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey.shade900,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  row.ar,
+                  textAlign: TextAlign.right,
+                  textDirection: TextDirection.rtl,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    color: Colors.grey.shade700,
+                    height: 1.2,
+                  ),
+                ),
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 14, top: 2),
+            padding: const EdgeInsets.only(left: 8, top: 2),
             child: Text(
-              InvoiceMaintenanceChecklist.rows[i].ar,
-              textAlign: TextAlign.right,
-              textDirection: TextDirection.rtl,
+              checks[idx] ? '☑' : '☐',
               style: TextStyle(
-                fontSize: 9.5,
-                color: Colors.grey.shade700,
-                height: 1.2,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Colors.grey.shade900,
               ),
             ),
           ),
@@ -136,27 +133,40 @@ List<Widget> _maintenanceChecklistBlock(List<bool> checks) {
     );
   }
 
-  final n = InvoiceMaintenanceChecklist.rows.length;
-  final columnWidths = <int, TableColumnWidth>{
-    for (var c = 0; c < _kMaintenanceChecklistColumns; c++)
-      c: const FlexColumnWidth(1),
-  };
   final tableRows = <TableRow>[];
-  for (var start = 0; start < n; start += _kMaintenanceChecklistColumns) {
-    final cells = <Widget>[];
-    for (var c = 0; c < _kMaintenanceChecklistColumns; c++) {
-      final i = start + c;
-      if (i < n) {
-        cells.add(TableCell(child: item(i)));
-      } else {
-        cells.add(const TableCell(child: SizedBox.shrink()));
-      }
-    }
-    tableRows.add(TableRow(children: cells));
+  const n = 3;
+  for (var r = 0; r < n; r++) {
+    final leftIdx = r;
+    final rightIdx = r + 3;
+    tableRows.add(
+      TableRow(
+        children: [
+          TableCell(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFCCCCCC), width: 0.75),
+              ),
+              child: checkItem(leftIdx),
+            ),
+          ),
+          TableCell(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFCCCCCC), width: 0.75),
+              ),
+              child: checkItem(rightIdx),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   final checklistGrid = Table(
-    columnWidths: columnWidths,
+    columnWidths: {
+      for (var c = 0; c < _kMaintenanceChecklistColumns; c++)
+        c: const FlexColumnWidth(1),
+    },
     defaultVerticalAlignment: TableCellVerticalAlignment.top,
     children: tableRows,
   );
@@ -165,14 +175,17 @@ List<Widget> _maintenanceChecklistBlock(List<bool> checks) {
     Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-      color: Color(0xFFE2E8F0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      decoration: BoxDecoration(
+        color: Color(0xFFE2E8F0),
+        border: Border.all(color: Color(0xFFCCCCCC), width: 0.75),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             'Check list',
             style: TextStyle(
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
               fontSize: 12,
               color: Colors.grey.shade900,
             ),
@@ -182,16 +195,15 @@ List<Widget> _maintenanceChecklistBlock(List<bool> checks) {
             textDirection: TextDirection.rtl,
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              fontSize: 10,
-              color: Colors.grey.shade800,
-              height: 1.1,
+              fontSize: 12,
+              color: Colors.grey.shade900,
             ),
           ),
         ],
       ),
     ),
     Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: const EdgeInsets.only(top: 0, bottom: 8),
       child: checklistGrid,
     ),
   ];
@@ -212,7 +224,7 @@ final _kGoodsInvoiceTableColumns = <int, TableColumnWidth>{
 const _kGoodsHeaderFlexInts = <int>[365, 192, 100, 202, 142, 202, 142, 213];
 
 const _kGoodsHeaderTexts = <String>[
-  'Goods/Services\nالبضائع/الخدمات',
+  'Goods/Services\nالسلعة / الخدمة',
   'Unit Price (Excl. VAT)\nسعر الوحدة (بدون ضريبة)',
   'Qty\nالكمية',
   'Gross Amt Before VAT\nالإجمالي قبل الضريبة',
@@ -221,6 +233,363 @@ const _kGoodsHeaderTexts = <String>[
   'VAT\nالضريبة',
   'Total With VAT\nالإجمالي مع الضريبة',
 ];
+
+String _localizedInvoiceDateBanner(BuildContext context, String legalDateStr) =>
+    AppTranslationService.localizeDigitsForLanguage(
+      legalDateStr,
+      Localizations.maybeLocaleOf(context)?.languageCode ?? 'en',
+    );
+
+/// ScrollView + [Align] children often get unbounded max width; never pass that to [Table].
+double _invoicePreviewTrackWidth(
+  BuildContext context,
+  BoxConstraints constraints,
+) {
+  var w = constraints.maxWidth;
+  if (w.isFinite && w > 16) return w;
+  final mqPad = MediaQuery.sizeOf(context).width - 72;
+  return mqPad.clamp(260.0, 920.0);
+}
+
+/// Customer / vehicle grid cell fill — solid white per product reference.
+const Color _kCustomerMetaGridBg = Color(0xFFFFFFFF);
+
+const Color _kCustomerMetaBorderColor = Color(0xFF1A1A1A);
+
+/// Fixed row height so the block matches reference density (4 rows, compact).
+const double _kCustomerVehicleCellHeight = 40.0;
+
+/// Line items table: a bit more vertical room for EN/AR stacks.
+const double _kGoodsBodyCellVPad = 9.0;
+
+const double _kCustomerMetaBorderWidth = 1.0;
+
+/// Goods table banner uses app primary yellow (solid).
+const Color _goodsTableHeaderFill = AppColors.primaryLight;
+
+const String _invoicePreviewNextChangeEn = 'Next Change';
+const String _invoicePreviewNextChangeAr = 'غيار الزيت القادم';
+
+Widget _invoiceMetaBlankSixColCell() {
+  return SizedBox(
+    height: _kCustomerVehicleCellHeight,
+    width: double.infinity,
+    child: DecoratedBox(
+      decoration: BoxDecoration(color: _kCustomerMetaGridBg),
+    ),
+  );
+}
+
+/// Label: Arabic (left) — English (right), vertically centered, reference density.
+Widget _invoiceMetaLabelPairCell(String en, String ar) {
+  final arStyle = TextStyle(
+    fontSize: 10.5,
+    fontWeight: FontWeight.w600,
+    color: Colors.grey.shade800,
+    height: 1.2,
+  );
+  final enStyle = TextStyle(
+    fontSize: 10.5,
+    fontWeight: FontWeight.w600,
+    color: Colors.grey.shade800,
+    height: 1.2,
+  );
+  final dash = TextStyle(
+    fontSize: 10.5,
+    fontWeight: FontWeight.w500,
+    color: Colors.grey.shade600,
+    height: 1.2,
+  );
+  return SizedBox(
+    height: _kCustomerVehicleCellHeight,
+    width: double.infinity,
+    child: Container(
+      color: _kCustomerMetaGridBg,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      alignment: Alignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              ar,
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.left,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: arStyle,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Text(' - ', style: dash),
+          ),
+          Expanded(
+            child: Text(
+              en,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: enStyle,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Value cell: centered vertically, left text; optional second line (plate Arabic only in ref).
+Widget _invoiceMetaValueOnlyCell(
+  String primary, {
+  String? secondaryAr,
+}) {
+  final main = TextStyle(
+    fontSize: 11.25,
+    fontWeight: FontWeight.w700,
+    color: Colors.grey.shade900,
+    height: 1.15,
+  );
+  final sub = TextStyle(
+    fontSize: 9,
+    fontWeight: FontWeight.w600,
+    color: Colors.grey.shade600,
+    height: 1.1,
+  );
+  final pv = primary.trim();
+  final explicitSec = secondaryAr?.trim();
+  final autoSec = explicitSec == null || explicitSec.isEmpty
+      ? _invoicePreviewArabicMirrorText(pv)
+      : '';
+  final sec = explicitSec != null && explicitSec.isNotEmpty ? explicitSec : autoSec;
+  return SizedBox(
+    height: _kCustomerVehicleCellHeight,
+    width: double.infinity,
+    child: Container(
+      color: _kCustomerMetaGridBg,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      alignment: Alignment.centerLeft,
+      child: sec.isEmpty
+          ? Text(
+              pv.isEmpty ? '—' : pv,
+              textAlign: TextAlign.left,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: main,
+            )
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  pv.isEmpty ? '—' : pv,
+                  textAlign: TextAlign.left,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: main,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  sec,
+                  textAlign: TextAlign.left,
+                  textDirection: TextDirection.rtl,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: sub,
+                ),
+              ],
+            ),
+    ),
+  );
+}
+
+bool _invoicePreviewHasArabic(String s) =>
+    RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]').hasMatch(s);
+
+bool _invoicePreviewNeedsDynamicArabic(String raw) {
+  final v = raw.trim();
+  if (v.isEmpty || v == '—' || v == '-') return false;
+  if (_invoicePreviewHasArabic(v)) return false;
+  // Do not send pure numbers / money / phone-style values to dynamic translation.
+  if (!RegExp(r'[A-Za-z]').hasMatch(v)) return false;
+  return true;
+}
+
+/// English/API value on top + Arabic line underneath for dynamic API values.
+/// Uses [LocalizedApiText] for API/database strings so the same dynamic
+/// translation path is used as the rest of POS. The Arabic line is forced
+/// through an Arabic [Localizations] scope because this invoice is bilingual
+/// even when the app locale changes.
+Widget _invoiceMetaDynamicValueCell(String primary) {
+  final raw = primary.trim();
+  if (!_invoicePreviewNeedsDynamicArabic(raw)) {
+    return _invoiceMetaValueOnlyCell(raw.isEmpty ? '—' : raw);
+  }
+
+  final main = TextStyle(
+    fontSize: 11.25,
+    fontWeight: FontWeight.w700,
+    color: Colors.grey.shade900,
+    height: 1.15,
+  );
+  final sub = TextStyle(
+    fontSize: 9,
+    fontWeight: FontWeight.w600,
+    color: Colors.grey.shade600,
+    height: 1.1,
+  );
+
+  return SizedBox(
+    height: _kCustomerVehicleCellHeight,
+    width: double.infinity,
+    child: Container(
+      color: _kCustomerMetaGridBg,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      alignment: Alignment.centerLeft,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            raw,
+            textAlign: TextAlign.left,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: main,
+          ),
+          const SizedBox(height: 2),
+          Builder(
+            builder: (context) => Localizations.override(
+              context: context,
+              locale: const Locale('ar'),
+              child: LocalizedApiText(
+                raw,
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.left,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: sub,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _invoicePreviewDynamicArabicLine(
+  String raw, {
+  TextStyle? style,
+  int maxLines = 1,
+}) {
+  final clean = raw.trim();
+  if (!_invoicePreviewNeedsDynamicArabic(clean)) return const SizedBox.shrink();
+  return Padding(
+    padding: const EdgeInsets.only(top: 2),
+    child: Builder(
+      builder: (context) => Localizations.override(
+        context: context,
+        locale: const Locale('ar'),
+        child: LocalizedApiText(
+          clean,
+          textDirection: TextDirection.rtl,
+          textAlign: TextAlign.left,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        ),
+      ),
+    ),
+  );
+}
+
+
+TableRow _invoiceTotalsTripleRow(
+  String labelEn,
+  String labelAr,
+  String sarAmount, {
+    bool emphasized = false,
+}) {
+  final labelEnStyle = TextStyle(
+    fontSize: emphasized ? 14.8 : 12.8,
+    fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
+    color:
+        emphasized ? AppColors.secondaryLight : Colors.grey.shade900,
+    height: 1.22,
+  );
+  final labelArStyle = TextStyle(
+    fontSize: (emphasized ? 14.8 : 12.8) * 0.84,
+    fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
+    color:
+        emphasized ? AppColors.secondaryLight : Colors.grey.shade700,
+    height: 1.18,
+  );
+  final sarStyle = TextStyle(
+    fontSize: emphasized ? 15 : 13,
+    fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
+    color:
+        emphasized ? AppColors.secondaryLight : Colors.grey.shade900,
+  );
+  Widget cellPadding(Widget child) {
+    return TableCell(
+      verticalAlignment: TableCellVerticalAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+        child: child,
+      ),
+    );
+  }
+
+  return TableRow(
+    children: [
+      cellPadding(
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(labelEn, style: labelEnStyle, textAlign: TextAlign.left),
+        ),
+      ),
+      cellPadding(
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            labelAr,
+            style: labelArStyle,
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+          ),
+        ),
+      ),
+      cellPadding(
+        Align(
+          alignment: Alignment.centerRight,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(sarAmount, style: sarStyle),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  _sarStringAr(sarAmount),
+                  style: sarStyle.copyWith(
+                    fontSize: (emphasized ? 15 : 13) * 0.78,
+                    fontWeight: FontWeight.w600,
+                    color: emphasized
+                        ? AppColors.secondaryLight.withValues(alpha: 0.92)
+                        : Colors.grey.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
 /// Simplified UAE-style tax invoice preview for the cashier **dialog** (screen),
 /// aligned with product reference: branded header + QR + detailed goods breakdown.
@@ -248,19 +617,18 @@ class CashierInvoicePreview extends StatelessWidget {
       maintenanceChecksFallback,
     );
 
+    final branchRibbonSegments = _branchRibbonSegments(invoice);
+
     final dateStr = formatInvoiceLegalDate(invoice.invoiceDate);
     final timeStr = formatInvoiceIssuedAtClock(invoice.issuedAt);
-    final white70 = Colors.white.withValues(alpha: 0.85);
+    final white70 = Colors.white.withValues(alpha: 0.70);
 
-    const border = Color(0xFF1A1A1A);
-    const tableBorder = TableBorder(
-      top: BorderSide(color: border, width: 0.75),
-      left: BorderSide(color: border, width: 0.75),
-      right: BorderSide(color: border, width: 0.75),
-      bottom: BorderSide(color: border, width: 0.75),
-      horizontalInside: BorderSide(color: border, width: 0.75),
-      verticalInside: BorderSide(color: border, width: 0.75),
-    );
+    final localizedTimeStr = timeStr == null
+        ? '—'
+        : AppTranslationService.localizeDigitsForLanguage(
+            timeStr,
+            Localizations.maybeLocaleOf(context)?.languageCode ?? 'en',
+          );
 
     return Material(
       color: Colors.transparent,
@@ -298,38 +666,23 @@ class CashierInvoicePreview extends StatelessWidget {
                                     const SizedBox(height: 34),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'FILTER',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 26,
-                                height: 1.0,
-                                color: AppColors.primaryLight,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 8),
                             Text(
                               'فلتر',
                               textDirection: TextDirection.rtl,
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 20,
+                                fontSize: 22,
                                 height: 1.05,
                                 color: AppColors.primaryLight,
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              (_workshopHeaderSingleLine(invoice.workshopName) ==
-                                          'FILTER'
-                                  ? 'Car Services'
-                                  : _workshopHeaderSingleLine(
-                                      invoice.workshopName)),
-                              style: const TextStyle(
+                            const Text(
+                              'CAR SERVICE',
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                                fontSize: 15.5,
                                 height: 1.1,
                                 color: Colors.white,
                               ),
@@ -367,25 +720,31 @@ class CashierInvoicePreview extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Text(
-                                'Invoice No / رقم الفاتورة\n${invoice.invoiceNo}',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: white70,
-                                  height: 1.35,
+                              Directionality(
+                                textDirection: TextDirection.rtl,
+                                child: Text(
+                                  'رقم الفاتورة : ${_arDigits(invoice.invoiceNo)}',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: white70,
+                                    height: 1.35,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              Text(
-                                'Tax No / الرقم الضريبي للعميل\n${_dash(invoice.customerTaxId)}',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: white70,
-                                  height: 1.35,
+                              Directionality(
+                                textDirection: TextDirection.rtl,
+                                child: Text(
+                                  'الرقم الضريبي للعميل : ${_arDigits(_dash(invoice.customerTaxId))}',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: white70,
+                                    height: 1.35,
+                                  ),
                                 ),
                               ),
                             ],
@@ -425,55 +784,99 @@ class CashierInvoicePreview extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Branch / الفرع',
+                      if (branchRibbonSegments.isEmpty)
+                        Text(
+                          '—',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: Colors.black.withValues(alpha: 0.82),
+                          ),
+                        )
+                      else
+                        ...[
+                          for (
+                              var i = 0;
+                              i < branchRibbonSegments.length;
+                              i++) ...[
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  i == 0
+                                      ? Icons.person_outline_rounded
+                                      : Icons.location_on_rounded,
+                                  size: 18,
+                                  color: Colors.black.withValues(alpha: 0.88),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        branchRibbonSegments[i],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12.5,
+                                          height: 1.35,
+                                          color:
+                                              Colors.black.withValues(alpha: 0.88),
+                                        ),
+                                      ),
+                                      _invoicePreviewDynamicArabicLine(
+                                        branchRibbonSegments[i],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 11.2,
+                                          height: 1.25,
+                                          color:
+                                              Colors.black.withValues(alpha: 0.74),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (i != branchRibbonSegments.length - 1)
+                              const SizedBox(height: 5),
+                          ],
+                        ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Date: ${_localizedInvoiceDateBanner(context, dateStr)}',
                         style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 9.5,
-                          color: AppColors.onPrimaryLight,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          letterSpacing: 0.25,
+                          color: Colors.black.withValues(alpha: 0.88),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _branchRibbonDisplay(invoice),
-                        textAlign: TextAlign.start,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 13,
-                          letterSpacing: 0.35,
-                          color: AppColors.onPrimaryLight,
-                          height: 1.25,
+                        'التاريخ: ${_arDigits(dateStr)}',
+                        textDirection: TextDirection.rtl,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11.5,
+                          height: 1.15,
+                          color: Colors.black.withValues(alpha: 0.72),
                         ),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'Date / التاريخ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 9.5,
-                        color: AppColors.onPrimaryLight,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      AppTranslationService.localizeDigitsForLanguage(
-                        dateStr,
-                        Localizations.maybeLocaleOf(context)?.languageCode ??
-                            'en',
-                      ),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                        letterSpacing: 0.3,
-                        color: AppColors.onPrimaryLight,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -481,190 +884,77 @@ class CashierInvoicePreview extends StatelessWidget {
           const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
-              var cw = constraints.maxWidth;
-              if (!cw.isFinite || cw <= 0) {
-                cw = MediaQuery.sizeOf(context).width;
-              }
-              // Six flex columns — wider minimum; horizontal scroll when narrow.
-              const minInfoTableWidth = 600.0;
-              final tableW = cw < minInfoTableWidth ? minInfoTableWidth : cw;
-              final rawPlate = invoice.plateNo.trim();
-              final plateLettersFirst =
-                  rawPlate.isEmpty ? null : formatVehiclePlateLettersFirst(rawPlate);
-              final localizedTime = timeStr == null
-                  ? '—'
-                  : AppTranslationService.localizeDigitsForLanguage(
-                      timeStr,
-                      Localizations.maybeLocaleOf(context)?.languageCode ?? 'en',
-                    );
-              final nextKm = invoice.nextOilChangeKm;
-              final nextKmStr =
-                  nextKm != null && nextKm > 0 ? '$nextKm' : '—';
-              final cashierName = _dash(invoice.cashierName);
-              final emp = _employeesSummary(invoice);
-              final cashierStaff = (cashierName == '—' && emp == '—')
-                  ? '—'
-                  : (emp == '—'
-                      ? cashierName
-                      : (cashierName == '—'
-                          ? emp
-                          : '$cashierName\n$emp'));
-
-              final infoTable = Table(
-                border: tableBorder,
-                columnWidths: const {
-                  0: FlexColumnWidth(1),
-                  1: FlexColumnWidth(1),
-                  2: FlexColumnWidth(1),
-                  3: FlexColumnWidth(1),
-                  4: FlexColumnWidth(1),
-                  5: FlexColumnWidth(1),
-                },
-                children: [
-                  TableRow(
-                    children: [
-                      _infoCell(
-                        label: 'Customer / العميل',
-                        value: _dash(invoice.customerName),
-                      ),
-                      _infoCell(
-                        label: 'Phone / الهاتف',
-                        value: _dash(invoice.customerMobile ?? ''),
-                      ),
-                      _infoCell(
-                        label: 'Model / الموديل',
-                        value: _dash(invoice.vehicleModel),
-                      ),
-                      _infoCell(
-                        label: 'Plate / اللوحة',
-                        value: plateLettersFirst ?? '—',
-                        valueArabic: plateLettersFirst == null
-                            ? null
-                            : PlateTransliterator.localize(
-                                plateLettersFirst,
-                                'ar',
-                              ),
-                      ),
-                      _infoCell(
-                        label: 'Year / السنة',
-                        value: _dash(invoice.vehicleYear),
-                      ),
-                      _infoCell(
-                        label: 'Time / الوقت',
-                        value: localizedTime,
-                        valueArabic: localizedTime == '—'
-                            ? null
-                            : _arDigits(localizedTime),
-                      ),
-                    ],
-                  ),
-                  TableRow(
-                    children: [
-                      _infoCell(
-                        label: 'VIN / رقم الهيكل',
-                        value: _dash(invoice.vehicleVin),
-                      ),
-                      _infoCell(
-                        label: 'Mileage / العداد',
-                        value:
-                            invoice.odometerReading != null &&
-                                    invoice.odometerReading! > 0
-                                ? '${invoice.odometerReading}'
-                                : '—',
-                        valueArabic: invoice.odometerReading != null &&
-                                invoice.odometerReading! > 0
-                            ? _arDigits('${invoice.odometerReading}')
-                            : '—',
-                      ),
-                      _infoCell(
-                        label: 'Next change (km)\nالتغيير القادم (كم)',
-                        value: nextKmStr,
-                        valueArabic:
-                            nextKmStr == '—' ? null : _arDigits(nextKmStr),
-                      ),
-                      _infoCell(
-                        label: 'Make / الشركة المصنّعة',
-                        value: _dash(invoice.vehicleMake),
-                      ),
-                      _infoCell(
-                        label: 'Payment Method / طريقة الدفع',
-                        value: paymentMethodText.trim().isEmpty
-                            ? '—'
-                            : paymentMethodText.trim(),
-                        valueArabic: _paymentMethodArabic(paymentMethodText),
-                      ),
-                      _infoCell(
-                        label: 'Cashier / الكاشير',
-                        value: cashierStaff,
-                      ),
-                    ],
-                  ),
-                ],
-              );
-              if (tableW <= cw) {
-                return SizedBox(width: double.infinity, child: infoTable);
-              }
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(width: tableW, child: infoTable),
+              final rw = _invoicePreviewTrackWidth(context, constraints);
+              return SizedBox(
+                width: rw,
+                child:
+                    _buildCustomerVehicleDetailsTable(localizedTimeStr),
               );
             },
           ),
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
-              var w = constraints.maxWidth;
-              if (!w.isFinite || w <= 0) {
-                w = MediaQuery.sizeOf(context).width;
-              }
+              final w = _invoicePreviewTrackWidth(context, constraints);
               return _goodsSection(lineRows, w);
             },
           ),
           const SizedBox(height: 12),
-          _totalsBanner(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
-            child: Column(
-              children: [
-                _amountRowBilingual(
-                  'Gross Amount (Excluding VAT)',
-                  'الإجمالي (بدون ضريبة)',
-                  _sar(t.grossAmountExclVat),
-                ),
-                _amountRowBilingual(
-                  ThermalInvoicePdfLabels.itemDiscountEn,
-                  ThermalInvoicePdfLabels.itemDiscountAr,
-                  _sar(thermalR2(t.itemDiscountsTotal)),
-                ),
-                _amountRowBilingual(
-                  ThermalInvoicePdfLabels.invoiceDiscountEn,
-                  ThermalInvoicePdfLabels.invoiceDiscountAr,
-                  _sar(thermalR2(t.invoiceDiscount)),
-                ),
-                _amountRowBilingual(
-                  ThermalInvoicePdfLabels.promoDiscountEn,
-                  ThermalInvoicePdfLabels.promoDiscountAr,
-                  _sar(thermalR2(t.promoDiscount)),
-                ),
-                _amountRowBilingual(
-                  'Total Taxable Amount',
-                  'إجمالي المبلغ الخاضع للضريبة',
-                  _sar(t.totalTaxableAmount),
-                ),
-                _amountRowBilingual(
-                  'VAT 15%',
-                  'ضريبة القيمة المضافة ١٥٪',
-                  _sar(t.vatAmount),
-                ),
-                const Divider(height: 18),
-                _amountRowBilingual(
-                  'Total Invoice Amount',
-                  'إجمالي مبلغ الفاتورة',
-                  _sar(t.totalInvoiceAmount),
-                  emphasized: true,
-                ),
-              ],
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final tw = _invoicePreviewTrackWidth(context, constraints);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: tw, child: _totalsBanner()),
+                  SizedBox(
+                    width: tw,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Table(
+                        border: TableBorder.all(
+                          color: _kCustomerMetaBorderColor,
+                          width: 0.75,
+                        ),
+                        columnWidths: const {
+                          0: FlexColumnWidth(2.05),
+                          1: FlexColumnWidth(2.05),
+                          2: FlexColumnWidth(1.25),
+                        },
+                        children: [
+                          _invoiceTotalsTripleRow(
+                            ThermalInvoicePdfLabels.totalExclVatEn,
+                            ThermalInvoicePdfLabels.totalExclVatAr,
+                            _sar(t.grossAmountExclVat),
+                          ),
+                          _invoiceTotalsTripleRow(
+                            ThermalInvoicePdfLabels.itemDiscountEn,
+                            ThermalInvoicePdfLabels.itemDiscountAr,
+                            _sar(thermalR2(t.itemDiscountsTotal)),
+                          ),
+                          _invoiceTotalsTripleRow(
+                            ThermalInvoicePdfLabels.taxableEn,
+                            ThermalInvoicePdfLabels.taxableAr,
+                            _sar(t.totalTaxableAmount),
+                          ),
+                          _invoiceTotalsTripleRow(
+                            ThermalInvoicePdfLabels.totalVatEn,
+                            ThermalInvoicePdfLabels.totalVatAr,
+                            _sar(t.vatAmount),
+                          ),
+                          _invoiceTotalsTripleRow(
+                            ThermalInvoicePdfLabels.totalDueEn,
+                            ThermalInvoicePdfLabels.totalDueAr,
+                            _sar(t.totalInvoiceAmount),
+                            emphasized: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 8),
           ..._maintenanceChecklistBlock(displayChecks),
@@ -684,83 +974,127 @@ class CashierInvoicePreview extends StatelessWidget {
     );
   }
 
-  Widget _infoCell({
-    required String label,
-    required String value,
-    String? valueArabic,
-  }) {
-    final cleanValue = value.trim();
-    final staticAr = valueArabic?.trim();
-    final valueStyle = TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w800,
-      color: Colors.grey.shade900,
-      height: 1.25,
-    );
-    final arValueStyle = TextStyle(
-      fontSize: 8.8,
-      fontWeight: FontWeight.w600,
-      color: Colors.grey.shade600,
-      height: 1.2,
-    );
-
-    Widget arabicValue() {
-      if (cleanValue.isEmpty || cleanValue == '—' || cleanValue == '-') {
-        return Text('—', style: arValueStyle);
-      }
-      if (staticAr != null && staticAr.isNotEmpty) {
-        return Text(
-          staticAr,
-          textDirection: TextDirection.rtl,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: arValueStyle,
+  /// Bilingual 6-column × 4-row customer / vehicle block (ribbon → items table).
+  Table _buildCustomerVehicleDetailsTable(String localizedTimeStr) {
+    TableCell tc(Widget w) => TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: w,
         );
-      }
-      return FutureBuilder<String>(
-        future: AppTranslationService.localizedDynamicValueForLanguage(
-          cleanValue,
-          'ar',
-        ),
-        initialData: _arDigits(cleanValue),
-        builder: (context, snapshot) {
-          final ar = (snapshot.data ?? _arDigits(cleanValue)).trim();
-          return Text(
-            ar.isEmpty ? '—' : ar,
-            textDirection: TextDirection.rtl,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: arValueStyle,
-          );
-        },
-      );
-    }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 8.5,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            cleanValue.isEmpty ? '—' : cleanValue,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: valueStyle,
-          ),
-          const SizedBox(height: 1.5),
-          arabicValue(),
-        ],
+    final rawPlate = invoice.plateNo.trim();
+    final plateLettersFirst =
+        rawPlate.isEmpty ? null : formatVehiclePlateLettersFirst(rawPlate);
+    final plateArLocalized = plateLettersFirst == null
+        ? null
+        : PlateTransliterator.localize(
+            plateLettersFirst,
+            'ar',
+          );
+
+    final nextKm = invoice.nextOilChangeKm;
+    final nextKmStr = nextKm != null && nextKm > 0 ? '$nextKm' : '—';
+
+    final odo = invoice.odometerReading;
+    final mileageStr = (odo != null && odo > 0) ? '$odo' : '—';
+
+    final phoneDisplay =
+        formatInvoiceMobileForDisplay(invoice.customerMobile);
+
+    return Table(
+      border: TableBorder.all(
+        color: _kCustomerMetaBorderColor,
+        width: _kCustomerMetaBorderWidth,
       ),
+      columnWidths: const {
+        0: FlexColumnWidth(1.0),
+        1: FlexColumnWidth(1.0),
+        2: FlexColumnWidth(1.0),
+        3: FlexColumnWidth(1.0),
+        4: FlexColumnWidth(1.0),
+        5: FlexColumnWidth(1.0),
+      },
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(
+          children: [
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.custNameEn,
+              ThermalInvoicePdfLabels.custNameAr,
+            )),
+            tc(_invoiceMetaDynamicValueCell(_dash(invoice.customerName))),
+            tc(_invoiceMetaBlankSixColCell()),
+            tc(_invoiceMetaBlankSixColCell()),
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.custTimeEn,
+              ThermalInvoicePdfLabels.custTimeAr,
+            )),
+            tc(_invoiceMetaValueOnlyCell(
+              localizedTimeStr,
+            )),
+          ],
+        ),
+        TableRow(
+          children: [
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.custPhoneEn,
+              ThermalInvoicePdfLabels.custPhoneAr,
+            )),
+            tc(_invoiceMetaValueOnlyCell(phoneDisplay)),
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.custModelEn,
+              ThermalInvoicePdfLabels.custModelAr,
+            )),
+            tc(_invoiceMetaDynamicValueCell(_dash(invoice.vehicleModel))),
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.mileageEn,
+              ThermalInvoicePdfLabels.mileageAr,
+            )),
+            tc(_invoiceMetaValueOnlyCell(
+              mileageStr,
+            )),
+          ],
+        ),
+        TableRow(
+          children: [
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.custPlateEn,
+              ThermalInvoicePdfLabels.custPlateAr,
+            )),
+            tc(_invoiceMetaValueOnlyCell(
+              plateLettersFirst ?? '—',
+              secondaryAr: plateArLocalized,
+            )),
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.vinEn,
+              ThermalInvoicePdfLabels.vinAr,
+            )),
+            tc(_invoiceMetaValueOnlyCell(_dash(invoice.vehicleVin))),
+            tc(_invoiceMetaLabelPairCell(
+              _invoicePreviewNextChangeEn,
+              _invoicePreviewNextChangeAr,
+            )),
+            tc(_invoiceMetaValueOnlyCell(
+              nextKmStr,
+            )),
+          ],
+        ),
+        TableRow(
+          children: [
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.custMakeEn,
+              ThermalInvoicePdfLabels.custMakeAr,
+            )),
+            tc(_invoiceMetaDynamicValueCell(_dash(invoice.vehicleMake))),
+            tc(_invoiceMetaLabelPairCell(
+              ThermalInvoicePdfLabels.custYearEn,
+              ThermalInvoicePdfLabels.custYearAr,
+            )),
+            tc(_invoiceMetaValueOnlyCell(_dash(invoice.vehicleYear))),
+            tc(_invoiceMetaBlankSixColCell()),
+            tc(_invoiceMetaBlankSixColCell()),
+          ],
+        ),
+      ],
     );
   }
 
@@ -768,7 +1102,7 @@ class CashierInvoicePreview extends StatelessWidget {
     final safeW = (!availWidth.isFinite || availWidth <= 8)
         ? 360.0
         : availWidth;
-    const borderColor = Color(0xFF1A1A1A);
+    const borderColor = _kCustomerMetaBorderColor;
 
     Widget goodsHeaderBanner(double bannerW, Color bc) {
       final hdr = BorderSide(color: bc, width: 0.75);
@@ -777,17 +1111,50 @@ class CashierInvoicePreview extends StatelessWidget {
         fontWeight: FontWeight.w800,
         fontSize: fz,
         height: 1.1,
-        color: AppColors.onPrimaryLight,
+        color: Colors.black.withValues(alpha: 0.87),
       );
-      // Single-line labels; ellipsis if column is narrow.
-      // Fixed height stretches column dividers; keep compact vs data rows.
-      const hdrRowH = 60.0;
+      final arHdrStyle = labelStyle.copyWith(
+        height: 1.12,
+      );
+      // EN line + slight gap + AR line; shallow row height.
+      const hdrRowH = 58.0;
+      const hdrEnArGap = 8.0;
+
+      Widget cell(int idx) {
+        final parts = _kGoodsHeaderTexts[idx].split('\n');
+        final en = parts.first;
+        final ar = parts.length > 1 ? parts[1] : '';
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              en,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: labelStyle,
+            ),
+            const SizedBox(height: hdrEnArGap),
+            Text(
+              ar,
+              maxLines: 1,
+              textDirection: TextDirection.rtl,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: arHdrStyle,
+            ),
+          ],
+        );
+      }
+
       return SizedBox(
         width: bannerW,
         height: hdrRowH,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: AppColors.primaryLight,
+            color: _goodsTableHeaderFill,
             border: Border(left: hdr, top: hdr, right: hdr, bottom: hdr),
           ),
           child: Row(
@@ -812,49 +1179,13 @@ class CashierInvoicePreview extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: SizedBox(
                         width: double.infinity,
-                        child: Text(
-                          _kGoodsHeaderTexts[i],
-                          maxLines: 2,
-                          softWrap: true,
-                          textAlign: TextAlign.start,
-                          overflow: TextOverflow.ellipsis,
-                          style: labelStyle,
-                        ),
+                        child: cell(i),
                       ),
                     ),
                   ),
                 ),
               ],
             ],
-          ),
-        ),
-      );
-    }
-
-    TableCell bodyCell(
-        String text, {
-          TextAlign ta = TextAlign.start,
-          int maxLines = 2,
-          double leadingPadding = 4,
-        }) {
-      return TableCell(
-        verticalAlignment: TableCellVerticalAlignment.middle,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(leadingPadding, 5, 3, 5),
-          child: SizedBox(
-            width: double.infinity,
-            child: Text(
-              text,
-              textAlign: ta,
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade900,
-                height: 1.2,
-              ),
-            ),
           ),
         ),
       );
@@ -870,9 +1201,16 @@ class CashierInvoicePreview extends StatelessWidget {
         }) {
       return TableCell(
         verticalAlignment: TableCellVerticalAlignment.middle,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(leadingPadding, 5, 3, 5),
-          child: Column(
+        child: ColoredBox(
+          color: Colors.white,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              leadingPadding,
+              _kGoodsBodyCellVPad,
+              3,
+              _kGoodsBodyCellVPad,
+            ),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -891,6 +1229,7 @@ class CashierInvoicePreview extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 5),
               Text(
                 textAr,
                 textDirection: TextDirection.rtl,
@@ -906,6 +1245,7 @@ class CashierInvoicePreview extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       );
     }
@@ -940,30 +1280,33 @@ class CashierInvoicePreview extends StatelessWidget {
         if (cleanEn.isEmpty || cleanEn == '—' || cleanEn == '-') {
           return Text('—', style: arStyle);
         }
-        return FutureBuilder<String>(
-          future: AppTranslationService.localizedDynamicValueForLanguage(
-            cleanEn,
-            'ar',
-          ),
-          initialData: _arDigits(cleanEn),
-          builder: (context, snapshot) {
-            final ar = (snapshot.data ?? _arDigits(cleanEn)).trim();
-            return Text(
-              ar.isEmpty ? '—' : ar,
+        return Builder(
+          builder: (context) => Localizations.override(
+            context: context,
+            locale: const Locale('ar'),
+            child: LocalizedApiText(
+              cleanEn,
               textDirection: TextDirection.rtl,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: arStyle,
-            );
-          },
+            ),
+          ),
         );
       }
 
       return TableCell(
         verticalAlignment: TableCellVerticalAlignment.middle,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(leadingPadding, 5, 3, 5),
-          child: Column(
+        child: ColoredBox(
+          color: Colors.white,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              leadingPadding,
+              _kGoodsBodyCellVPad,
+              3,
+              _kGoodsBodyCellVPad,
+            ),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -978,9 +1321,11 @@ class CashierInvoicePreview extends StatelessWidget {
                   height: 1.2,
                 ),
               ),
+              const SizedBox(height: 5),
               arabicProductLine(),
             ],
           ),
+        ),
         ),
       );
     }
@@ -1033,114 +1378,30 @@ class CashierInvoicePreview extends StatelessWidget {
   Widget _totalsBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       color: AppColors.primaryLight,
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             'Total Amount',
             style: TextStyle(
               fontWeight: FontWeight.w900,
-              fontSize: 13,
-              color: AppColors.onPrimaryLight,
+              fontSize: 14,
+              color: AppColors.secondaryLight,
+              height: 1.1,
             ),
           ),
           Text(
-            'إجمالي المبلغ',
+            'إجمالي المبالغ',
             textDirection: TextDirection.rtl,
             style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-              color: AppColors.onPrimaryLight,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+              height: 1.1,
+              color: AppColors.secondaryLight,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _amountRow(String label, String amount, {bool emphasized = false}) {
-    final baseStyle = TextStyle(
-      fontSize: emphasized ? 15 : 13,
-      fontWeight: emphasized ? FontWeight.w900 : FontWeight.w600,
-      color: emphasized ? AppColors.secondaryLight : Colors.grey.shade800,
-    );
-    final amtStyle = TextStyle(
-      fontSize: emphasized ? 15.5 : 13,
-      fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
-      color: emphasized ? AppColors.secondaryLight : Colors.grey.shade900,
-    );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(child: Text(label, style: baseStyle)),
-          Text(amount, style: amtStyle),
-        ],
-      ),
-    );
-  }
-
-  /// English + Arabic label (RTL) with amount; matches thermal PDF discount labels.
-  Widget _amountRowBilingual(
-      String labelEn,
-      String labelAr,
-      String amount, {
-        bool emphasized = false,
-      }) {
-    final baseStyle = TextStyle(
-      fontSize: emphasized ? 15 : 13,
-      fontWeight: emphasized ? FontWeight.w900 : FontWeight.w600,
-      color: emphasized ? AppColors.secondaryLight : Colors.grey.shade800,
-    );
-    final arStyle = baseStyle.copyWith(
-      fontSize: (emphasized ? 15.0 : 13.0) * 0.82,
-      fontWeight: FontWeight.w500,
-      color: Colors.grey.shade700,
-      height: 1.2,
-    );
-    final amtStyle = TextStyle(
-      fontSize: emphasized ? 15.5 : 13,
-      fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
-      color: emphasized ? AppColors.secondaryLight : Colors.grey.shade900,
-    );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(labelEn, style: baseStyle),
-                Text(
-                  labelAr,
-                  textDirection: TextDirection.rtl,
-                  textAlign: TextAlign.left,
-                  style: arStyle,
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(amount, style: amtStyle),
-              Text(
-                _sarStringAr(amount),
-                textDirection: TextDirection.rtl,
-                style: amtStyle.copyWith(
-                  fontSize: (emphasized ? 15.5 : 13.0) * 0.78,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
-                  height: 1.15,
-                ),
-              ),
-            ],
           ),
         ],
       ),

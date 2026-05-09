@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'dart:math' as math;
 import 'dart:ui';
 import '../../../utils/app_colors.dart';
+import '../../../utils/app_arabic_font_fallbacks.dart';
+import '../../../utils/app_button_busy.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
 import '../../../services/locker_translation_mixin.dart';
@@ -84,6 +85,15 @@ String _ordersTranslatedStatusLabel(BuildContext context, String statusRaw) {
     default:
       return l10n.posOrdersStatusPending;
   }
+}
+
+
+String _ordersProductNameForLocale(BuildContext context, PosOrderJobItem item) {
+  final lang = Localizations.localeOf(context).languageCode;
+  final ar = item.productNameArabic.trim();
+  if (lang == 'ar' && ar.isNotEmpty) return ar;
+  final en = item.productName.trim();
+  return en.isNotEmpty ? en : item.productId;
 }
 
 String? _ordersBranchEmployeeIdForPayroll(PosViewModel vm, PosOrder order) {
@@ -240,27 +250,27 @@ Future<void> _showOrdersMaintenanceChecklistDialog(
             ),
             FilledButton(
               onPressed: savingRef[0] ? null : save,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              style: AppButtonBusy.filledLocked(
+                backgroundColor: AppColors.primaryLight,
+                foregroundColor: AppColors.onPrimaryLight,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
               child: savingRef[0]
-                  ? const SizedBox(
-                width: 52,
-                height: 22,
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              )
+                  ? SizedBox(
+                      width: 52,
+                      height: 22,
+                      child: Center(
+                        child: AppButtonBusy.loaderOnFill(
+                          AppColors.primaryLight,
+                          size: 20,
+                          strokeWidth: 2.2,
+                        ),
+                      ),
+                    )
                   : Text(AppLocalizations.of(context)!.posCommonSave),
             ),
           ],
@@ -314,13 +324,10 @@ class _PosOrdersViewState extends State<PosOrdersView> {
                     ? null
                     : () => vmRefresh.refreshOrdersScreen(),
                 icon: vmRefresh.isOrdersScreenRefreshing
-                    ? SizedBox(
+                    ? _OrdersInlineShimmerBox(
                   width: isBarTablet ? 24 : 22,
                   height: isBarTablet ? 24 : 22,
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Colors.black,
-                  ),
+                  radius: 99,
                 )
                     : Icon(
                   Icons.refresh_rounded,
@@ -343,25 +350,15 @@ class _PosOrdersViewState extends State<PosOrdersView> {
           if (vm.isOrdersScreenRefreshing)
             Positioned.fill(
               child: AbsorbPointer(
-                child: Container(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  alignment: Alignment.center,
-                  child: const CircularProgressIndicator(
-                    color: AppColors.primaryLight,
-                  ),
+                child: _OrdersHubShimmerOverlay(
+                  isTablet: isTablet,
+                  translucent: true,
                 ),
               ),
             ),
           if (showOrdersLoader)
             Positioned.fill(
-              child: Container(
-                color: Colors.white,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primaryLight,
-                  ),
-                ),
-              ),
+              child: _OrdersHubShimmerOverlay(isTablet: isTablet),
             ),
         ],
       ),
@@ -436,6 +433,452 @@ class _PosOrdersViewState extends State<PosOrdersView> {
 }
 
 
+
+class _OrdersHubShimmerOverlay extends StatefulWidget {
+  final bool isTablet;
+  final bool translucent;
+
+  const _OrdersHubShimmerOverlay({
+    required this.isTablet,
+    this.translucent = false,
+  });
+
+  @override
+  State<_OrdersHubShimmerOverlay> createState() => _OrdersHubShimmerOverlayState();
+}
+
+class _OrdersHubShimmerOverlayState extends State<_OrdersHubShimmerOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1150),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: ColoredBox(
+        color: Colors.white.withValues(alpha: widget.translucent ? 0.82 : 1),
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            final p = _controller.value;
+            return widget.isTablet
+                ? _OrdersTabletShimmer(progress: p)
+                : _OrdersMobileShimmer(progress: p);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _OrdersMobileShimmer extends StatelessWidget {
+  final double progress;
+
+  const _OrdersMobileShimmer({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(child: _OrdersShimmerBox(progress: progress, height: 42, radius: 12)),
+              const SizedBox(width: 10),
+              _OrdersShimmerBox(progress: progress, width: 104, height: 42, radius: 10),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(12),
+            itemCount: 7,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, __) => _OrdersListCardShimmer(progress: progress, compact: false),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OrdersTabletShimmer extends StatelessWidget {
+  final double progress;
+
+  const _OrdersTabletShimmer({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 12, 20, 0),
+                child: Row(
+                  children: [
+                    Expanded(child: _OrdersShimmerBox(progress: progress, height: 44, radius: 12)),
+                    const SizedBox(width: 12),
+                    _OrdersShimmerBox(progress: progress, width: 108, height: 40, radius: 10),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 20, 10),
+                child: Row(
+                  children: [
+                    _OrdersShimmerBox(progress: progress, width: 72, height: 32, radius: 18),
+                    const SizedBox(width: 12),
+                    _OrdersShimmerBox(progress: progress, width: 92, height: 32, radius: 18),
+                    const SizedBox(width: 12),
+                    _OrdersShimmerBox(progress: progress, width: 112, height: 32, radius: 18),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFE8ECF3)),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: 210,
+                      child: ListView.separated(
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 12, 16),
+                        itemCount: 8,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (_, __) => _OrdersListCardShimmer(progress: progress, compact: true),
+                      ),
+                    ),
+                    const VerticalDivider(width: 1, color: Color(0xFFE8ECF3)),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
+                        child: GridView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 1.75,
+                          ),
+                          itemCount: 4,
+                          itemBuilder: (_, __) => _OrdersJobCardShimmer(progress: progress),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const VerticalDivider(width: 1, color: Color(0xFFE8ECF3)),
+        SizedBox(
+          width: 392,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 12, 14, 12),
+            child: _OrdersSummaryShimmer(progress: progress),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OrdersListCardShimmer extends StatelessWidget {
+  final double progress;
+  final bool compact;
+
+  const _OrdersListCardShimmer({required this.progress, required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(compact ? 10 : 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE8ECF3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _OrdersShimmerBox(progress: progress, width: compact ? 34 : 40, height: compact ? 34 : 40, radius: 10),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _OrdersShimmerBox(progress: progress, height: 11, radius: 6),
+                    const SizedBox(height: 8),
+                    FractionallySizedBox(
+                      widthFactor: 0.72,
+                      child: _OrdersShimmerBox(progress: progress, height: 10, radius: 6),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: compact ? 10 : 14),
+          _OrdersShimmerBox(progress: progress, height: compact ? 22 : 28, radius: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrdersJobCardShimmer extends StatelessWidget {
+  final double progress;
+
+  const _OrdersJobCardShimmer({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxH = constraints.maxHeight;
+        final veryTight = maxH.isFinite && maxH < 155;
+        final tight = maxH.isFinite && maxH < 180;
+
+        final pad = veryTight ? 8.0 : (tight ? 10.0 : 12.0);
+        final icon = veryTight ? 28.0 : (tight ? 30.0 : 34.0);
+        final line = veryTight ? 10.0 : (tight ? 11.0 : 13.0);
+        final chip = veryTight ? 22.0 : (tight ? 24.0 : 30.0);
+        final button = veryTight ? 26.0 : (tight ? 28.0 : 34.0);
+        final gapLarge = veryTight ? 6.0 : (tight ? 8.0 : 12.0);
+        final gapSmall = veryTight ? 5.0 : (tight ? 6.0 : 8.0);
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: EdgeInsets.all(pad),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE8ECF3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _OrdersShimmerBox(
+                      progress: progress,
+                      width: icon,
+                      height: icon,
+                      radius: 12,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _OrdersShimmerBox(
+                        progress: progress,
+                        height: line,
+                        radius: 7,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: gapLarge),
+                _OrdersShimmerBox(progress: progress, height: chip, radius: 10),
+                SizedBox(height: gapSmall),
+                _OrdersShimmerBox(progress: progress, height: chip, radius: 10),
+                const Expanded(child: SizedBox.shrink()),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _OrdersShimmerBox(
+                        progress: progress,
+                        height: button,
+                        radius: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _OrdersShimmerBox(
+                        progress: progress,
+                        height: button,
+                        radius: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OrdersSummaryShimmer extends StatelessWidget {
+  final double progress;
+
+  const _OrdersSummaryShimmer({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8ECF3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _OrdersShimmerBox(progress: progress, width: 180, height: 18, radius: 8),
+          const SizedBox(height: 18),
+          for (var i = 0; i < 7; i++) ...[
+            Row(
+              children: [
+                Expanded(child: _OrdersShimmerBox(progress: progress, height: 12, radius: 6)),
+                const SizedBox(width: 18),
+                _OrdersShimmerBox(progress: progress, width: 82, height: 12, radius: 6),
+              ],
+            ),
+            const SizedBox(height: 14),
+          ],
+          const Spacer(),
+          _OrdersShimmerBox(progress: progress, height: 42, radius: 12),
+          const SizedBox(height: 10),
+          _OrdersShimmerBox(progress: progress, height: 42, radius: 12),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrdersInlineShimmerBox extends StatefulWidget {
+  final double width;
+  final double height;
+  final double radius;
+
+  const _OrdersInlineShimmerBox({
+    required this.width,
+    required this.height,
+    required this.radius,
+  });
+
+  @override
+  State<_OrdersInlineShimmerBox> createState() => _OrdersInlineShimmerBoxState();
+}
+
+class _OrdersInlineShimmerBoxState extends State<_OrdersInlineShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1150),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (_, __) => _OrdersShimmerBox(
+          progress: _controller.value,
+          width: widget.width,
+          height: widget.height,
+          radius: widget.radius,
+        ),
+      ),
+    );
+  }
+}
+
+class _OrdersShimmerBox extends StatelessWidget {
+  final double progress;
+  final double? width;
+  final double height;
+  final double radius;
+
+  const _OrdersShimmerBox({
+    required this.progress,
+    this.width,
+    required this.height,
+    required this.radius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final w = constraints.maxWidth.isFinite ? constraints.maxWidth : (width ?? 160);
+            final shineW = math.max(42.0, w * 0.34);
+            final left = (w + shineW) * progress - shineW;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                const ColoredBox(color: Color(0xFFE9EEF5)),
+                Positioned(
+                  left: left,
+                  top: 0,
+                  bottom: 0,
+                  width: shineW,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.0),
+                          Colors.white.withValues(alpha: 0.62),
+                          Colors.white.withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class _OrdersLoadMoreRow extends StatelessWidget {
   final PosViewModel vm;
   final bool compact;
@@ -448,10 +891,10 @@ class _OrdersLoadMoreRow extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: compact ? 4 : 8),
       child: Center(
         child: vm.isLoadingMoreOrders
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.4),
+            ? _OrdersInlineShimmerBox(
+                width: compact ? 76 : 104,
+                height: compact ? 16 : 18,
+                radius: 12,
               )
             : OutlinedButton(
                 onPressed: vm.loadMoreOrders,
@@ -1911,25 +2354,27 @@ class _CancelJobConfirmDialogState extends State<_CancelJobConfirmDialog> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _isBusy ? null : _handleConfirm,
-                    style: ElevatedButton.styleFrom(
+                    style: AppButtonBusy.elevatedLocked(
                       backgroundColor: AppColors.primaryLight,
                       foregroundColor: AppColors.onPrimaryLight,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                      shape:
+                          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                       minimumSize: const Size(0, 40),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: _isBusy
-                        ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: AppColors.onPrimaryLight,
-                        strokeWidth: 2,
-                      ),
-                    )
-                        : Text(AppLocalizations.of(context)!.posOrdersYesDeleteBtn, style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 13)),
+                        ? AppButtonBusy.loaderOnFill(AppColors.primaryLight, size: 20)
+                        : Text(
+                            AppLocalizations.of(context)!.posOrdersYesDeleteBtn,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              fontSize: 13,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -2298,20 +2743,19 @@ class _JobFooterButton extends StatelessWidget {
       color: backgroundColor,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         onTap: (isBusy || !enabled) ? null : onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 11),
           alignment: Alignment.center,
           child: isBusy
-              ? SizedBox(
-            height: 16,
-            width: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: textColor,
-            ),
-          )
+              ? AppButtonBusy.loaderOnFill(
+                  backgroundColor,
+                  size: 16,
+                  strokeWidth: 2,
+                )
               : Text(
             label,
             style: TextStyle(
@@ -2512,7 +2956,7 @@ Widget _draftDeptTotalsPlainTextRows(BuildContext context, PosOrderJob job) {
           Expanded(
             child: Text(
               AppLocalizations.of(context)!.posOrdersTotalInclVat,
-              style: GoogleFonts.manrope(
+              style: appManropeTextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 color: Colors.grey.shade800,
@@ -2522,7 +2966,7 @@ Widget _draftDeptTotalsPlainTextRows(BuildContext context, PosOrderJob job) {
           ),
           Text(
             AppLocalizations.of(context)!.posCommonSarAmount(AppTranslationService.localizeDigitsForLanguage(totalInclVat.toStringAsFixed(2), Localizations.localeOf(context).languageCode)),
-            style: GoogleFonts.manrope(
+            style: appManropeTextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF1E2124),
@@ -3244,16 +3688,14 @@ class _OrderSummaryPanel extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: canGenerateInvoice && !invoicingThisOrder
                           ? () => _generateInvoiceFromOrdersSummary(
-                        context,
-                        posVm,
-                        order,
-                      )
+                                context,
+                                posVm,
+                                order,
+                              )
                           : null,
-                      style: ElevatedButton.styleFrom(
+                      style: AppButtonBusy.elevatedLocked(
                         backgroundColor: AppColors.secondaryLight,
                         foregroundColor: AppColors.onSecondaryLight,
-                        disabledBackgroundColor: const Color(0xFFCBD5E1),
-                        disabledForegroundColor: const Color(0xFF64748B),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 8,
@@ -3264,25 +3706,19 @@ class _OrderSummaryPanel extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: invoicingThisOrder
-                          ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: AppColors.onSecondaryLight,
-                        ),
-                      )
+                          ? AppButtonBusy.loaderOnFill(AppColors.secondaryLight, size: 22)
                           : Text(
-                        AppLocalizations.of(context)!.posOrdersGenerateInvoice,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.onSecondaryLight,
-                        ),
-                      ),
+                              AppLocalizations.of(context)!
+                                  .posOrdersGenerateInvoice,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.onSecondaryLight,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -3469,8 +3905,8 @@ class _DraftDepartmentSection extends StatelessWidget {
                         ),
                       ),
                       Expanded(
-                        child: LocalizedApiText(
-                          item.productName,
+                        child: Text(
+                          _ordersProductNameForLocale(context, item),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -3876,12 +4312,11 @@ class _HorizontalOrderTile extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             );
                           }
-                          final formatted =
-                              formatVehiclePlateLettersFirst(plateRaw);
                           final plate = langCode == 'ar'
-                              ? PlateTransliterator.localize(
-                                  formatted, langCode)
-                              : formatted;
+                              // Use raw API plate for Arabic so the letter block is
+                              // transliterated before any UI formatter changes order.
+                              ? PlateTransliterator.localize(plateRaw, langCode)
+                              : formatVehiclePlateLettersFirst(plateRaw);
                           return Text(
                             plate,
                             style: TextStyle(

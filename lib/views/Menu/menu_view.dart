@@ -25,6 +25,7 @@ class MenuView extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final isLandscape = screenWidth > screenHeight;
+    final l10n = AppLocalizations.of(context)!;
 
     final crossAxisCount = isTablet ? (isLandscape ? 3 : 2) : 2;
     final childAspectRatio = isTablet ? (isLandscape ? 1.15 : 1.15) : 0.85;
@@ -51,8 +52,8 @@ class MenuView extends StatelessWidget {
                 children: [
 
                   CustomAuthHeader(
-                    title: 'ALL Apps',
-                    subtitle: 'Please choose one of these apps',
+                    title: l10n.menuAllApps,
+                    subtitle: l10n.menuSubtitle,
                     height: isTablet ? (isLandscape ? screenHeight * 0.50 : null) : null,
                   ),
                   Padding(
@@ -70,7 +71,7 @@ class MenuView extends StatelessWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
                         MenuCard(
-                          title: 'Super Admin\nPortal',
+                          title: l10n.menuSuperAdminPortal,
                           icon: Icons.admin_panel_settings_rounded,
                           onTap: () {
                             Navigator.push(
@@ -82,7 +83,7 @@ class MenuView extends StatelessWidget {
                           },
                         ),
                         MenuCard(
-                          title: 'Workshop\nOwner',
+                          title: l10n.menuWorkshopOwner,
                           icon: Icons.store_rounded,
                           onTap: () {
                             Navigator.push(
@@ -94,7 +95,7 @@ class MenuView extends StatelessWidget {
                           },
                         ),
                         MenuCard(
-                          title: 'Technician\nApp',
+                          title: l10n.menuTechnicianApp,
                           icon: Icons.engineering_rounded,
                           onTap: () {
                             Navigator.push(
@@ -106,20 +107,18 @@ class MenuView extends StatelessWidget {
                           },
                         ),
                         MenuCard(
-                          title: 'Workshop\nPOS App',
+                          title: l10n.menuWorkshopPosApp,
                           icon: Icons.point_of_sale_rounded,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const LoginView(
-                                    appName: 'Workshop POS App'),
-                              ),
+                                builder: (_) => const LoginView())
                             );
                           },
                         ),
                         MenuCard(
-                          title: 'Locker\nPortal',
+                          title: l10n.menuLockerPortal,
                           icon: Icons.lock_rounded,
                           onTap: () async {
                             final isLoggedIn =
@@ -136,7 +135,7 @@ class MenuView extends StatelessWidget {
                           },
                         ),
                         MenuCard(
-                          title: 'Supplier',
+                          title: l10n.menuSupplier,
                           icon: Icons.local_shipping_rounded,
                           onTap: () {
                             Navigator.push(
@@ -158,7 +157,7 @@ class MenuView extends StatelessWidget {
               // ── Layer 3: Version footer ──
               Center(
                 child: Text(
-                  'Version: 1.0.0',
+                  l10n.menuVersion,
                   style: AppTextStyles.bodyMedium.copyWith(color: Colors.grey),
                 ),
               ),

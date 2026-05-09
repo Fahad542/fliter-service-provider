@@ -8,7 +8,7 @@ class SettingsViewModel extends ChangeNotifier {
   static const String _localeKey = 'locale';
 
   ThemeMode _themeMode = ThemeMode.system;
-  Locale _locale = const Locale('en');
+  Locale _locale = const Locale('ar');
 
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
@@ -27,10 +27,8 @@ class SettingsViewModel extends ChangeNotifier {
     }
 
     // Load Locale
-    final languageCode = prefs.getString(_localeKey);
-    if (languageCode != null) {
-      _locale = Locale(languageCode);
-    }
+    final languageCode = prefs.getString('app_locale') ?? prefs.getString(_localeKey);
+    _locale = Locale(languageCode ?? 'ar');
     
     notifyListeners();
   }
@@ -51,6 +49,7 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_localeKey, newLocale.languageCode);
     await prefs.setString('app_locale', newLocale.languageCode);
 
     // ← ADD THIS LINE so the translation service can read it without context:

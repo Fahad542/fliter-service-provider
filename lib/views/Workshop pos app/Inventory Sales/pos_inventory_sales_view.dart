@@ -12,6 +12,7 @@ import '../../../utils/app_colors.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../../../models/inventory_sales_api_model.dart';
 import 'inventory_sales_view_model.dart';
@@ -339,9 +340,7 @@ class _PosInventorySalesViewState extends State<PosInventorySalesView> {
 
   Widget _buildBodyContent(BuildContext context, InventorySalesViewModel vm) {
     if (vm.isLoading && vm.lines.isEmpty && vm.errorMessage == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryLight),
-      );
+      return const _InventorySalesLoadingShimmer();
     }
 
     final range = vm.resolveDateRange();
@@ -1299,6 +1298,89 @@ class _ErrorBlock extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _InventorySalesLoadingShimmer extends StatelessWidget {
+  const _InventorySalesLoadingShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    final tablet = PosTabletLayout.isTablet(context);
+    final hPad = tablet ? 20.0 : 24.0;
+    return PosShimmer(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(hPad, tablet ? 16 : 20, hPad, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: tablet ? 800 : double.infinity),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFE8ECF3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Expanded(child: PosShimmerBox(width: double.infinity, height: 40, radius: 12)),
+                      SizedBox(width: 10),
+                      Expanded(child: PosShimmerBox(width: double.infinity, height: 40, radius: 12)),
+                      SizedBox(width: 10),
+                      PosShimmerBox(width: 90, height: 40, radius: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Row(
+              children: [
+                Expanded(child: PosShimmerBox(width: double.infinity, height: 70, radius: 14)),
+                SizedBox(width: 8),
+                Expanded(child: PosShimmerBox(width: double.infinity, height: 70, radius: 14)),
+                SizedBox(width: 8),
+                Expanded(child: PosShimmerBox(width: double.infinity, height: 70, radius: 14)),
+                SizedBox(width: 8),
+                Expanded(child: PosShimmerBox(width: double.infinity, height: 70, radius: 14)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE8ECF3)),
+                ),
+                child: ListView.separated(
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: tablet ? 8 : 6,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) => const Row(
+                    children: [
+                      Expanded(flex: 3, child: PosShimmerLine(width: double.infinity, height: 13)),
+                      SizedBox(width: 12),
+                      Expanded(flex: 2, child: PosShimmerLine(width: double.infinity, height: 13)),
+                      SizedBox(width: 12),
+                      Expanded(child: PosShimmerLine(width: double.infinity, height: 13)),
+                      SizedBox(width: 12),
+                      PosShimmerBox(width: 64, height: 22, radius: 8),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

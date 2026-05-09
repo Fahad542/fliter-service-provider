@@ -9,6 +9,7 @@ import '../../../utils/app_text_styles.dart';
 import '../../../utils/app_formatters.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import '../More Tab/pos_more_view.dart'; // Added
@@ -97,12 +98,7 @@ class _PosPromoViewState extends State<PosPromoView> {
             _buildSectionTitle(AppLocalizations.of(context)!.posPromoAvailablePromotions, Icons.stars_outlined),
             SizedBox(height: isTablet ? 8 : 14),
             if (promoVm.isLoadingPromos)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(),
-                ),
-              )
+              _PromoPromotionsShimmer(isTablet: isTablet)
             else if (promoVm.availablePromotions.isEmpty)
               Center(
                 child: Padding(
@@ -271,12 +267,11 @@ class _PosPromoViewState extends State<PosPromoView> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                     ),
                     child: promoVm.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                        ? const PosShimmer(
+                            child: PosShimmerBox(
+                              width: 20,
+                              height: 20,
+                              radius: 10,
                             ),
                           )
                         : Text(
@@ -367,12 +362,11 @@ class _PosPromoViewState extends State<PosPromoView> {
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                         ),
                         child: promoVm.isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
+                            ? const PosShimmer(
+                                child: PosShimmerBox(
+                                  width: 20,
+                                  height: 20,
+                                  radius: 10,
                                 ),
                               )
                             : Text(
@@ -687,6 +681,53 @@ class _PosPromoViewState extends State<PosPromoView> {
           ),
         );
       },
+    );
+  }
+}
+
+
+class _PromoPromotionsShimmer extends StatelessWidget {
+  const _PromoPromotionsShimmer({required this.isTablet});
+
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = isTablet ? 3 : 2;
+    return PosShimmer(
+      child: Column(
+        children: List.generate(count, (index) {
+          return Container(
+            margin: EdgeInsets.only(bottom: isTablet ? 10 : 12),
+            padding: EdgeInsets.all(isTablet ? 14 : 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Row(
+              children: const [
+                PosShimmerCircle(size: 38),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      PosShimmerLine(width: 150, height: 14),
+                      SizedBox(height: 8),
+                      PosShimmerLine(width: double.infinity, height: 11),
+                      SizedBox(height: 6),
+                      PosShimmerLine(width: 120, height: 11),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 12),
+                PosShimmerBox(width: 64, height: 28, radius: 12),
+              ],
+            ),
+          );
+        }),
+      ),
     );
   }
 }

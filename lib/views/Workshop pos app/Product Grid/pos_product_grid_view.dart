@@ -11,6 +11,7 @@ import '../../../utils/app_formatters.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../widgets/pos_shimmer.dart';
 
 import '../../../data/repositories/pos_repository.dart';
 import '../../../services/session_service.dart';
@@ -71,6 +72,19 @@ Widget _productTitleText(
   );
 }
 
+
+String _localizedStockLabel(BuildContext context, PosProduct product) {
+  final langCode = Localizations.localeOf(context).languageCode;
+  if (langCode != 'ar') return product.stockLabel;
+  if (product.isService) return 'خدمة';
+  if (product.stock > 5) {
+    return 'متوفر (${AppTranslationService.localizeDigitsForLanguage(product.stock.toString(), langCode)})';
+  }
+  if (product.stock > 0) {
+    return 'منخفض (${AppTranslationService.localizeDigitsForLanguage(product.stock.toString(), langCode)})';
+  }
+  return 'غير متوفر';
+}
 
 class _LoadMoreProductsTile extends StatelessWidget {
   final bool isTablet;
@@ -373,7 +387,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     if (_translatedDeptName == null) {
       setState(() => _translatedDeptName = raw);
     }
-    AppTranslationService.localizedDynamicValueForLanguage(raw, langCode).then((translated) {
+    LocalizedApiText.resolve(raw, langCode).then((translated) {
       if (mounted && translated != _translatedDeptName) {
         setState(() => _translatedDeptName = translated);
       }
@@ -890,11 +904,7 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                 Positioned.fill(
                   child: Container(
                     color: Colors.white,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primaryLight,
-                      ),
-                    ),
+                    child: _ProductGridLoadingShimmer(isTablet: isTablet),
                   ),
                 ),
             ],
@@ -1342,12 +1352,12 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                             ),
                                           ),
                                           child: saving
-                                              ? const SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2.5,
-                                              color: Colors.white,
+                                              ? const PosShimmer(
+                                            child: PosShimmerBox(
+                                              width: 70,
+                                              height: 14,
+                                              radius: 7,
+                                              dark: true,
                                             ),
                                           )
                                               : Text(
@@ -1924,12 +1934,11 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
                                     child: completing
-                                        ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Color(0xFF1E2124),
+                                        ? const PosShimmer(
+                                      child: PosShimmerBox(
+                                        width: 64,
+                                        height: 12,
+                                        radius: 6,
                                       ),
                                     )
                                         : Text(
@@ -1993,12 +2002,12 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                   ),
                                                   child: isSavingDraft
-                                                      ? const SizedBox(
-                                                    height: 18,
-                                                    width: 18,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.white,
+                                                      ? const PosShimmer(
+                                                    child: PosShimmerBox(
+                                                      width: 64,
+                                                      height: 12,
+                                                      radius: 6,
+                                                      dark: true,
                                                     ),
                                                   )
                                                       : Text(
@@ -2063,12 +2072,11 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                 ),
                                                 child: isForwarding
-                                                    ? const SizedBox(
-                                                  height: 18,
-                                                  width: 18,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    color: Color(0xFF1E2124),
+                                                    ? const PosShimmer(
+                                                  child: PosShimmerBox(
+                                                    width: 64,
+                                                    height: 12,
+                                                    radius: 6,
                                                   ),
                                                 )
                                                     : Text(
@@ -2224,6 +2232,15 @@ class _PosProductGridViewState extends State<PosProductGridView> {
     final visibleProducts = filteredProducts
         .take(gridVm.visibleProductLimit)
         .toList(growable: false);
+    final langCode = Localizations.localeOf(context).languageCode;
+    if (langCode == 'ar') {
+      LocalizedApiText.precache(
+        visibleProducts
+            .where((p) => _cleanProductArabicName(p.productNameArabic) == null)
+            .map((p) => p.name),
+        langCode,
+      );
+    }
     final hasLocalMore = visibleProducts.length < filteredProducts.length;
 
     final isPortrait =
@@ -2640,8 +2657,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 color: product.stockColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: LocalizedApiText(
-                                product.stockLabel,
+                              child: Text(
+                                _localizedStockLabel(context, product),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -2826,8 +2843,8 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                 color: product.stockColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: LocalizedApiText(
-                                product.stockLabel,
+                              child: Text(
+                                _localizedStockLabel(context, product),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -3580,6 +3597,109 @@ class _EditableServiceUnitPriceRowState extends State<_EditableServiceUnitPriceR
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductGridLoadingShimmer extends StatelessWidget {
+  const _ProductGridLoadingShimmer({required this.isTablet});
+
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    final crossAxisCount = isTablet ? 3 : 2;
+    final itemCount = isTablet ? 9 : 6;
+    return PosShimmer(
+      child: CustomScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              isTablet ? 24 : 16,
+              isTablet ? 20 : 16,
+              isTablet ? 24 : 16,
+              12,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: Row(
+                children: [
+                  const Expanded(child: PosShimmerLine(width: double.infinity, height: 42, radius: 14)),
+                  const SizedBox(width: 12),
+                  PosShimmerBox(width: isTablet ? 140 : 96, height: 42, radius: 14),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              isTablet ? 24 : 16,
+              0,
+              isTablet ? 24 : 16,
+              isTablet ? 24 : 16,
+            ),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: isTablet ? 1.3 : 1.15,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => const _ProductGridSkeletonCard(),
+                childCount: itemCount,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductGridSkeletonCard extends StatelessWidget {
+  const _ProductGridSkeletonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE8ECF3)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              PosShimmerCircle(size: 42),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PosShimmerLine(width: double.infinity, height: 13),
+                    SizedBox(height: 8),
+                    PosShimmerLine(width: 110, height: 11),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Spacer(),
+          PosShimmerLine(width: double.infinity, height: 12),
+          SizedBox(height: 10),
+          Row(
+            children: [
+              PosShimmerBox(width: 82, height: 30, radius: 10),
+              Spacer(),
+              PosShimmerBox(width: 64, height: 30, radius: 10),
+            ],
           ),
         ],
       ),

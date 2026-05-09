@@ -1,5 +1,15 @@
 {
   "@@locale": "ar",
+  "menuAllApps": "جميع التطبيقات",
+  "menuSubtitle": "يرجى اختيار أحد هذه التطبيقات",
+  "menuSuperAdminPortal": "بوابة\\nالمشرف العام",
+  "menuWorkshopOwner": "مالك\\nالورشة",
+  "menuTechnicianApp": "تطبيق\\nالفني",
+  "menuWorkshopPosApp": "تطبيق نقاط\\nبيع الورشة",
+  "menuWorkshopPosAppPlain": "تطبيق نقاط بيع الورشة",
+  "menuLockerPortal": "بوابة\\nالخزينة",
+  "menuSupplier": "المورد",
+  "menuVersion": "الإصدار: 1.0.0",
   "ownerShellHome": "الرئيسية",
   "ownerShellBranches": "الفروع",
   "ownerShellDepartments": "الأقسام",
@@ -1758,7 +1768,7 @@
   },
   "posHomeTitleFilter": "فلتر",
   "posHomeTitlePos": "نقطة البيع",
-  "posHomeSubtitle": "ابحث برقم العميل أو رقم المركبة\nأو رقم الهاتف أو اسم العميل",
+  "posHomeSubtitle": "ابحث برقم العميل أو رقم المركبةأو رقم الهاتف أو اسم العميل",
   "posHomeSearchHint": "ابحث برقم العميل / المركبة / الهاتف / اللوحة...",
   "posHomeNewWalkIn": "عميل جديد",
   "posHomeCorporateBooking": "حجز مؤسسي",
@@ -3159,7 +3169,14 @@
   "posPaymentChangeCustomerBody": "هل تريد فعلاً تغيير العميل؟ سيتم مسح اختيارات الدفع الخاصة بهذا النوع من العملاء.",
   "posPaymentChangeCustomerButton": "تغيير العميل",
   "posOrdersExceedsBy": "يتجاوز الإجمالي بمقدار {amount}",
-  "@posOrdersExceedsBy": {"description": "Message when payments exceed total.", "placeholders": {"amount": {"type": "String"}}},
+  "@posOrdersExceedsBy": {
+    "description": "Message when payments exceed total.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "posReviewUnitExclVat": "سعر الوحدة (بدون ضريبة)",
   "posReviewGrossBeforeVat": "الإجمالي قبل الضريبة",
   "posReviewTotalBeforeVat": "الإجمالي قبل الضريبة (بعد الخصم)",

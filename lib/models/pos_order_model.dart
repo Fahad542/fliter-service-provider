@@ -494,6 +494,7 @@ class PosOrderJobItem {
   final String itemType;
   final String productId;
   final String productName;
+  final String productNameArabic;
   final String departmentId;
   final String departmentName;
   final double qty;
@@ -511,6 +512,7 @@ class PosOrderJobItem {
     required this.itemType,
     required this.productId,
     required this.productName,
+    this.productNameArabic = '',
     required this.departmentId,
     required this.departmentName,
     required this.qty,
@@ -531,7 +533,17 @@ class PosOrderJobItem {
       id: json['id']?.toString() ?? '',
       itemType: json['itemType'] ?? '',
       productId: json['productId']?.toString() ?? '',
-      productName: json['productName'] ?? '',
+      productName: json['productName']?.toString() ?? '',
+      productNameArabic: _firstNonEmptyString([
+        json['productNameArabic'],
+        json['product_name_arabic'],
+        json['nameArabic'],
+        json['name_arabic'],
+        json['arabicName'],
+        json['arabic_name'],
+        (json['product'] is Map) ? (json['product'] as Map)['nameArabic'] : null,
+        (json['product'] is Map) ? (json['product'] as Map)['productNameArabic'] : null,
+      ]) ?? '',
       departmentId:
           json['departmentId']?.toString() ??
           json['department_id']?.toString() ??

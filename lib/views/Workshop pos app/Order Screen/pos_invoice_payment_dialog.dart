@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../models/pos_payment_method.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/app_button_busy.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/locker_translation_mixin.dart';
 import '../../../utils/toast_service.dart';
@@ -18,9 +19,7 @@ typedef InvoicePaymentDraftPersistFn = Future<String?> Function(
 class InvoicePaymentChoiceResult {
   final bool isCorporate;
   final Set<PaymentMethod> payments;
-  /// Per-method amounts when multiple methods are selected (individual or corporate).
   final Map<PaymentMethod, double> paymentAmounts;
-  /// Legacy field — always empty (Employees payment removed from cashier UI).
   final Set<String> employeeIds;
 
   const InvoicePaymentChoiceResult({
@@ -37,13 +36,8 @@ Future<InvoicePaymentChoiceResult?> showInvoicePaymentChoiceDialog(
       Set<PaymentMethod>? initialPayments,
       Map<PaymentMethod, double>? initialPaymentAmounts,
       Set<String>? initialEmployeeIds,
-      /// Order grand total for split validation; defaults to 0 if omitted (e.g. hot-reload edge cases).
       double totalAmount = 0,
-
-      /// When set (cashier Orders flow): Save calls PATCH draft first; on failure dialog stays open.
       InvoicePaymentDraftPersistFn? persistDraftFn,
-
-      /// When set with [persistDraftFn]: clears server draft and closes modal (caller gets `null`).
       Future<String?> Function()? clearPersistedDraftFn,
     }) {
   return showDialog<InvoicePaymentChoiceResult>(
@@ -836,15 +830,29 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                       style: TextButton.styleFrom(
                         padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        foregroundColor:
+                            Colors.orange.shade800.withValues(alpha: 0.9),
+                        disabledForegroundColor:
+                            Colors.orange.shade800.withValues(alpha: 0.9),
+                      ).merge(
+                        ButtonStyle(
+                          overlayColor:
+                              WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.disabled)) {
+                              return Colors.transparent;
+                            }
+                            return null;
+                          }),
+                        ),
                       ),
                       onPressed:
                       _draftSaving || _draftClearing ? null : _submitClearPersistedDraft,
                       child: _draftClearing
-                          ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                          ? AppButtonBusy.circularLoader(
+                              AppColors.secondaryLight,
+                              size: 18,
+                              strokeWidth: 2,
+                            )
                           : Text(
                         l10n.posPaymentClearSaved,
                         style: TextStyle(
@@ -873,13 +881,11 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                   ),
                   const SizedBox(width: 6),
                   FilledButton(
-                    style: FilledButton.styleFrom(
+                    style: AppButtonBusy.filledLocked(
                       backgroundColor: AppColors.primaryLight,
                       foregroundColor: AppColors.onPrimaryLight,
-                      disabledBackgroundColor: const Color(0xFFE2E8F0),
-                      disabledForegroundColor: const Color(0xFF94A3B8),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -891,11 +897,10 @@ class _InvoicePaymentChoiceDialogState extends State<_InvoicePaymentChoiceDialog
                         ? null
                         : _submitSaveDraft,
                     child: _draftSaving
-                        ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                        ? AppButtonBusy.loaderOnFill(
+                            AppColors.primaryLight,
+                            strokeWidth: 2,
+                          )
                         : Text(
                       l10n.posCommonSave,
                       style:

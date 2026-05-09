@@ -122,10 +122,18 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     notifyListeners();
   }
 
-  Future<void> _loadUserInfo() async {
-    _homeSearchFocusNode.addListener(() {
+  bool _homeSearchHasFocus = false;
+
+  void _onSearchFocusChanged() {
+    final focused = _homeSearchFocusNode.hasFocus;
+    if (focused != _homeSearchHasFocus) {
+      _homeSearchHasFocus = focused;
       notifyListeners();
-    });
+    }
+  }
+
+  Future<void> _loadUserInfo() async {
+    _homeSearchFocusNode.addListener(_onSearchFocusChanged);
     final user = await sessionService.getUser();
     if (user != null) {
       _rawCashierName = user.cashier?.cashierName ?? user.name;
@@ -527,7 +535,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       _invoicePaymentMethods.clear();
       _invoicePaymentAmounts.clear();
       _invoicePaymentEmployeeIds.clear();
-      notifyListeners();
+      // caller handles notifyListeners(); we just kick off the async clear
       final hasStaleServerDraft = (o.posPayments != null && o.posPayments!.isNotEmpty) ||
           ((o.posCustomerKind ?? '').trim().isNotEmpty);
       if (hasStaleServerDraft) {
@@ -555,8 +563,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         _invoicePaymentAmounts[pm] = row.amount;
       }
       if (_invoicePaymentMethods.isNotEmpty) {
-        notifyListeners();
-        return;
+        return; // caller will notify
       }
       _invoicePaymentMethods.clear();
       _invoicePaymentAmounts.clear();
@@ -964,6 +971,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     _realtimeService.off(RealtimeService.eventCashierCorporateWalkInRejected, _onOrdersUpdated);
     _realtimeService.disconnect();
     _homeSearchController.dispose();
+    _homeSearchFocusNode.removeListener(_onSearchFocusChanged);
     _homeSearchFocusNode.dispose();
     _globalDiscountTextController.dispose();
     _mainTabGlobalDiscountTextController.dispose();
@@ -1071,18 +1079,21 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     if (_broadcastCooldownTicker != null) return;
     _broadcastCooldownTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = DateTime.now();
+      final before = _broadcastCooldownEndsAt.length;
       _broadcastCooldownEndsAt
           .removeWhere((_, end) => !now.isBefore(end));
+      final changed = _broadcastCooldownEndsAt.length != before;
       if (_latestBroadcastCooldownKey != null &&
           !_broadcastCooldownEndsAt
               .containsKey(_latestBroadcastCooldownKey)) {
         _latestBroadcastCooldownKey = null;
       }
-      notifyListeners();
       if (_broadcastCooldownEndsAt.isEmpty) {
         _broadcastCooldownTicker?.cancel();
         _broadcastCooldownTicker = null;
       }
+      // Only rebuild if an entry expired (label changed) or ticker stopped
+      if (changed) notifyListeners();
     });
   }
 
@@ -2501,7 +2512,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
       debugPrint(
         '[POS][PRODUCTS] GET $resolvedProductsEndpoint query=$resolvedProductsQuery '
-        'workshopId=${user.workshopId} branchId=${branchId.isEmpty ? 'MISSING' : branchId}',
+            'workshopId=${user.workshopId} branchId=${branchId.isEmpty ? 'MISSING' : branchId}',
       );
 
       final response = await posRepository.getProducts(
@@ -2513,8 +2524,8 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
       debugPrint(
         '[POS][PRODUCTS] response success=${response.success} '
-        'categories=${response.categories.length} '
-        'uncategorized=${response.uncategorizedProducts.length}',
+            'categories=${response.categories.length} '
+            'uncategorized=${response.uncategorizedProducts.length}',
       );
 
       if (response.success) {
@@ -3130,19 +3141,22 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     final effectiveOffset = offset ?? 0;
     final isAppend = effectiveOffset > 0;
 
+    // Batch all loading-state changes into a single notify
+    var needsNotify = false;
     if (isAppend) {
       _isLoadingMoreOrders = true;
-      notifyListeners();
+      needsNotify = true;
     }
     if (ordersScreenRefresh) {
       _ordersScreenRefreshInFlight = true;
-      notifyListeners();
+      needsNotify = true;
     }
     if (!silent && !ordersScreenRefresh && !isAppend) {
       _isLoading = true;
       _errorMessage = null;
-      notifyListeners();
+      needsNotify = true;
     }
+    if (needsNotify) notifyListeners();
 
     try {
       final token = await sessionService.getToken();
@@ -3230,7 +3244,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
 
         _applyServerOrderSnapshotToBillingAndPaymentDraftState();
 
-        notifyListeners();
+        // notifyListeners() is called unconditionally in finally below
       } else {
         _errorMessage = 'Failed to fetch orders';
       }
@@ -3247,7 +3261,7 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
         _ordersScreenRefreshInFlight = false;
       }
       _ordersApiFetchCompleted = true;
-      notifyListeners();
+      notifyListeners(); // single rebuild — covers success, error, and loading-state reset
     }
   }
 
@@ -3434,14 +3448,14 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
       isCorporate: order.posCustomerKind?.trim().toLowerCase() == 'corporate',
       payments: order.posPayments != null && order.posPayments!.isNotEmpty
           ? order.posPayments!
-              .where((p) => p.method.trim().isNotEmpty && p.amount > 0)
-              .map(
-                (p) => RequestedPayment(
-                  method: p.method.trim(),
-                  amount: p.amount,
-                ),
-              )
-              .toList()
+          .where((p) => p.method.trim().isNotEmpty && p.amount > 0)
+          .map(
+            (p) => RequestedPayment(
+          method: p.method.trim(),
+          amount: p.amount,
+        ),
+      )
+          .toList()
           : null,
     );
   }
@@ -4441,7 +4455,11 @@ class PosViewModel extends ChangeNotifier with TranslatableMixin {
     try {
       final token = await sessionService.getToken();
       if (token == null) throw Exception('Token not found');
-      return await posRepository.getInvoicedOrdersByCustomer(customerId, token);
+      return await posRepository.getInvoicedOrdersByCustomer(
+        customerId,
+        token,
+        scope: 'all',
+      );
     } catch (e) {
       return null;
     }

@@ -1,5 +1,15 @@
 {
   "@@locale": "en",
+  "menuAllApps": "ALL Apps",
+  "menuSubtitle": "Please choose one of these apps",
+  "menuSuperAdminPortal": "Super Admin\\nPortal",
+  "menuWorkshopOwner": "Workshop\\nOwner",
+  "menuTechnicianApp": "Technician\\nApp",
+  "menuWorkshopPosApp": "Workshop\\nPOS App",
+  "menuWorkshopPosAppPlain": "Workshop POS App",
+  "menuLockerPortal": "Locker\\nPortal",
+  "menuSupplier": "Supplier",
+  "menuVersion": "Version: 1.0.0",
   "ownerShellHome": "Home",
   "ownerShellBranches": "Branches",
   "ownerShellDepartments": "Departments",
@@ -1758,7 +1768,7 @@
   },
   "posHomeTitleFilter": "Filter ",
   "posHomeTitlePos": "POS",
-  "posHomeSubtitle": "Search by customer number, vehicle number,\nphone number or customer name",
+  "posHomeSubtitle": "Search by customer number, vehicle number,phone number or customer name",
   "posHomeSearchHint": "Search customer no / vehicle / mobile / plate...",
   "posHomeNewWalkIn": "New walk-in",
   "posHomeCorporateBooking": "Corporate booking",
@@ -3159,15 +3169,32 @@
   "posPaymentChangeCustomerBody": "Do you really want to change the customer? Your payment choices for this customer type will be cleared.",
   "posPaymentChangeCustomerButton": "Change customer",
   "posOrdersExceedsBy": "Exceeds total by {amount}",
-  "@posOrdersExceedsBy": {"description": "Message when payments exceed total.", "placeholders": {"amount": {"type": "String"}}},
+  "@posOrdersExceedsBy": {
+    "description": "Message when payments exceed total.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "posReviewUnitExclVat": "Unit (Excl. VAT)",
-  "@posReviewUnitExclVat": {"description": "Receipt item breakdown: unit price label"},
+  "@posReviewUnitExclVat": {
+    "description": "Receipt item breakdown: unit price label"
+  },
   "posReviewGrossBeforeVat": "Gross Before VAT",
-  "@posReviewGrossBeforeVat": {"description": "Receipt item breakdown: gross label"},
+  "@posReviewGrossBeforeVat": {
+    "description": "Receipt item breakdown: gross label"
+  },
   "posReviewTotalBeforeVat": "Total Before VAT",
-  "@posReviewTotalBeforeVat": {"description": "Receipt item breakdown: total label"},
+  "@posReviewTotalBeforeVat": {
+    "description": "Receipt item breakdown: total label"
+  },
   "posCommonQty": "Qty",
-  "@posCommonQty": {"description": "Common quantity abbreviation"},
+  "@posCommonQty": {
+    "description": "Common quantity abbreviation"
+  },
   "posCommonTech": "Tech",
-  "@posCommonTech": {"description": "Common technician abbreviation"}
+  "@posCommonTech": {
+    "description": "Common technician abbreviation"
+  }
 }

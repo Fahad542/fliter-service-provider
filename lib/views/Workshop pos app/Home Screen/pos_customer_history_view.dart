@@ -6,11 +6,23 @@ import '../../../services/LocalizedApiText.dart';
 import '../../../services/locker_translation_mixin.dart';
 import '../../../models/invoiced_orders_model.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/app_button_busy.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
+import '../../../utils/plate_transliterator.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../Home Screen/pos_view_model.dart';
 import 'package:provider/provider.dart';
+
+
+String _historyPlateDisplay(BuildContext context, String raw) {
+  final plate = raw.trim();
+  if (plate.isEmpty) return '';
+  return PlateTransliterator.localize(
+    plate.toUpperCase(),
+    Localizations.localeOf(context).languageCode,
+  );
+}
 
 class PosCustomerHistoryView extends StatefulWidget {
   final SearchedCustomer customer;
@@ -216,10 +228,15 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                     size: isTablet ? 15 : 13, color: Colors.grey.shade500),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: LocalizedApiText(
-                    '${order.vehicle!.make} ${order.vehicle!.model}  •  ${order.vehicle!.plateNo}'
-                        '${(order.vehicle!.year != null && order.vehicle!.year!.isNotEmpty) ? '  ·  ${order.vehicle!.year}' : ''}'
-                        '${(order.vehicle!.vin != null && order.vehicle!.vin!.isNotEmpty) ? '  ·  ${AppLocalizations.of(context)!.posCustomerVin(order.vehicle!.vin!)}' : ''}',
+                  child: Text(
+                    [
+                      '${order.vehicle!.make} ${order.vehicle!.model}'.trim(),
+                      _historyPlateDisplay(context, order.vehicle!.plateNo),
+                      if (order.vehicle!.year != null && order.vehicle!.year!.isNotEmpty)
+                        order.vehicle!.year!,
+                      if (order.vehicle!.vin != null && order.vehicle!.vin!.isNotEmpty)
+                        AppLocalizations.of(context)!.posCustomerVin(order.vehicle!.vin!),
+                    ].where((v) => v.trim().isNotEmpty).join('  •  '),
                     style: TextStyle(
                       fontSize: isTablet ? 13 : 12,
                       color: Colors.grey.shade600,
@@ -509,13 +526,9 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                         );
                       }
                     },
-                    style: FilledButton.styleFrom(
+                    style: AppButtonBusy.filledLocked(
                       backgroundColor: AppColors.primaryLight,
                       foregroundColor: AppColors.secondaryLight,
-                      disabledBackgroundColor:
-                      AppColors.primaryLight.withValues(alpha: 0.55),
-                      disabledForegroundColor: AppColors.secondaryLight
-                          .withValues(alpha: 0.55),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -525,37 +538,17 @@ class _PosCustomerHistoryViewState extends State<PosCustomerHistoryView> {
                       ),
                     ),
                     child: loading
-                        ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: compact ? 14 : 16,
-                          height: compact ? 14 : 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.secondaryLight,
-                          ),
-                        ),
-                        SizedBox(width: compact ? 8 : 10),
-                        Text(
-                          AppLocalizations.of(context)!.posCustomerLoading,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: compact ? 12 : 14,
-                            color: AppColors.secondaryLight,
-                          ),
-                        ),
-                      ],
-                    )
+                        ? AppButtonBusy.loaderOnFill(AppColors.primaryLight,
+                            size: compact ? 16 : 18, strokeWidth: 2)
                         : Text(
-                      AppLocalizations.of(context)!.posCustomerPrintInvoice,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: compact ? 12 : 14,
-                        color: AppColors.secondaryLight,
-                      ),
-                    ),
+                            AppLocalizations.of(context)!
+                                .posCustomerPrintInvoice,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: compact ? 12 : 14,
+                              color: AppColors.secondaryLight,
+                            ),
+                          ),
                   ),
                 );
               },

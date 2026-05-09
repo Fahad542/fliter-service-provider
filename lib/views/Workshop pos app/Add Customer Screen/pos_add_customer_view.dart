@@ -4,7 +4,9 @@ import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../utils/app_formatters.dart';
+import '../../../utils/plate_transliterator.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
 import '../../../models/customer_search_model.dart';
@@ -18,8 +20,8 @@ import 'add_customer_view_model.dart';
 
 /// One [DropdownMenuItem] per id (API can return duplicate company names).
 List<CashierCorporateAccount> _dedupeCorporateAccountsById(
-  List<CashierCorporateAccount> list,
-) {
+    List<CashierCorporateAccount> list,
+    ) {
   final byId = <String, CashierCorporateAccount>{};
   for (final c in list) {
     final id = c.id.trim();
@@ -63,6 +65,29 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
 
   /// Slightly darker than [Colors.grey.shade400] so hints stay readable on white fields.
   static Color get _fieldHintColor => Colors.grey.shade500;
+
+  String _localizeDigitsForLocale(String value) {
+    final lang = Localizations.maybeLocaleOf(context)?.languageCode ?? 'en';
+    if (lang != 'ar') return value;
+    const western = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    var out = value;
+    for (var i = 0; i < western.length; i++) {
+      out = out.replaceAll(western[i], arabic[i]);
+    }
+    return out;
+  }
+
+  String _localizedPlateOrDigits(String value) {
+    final lang = Localizations.maybeLocaleOf(context)?.languageCode ?? 'en';
+    if (lang != 'ar') return value;
+    final clean = value.trim();
+    if (clean.isEmpty) return value;
+    if (PlateTransliterator.looksLikePlate(clean)) {
+      return PlateTransliterator.localize(clean, lang);
+    }
+    return _localizeDigitsForLocale(clean);
+  }
 
   // Form keys
   final _normalFormKey = GlobalKey<FormState>();
@@ -122,7 +147,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   }) {
     return TextInputFormatter.withFunction((oldValue, newValue) {
       final raw =
-          _normalizeSaudiPlate(EnglishNumberFormatter.convert(newValue.text));
+      _normalizeSaudiPlate(EnglishNumberFormatter.convert(newValue.text));
       if (raw.isEmpty) {
         return TextEditingValue(
           text: '',
@@ -135,7 +160,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
 
       /// Complete plate pasted as `1312 + DDS` (API order) — show as letters first.
       final pastedDigitsFirst =
-          RegExp(r'^([0-9]{3,4})([A-Z\u0621-\u064A]{3})$').firstMatch(raw);
+      RegExp(r'^([0-9]{3,4})([A-Z\u0621-\u064A]{3})$').firstMatch(raw);
       if (pastedDigitsFirst != null) {
         final digits = pastedDigitsFirst.group(1)!;
         final letters = pastedDigitsFirst.group(2)!;
@@ -268,61 +293,61 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
             appBar: PosScreenAppBar(title: l10n.posAddCustomerTitle),
             body: Column(
               children: [
-          SizedBox(height: isTablet ? 14 : 12),
+                SizedBox(height: isTablet ? 14 : 12),
 
-          // Tab Bar
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: isTablet ? 28 : 20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(isTablet ? 12 : 10),
-              ),
-              padding: EdgeInsets.all(isTablet ? 4 : 3),
-              child: TabBar(
-                controller: _tabController,
-                indicator: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                // Tab Bar
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 28 : 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(isTablet ? 12 : 10),
+                    ),
+                    padding: EdgeInsets.all(isTablet ? 4 : 3),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      labelColor: AppColors.secondaryLight,
+                      unselectedLabelColor: AppColors.secondaryLight.withOpacity(0.42),
+                      labelStyle: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: isTablet ? 14 : 14,
+                      ),
+                      unselectedLabelStyle: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: isTablet ? 14 : 14,
+                        color: AppColors.secondaryLight.withOpacity(0.42),
+                      ),
+                      labelPadding: EdgeInsets.symmetric(vertical: isTablet ? 3 : 2),
+                      overlayColor: MaterialStateProperty.all(Colors.transparent),
+                      splashFactory: NoSplash.splashFactory,
+                      tabs: [
+                        Tab(text: l10n.posAddCustomerTabNormal),
+                        Tab(text: l10n.posAddCustomerTabCorporate),
+                      ],
+                    ),
+                  ),
                 ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: Colors.transparent,
-                labelColor: AppColors.secondaryLight,
-                unselectedLabelColor: AppColors.secondaryLight.withOpacity(0.42),
-                labelStyle: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: isTablet ? 14 : 14,
-                ),
-                unselectedLabelStyle: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: isTablet ? 14 : 14,
-                  color: AppColors.secondaryLight.withOpacity(0.42),
-                ),
-                labelPadding: EdgeInsets.symmetric(vertical: isTablet ? 3 : 2),
-                overlayColor: MaterialStateProperty.all(Colors.transparent),
-                splashFactory: NoSplash.splashFactory,
-                tabs: [
-                  Tab(text: l10n.posAddCustomerTabNormal),
-                  Tab(text: l10n.posAddCustomerTabCorporate),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: isTablet ? 14 : 12),
+                SizedBox(height: isTablet ? 14 : 12),
 
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildNormalCustomerForm(isTablet, vm),
-                _buildCorporateCustomerForm(isTablet, vm),
+                // Tab Content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildNormalCustomerForm(isTablet, vm),
+                      _buildCorporateCustomerForm(isTablet, vm),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
+          );
         },
       ),
     );
@@ -330,10 +355,10 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
 
   /// Name + mobile; optional branch-employee pick (Normal tab only).
   Widget _buildCustomerInformationSection(
-    AddCustomerViewModel vm, {
-    required bool isTablet,
-    bool showBranchEmployeePick = false,
-  }) {
+      AddCustomerViewModel vm, {
+        required bool isTablet,
+        bool showBranchEmployeePick = false,
+      }) {
     final fieldGap = isTablet ? 14.0 : 12.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,12 +399,11 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Center(
-                          child: SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primaryLight,
+                          child: PosShimmer(
+                            child: PosShimmerBox(
+                              width: 56,
+                              height: 18,
+                              radius: 9,
                             ),
                           ),
                         ),
@@ -533,11 +557,12 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 autocorrect: false,
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [
+                  UpperCaseTextFormatter(),
                   _saudiPlateInputFormatter(
                     onRejectedDigitBeyondFour:
-                        _toastPlateMaxFourDigitsAfterLetters,
+                    _toastPlateMaxFourDigitsAfterLetters,
                     onRejectedLetterBeyondThree:
-                        _toastPlateMaxThreeLettersBeforeDigits,
+                    _toastPlateMaxThreeLettersBeforeDigits,
                   ),
                 ],
                 validator: (value) => _validateSaudiPlate(
@@ -637,11 +662,12 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 autocorrect: false,
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [
+                  UpperCaseTextFormatter(),
                   _saudiPlateInputFormatter(
                     onRejectedDigitBeyondFour:
-                        _toastPlateMaxFourDigitsAfterLetters,
+                    _toastPlateMaxFourDigitsAfterLetters,
                     onRejectedLetterBeyondThree:
-                        _toastPlateMaxThreeLettersBeforeDigits,
+                    _toastPlateMaxThreeLettersBeforeDigits,
                   ),
                 ],
                 validator: (value) {
@@ -752,10 +778,12 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryLight),
+                      child: PosShimmer(
+                        child: PosShimmerBox(
+                          width: 120,
+                          height: 16,
+                          radius: 8,
+                        ),
                       ),
                     ),
                   );
@@ -765,9 +793,9 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 vm.reconcileCorporateDropdownSelection(accounts);
                 final selectedId = vm.selectedCorporate;
                 final dropdownValue =
-                    selectedId != null && accounts.any((c) => c.id == selectedId)
-                        ? selectedId
-                        : null;
+                selectedId != null && accounts.any((c) => c.id == selectedId)
+                    ? selectedId
+                    : null;
 
                 return Container(
                   decoration: BoxDecoration(
@@ -781,7 +809,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       value: dropdownValue,
                       hint: Text(
                         accounts.isEmpty
-                            ? l10n.posAddCustomerNoCorporateFound 
+                            ? l10n.posAddCustomerNoCorporateFound
                             : l10n.posAddCustomerSelectCorporate,
                         style: AppTextStyles.bodyMedium.copyWith(color: _fieldHintColor, fontSize: isTablet ? 14 : 13),
                       ),
@@ -804,7 +832,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       onChanged: accounts.isEmpty ? null : (value) {
                         if (value != null) {
                           final corpData = accounts.firstWhere(
-                            (corp) => corp.id == value,
+                                (corp) => corp.id == value,
                           );
                           vm.setCorporate(value, corpData);
                         }
@@ -884,11 +912,12 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                       autocorrect: false,
                       textCapitalization: TextCapitalization.characters,
                       inputFormatters: [
+                        UpperCaseTextFormatter(),
                         _saudiPlateInputFormatter(
                           onRejectedDigitBeyondFour:
-                              _toastPlateMaxFourDigitsAfterLetters,
+                          _toastPlateMaxFourDigitsAfterLetters,
                           onRejectedLetterBeyondThree:
-                              _toastPlateMaxThreeLettersBeforeDigits,
+                          _toastPlateMaxThreeLettersBeforeDigits,
                         ),
                       ],
                       validator: (value) {
@@ -995,11 +1024,12 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 autocorrect: false,
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [
+                  UpperCaseTextFormatter(),
                   _saudiPlateInputFormatter(
                     onRejectedDigitBeyondFour:
-                        _toastPlateMaxFourDigitsAfterLetters,
+                    _toastPlateMaxFourDigitsAfterLetters,
                     onRejectedLetterBeyondThree:
-                        _toastPlateMaxThreeLettersBeforeDigits,
+                    _toastPlateMaxThreeLettersBeforeDigits,
                   ),
                 ],
                 validator: (value) {
@@ -1090,10 +1120,10 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   // ── Shared Widgets ──
 
   Widget _buildVehicleYearDropdown(
-    AddCustomerViewModel vm, {
-    required bool isCorporate,
-    required bool isTablet,
-  }) {
+      AddCustomerViewModel vm, {
+        required bool isCorporate,
+        required bool isTablet,
+      }) {
     final years = vehicleModelYearChoices();
     final isAr = Localizations.maybeLocaleOf(context)?.languageCode == 'ar';
     return ListenableBuilder(
@@ -1117,7 +1147,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
               ),
             ),
             maximumSize:
-                const WidgetStatePropertyAll(Size.fromHeight(260)),
+            const WidgetStatePropertyAll(Size.fromHeight(260)),
           ),
           builder: (context, controller, _) {
             return InkWell(
@@ -1155,17 +1185,17 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                   ),
                   border: OutlineInputBorder(
                     borderRadius:
-                        BorderRadius.circular(isTablet ? 14 : 12),
+                    BorderRadius.circular(isTablet ? 14 : 12),
                     borderSide: BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius:
-                        BorderRadius.circular(isTablet ? 14 : 12),
+                    BorderRadius.circular(isTablet ? 14 : 12),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius:
-                        BorderRadius.circular(isTablet ? 14 : 12),
+                    BorderRadius.circular(isTablet ? 14 : 12),
                     borderSide: BorderSide.none,
                   ),
                   labelStyle: AppTextStyles.bodyMedium.copyWith(
@@ -1174,7 +1204,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                   ),
                 ),
                 child: Text(
-                  selected ?? '',
+                  selected == null ? '' : _localizeDigitsForLocale(selected),
                   textAlign: isAr ? TextAlign.right : TextAlign.left,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.secondaryLight,
@@ -1213,7 +1243,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                     ? Alignment.centerRight
                     : Alignment.centerLeft,
                 child: Text(
-                  y,
+                  _localizeDigitsForLocale(y),
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontSize: isTablet ? 14 : 13,
                     fontWeight: isSelected
@@ -1255,19 +1285,19 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   }
 
   Widget _buildTextField(
-    String label,
-    TextEditingController controller,
-    IconData icon, {
-    String? hintText,
-    TextInputType keyboardType = TextInputType.text,
-    bool isTablet = false,
-    bool readOnly = false,
-    String? Function(String?)? validator,
-    List<TextInputFormatter>? inputFormatters,
-    bool enableSuggestions = true,
-    bool autocorrect = true,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-  }) {
+      String label,
+      TextEditingController controller,
+      IconData icon, {
+        String? hintText,
+        TextInputType keyboardType = TextInputType.text,
+        bool isTablet = false,
+        bool readOnly = false,
+        String? Function(String?)? validator,
+        List<TextInputFormatter>? inputFormatters,
+        bool enableSuggestions = true,
+        bool autocorrect = true,
+        TextCapitalization textCapitalization = TextCapitalization.none,
+      }) {
     final isAr = Localizations.maybeLocaleOf(context)?.languageCode == 'ar';
     final effectiveHint = hintText ?? label;
     return TextFormField(
@@ -1328,15 +1358,15 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   }
 
   Widget _buildVehicleAutocompleteField(
-    String label,
-    TextEditingController controller,
-    IconData icon, {
-    required AddCustomerViewModel vm,
-    required VehicleLookupType type,
-    TextEditingController? makeController,
-    TextEditingController? dependentModelController,
-    bool isTablet = false,
-  }) {
+      String label,
+      TextEditingController controller,
+      IconData icon, {
+        required AddCustomerViewModel vm,
+        required VehicleLookupType type,
+        TextEditingController? makeController,
+        TextEditingController? dependentModelController,
+        bool isTablet = false,
+      }) {
     final isAr = Localizations.maybeLocaleOf(context)?.languageCode == 'ar';
     final makeText = makeController?.text.trim() ?? '';
     final hasSelectedMake = vm.hasExactMake(makeText);
@@ -1354,149 +1384,153 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
     return KeyedSubtree(
       key: ValueKey('vehlookup_${type.name}_${vm.customerPrefillRebuildToken}'),
       child: Autocomplete<String>(
-      initialValue: TextEditingValue(text: controller.text),
-      optionsBuilder: (textEditingValue) {
-        final q = textEditingValue.text;
-        if (type == VehicleLookupType.make) {
-          return vm.makeSuggestions(q);
-        }
-        final selectedMake = (makeController?.text ?? '').trim();
-        if (!vm.hasExactMake(selectedMake)) return const Iterable<String>.empty();
-        return vm.modelSuggestions(make: selectedMake, query: q);
-      },
-      onSelected: (selection) {
-        final previous = controller.text.trim();
-        controller.text = selection;
-        if (type == VehicleLookupType.make &&
-            dependentModelController != null &&
-            previous.toLowerCase() != selection.toLowerCase()) {
-          dependentModelController.clear();
-        }
-      },
-      fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
-        return TextFormField(
-          controller: textController,
-          focusNode: focusNode,
-          textAlign: isAr ? TextAlign.right : TextAlign.left,
-          textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontSize: isTablet ? 14 : 14,
-            fontWeight: FontWeight.w500,
-          ),
-          onChanged: (value) {
-            final previous = controller.text.trim();
-            controller.text = value;
-            if (type == VehicleLookupType.make &&
-                dependentModelController != null &&
-                previous.toLowerCase() != value.trim().toLowerCase()) {
-              dependentModelController.clear();
-            }
-            if (type == VehicleLookupType.make) {
-              // Trigger API-backed make refresh while typing.
-              vm.loadMakes(forceRefresh: true);
-            } else if (vm.hasExactMake((makeController?.text ?? '').trim())) {
-              final typedMake = (makeController?.text ?? '').trim();
-              // Trigger model API on every change only for an exact selected make.
-              vm.loadModelsForMake(typedMake, forceRefresh: true);
-            }
-          },
-          decoration: InputDecoration(
-            labelText: label,
-            hintText: label,
-            hintTextDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-            alignLabelWithHint: true,
-            labelStyle: AppTextStyles.bodyMedium.copyWith(
-              color: Colors.grey,
-              fontSize: isTablet ? 14 : 13,
+        initialValue: TextEditingValue(text: controller.text),
+        optionsBuilder: (textEditingValue) {
+          final q = textEditingValue.text;
+          if (type == VehicleLookupType.make) {
+            return vm.makeSuggestions(q);
+          }
+          final selectedMake = (makeController?.text ?? '').trim();
+          if (!vm.hasExactMake(selectedMake)) return const Iterable<String>.empty();
+          return vm.modelSuggestions(make: selectedMake, query: q);
+        },
+        onSelected: (selection) {
+          final previous = controller.text.trim();
+          controller.text = selection;
+          if (type == VehicleLookupType.make &&
+              dependentModelController != null &&
+              previous.toLowerCase() != selection.toLowerCase()) {
+            dependentModelController.clear();
+          }
+        },
+        fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
+          return TextFormField(
+            controller: textController,
+            focusNode: focusNode,
+            textAlign: isAr ? TextAlign.right : TextAlign.left,
+            textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontSize: isTablet ? 14 : 14,
+              fontWeight: FontWeight.w500,
             ),
-            hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: _fieldHintColor,
-              fontSize: isTablet ? 14 : 13,
-            ),
-            prefixIcon: Icon(icon, size: isTablet ? 22 : 20, color: Colors.grey.shade400),
-            suffixIcon: type == VehicleLookupType.model &&
-                    !vm.hasExactMake((makeController?.text ?? '').trim())
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Icon(
-                      Icons.info_outline,
-                      size: isTablet ? 18 : 16,
-                      color: Colors.grey.shade400,
-                    ),
-                  )
-                : null,
-            filled: true,
-            fillColor: Colors.white,
-            isDense: true,
-            contentPadding: EdgeInsets.fromLTRB(
-              isTablet ? 10 : 8,
-              isTablet ? 14 : 12,
-              isTablet ? 10 : 8,
-              isTablet ? 14 : 12,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        );
-      },
-      optionsViewBuilder: (context, onSelected, options) {
-        return Align(
-          alignment: isAr ? Alignment.topRight : Alignment.topLeft,
-          child: Material(
-            elevation: 6,
-            borderRadius: BorderRadius.circular(12),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isTablet ? 420 : 320,
-                maxHeight: 220,
+            onChanged: (value) {
+              final previous = controller.text.trim();
+              controller.text = value;
+              if (type == VehicleLookupType.make &&
+                  dependentModelController != null &&
+                  previous.toLowerCase() != value.trim().toLowerCase()) {
+                dependentModelController.clear();
+              }
+              if (type == VehicleLookupType.make) {
+                // Trigger API-backed make refresh while typing.
+                vm.loadMakes(forceRefresh: true);
+              } else if (vm.hasExactMake((makeController?.text ?? '').trim())) {
+                final typedMake = (makeController?.text ?? '').trim();
+                // Trigger model API on every change only for an exact selected make.
+                vm.loadModelsForMake(typedMake, forceRefresh: true);
+              }
+            },
+            decoration: InputDecoration(
+              labelText: label,
+              hintText: label,
+              hintTextDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+              alignLabelWithHint: true,
+              labelStyle: AppTextStyles.bodyMedium.copyWith(
+                color: Colors.grey,
+                fontSize: isTablet ? 14 : 13,
               ),
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final option = options.elementAt(index);
-                  return InkWell(
-                    onTap: () => onSelected(option),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Text(
-                        type == VehicleLookupType.make
-                            ? _vehicleLabelWithArabic(option)
-                            : option,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontSize: isTablet ? 14 : 13,
-                          color: AppColors.secondaryLight,
-                          fontWeight: FontWeight.w600,
+              hintStyle: AppTextStyles.bodyMedium.copyWith(
+                color: _fieldHintColor,
+                fontSize: isTablet ? 14 : 13,
+              ),
+              prefixIcon: Icon(icon, size: isTablet ? 22 : 20, color: Colors.grey.shade400),
+              suffixIcon: type == VehicleLookupType.model &&
+                  !vm.hasExactMake((makeController?.text ?? '').trim())
+                  ? Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  Icons.info_outline,
+                  size: isTablet ? 18 : 16,
+                  color: Colors.grey.shade400,
+                ),
+              )
+                  : null,
+              filled: true,
+              fillColor: Colors.white,
+              isDense: true,
+              contentPadding: EdgeInsets.fromLTRB(
+                isTablet ? 10 : 8,
+                isTablet ? 14 : 12,
+                isTablet ? 10 : 8,
+                isTablet ? 14 : 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          );
+        },
+        optionsViewBuilder: (context, onSelected, options) {
+          return Align(
+            alignment: isAr ? Alignment.topRight : Alignment.topLeft,
+            child: Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(12),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isTablet ? 420 : 320,
+                  maxHeight: 220,
+                ),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  shrinkWrap: true,
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final option = options.elementAt(index);
+                    return InkWell(
+                      onTap: () => onSelected(option),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: LocalizedApiText(
+                          type == VehicleLookupType.make
+                              ? _vehicleLabelWithArabic(option)
+                              : option,
+                          textAlign: isAr ? TextAlign.right : TextAlign.left,
+                          textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontSize: isTablet ? 14 : 13,
+                            color: AppColors.secondaryLight,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        );
-      },
-    ),
+          );
+        },
+      ),
     );
   }
 
   Widget _mobileCountryDialPrefix(
-    AddCustomerViewModel vm, {
-    required bool isTablet,
-    bool enabled = true,
-  }) {
+      AddCustomerViewModel vm, {
+        required bool isTablet,
+        bool enabled = true,
+      }) {
     final textStyle = AppTextStyles.bodyMedium.copyWith(
       fontWeight: FontWeight.w700,
       fontSize: isTablet ? 14 : 13,
@@ -1528,8 +1562,8 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
         }).toList(),
         onChanged: enabled
             ? (v) {
-                if (v != null) vm.setMobileDialCountry(v);
-              }
+          if (v != null) vm.setMobileDialCountry(v);
+        }
             : null,
         selectedItemBuilder: (context) => PosAddCustomerMobileDial.values.map((code) {
           return Padding(
@@ -1549,10 +1583,10 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   }
 
   Widget _buildNationalMobileField(
-    AddCustomerViewModel vm, {
-    required bool isTablet,
-    bool readOnly = false,
-  }) {
+      AddCustomerViewModel vm, {
+        required bool isTablet,
+        bool readOnly = false,
+      }) {
     final isAr = Localizations.maybeLocaleOf(context)?.languageCode == 'ar';
     return TextFormField(
       controller: vm.mobileController,
@@ -1643,175 +1677,209 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
   }
 
   Widget _buildCustomerHistoryAutocompleteField(
-    String label,
-    TextEditingController controller,
-    IconData icon, {
-    required AddCustomerViewModel vm,
-    TextInputType keyboardType = TextInputType.text,
-    bool isTablet = false,
-    String? Function(String?)? validator,
-    List<TextInputFormatter>? inputFormatters,
-    bool enableSuggestions = true,
-    bool autocorrect = true,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-  }) {
+      String label,
+      TextEditingController controller,
+      IconData icon, {
+        required AddCustomerViewModel vm,
+        TextInputType keyboardType = TextInputType.text,
+        bool isTablet = false,
+        String? Function(String?)? validator,
+        List<TextInputFormatter>? inputFormatters,
+        bool enableSuggestions = true,
+        bool autocorrect = true,
+        TextCapitalization textCapitalization = TextCapitalization.none,
+      }) {
     final isAr = Localizations.maybeLocaleOf(context)?.languageCode == 'ar';
     return KeyedSubtree(
       key: ValueKey('custhist_vehicle_${vm.customerPrefillRebuildToken}'),
       child: Autocomplete<SearchedCustomer>(
-      displayStringForOption: (option) {
-        final plate = (vm.historyVehicleSnapshot(option)?.plateNo ?? '').trim();
-        return plate.isNotEmpty ? plate : option.mobile;
-      },
-      initialValue: TextEditingValue(text: controller.text),
-      optionsBuilder: (textEditingValue) {
-        final q = textEditingValue.text.trim();
-        if (q.length < 2) return vm.historyFocusHints;
-        return vm.vehicleHistorySuggestions;
-      },
-      onSelected: (selection) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!context.mounted) return;
-          vm.prefillFromCustomer(selection);
-        });
-      },
-      fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
-        return _CustomerHistoryFieldFocusLoader(
-          focusNode: focusNode,
-          textEditingController: textController,
-          vm: vm,
-          child: TextFormField(
-            controller: textController,
+        displayStringForOption: (option) {
+          final plate = (vm.historyVehicleSnapshot(option)?.plateNo ?? '').trim();
+          return plate.isNotEmpty ? plate : option.mobile;
+        },
+        initialValue: TextEditingValue(text: controller.text),
+        optionsBuilder: (textEditingValue) {
+          final q = textEditingValue.text.trim();
+          if (q.length < 2) return vm.historyFocusHints;
+          return vm.vehicleHistorySuggestions;
+        },
+        onSelected: (selection) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!context.mounted) return;
+            vm.prefillFromCustomer(selection);
+          });
+        },
+        fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
+          return _CustomerHistoryFieldFocusLoader(
             focusNode: focusNode,
-            keyboardType: keyboardType,
-            textCapitalization: textCapitalization,
-            validator: validator,
-            textAlign: isAr ? TextAlign.right : TextAlign.left,
-            textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-            inputFormatters: [
-              EnglishNumberFormatter(),
-              if (keyboardType == TextInputType.number || keyboardType == TextInputType.phone)
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹०-९]')),
-              ...?inputFormatters,
-            ],
-            enableSuggestions: enableSuggestions,
-            autocorrect: autocorrect,
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontSize: isTablet ? 14 : 14,
-              fontWeight: FontWeight.w500,
+            textEditingController: textController,
+            vm: vm,
+            child: TextFormField(
+              controller: textController,
+              focusNode: focusNode,
+              keyboardType: keyboardType,
+              textCapitalization: textCapitalization,
+              validator: validator,
+              textAlign: isAr ? TextAlign.right : TextAlign.left,
+              textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+              inputFormatters: [
+                EnglishNumberFormatter(),
+                if (keyboardType == TextInputType.number || keyboardType == TextInputType.phone)
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹०-९]')),
+                ...?inputFormatters,
+              ],
+              enableSuggestions: enableSuggestions,
+              autocorrect: autocorrect,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontSize: isTablet ? 14 : 14,
+                fontWeight: FontWeight.w500,
+              ),
+              onChanged: (value) {
+                controller.text = value;
+                vm.searchCustomerHistoryByVehicle(value);
+              },
+              decoration: InputDecoration(
+                labelText: label,
+                hintText: label,
+                hintTextDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                alignLabelWithHint: true,
+                labelStyle: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.grey,
+                  fontSize: isTablet ? 14 : 13,
+                ),
+                hintStyle: AppTextStyles.bodyMedium.copyWith(
+                  color: _fieldHintColor,
+                  fontSize: isTablet ? 14 : 13,
+                ),
+                prefixIcon: Icon(icon, size: isTablet ? 22 : 20, color: Colors.grey.shade400),
+                filled: true,
+                fillColor: Colors.white,
+                isDense: true,
+                contentPadding: EdgeInsets.fromLTRB(
+                  isTablet ? 10 : 8,
+                  isTablet ? 14 : 12,
+                  isTablet ? 10 : 8,
+                  isTablet ? 14 : 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
-            onChanged: (value) {
-              controller.text = value;
-              vm.searchCustomerHistoryByVehicle(value);
-            },
-            decoration: InputDecoration(
-              labelText: label,
-              hintText: label,
-              hintTextDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-              alignLabelWithHint: true,
-              labelStyle: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.grey,
-                fontSize: isTablet ? 14 : 13,
-              ),
-              hintStyle: AppTextStyles.bodyMedium.copyWith(
-                color: _fieldHintColor,
-                fontSize: isTablet ? 14 : 13,
-              ),
-              prefixIcon: Icon(icon, size: isTablet ? 22 : 20, color: Colors.grey.shade400),
-              filled: true,
-              fillColor: Colors.white,
-              isDense: true,
-              contentPadding: EdgeInsets.fromLTRB(
-                isTablet ? 10 : 8,
-                isTablet ? 14 : 12,
-                isTablet ? 10 : 8,
-                isTablet ? 14 : 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-        );
-      },
-      optionsViewBuilder: (context, onSelected, options) {
-        return Align(
-          alignment: isAr ? Alignment.topRight : Alignment.topLeft,
-          child: Material(
-            elevation: 6,
-            borderRadius: BorderRadius.circular(12),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isTablet ? 480 : 320,
-                maxHeight: 240,
-              ),
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final option = options.elementAt(index);
-                  final vehicle = vm.historyVehicleSnapshot(option);
-                  final plate = vehicle?.plateNo ?? '';
-                  final title = plate.isNotEmpty ? plate : option.mobile;
-                  final subtitle = '${option.name}${(vehicle?.make ?? '').isNotEmpty ? ' • ${vehicle!.make} ${vehicle.model}' : ''}';
-                  return InkWell(
-                    onTap: () {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      onSelected(option);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontSize: isTablet ? 14 : 13,
-                              color: AppColors.secondaryLight,
-                              fontWeight: FontWeight.w700,
+          );
+        },
+        optionsViewBuilder: (context, onSelected, options) {
+          return Align(
+            alignment: isAr ? Alignment.topRight : Alignment.topLeft,
+            child: Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(12),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isTablet ? 480 : 320,
+                  maxHeight: 240,
+                ),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  shrinkWrap: true,
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final option = options.elementAt(index);
+                    final vehicle = vm.historyVehicleSnapshot(option);
+                    final plate = vehicle?.plateNo ?? '';
+                    final title = plate.isNotEmpty ? plate : option.mobile;
+                    final customerName = option.name;
+                    final make = vehicle?.make ?? '';
+                    final model = vehicle?.model ?? '';
+                    final hasMakeModel = make.isNotEmpty;
+                    return InkWell(
+                      onTap: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        onSelected(option);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _localizedPlateOrDigits(title),
+                              textAlign: isAr ? TextAlign.right : TextAlign.left,
+                              textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontSize: isTablet ? 14 : 13,
+                                color: AppColors.secondaryLight,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              fontSize: isTablet ? 12 : 11,
-                              color: Colors.grey.shade600,
+                            const SizedBox(height: 2),
+                            // Subtitle: name [• make model] — each part localized
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: LocalizedApiText(
+                                    customerName,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      fontSize: isTablet ? 12 : 11,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (hasMakeModel) ...[
+                                  Text(
+                                    ' • ',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      fontSize: isTablet ? 12 : 11,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  Flexible(
+                                    child: LocalizedApiText(
+                                      '$make $model'.trim(),
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        fontSize: isTablet ? 12 : 11,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        );
-      },
-    ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildReadOnlyField(
-    String label,
-    String value,
-    IconData icon, {
-    bool isTablet = false,
-    int? maxValueLines,
-    TextOverflow? valueOverflow,
-  }) {
+      String label,
+      String value,
+      IconData icon, {
+        bool isTablet = false,
+        int? maxValueLines,
+        TextOverflow? valueOverflow,
+      }) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 14, vertical: isTablet ? 14 : 12),
       decoration: BoxDecoration(
@@ -1875,7 +1943,7 @@ class _PosAddCustomerViewState extends State<PosAddCustomerView> with SingleTick
                 MaterialPageRoute(
                   builder: (_) => PosDepartmentView(
                     initialDepartmentId:
-                        context.read<PosViewModel>().editDepartmentId,
+                    context.read<PosViewModel>().editDepartmentId,
                   ),
                 ),
               );
@@ -1981,3 +2049,15 @@ class _CustomerHistoryFieldFocusLoaderState extends State<_CustomerHistoryFieldF
 }
 
 enum VehicleLookupType { make, model }
+
+/// Forces all typed / pasted text to uppercase in any [TextField].
+/// Usage: add to `inputFormatters: [UpperCaseTextFormatter()]`
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    return newValue.copyWith(text: newValue.text.toUpperCase());
+  }
+}

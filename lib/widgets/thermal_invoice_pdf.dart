@@ -14,6 +14,14 @@ import '../utils/thermal_invoice_totals.dart';
 import '../utils/thermal_receipt_logo_preprocess.dart';
 import '../utils/thermal_safe_text.dart';
 import 'thermal_invoice_pdf_ar_constants.dart';
+import 'thermal_arabic_pdf_reshaper.dart';
+
+/// Reshape Arabic for the `pdf` package (which has no HarfBuzz shaping).
+/// Call this on every Arabic string before passing it to [pw.Text].
+/// Do **not** set [pw.TextDirection.rtl] on reshaped strings — the reshaper
+/// already reverses the glyphs for LTR layout.
+String _ar(String s) => reshapeArabic(s);
+String _arMixedLtr(String s) => reshapeArabicForMixedLtr(s);
 
 bool _thermalInvoicePdfHasArabic(String s) =>
     RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]').hasMatch(s);
@@ -89,9 +97,15 @@ pw.Document buildThermalInvoicePdfDocument({
 
   final pdf = pw.Document();
 
-  const fsMeta = 7.2;
+  const fsMeta = 7.45;
   pw.TextStyle tsLabel() => pw.TextStyle(
     font: fontBold,
+    fontSize: fsMeta + 0.35,
+    fontWeight: pw.FontWeight.bold,
+    height: 1.05,
+  );
+  pw.TextStyle tsArabicLabel() => pw.TextStyle(
+    font: fontArabic,
     fontSize: fsMeta + 0.35,
     fontWeight: pw.FontWeight.bold,
     height: 1.05,
@@ -100,6 +114,13 @@ pw.Document buildThermalInvoicePdfDocument({
       pw.TextStyle(font: font, fontSize: fsMeta, height: 1.05);
 
   String pdfUserLine(String raw) => pdfStripBidiAndInvisible(raw.trim());
+  String pdfLabelLine(String raw) {
+    final clean = pdfStripBidiAndInvisible(raw.trimRight());
+    return _thermalInvoicePdfHasArabic(clean) ? _arMixedLtr(clean) : clean;
+  }
+
+  pw.TextStyle pdfLabelStyle(String raw) =>
+      _thermalInvoicePdfHasArabic(raw) ? tsArabicLabel() : tsLabel();
 
   String pdfArabicDigits(String raw) {
     var out = raw;
@@ -116,13 +137,13 @@ pw.Document buildThermalInvoicePdfDocument({
 
   String dynamicArabicFor(String raw) {
     final clean = pdfUserLine(raw);
-    if (clean.isEmpty || clean == '-' || _thermalInvoicePdfHasArabic(clean)) {
-      return '';
-    }
+    if (clean.isEmpty || clean == '-') return '';
+    if (_thermalInvoicePdfHasArabic(clean)) return '';
     final direct = dynamicArabicValues[clean] ?? dynamicArabicValues[raw.trim()];
     final ar = pdfUserLine(direct ?? '');
-    if (ar.isEmpty || ar.toLowerCase() == clean.toLowerCase()) return '';
-    return ar;
+    if (ar.isNotEmpty && ar.toLowerCase() != clean.toLowerCase()) return ar;
+    final digitMirror = pdfArabicDigits(clean);
+    return digitMirror == clean ? '' : digitMirror;
   }
 
   pw.Widget bilingualHeaderLeading(String ar, String en) {
@@ -132,9 +153,8 @@ pw.Document buildThermalInvoicePdfDocument({
         pw.Align(
           alignment: pw.Alignment.centerLeft,
           child: pw.Text(
-            ar,
+            _ar(ar),
             style: pw.TextStyle(font: fontArabic, fontSize: 6.6, height: 1.08),
-            textDirection: pw.TextDirection.rtl,
             textAlign: pw.TextAlign.right,
           ),
         ),
@@ -153,9 +173,8 @@ pw.Document buildThermalInvoicePdfDocument({
         mainAxisSize: pw.MainAxisSize.min,
         children: [
           pw.Text(
-            ar,
+            _ar(ar),
             style: pw.TextStyle(font: fontArabic, fontSize: 6.6, height: 1.08),
-            textDirection: pw.TextDirection.rtl,
             textAlign: pw.TextAlign.center,
           ),
           pw.SizedBox(height: 1.1),
@@ -176,9 +195,8 @@ pw.Document buildThermalInvoicePdfDocument({
         pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Text(
-            ar,
+            _ar(ar),
             style: pw.TextStyle(font: fontArabic, fontSize: 6.6, height: 1.08),
-            textDirection: pw.TextDirection.rtl,
             textAlign: pw.TextAlign.right,
           ),
         ),
@@ -213,13 +231,12 @@ pw.Document buildThermalInvoicePdfDocument({
         mainAxisSize: pw.MainAxisSize.min,
         children: [
           pw.Text(
-            ThermalInvoicePdfLabels.paymentArabicLine(paymentMethodRaw),
+            _ar(ThermalInvoicePdfLabels.paymentArabicLine(paymentMethodRaw)),
             style: pw.TextStyle(
               font: fontArabic,
               fontSize: arabicSize,
               height: 1.08,
             ),
-            textDirection: pw.TextDirection.rtl,
             textAlign: pw.TextAlign.left,
             maxLines: 10,
           ),
@@ -251,13 +268,12 @@ pw.Document buildThermalInvoicePdfDocument({
         mainAxisSize: pw.MainAxisSize.min,
         children: [
           pw.Text(
-            arabicLines,
+            _ar(arabicLines),
             style: pw.TextStyle(
               font: fontArabic,
               fontSize: arabicSize,
               height: 1.08,
             ),
-            textDirection: pw.TextDirection.rtl,
             textAlign: pw.TextAlign.left,
             maxLines: 10,
           ),
@@ -305,25 +321,23 @@ pw.Document buildThermalInvoicePdfDocument({
             children: [
               pw.Expanded(
                 child: pw.Text(
-                  arabicLines,
+                  _ar(arabicLines),
                   style: pw.TextStyle(
                     font: fontArabic,
                     fontSize: arabicSize,
                     height: 1.08,
                   ),
-                  textDirection: pw.TextDirection.rtl,
                   textAlign: pw.TextAlign.left,
                   maxLines: 10,
                 ),
               ),
               pw.Text(
-                pdfMoneyAr(amount),
+                _ar(pdfMoneyAr(amount)),
                 style: pw.TextStyle(
                   font: fontArabic,
                   fontSize: arabicSize,
                   height: 1.08,
                 ),
-                textDirection: pw.TextDirection.rtl,
                 textAlign: pw.TextAlign.right,
               ),
             ],
@@ -361,17 +375,16 @@ pw.Document buildThermalInvoicePdfDocument({
           ? pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(label, style: tsLabel()),
+          pw.Text(pdfLabelLine(label), style: pdfLabelStyle(label)),
           pw.SizedBox(width: 3),
           pw.Expanded(
             child: pw.Text(
-              v,
+              _ar(v),
               style: pw.TextStyle(
                 font: fontArabic,
                 fontSize: fsMeta + 0.5,
                 height: 1.05,
               ),
-              textDirection: pw.TextDirection.rtl,
               textAlign: pw.TextAlign.left,
               maxLines: 6,
               softWrap: true,
@@ -382,7 +395,7 @@ pw.Document buildThermalInvoicePdfDocument({
           : pw.RichText(
         text: pw.TextSpan(
           children: [
-            pw.TextSpan(text: label, style: tsLabel()),
+            pw.TextSpan(text: pdfLabelLine(label), style: pdfLabelStyle(label)),
             pw.TextSpan(text: v, style: tsValue()),
           ],
         ),
@@ -402,13 +415,12 @@ pw.Document buildThermalInvoicePdfDocument({
         mainAxisSize: pw.MainAxisSize.min,
         children: [
           pw.Text(
-            ar,
+            _ar(ar),
             style: pw.TextStyle(
               font: fontArabic,
               fontSize: fsMeta + 0.1,
               height: 1.05,
             ),
-            textDirection: pw.TextDirection.rtl,
             textAlign: pw.TextAlign.left,
             maxLines: 6,
             softWrap: true,
@@ -436,13 +448,12 @@ pw.Document buildThermalInvoicePdfDocument({
         mainAxisSize: pw.MainAxisSize.min,
         children: [
           pw.Text(
-            plateAr,
+            _ar(plateAr),
             style: pw.TextStyle(
               font: fontArabic,
               fontSize: fsMeta + 0.1,
               height: 1.05,
             ),
-            textDirection: pw.TextDirection.rtl,
             textAlign: pw.TextAlign.left,
             maxLines: 6,
             softWrap: true,
@@ -462,36 +473,23 @@ pw.Document buildThermalInvoicePdfDocument({
   pw.Widget bilingualSectionHeader(String ar, String en) => pw.Row(
     children: [
       pw.Text(
-        ar,
+        _ar(ar),
         style: pw.TextStyle(font: fontArabic, fontSize: 7.2, height: 1.08),
-        textDirection: pw.TextDirection.rtl,
       ),
       pw.Text(' / ', style: pw.TextStyle(font: fontBold, fontSize: 7.6)),
       pw.Text(en, style: pw.TextStyle(font: fontBold, fontSize: 7.6)),
     ],
   );
 
+  /// Strong full-width divider for thermal raster printing.
+  /// Text-based dashed lines can clip or fade on 80mm raster output,
+  /// so this uses a vector line that always spans the available paper width.
   pw.Widget dashed() => pw.Padding(
-    padding: const pw.EdgeInsets.only(top: 0.35, bottom: 0.9),
-    child: pw.LayoutBuilder(
-      builder: (context, constraints) {
-        const fs = 6.2;
-        final w = constraints?.maxWidth;
-        final count = (w == null || !w.isFinite || w <= 8)
-            ? 56
-            : (w / (fs * 0.42)).floor().clamp(32, 600);
-        return pw.Text(
-          List.filled(count, '-').join(),
-          maxLines: 1,
-          overflow: pw.TextOverflow.clip,
-          style: pw.TextStyle(
-            font: font,
-            fontSize: fs,
-            color: PdfColors.grey600,
-            letterSpacing: 0,
-          ),
-        );
-      },
+    padding: const pw.EdgeInsets.symmetric(vertical: 2.1),
+    child: pw.Container(
+      width: double.infinity,
+      height: 1.1,
+      color: PdfColors.grey700,
     ),
   );
 
@@ -551,11 +549,11 @@ pw.Document buildThermalInvoicePdfDocument({
     );
   }
 
-  final itemNumStyle = pw.TextStyle(font: font, fontSize: 7.6);
-  final itemEnStyle = pw.TextStyle(font: fontBold, fontSize: 7.6);
+  final itemNumStyle = pw.TextStyle(font: fontBold, fontSize: 7.85);
+  final itemEnStyle = pw.TextStyle(font: fontBold, fontSize: 7.9);
   final itemArStyle = pw.TextStyle(
     font: fontArabic,
-    fontSize: 6.45,
+    fontSize: 6.65,
     height: 1.06,
   );
 
@@ -581,9 +579,8 @@ pw.Document buildThermalInvoicePdfDocument({
           children: [
             if (ar.isNotEmpty) ...[
               pw.Text(
-                ar,
+                _ar(ar),
                 style: itemArStyle,
-                textDirection: pw.TextDirection.rtl,
                 textAlign: pw.TextAlign.left,
                 maxLines: 4,
               ),
@@ -611,7 +608,6 @@ pw.Document buildThermalInvoicePdfDocument({
                         pw.Text(
                           pdfArabicDigits(qty),
                           style: pw.TextStyle(font: fontArabic, fontSize: 6.3),
-                          textDirection: pw.TextDirection.rtl,
                         ),
                       ],
                     ),
@@ -733,14 +729,13 @@ pw.Document buildThermalInvoicePdfDocument({
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           pw.Text(
-                            row.ar,
+                            _ar(row.ar),
                             style: pw.TextStyle(
                               font: fontArabic,
                               fontSize: 5.25,
                               height: 1.06,
                             ),
                             maxLines: 4,
-                            textDirection: pw.TextDirection.rtl,
                             textAlign: pw.TextAlign.left,
                           ),
                           pw.SizedBox(height: 1.5),
@@ -761,7 +756,7 @@ pw.Document buildThermalInvoicePdfDocument({
         }
 
         return pw.DefaultTextStyle(
-          style: pw.TextStyle(font: font, fontSize: 7.6),
+          style: pw.TextStyle(font: font, fontSize: 7.85),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
@@ -781,13 +776,12 @@ pw.Document buildThermalInvoicePdfDocument({
                   mainAxisSize: pw.MainAxisSize.min,
                   children: [
                     pw.Text(
-                      ThermalInvoicePdfLabels.documentTitleAr,
+                      _ar(ThermalInvoicePdfLabels.documentTitleAr),
                       style: pw.TextStyle(
                         font: fontArabic,
                         fontSize: 9.8,
                         height: 1.0,
                       ),
-                      textDirection: pw.TextDirection.rtl,
                       textAlign: pw.TextAlign.center,
                     ),
                     pw.SizedBox(height: 0.8),
@@ -806,13 +800,12 @@ pw.Document buildThermalInvoicePdfDocument({
                   children: [
                     if (dynamicArabicFor(seller).isNotEmpty) ...[
                       pw.Text(
-                        dynamicArabicFor(seller),
+                        _ar(dynamicArabicFor(seller)),
                         style: pw.TextStyle(
                           font: fontArabic,
                           fontSize: 9.0,
                           height: 1.05,
                         ),
-                        textDirection: pw.TextDirection.rtl,
                         textAlign: pw.TextAlign.center,
                         maxLines: 3,
                       ),
@@ -979,13 +972,12 @@ pw.Document buildThermalInvoicePdfDocument({
                     ),
                     pw.SizedBox(width: 10),
                     pw.Text(
-                      ThermalInvoicePdfLabels.thankYouAr,
+                      _ar(ThermalInvoicePdfLabels.thankYouAr),
                       style: pw.TextStyle(
                         font: fontArabic,
                         fontSize: 8,
                         height: 1.1,
                       ),
-                      textDirection: pw.TextDirection.rtl,
                     ),
                   ],
                 ),
@@ -1049,6 +1041,9 @@ Future<Uint8List> buildThermalInvoicePdfBytes({
     }
   }
 
+  // Dynamic API/database values cannot use the Flutter LocalizedApiText widget in
+  // a pdf/widgets document. Use the same translation service behind
+  // LocalizedApiText so screen preview, PDF, and Wi-Fi print all stay bilingual.
   final dynamicArabicValues = <String, String>{};
 
   Future<void> addDynamicArabic(String? raw) async {
@@ -1056,6 +1051,11 @@ Future<Uint8List> buildThermalInvoicePdfBytes({
     if (clean.isEmpty || clean == '-' || _thermalInvoicePdfHasArabic(clean)) {
       return;
     }
+    // Plates are handled by PlateTransliterator only, not by API translation.
+    if (PlateTransliterator.looksLikePlate(clean)) return;
+    // Pure numbers, phone numbers, dates, and IDs only need Arabic-Indic digits;
+    // do not send them to dynamic API translation.
+    if (!RegExp(r'[A-Za-z]').hasMatch(clean)) return;
     if (dynamicArabicValues.containsKey(clean)) return;
     try {
       final translated = await AppTranslationService.localizedDynamicValueForLanguage(

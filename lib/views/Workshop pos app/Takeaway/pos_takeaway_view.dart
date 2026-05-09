@@ -10,6 +10,7 @@ import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/toast_service.dart';
 import '../../../models/takeaway_models.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Order Screen/pos_invoice_payment_dialog.dart';
@@ -191,7 +192,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         body: wrapPosShellRailBody(
           context,
           vm.catalogLoading && vm.catalog == null
-              ? const Center(child: CircularProgressIndicator())
+              ? _TakeawayCatalogShimmer(isTablet: isTablet)
               : vm.catalogError != null && vm.catalog == null
               ? _buildCatalogError(context, vm.catalogError!)
               : _buildProductSection(context, vm, isTablet),
@@ -1985,6 +1986,134 @@ class _TakeawayCartItemCompactTileState extends State<_TakeawayCartItemCompactTi
             ],
           ),
 
+        ],
+      ),
+    );
+  }
+}
+
+class _TakeawayCatalogShimmer extends StatelessWidget {
+  const _TakeawayCatalogShimmer({required this.isTablet});
+
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(isTablet ? 22 : 12, 16, isTablet ? 14 : 12, 12),
+        child: isTablet
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(flex: 3, child: _catalogArea(context, true)),
+                  const SizedBox(width: 12),
+                  SizedBox(width: 360, child: _invoicePanel()),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const PosShimmerBox(width: double.infinity, height: 44, radius: 14),
+                  const SizedBox(height: 16),
+                  _chipRow(),
+                  const SizedBox(height: 14),
+                  Expanded(child: _productList(false)),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _catalogArea(BuildContext context, bool tablet) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const PosShimmerBox(width: double.infinity, height: 46, radius: 14),
+        const SizedBox(height: 14),
+        _chipRow(),
+        const SizedBox(height: 12),
+        _chipRow(short: true),
+        const SizedBox(height: 14),
+        Expanded(child: _productList(tablet)),
+      ],
+    );
+  }
+
+  Widget _chipRow({bool short = false}) {
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: short ? 4 : 5,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) => PosShimmerBox(width: i == 0 ? 72 : 100, height: 36, radius: 12),
+      ),
+    );
+  }
+
+  Widget _productList(bool tablet) {
+    return GridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: tablet ? 8 : 5,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: tablet ? 2 : 1,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        mainAxisExtent: 96,
+      ),
+      itemBuilder: (_, __) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: const Row(
+          children: [
+            PosShimmerBox(width: 58, height: 58, radius: 14),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  PosShimmerLine(width: double.infinity, height: 13),
+                  SizedBox(height: 8),
+                  PosShimmerLine(width: 120, height: 11),
+                  SizedBox(height: 8),
+                  PosShimmerLine(width: 74, height: 11),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _invoicePanel() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PosShimmerLine(width: 140, height: 14),
+          SizedBox(height: 16),
+          PosShimmerBox(width: double.infinity, height: 48, radius: 12),
+          SizedBox(height: 10),
+          PosShimmerBox(width: double.infinity, height: 48, radius: 12),
+          Spacer(),
+          PosShimmerLine(width: double.infinity, height: 12),
+          SizedBox(height: 10),
+          PosShimmerLine(width: double.infinity, height: 12),
+          SizedBox(height: 14),
+          PosShimmerBox(width: double.infinity, height: 44, radius: 12),
         ],
       ),
     );

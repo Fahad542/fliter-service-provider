@@ -10,6 +10,9 @@ import '../models/store_closing_model.dart';
 import '../utils/thermal_invoice_totals.dart' show kThermalInvoiceLogoAsset;
 import '../utils/thermal_receipt_logo_preprocess.dart';
 import '../utils/thermal_safe_text.dart';
+import 'thermal_arabic_pdf_reshaper.dart';
+
+String _ar(String s) => reshapeArabic(s);
 
 bool _hasArabicScript(String s) =>
     RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]').hasMatch(s);
@@ -81,9 +84,8 @@ pw.Document buildThermalStoreClosingPdfDocument({
             pw.Align(
               alignment: pw.Alignment.centerRight,
               child: pw.Text(
-                v,
+                _ar(v),
                 style: pw.TextStyle(font: fontArabic, fontSize: fsBold),
-                textDirection: pw.TextDirection.rtl,
                 textAlign: pw.TextAlign.right,
                 maxLines: 5,
                 softWrap: true,
@@ -104,12 +106,30 @@ pw.Document buildThermalStoreClosingPdfDocument({
     );
   }
 
+  bool _cellHasArabic(String s) =>
+      RegExp(r'[\u0600-\u06FF]').hasMatch(s);
+
   pw.Widget cell(
     String text, {
     pw.TextAlign align = pw.TextAlign.left,
     bool bold = false,
     double? size,
   }) {
+    final hasAr = _cellHasArabic(text);
+    if (hasAr) {
+      // Mixed Arabic/Latin: reshape the Arabic portions, use Arabic font.
+      final reshaped = reshapeArabic(text);
+      return pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 2, vertical: 3.5),
+        child: pw.Text(
+          reshaped,
+          style: pw.TextStyle(font: fontArabic, fontSize: size ?? fs),
+          textAlign: align,
+          maxLines: 3,
+          softWrap: true,
+        ),
+      );
+    }
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 2, vertical: 3.5),
       child: pw.Text(
@@ -169,7 +189,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
         kids.addAll([
           pw.Center(
             child: pw.Text(
-              thermalSafeText('تقرير إغلاق المتجر / STORE CLOSING REPORT'),
+              thermalSafeText(_ar('تقرير إغلاق المتجر') + ' / STORE CLOSING REPORT'),
               style: pw.TextStyle(font: fontBold, fontSize: titleFs),
               textAlign: pw.TextAlign.center,
             ),
@@ -279,7 +299,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
                 children: [
                   pw.Expanded(
                     child: pw.Text(
-                      thermalSafeText('خصم: إجمالي مرتجعات المبيعات / Less: Total sales return'),
+                      '${_ar('خصم: إجمالي مرتجعات المبيعات')} / Less: Total sales return',
                       style: pw.TextStyle(font: fontBold, fontSize: fsBold + 0.6),
                       softWrap: true,
                     ),
@@ -311,7 +331,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
               children: [
                 pw.Expanded(
                   child: pw.Text(
-                    thermalSafeText('الإجمالي الكلي / Grand Total'),
+                    '${_ar('الإجمالي الكلي')} / Grand Total',
                     style: pw.TextStyle(font: fontBold, fontSize: fsBold + 0.6),
                   ),
                 ),
@@ -327,7 +347,7 @@ pw.Document buildThermalStoreClosingPdfDocument({
           pw.SizedBox(height: 9),
           pw.Center(
             child: pw.Text(
-              thermalSafeText('شكراً لك / Thank you'),
+              '${_ar('شكراً لك')} / Thank you',
               style: pw.TextStyle(font: fontBold, fontSize: 7.5),
             ),
           ),

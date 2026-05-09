@@ -98,6 +98,66 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @menuAllApps.
+  ///
+  /// In en, this message translates to:
+  /// **'ALL Apps'**
+  String get menuAllApps;
+
+  /// No description provided for @menuSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose one of these apps'**
+  String get menuSubtitle;
+
+  /// No description provided for @menuSuperAdminPortal.
+  ///
+  /// In en, this message translates to:
+  /// **'Super Admin\\nPortal'**
+  String get menuSuperAdminPortal;
+
+  /// No description provided for @menuWorkshopOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop\\nOwner'**
+  String get menuWorkshopOwner;
+
+  /// No description provided for @menuTechnicianApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Technician\\nApp'**
+  String get menuTechnicianApp;
+
+  /// No description provided for @menuWorkshopPosApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop\\nPOS App'**
+  String get menuWorkshopPosApp;
+
+  /// No description provided for @menuWorkshopPosAppPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop POS App'**
+  String get menuWorkshopPosAppPlain;
+
+  /// No description provided for @menuLockerPortal.
+  ///
+  /// In en, this message translates to:
+  /// **'Locker\\nPortal'**
+  String get menuLockerPortal;
+
+  /// No description provided for @menuSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get menuSupplier;
+
+  /// No description provided for @menuVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version: 1.0.0'**
+  String get menuVersion;
+
   /// No description provided for @ownerShellHome.
   ///
   /// In en, this message translates to:
@@ -8013,7 +8073,7 @@ abstract class AppLocalizations {
   /// No description provided for @posHomeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Search by customer number, vehicle number,\nphone number or customer name'**
+  /// **'Search by customer number, vehicle number,phone number or customer name'**
   String get posHomeSubtitle;
 
   /// No description provided for @posHomeSearchHint.

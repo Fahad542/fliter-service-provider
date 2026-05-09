@@ -7,6 +7,7 @@ import 'technician_view_model.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../models/pos_technician_model.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 
@@ -124,7 +125,7 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
           child: Consumer<TechnicianViewModel>(
             builder: (context, vm, child) {
               if (vm.isLoading && vm.technicians.isEmpty) {
-                return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
+                return _TechnicianViewListShimmer(isTablet: isTablet);
               }
 
               if (vm.errorMessage != null && vm.technicians.isEmpty) {
@@ -269,6 +270,83 @@ class _PosTechnicianViewState extends State<PosTechnicianView> {
           onOnCallDutyChanged: (v) => vm.setTechnicianOnCallDuty(context, tech, v),
         );
       },
+    );
+  }
+}
+
+
+class _TechnicianViewListShimmer extends StatelessWidget {
+  const _TechnicianViewListShimmer({required this.isTablet});
+
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    final horizontalPadding = isTablet ? 32.0 : 16.0;
+    return PosShimmer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(horizontalPadding, 24, horizontalPadding, 0),
+            child: const PosShimmerBox(width: double.infinity, height: 46, radius: 14),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            child: SizedBox(
+              height: 38,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: 4,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) => PosShimmerBox(width: i == 0 ? 70 : 100, height: 36, radius: 20),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              itemCount: isTablet ? 6 : 4,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: isTablet ? 2 : 1,
+                mainAxisExtent: 132,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 12,
+              ),
+              itemBuilder: (_, __) => Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: const Row(
+                  children: [
+                    PosShimmerCircle(size: 48),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          PosShimmerLine(width: 150, height: 14),
+                          SizedBox(height: 10),
+                          PosShimmerLine(width: 110, height: 11),
+                          SizedBox(height: 12),
+                          PosShimmerBox(width: 90, height: 24, radius: 12),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -15,6 +15,7 @@ import '../../../models/expense_category_model.dart'; // Added
 import '../../../models/cashier_expense_models.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 
 import '../More Tab/pos_more_view.dart'; // Added
@@ -104,7 +105,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
       body: wrapPosShellRailBody(
         context,
         vm.isPettyCashLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? _PettyCashLoadingShimmer(isTablet: isTablet)
             : SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: EdgeInsets.fromLTRB(
@@ -399,7 +400,11 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                 if (vm.branchEmployeesLoading)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))),
+                    child: Center(
+                      child: PosShimmer(
+                        child: PosShimmerBox(width: 120, height: 18, radius: 9),
+                      ),
+                    ),
                   )
                 else
                   _buildEmployeeDropdown(vm),
@@ -440,12 +445,12 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               shadowColor: AppColors.secondaryLight.withOpacity(0.4),
             ),
             child: vm.isExpenseSubmitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+                ? const PosShimmer(
+                    child: PosShimmerBox(
+                      width: 86,
+                      height: 14,
+                      radius: 7,
+                      dark: true,
                     ),
                   )
                 : Row(
@@ -517,12 +522,12 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
               shadowColor: AppColors.secondaryLight.withOpacity(0.4),
             ),
             child: vm.isRequestSubmitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+                ? const PosShimmer(
+                    child: PosShimmerBox(
+                      width: 86,
+                      height: 14,
+                      radius: 7,
+                      dark: true,
                     ),
                   )
                 : Row(
@@ -930,7 +935,7 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
         SizedBox(
           height: listHeight,
           child: vm.expenseHistoryLoading && vm.expenseHistory.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? _PettyCashHistoryShimmer(isTablet: isTablet)
               : vm.expenseHistory.isEmpty
                   ? RefreshIndicator(
                       onRefresh: () => vm.fetchExpenseHistory(refresh: true),
@@ -964,10 +969,8 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                                       ? null
                                       : () => vm.fetchExpenseHistory(refresh: false),
                                   child: vm.expenseHistoryLoading
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                      ? const PosShimmer(
+                                          child: PosShimmerBox(width: 76, height: 12, radius: 6),
                                         )
                                       : Text(AppLocalizations.of(context)!.posPettyCashLoadMore),
                                 ),
@@ -1284,6 +1287,135 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
           ),
         ),
       ],
+    );
+  }
+}
+
+
+class _PettyCashLoadingShimmer extends StatelessWidget {
+  const _PettyCashLoadingShimmer({required this.isTablet});
+
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.all(isTablet ? 16 : 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: EdgeInsets.all(isTablet ? 18 : 12),
+              decoration: BoxDecoration(
+                color: AppColors.secondaryLight,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PosShimmerBox(width: 132, height: 24, radius: 8, dark: true),
+                  SizedBox(height: 16),
+                  PosShimmerLine(width: 170, height: 12, dark: true),
+                  SizedBox(height: 8),
+                  PosShimmerLine(width: 112, height: 26, radius: 10, dark: true),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE8ECF3)),
+              ),
+              child: const Row(
+                children: [
+                  Expanded(child: PosShimmerBox(width: double.infinity, height: 40, radius: 12)),
+                  SizedBox(width: 6),
+                  Expanded(child: PosShimmerBox(width: double.infinity, height: 40, radius: 12)),
+                  SizedBox(width: 6),
+                  Expanded(child: PosShimmerBox(width: double.infinity, height: 40, radius: 12)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE8ECF3)),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PosShimmerLine(width: 160, height: 14),
+                  SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(child: PosShimmerBox(width: double.infinity, height: 46, radius: 12)),
+                      SizedBox(width: 12),
+                      Expanded(child: PosShimmerBox(width: double.infinity, height: 46, radius: 12)),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  PosShimmerBox(width: double.infinity, height: 76, radius: 12),
+                  SizedBox(height: 20),
+                  PosShimmerBox(width: double.infinity, height: 44, radius: 14),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PettyCashHistoryShimmer extends StatelessWidget {
+  const _PettyCashHistoryShimmer({required this.isTablet});
+
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: isTablet ? 6 : 4,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE8ECF3)),
+            ),
+            child: const Row(
+              children: [
+                PosShimmerCircle(size: 36),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      PosShimmerLine(width: double.infinity, height: 13),
+                      SizedBox(height: 8),
+                      PosShimmerLine(width: 120, height: 11),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 12),
+                PosShimmerBox(width: 72, height: 20, radius: 8),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

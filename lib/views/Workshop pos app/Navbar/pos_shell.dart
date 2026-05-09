@@ -32,6 +32,7 @@ import '../Takeaway/pos_takeaway_view.dart';
 import '../Takeaway/takeaway_view_model.dart';
 import '../Inventory Sales/inventory_sales_view_model.dart';
 import '../Inventory Sales/pos_inventory_sales_view.dart';
+import '../Corporate Bookings/pos_corporate_bookings_view.dart';
 // import '../../utils/app_colors.dart';
 // import '../../utils/app_text_styles.dart';
 // import '../Workshop pos app/Home Screen/pos_home_view.dart';
@@ -150,6 +151,7 @@ class _PosShellState extends State<PosShell> {
     PosTakeawayView(),
     PosCashierBroadcastView(),
     PosInventorySalesView(),
+    PosCorporateBookingsView(showBackButton: false),
   ];
 
   @override
@@ -187,7 +189,7 @@ class _PosShellState extends State<PosShell> {
     final isLockedInStoreClosing = isStoreClosingTab && isReconciled;
 
     final hideBottomBar =
-        [4, 5, 6, 7, 8, 9, 10, 11, 12].contains(validIndex) ||
+        [4, 5, 6, 7, 8, 9, 10, 11, 12, 13].contains(validIndex) ||
             isLockedInStoreClosing;
 
     final stackBody = PosShellRailLayout(
@@ -317,6 +319,12 @@ class _PosShellState extends State<PosShell> {
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                     2, l10n.posNavOrdersHub, Icons.receipt_long_outlined, isTablet),
+                const SizedBox(height: 8),
+                _buildDrawerItem(
+                    13,
+                    l10n.posCorporateBookingsTitle,
+                    Icons.business_center_rounded,
+                    isTablet),
                 const SizedBox(height: 8),
                 _buildDrawerItem(
                     11,

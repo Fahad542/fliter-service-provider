@@ -9,6 +9,36 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get menuAllApps => 'جميع التطبيقات';
+
+  @override
+  String get menuSubtitle => 'يرجى اختيار أحد هذه التطبيقات';
+
+  @override
+  String get menuSuperAdminPortal => 'بوابة\\nالمشرف العام';
+
+  @override
+  String get menuWorkshopOwner => 'مالك\\nالورشة';
+
+  @override
+  String get menuTechnicianApp => 'تطبيق\\nالفني';
+
+  @override
+  String get menuWorkshopPosApp => 'تطبيق نقاط\\nبيع الورشة';
+
+  @override
+  String get menuWorkshopPosAppPlain => 'تطبيق نقاط بيع الورشة';
+
+  @override
+  String get menuLockerPortal => 'بوابة\\nالخزينة';
+
+  @override
+  String get menuSupplier => 'المورد';
+
+  @override
+  String get menuVersion => 'الإصدار: 1.0.0';
+
+  @override
   String get ownerShellHome => 'الرئيسية';
 
   @override
@@ -4179,7 +4209,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get posHomeSubtitle =>
-      'ابحث برقم العميل أو رقم المركبة\nأو رقم الهاتف أو اسم العميل';
+      'ابحث برقم العميل أو رقم المركبةأو رقم الهاتف أو اسم العميل';
 
   @override
   String get posHomeSearchHint =>

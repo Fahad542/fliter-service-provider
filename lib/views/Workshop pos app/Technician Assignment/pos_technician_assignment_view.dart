@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import 'package:filter_service_providers/views/Workshop pos app/Navbar/pos_shell.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Technician Screen/technician_view_model.dart';
@@ -652,29 +653,7 @@ class _PosTechnicianAssignmentViewState
                       ),
                       Expanded(
                         child: listLoading
-                            ? Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const SizedBox(
-                                      width: 36,
-                                      height: 36,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 3,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      AppLocalizations.of(context)!.posTechnicianLoading,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
+                            ? const _TechnicianAssignmentListShimmer()
                             : technicians.isEmpty
                                 ? Center(
                                     child: Text(AppLocalizations.of(context)!.posTechAssignNoResults),
@@ -945,14 +924,10 @@ class _PosTechnicianAssignmentViewState
                 },
               ),
               if (context.watch<TechnicianViewModel>().isLoading)
-                Positioned.fill(
-                  child: Container(
+                const Positioned.fill(
+                  child: ColoredBox(
                     color: Colors.white,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primaryLight,
-                      ),
-                    ),
+                    child: _TechnicianAssignmentListShimmer(),
                   ),
                 ),
             ],
@@ -1023,12 +998,11 @@ class _PosTechnicianAssignmentViewState
                                         ),
                                       ),
                                       child: (_broadcastingDuty == 'on_call')
-                                          ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                color: AppColors.secondaryLight,
-                                                strokeWidth: 2.5,
+                                          ? const PosShimmer(
+                                              child: PosShimmerBox(
+                                                width: 20,
+                                                height: 20,
+                                                radius: 10,
                                               ),
                                             )
                                           : broadcastCooldown
@@ -1085,12 +1059,11 @@ class _PosTechnicianAssignmentViewState
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                     ),
-                                    child: busy ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
+                                    child: busy ? const PosShimmer(
+                                      child: PosShimmerBox(
+                                        width: 20,
+                                        height: 20,
+                                        radius: 10,
                                       ),
                                     ) : Text(
                                       AppLocalizations.of(context)!.posTechnicianSave,
@@ -1134,5 +1107,61 @@ class _PosTechnicianAssignmentViewState
     } finally {
       if (mounted) setState(() => _broadcastingDuty = null);
     }
+  }
+}
+
+
+class _TechnicianAssignmentListShimmer extends StatelessWidget {
+  const _TechnicianAssignmentListShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    return PosShimmer(
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 24 : 16,
+          vertical: 8,
+        ),
+        itemCount: isLandscape ? 6 : 4,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isLandscape ? 3 : (isTablet ? 2 : 1),
+          mainAxisExtent: isTablet ? 156 : 138,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 10,
+        ),
+        itemBuilder: (_, __) => Container(
+          padding: EdgeInsets.all(isTablet ? 16 : 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: const Row(
+            children: [
+              PosShimmerCircle(size: 48),
+              SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PosShimmerLine(width: 150, height: 14),
+                    SizedBox(height: 10),
+                    PosShimmerLine(width: 110, height: 11),
+                    SizedBox(height: 12),
+                    PosShimmerBox(width: 84, height: 24, radius: 12),
+                  ],
+                ),
+              ),
+              SizedBox(width: 12),
+              PosShimmerBox(width: 22, height: 22, radius: 6),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

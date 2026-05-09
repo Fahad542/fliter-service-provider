@@ -9,6 +9,36 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get menuAllApps => 'ALL Apps';
+
+  @override
+  String get menuSubtitle => 'Please choose one of these apps';
+
+  @override
+  String get menuSuperAdminPortal => 'Super Admin\\nPortal';
+
+  @override
+  String get menuWorkshopOwner => 'Workshop\\nOwner';
+
+  @override
+  String get menuTechnicianApp => 'Technician\\nApp';
+
+  @override
+  String get menuWorkshopPosApp => 'Workshop\\nPOS App';
+
+  @override
+  String get menuWorkshopPosAppPlain => 'Workshop POS App';
+
+  @override
+  String get menuLockerPortal => 'Locker\\nPortal';
+
+  @override
+  String get menuSupplier => 'Supplier';
+
+  @override
+  String get menuVersion => 'Version: 1.0.0';
+
+  @override
   String get ownerShellHome => 'Home';
 
   @override
@@ -4205,7 +4235,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get posHomeSubtitle =>
-      'Search by customer number, vehicle number,\nphone number or customer name';
+      'Search by customer number, vehicle number,phone number or customer name';
 
   @override
   String get posHomeSearchHint =>

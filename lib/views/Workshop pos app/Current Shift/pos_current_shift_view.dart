@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
 import '../../../widgets/pos_widgets.dart';
 import '../../../widgets/pos_shell_rail_layout.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../../../utils/pos_shell_scaffold.dart' show PosShellScaffoldRegistry;
 import 'current_shift_view_model.dart';
 
@@ -83,9 +84,7 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
 
   Widget _buildBody(CurrentShiftViewModel vm, AppLocalizations l10n) {
     if (vm.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryLight),
-      );
+      return const _CurrentShiftShimmer();
     }
 
     if (vm.errorMessage != null && vm.currentSession == null) {
@@ -267,6 +266,118 @@ class _PosCurrentShiftViewState extends State<PosCurrentShiftView> {
               Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
               LocalizedApiText(_shiftDigits(context, value), style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+
+class _CurrentShiftShimmer extends StatelessWidget {
+  const _CurrentShiftShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C3136),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        PosShimmerBox(width: 115, height: 10, radius: 6, dark: true),
+                        SizedBox(height: 10),
+                        PosShimmerBox(width: 58, height: 20, radius: 8, dark: true),
+                      ],
+                    ),
+                    const PosShimmerBox(width: 38, height: 38, radius: 19, dark: true),
+                  ],
+                ),
+                const SizedBox(height: 26),
+                Row(
+                  children: const [
+                    Expanded(child: _ShiftInfoTileShimmer()),
+                    SizedBox(width: 24),
+                    Expanded(child: _ShiftInfoTileShimmer()),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: const [
+                    Expanded(child: _ShiftInfoTileShimmer()),
+                    SizedBox(width: 24),
+                    Expanded(child: _ShiftInfoTileShimmer()),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const _ShiftDetailRowShimmer(),
+          const Divider(height: 32),
+          const _ShiftDetailRowShimmer(wide: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShiftInfoTileShimmer extends StatelessWidget {
+  const _ShiftInfoTileShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: const [
+        PosShimmerBox(width: 14, height: 14, radius: 7, dark: true),
+        SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PosShimmerBox(width: 72, height: 9, radius: 5, dark: true),
+              SizedBox(height: 8),
+              PosShimmerBox(width: 118, height: 14, radius: 7, dark: true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ShiftDetailRowShimmer extends StatelessWidget {
+  const _ShiftDetailRowShimmer({this.wide = false});
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const PosShimmerBox(width: 40, height: 40, radius: 12),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const PosShimmerBox(width: 95, height: 10, radius: 5),
+              const SizedBox(height: 8),
+              PosShimmerBox(width: wide ? 260 : 165, height: 15, radius: 7),
             ],
           ),
         ),

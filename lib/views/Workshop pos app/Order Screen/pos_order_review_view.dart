@@ -9,6 +9,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
 import '../../../services/locker_translation_mixin.dart';
 import '../../../utils/app_text_styles.dart';
+import '../../../utils/plate_transliterator.dart';
 import '../../../utils/toast_service.dart';
 import '../../../utils/pos_tablet_layout.dart';
 import '../../../utils/invoice_maintenance_checklist.dart';
@@ -18,6 +19,32 @@ import 'package:provider/provider.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../models/cashier_expense_models.dart';
 import '../../../services/session_service.dart';
+
+
+
+String _reviewProductNameForLocale(
+  BuildContext context, {
+  required String productName,
+  String? productNameArabic,
+  String? fallback,
+}) {
+  final lang = Localizations.localeOf(context).languageCode;
+  final ar = (productNameArabic ?? '').trim();
+  if (lang == 'ar' && ar.isNotEmpty) return ar;
+  final en = productName.trim();
+  if (en.isNotEmpty) return en;
+  return fallback ?? AppLocalizations.of(context)!.posReviewItemFallback;
+}
+
+String _reviewPlateDisplay(BuildContext context, String raw, {bool upperCase = true}) {
+  final plate = raw.trim();
+  if (plate.isEmpty) return '—';
+  final normalized = upperCase ? plate.toUpperCase() : plate;
+  return PlateTransliterator.localize(
+    normalized,
+    Localizations.localeOf(context).languageCode,
+  );
+}
 
 // ── Mock data models used exclusively for this review screen ─────────────────
 
@@ -1425,7 +1452,11 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         for (var item in dept.items) {
           _items.add(
             ReviewLineItem(
-              name: item.productName,
+              name: _reviewProductNameForLocale(
+                context,
+                productName: item.productName,
+                productNameArabic: item.productNameArabic,
+              ),
               technicianName: dept.departmentName,
               unitPrice: item.unitPrice,
               qty: item.qty.toInt(),
@@ -1440,7 +1471,11 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
         _items = _currentInvoice!.items
             .map(
               (item) => ReviewLineItem(
-            name: item.productName,
+            name: _reviewProductNameForLocale(
+              context,
+              productName: item.productName,
+              productNameArabic: item.productNameArabic,
+            ),
             technicianName: AppLocalizations.of(context)!.posReviewTechnicianFallback,
             unitPrice: item.unitPrice,
             qty: item.qty.toInt(),
@@ -1454,7 +1489,12 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
           .expand((job) {
         return job.items.map((item) {
           return ReviewLineItem(
-            name: item.productName,
+            name: _reviewProductNameForLocale(
+              context,
+              productName: item.productName,
+              productNameArabic: item.productNameArabic,
+              fallback: item.productId,
+            ),
             technicianName: job.department,
             unitPrice: item.unitPrice,
             qty: item.qty.toInt(),
@@ -1471,7 +1511,15 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
             ? priceDynamic.toDouble()
             : (priceDynamic as double? ?? 0.0);
         return ReviewLineItem(
-          name: item['productName'] ?? item['name'] ?? AppLocalizations.of(context)!.posReviewItemFallback,
+          name: _reviewProductNameForLocale(
+            context,
+            productName: (item['productName'] ?? item['name'] ?? '').toString(),
+            productNameArabic: (item['productNameArabic'] ??
+                    item['product_name_arabic'] ??
+                    item['nameArabic'] ??
+                    item['name_arabic'])
+                ?.toString(),
+          ),
           technicianName: widget.order.jobs.any((j) => !j.isCancelledJob)
               ? widget.order.jobs.firstWhere((j) => !j.isCancelledJob).department
               : AppLocalizations.of(context)!.posReviewTechnicianFallback,
@@ -2614,7 +2662,16 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   weight: i == 0 ? FontWeight.w800 : FontWeight.w500),
               _reviewBodyCell(i == 0 ? job.id : '', isTablet),
               _reviewBodyCell(i == 0 ? job.status.toUpperCase() : '', isTablet, maxLines: 2),
-              _reviewBodyCell(item.productName, isTablet, weight: FontWeight.w600),
+              _reviewBodyCell(
+                _reviewProductNameForLocale(
+                  context,
+                  productName: item.productName,
+                  productNameArabic: item.productNameArabic,
+                  fallback: item.productId,
+                ),
+                isTablet,
+                weight: FontWeight.w600,
+              ),
               _reviewBodyCell(qtyStr, isTablet, align: TextAlign.end),
               _reviewBodyCell(item.lineTotal.toStringAsFixed(2), isTablet,
                   align: TextAlign.end, weight: FontWeight.w800),
@@ -3051,7 +3108,7 @@ class _OrderHeaderCard extends StatelessWidget {
               children: [
                 Text(
                   order.plateNumber.isNotEmpty
-                      ? order.plateNumber.toUpperCase()
+                      ? _reviewPlateDisplay(context, order.plateNumber)
                       : '—',
                   style: TextStyle(
                     color: Colors.white,
@@ -4065,7 +4122,7 @@ class _MockInvoicePrintDialog extends StatelessWidget {
               _DialogRow(
                 label: AppLocalizations.of(context)!.posReviewVehicleNoLabel,
                 value: order.plateNumber.isNotEmpty
-                    ? order.plateNumber.toUpperCase()
+                    ? _reviewPlateDisplay(context, order.plateNumber)
                     : '—',
               ),
               _DialogRow(label: AppLocalizations.of(context)!.posReviewCustomerLabel, value: order.customerName),

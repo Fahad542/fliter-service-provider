@@ -3,7 +3,19 @@ import '../../../models/pos_order_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/LocalizedApiText.dart';
+import '../../../utils/plate_transliterator.dart';
 
+
+
+String _detailsPlateDisplay(BuildContext context, String raw, {bool upperCase = false}) {
+  final plate = raw.trim();
+  if (plate.isEmpty) return '-';
+  final normalized = upperCase ? plate.toUpperCase() : plate;
+  return PlateTransliterator.localize(
+    normalized,
+    Localizations.localeOf(context).languageCode,
+  );
+}
 
 String _detailsStatusLabel(BuildContext context, String status) {
   final l10n = AppLocalizations.of(context)!;
@@ -28,6 +40,15 @@ String _detailsStatusLabel(BuildContext context, String status) {
     default:
       return l10n.posOrdersStatusPending;
   }
+}
+
+
+String _detailsProductNameForLocale(BuildContext context, PosOrderJobItem item) {
+  final lang = Localizations.localeOf(context).languageCode;
+  final ar = item.productNameArabic.trim();
+  if (lang == 'ar' && ar.isNotEmpty) return ar;
+  final en = item.productName.trim();
+  return en.isNotEmpty ? en : item.productId;
 }
 
 class PosOrderDetailsView extends StatelessWidget {
@@ -71,7 +92,7 @@ class PosOrderDetailsView extends StatelessWidget {
               children: [
                 _infoRow(
                   l10n.posDetailsVehicleNo,
-                  order.plateNumber.isNotEmpty ? order.plateNumber : '-',
+                  _detailsPlateDisplay(context, order.plateNumber),
                   isTablet,
                 ),
                 _infoRow(l10n.posDetailsCustomer, order.customerName, isTablet),
@@ -104,7 +125,7 @@ class PosOrderDetailsView extends StatelessWidget {
                 ),
                 _infoRow(
                   l10n.posDetailsPlate,
-                  order.plateNumber.isNotEmpty ? order.plateNumber : '-',
+                  _detailsPlateDisplay(context, order.plateNumber),
                   isTablet,
                 ),
                 _infoRow(l10n.posDetailsOdometer, l10n.posDetailsOdometerKm(order.odometerReading.toString()), isTablet),
@@ -151,7 +172,7 @@ class PosOrderDetailsView extends StatelessWidget {
                     children: [
                       Text(
                         order.plateNumber.isNotEmpty
-                            ? order.plateNumber.toUpperCase()
+                            ? _detailsPlateDisplay(context, order.plateNumber, upperCase: true)
                             : '—',
                         style: TextStyle(
                           color: Colors.white,
@@ -364,10 +385,8 @@ class PosOrderDetailsView extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: LocalizedApiText(
-                              item.productName.isNotEmpty
-                                  ? item.productName
-                                  : item.productId,
+                            child: Text(
+                              _detailsProductNameForLocale(context, item),
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: isTablet ? 14 : 12.5,

@@ -5,6 +5,7 @@ import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 import '../../../utils/toast_service.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Navbar/pos_shell.dart';
 import 'department_view_model.dart';
@@ -86,7 +87,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
       body: Consumer<DepartmentViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return _DepartmentsShimmerGrid(isTablet: isTablet);
           }
 
           if (viewModel.errorMessage != null) {
@@ -109,7 +110,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
           final preferredDepartmentId = isAddToExisting
               ? widget.initialDepartmentId
               : (widget.initialDepartmentId ??
-                  context.read<PosViewModel>().editDepartmentId);
+              context.read<PosViewModel>().editDepartmentId);
 
           if (departments.isEmpty) {
             return Center(child: Text(l10n.posDeptNoneFound));
@@ -155,89 +156,89 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
                       return GestureDetector(
                         onTap: excluded
                             ? () {
-                                ToastService.showError(
-                                  context,
-                                  l10n.posDeptAlreadyOnOrder,
-                                );
-                              }
+                          ToastService.showError(
+                            context,
+                            l10n.posDeptAlreadyOnOrder,
+                          );
+                        }
                             : () {
-                                viewModel.toggleSelectedIndex(index);
-                              },
+                          viewModel.toggleSelectedIndex(index);
+                        },
                         child: AnimatedOpacity(
                           opacity: excluded ? 0.42 : 1,
                           duration: const Duration(milliseconds: 200),
                           child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            gradient: isSelected && !excluded
-                                ? LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      AppColors.primaryLight.withOpacity(0.15),
-                                      AppColors.primaryLight.withOpacity(0.05),
-                                    ],
-                                  )
-                                : null,
-                            borderRadius:
-                                BorderRadius.circular(isTablet ? 18 : 14),
-                            border: Border.all(
-                              color: excluded
-                                  ? Colors.grey.shade300
-                                  : isSelected
-                                      ? AppColors.primaryLight.withOpacity(0.6)
-                                      : Colors.grey.shade200.withOpacity(0.8),
-                              width: isSelected && !excluded ? 2 : 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: isSelected && !excluded
-                                    ? AppColors.primaryLight.withOpacity(0.08)
-                                    : Colors.black.withOpacity(0.03),
-                                blurRadius: isSelected && !excluded ? 10 : 6,
-                                offset: const Offset(0, 3),
+                            duration: const Duration(milliseconds: 200),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              gradient: isSelected && !excluded
+                                  ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppColors.primaryLight.withOpacity(0.15),
+                                  AppColors.primaryLight.withOpacity(0.05),
+                                ],
+                              )
+                                  : null,
+                              borderRadius:
+                              BorderRadius.circular(isTablet ? 18 : 14),
+                              border: Border.all(
+                                color: excluded
+                                    ? Colors.grey.shade300
+                                    : isSelected
+                                    ? AppColors.primaryLight.withOpacity(0.6)
+                                    : Colors.grey.shade200.withOpacity(0.8),
+                                width: isSelected && !excluded ? 2 : 1,
                               ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.zero,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(isTablet ? 9 : 7),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.secondaryLight,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    _getIconForDepartment(dept.name),
-                                    size: isTablet ? 28 : 22,
-                                    color: AppColors.primaryLight,
-                                  ),
-                                ),
-                                SizedBox(height: isTablet ? 12 : 10),
-                                LocalizedApiText(
-                                  dept.name,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    fontWeight:
-                                        isSelected ? FontWeight.w700 : FontWeight.w600,
-                                    fontSize: isTablet ? 13 : 11,
-                                    height: 1.15,
-                                    color: isSelected
-                                        ? AppColors.secondaryLight
-                                        : Colors.grey.shade700,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isSelected && !excluded
+                                      ? AppColors.primaryLight.withOpacity(0.08)
+                                      : Colors.black.withOpacity(0.03),
+                                  blurRadius: isSelected && !excluded ? 10 : 6,
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
                             ),
+                            child: Padding(
+                              padding: EdgeInsets.zero,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(isTablet ? 9 : 7),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.secondaryLight,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      _getIconForDepartment(dept.name),
+                                      size: isTablet ? 28 : 22,
+                                      color: AppColors.primaryLight,
+                                    ),
+                                  ),
+                                  SizedBox(height: isTablet ? 12 : 10),
+                                  LocalizedApiText(
+                                    dept.name,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      fontWeight:
+                                      isSelected ? FontWeight.w700 : FontWeight.w600,
+                                      fontSize: isTablet ? 13 : 11,
+                                      height: 1.15,
+                                      color: isSelected
+                                          ? AppColors.secondaryLight
+                                          : Colors.grey.shade700,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
                         ),
                       );
                     },
@@ -319,243 +320,303 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
   }
 
   Widget _buildOrderPlacedButton(
-    BuildContext context,
-    List<Department> selectedDepartments,
-    bool isTablet,
-    bool isPlacing,
-  ) {
+      BuildContext context,
+      List<Department> selectedDepartments,
+      bool isTablet,
+      bool isPlacing,
+      ) {
     final l10n = AppLocalizations.of(context)!;
     return Consumer<PosViewModel>(
-      builder: (context, posViewModel, child) {
-        final selectedDeptIds = selectedDepartments.map((d) => d.id).toList();
-        final busy = isPlacing || posViewModel.isLoading;
-        final addToExistingOrderId = widget.addJobsToOrderId?.trim() ?? '';
-        final isAddToExistingFlow = addToExistingOrderId.isNotEmpty;
-        return ElevatedButton(
-          onPressed: busy
-              ? null
-              : () async {
-            if (isAddToExistingFlow) {
-              final validIds = selectedDepartments
-                  .where((d) => !_departmentExcluded(d))
-                  .map((d) => d.id.trim())
-                  .where((id) => id.isNotEmpty)
-                  .toList();
-              if (validIds.isEmpty) {
+        builder: (context, posViewModel, child) {
+          final selectedDeptIds = selectedDepartments.map((d) => d.id).toList();
+          final busy = isPlacing || posViewModel.isLoading;
+          final addToExistingOrderId = widget.addJobsToOrderId?.trim() ?? '';
+          final isAddToExistingFlow = addToExistingOrderId.isNotEmpty;
+          return ElevatedButton(
+            onPressed: busy
+                ? null
+                : () async {
+              if (isAddToExistingFlow) {
+                final validIds = selectedDepartments
+                    .where((d) => !_departmentExcluded(d))
+                    .map((d) => d.id.trim())
+                    .where((id) => id.isNotEmpty)
+                    .toList();
+                if (validIds.isEmpty) {
+                  ToastService.showError(
+                    context,
+                    l10n.posDeptSelectAtLeastOne,
+                  );
+                  return;
+                }
+                setState(() => _placingOrder = true);
+                try {
+                  final ok = await posViewModel.addDepartmentsToWalkInOrder(
+                    context,
+                    addToExistingOrderId,
+                    validIds,
+                  );
+                  if (!context.mounted || !ok) return;
+                  Navigator.of(context).pop();
+                } finally {
+                  if (mounted) {
+                    setState(() => _placingOrder = false);
+                  }
+                }
+                return;
+              }
+
+              if (posViewModel.vehicleNumber
+                  .trim()
+                  .isEmpty) {
                 ToastService.showError(
                   context,
-                  l10n.posDeptSelectAtLeastOne,
+                  l10n.posDeptVehicleRequired,
                 );
                 return;
               }
+
               setState(() => _placingOrder = true);
               try {
-                final ok = await posViewModel.addDepartmentsToWalkInOrder(
-                  context,
-                  addToExistingOrderId,
-                  validIds,
+                if (posViewModel.editingOrder == null) {
+                  final placed = await posViewModel.placeWalkInShellOrder(
+                    selectedDeptIds,
+                    context,
+                  );
+                  if (!context.mounted || !placed) return;
+                }
+                final createdOrderId = posViewModel.lastCreatedWalkInOrderId;
+
+                final previousDeptId = posViewModel.editDepartmentId;
+                final isDeptChanged =
+                    posViewModel.editingOrder != null &&
+                        previousDeptId != null &&
+                        previousDeptId.isNotEmpty &&
+                        !selectedDeptIds.contains(previousDeptId);
+
+                if (isDeptChanged) {
+                  final shouldContinue = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogCtx) {
+                      final w = MediaQuery
+                          .of(dialogCtx)
+                          .size
+                          .width;
+                      final isDialogTablet = w > 600;
+                      return Dialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        insetPadding: EdgeInsets.symmetric(
+                          horizontal: isDialogTablet ? w * 0.28 : 24,
+                          vertical: 24,
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            isDialogTablet ? 28 : 22,
+                            isDialogTablet ? 24 : 20,
+                            isDialogTablet ? 28 : 22,
+                            isDialogTablet ? 22 : 18,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.posDeptChangeDeptTitle,
+                                style: AppTextStyles.h3.copyWith(
+                                  fontSize: isDialogTablet ? 26 : 22,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                l10n.posDeptChangeDeptBody,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: Colors.grey.shade800,
+                                  fontSize: isDialogTablet ? 17 : 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                l10n.posDeptChangeDeptRefresh,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: Colors.grey.shade600,
+                                  fontSize: isDialogTablet ? 16 : 14,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed:
+                                          () => Navigator.pop(dialogCtx, false),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: isDialogTablet ? 16 : 13,
+                                        ),
+                                        side: BorderSide(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        l10n.posDeptChangeDeptCancel,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: isDialogTablet ? 16 : 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed:
+                                          () => Navigator.pop(dialogCtx, true),
+                                      style: ElevatedButton.styleFrom(
+                                        overlayColor: Colors.transparent,
+                                        backgroundColor: AppColors.primaryLight,
+                                        foregroundColor: AppColors.secondaryLight,
+                                        elevation: 0,
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: isDialogTablet ? 16 : 13,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        l10n.posDeptChangeDeptContinue,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: isDialogTablet ? 16 : 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+
+                  if (shouldContinue != true) return;
+
+                  // Reset current invoice/cart state so user can rebuild
+                  // order against the newly selected department.
+                  posViewModel.clearCart(isMainTab: false);
+                }
+
+                if (!context.mounted) return;
+                await posViewModel.fetchOrders(
+                  silent: false,
+                  preferredOrderId: createdOrderId,
                 );
-                if (!context.mounted || !ok) return;
-                Navigator.of(context).pop();
+                if (!context.mounted) return;
+                navigateToPosShellOrdersTab(context);
               } finally {
                 if (mounted) {
                   setState(() => _placingOrder = false);
                 }
               }
-              return;
-            }
-
-            if (posViewModel.vehicleNumber
-                .trim()
-                .isEmpty) {
-              ToastService.showError(
-                context,
-                l10n.posDeptVehicleRequired,
-              );
-              return;
-            }
-
-            setState(() => _placingOrder = true);
-            try {
-              if (posViewModel.editingOrder == null) {
-                final placed = await posViewModel.placeWalkInShellOrder(
-                  selectedDeptIds,
-                  context,
-                );
-                if (!context.mounted || !placed) return;
-              }
-              final createdOrderId = posViewModel.lastCreatedWalkInOrderId;
-
-              final previousDeptId = posViewModel.editDepartmentId;
-              final isDeptChanged =
-                  posViewModel.editingOrder != null &&
-                      previousDeptId != null &&
-                      previousDeptId.isNotEmpty &&
-                      !selectedDeptIds.contains(previousDeptId);
-
-              if (isDeptChanged) {
-                final shouldContinue = await showDialog<bool>(
-                  context: context,
-                  builder: (dialogCtx) {
-                    final w = MediaQuery
-                        .of(dialogCtx)
-                        .size
-                        .width;
-                    final isDialogTablet = w > 600;
-                    return Dialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      insetPadding: EdgeInsets.symmetric(
-                        horizontal: isDialogTablet ? w * 0.28 : 24,
-                        vertical: 24,
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          isDialogTablet ? 28 : 22,
-                          isDialogTablet ? 24 : 20,
-                          isDialogTablet ? 28 : 22,
-                          isDialogTablet ? 22 : 18,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.posDeptChangeDeptTitle,
-                              style: AppTextStyles.h3.copyWith(
-                                fontSize: isDialogTablet ? 26 : 22,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            Text(
-                              l10n.posDeptChangeDeptBody,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: Colors.grey.shade800,
-                                fontSize: isDialogTablet ? 17 : 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.posDeptChangeDeptRefresh,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: Colors.grey.shade600,
-                                fontSize: isDialogTablet ? 16 : 14,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed:
-                                        () => Navigator.pop(dialogCtx, false),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: isDialogTablet ? 16 : 13,
-                                      ),
-                                      side: BorderSide(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      l10n.posDeptChangeDeptCancel,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: isDialogTablet ? 16 : 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed:
-                                        () => Navigator.pop(dialogCtx, true),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primaryLight,
-                                      foregroundColor: AppColors.secondaryLight,
-                                      elevation: 0,
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: isDialogTablet ? 16 : 13,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      l10n.posDeptChangeDeptContinue,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: isDialogTablet ? 16 : 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-
-                if (shouldContinue != true) return;
-
-                // Reset current invoice/cart state so user can rebuild
-                // order against the newly selected department.
-                posViewModel.clearCart(isMainTab: false);
-              }
-
-              if (!context.mounted) return;
-              await posViewModel.fetchOrders(
-                silent: false,
-                preferredOrderId: createdOrderId,
-              );
-              if (!context.mounted) return;
-              navigateToPosShellOrdersTab(context);
-            } finally {
-              if (mounted) {
-                setState(() => _placingOrder = false);
-              }
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryLight,
-            foregroundColor: AppColors.secondaryLight,
-            disabledBackgroundColor: AppColors.primaryLight.withValues(
-                alpha: 0.85),
-            disabledForegroundColor: AppColors.secondaryLight,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryLight,
+              foregroundColor: AppColors.secondaryLight,
+              overlayColor: Colors.transparent,
+              disabledBackgroundColor: AppColors.primaryLight.withValues(
+                  alpha: 0.85),
+              disabledForegroundColor: AppColors.secondaryLight,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+              ),
             ),
-          ),
-          child: busy
-              ? const SizedBox(
-            height: 24,
-            width: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: AppColors.secondaryLight,
+            child: busy
+                ? const _DepartmentButtonShimmer()
+                : Text(
+              isAddToExistingFlow ? l10n.posDeptAddToOrder : l10n.posDeptOrderPlaced,
+              style: AppTextStyles.button.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: isTablet ? 16 : 14,
+              ),
             ),
-          )
-              : Text(
-            isAddToExistingFlow ? l10n.posDeptAddToOrder : l10n.posDeptOrderPlaced,
-            style: AppTextStyles.button.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: isTablet ? 16 : 14,
-            ),
-          ),
-        );
-      } );
+          );
+        } );
   }
 }
 
+class _DepartmentsShimmerGrid extends StatelessWidget {
+  const _DepartmentsShimmerGrid({required this.isTablet});
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(isTablet ? 14 : 10, isTablet ? 12 : 10, isTablet ? 14 : 10, 24),
+        child: GridView.builder(
+          itemCount: isTablet ? 18 : 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isTablet ? 6 : 4,
+            childAspectRatio: 1.1,
+            crossAxisSpacing: isTablet ? 8 : 6,
+            mainAxisSpacing: isTablet ? 8 : 6,
+          ),
+          itemBuilder: (_, __) => const _DepartmentCardShimmer(),
+        ),
+      ),
+    );
+  }
+}
+
+class _DepartmentCardShimmer extends StatelessWidget {
+  const _DepartmentCardShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE8ECF3)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            PosShimmerBox(width: 48, height: 48, radius: 24),
+            SizedBox(height: 12),
+            PosShimmerBox(width: 72, height: 10, radius: 5),
+            SizedBox(height: 7),
+            PosShimmerBox(width: 54, height: 10, radius: 5),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DepartmentButtonShimmer extends StatelessWidget {
+  const _DepartmentButtonShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return const PosShimmer(
+      child: PosShimmerBox(width: 58, height: 18, radius: 9),
+    );
+  }
+}

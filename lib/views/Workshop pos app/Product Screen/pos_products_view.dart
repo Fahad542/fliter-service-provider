@@ -7,6 +7,7 @@ import '../../../utils/app_text_styles.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../../../models/pos_product_model.dart';
 import '../../../widgets/pos_widgets.dart';
+import '../../../widgets/pos_shimmer.dart';
 import '../Promo/pos_promo_view.dart';
 import '../../../services/LocalizedApiText.dart';
 
@@ -77,7 +78,7 @@ class _PosProductsViewState extends State<PosProductsView> {
         child: Consumer<PosViewModel>(
           builder: (context, vm, child) {
             if (vm.isLoading && vm.products.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return _ProductsLoadingShimmer(isTablet: isTablet);
             }
             return LayoutBuilder(
               builder: (context, constraints) {
@@ -192,3 +193,88 @@ class _PosProductsViewState extends State<PosProductsView> {
   }
 }
 
+
+
+class _ProductsLoadingShimmer extends StatelessWidget {
+  const _ProductsLoadingShimmer({required this.isTablet});
+
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PosShimmerBox(width: double.infinity, height: 44, radius: 14),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    PosShimmerBox(width: 82, height: 34, radius: 12),
+                    SizedBox(width: 10),
+                    PosShimmerBox(width: 96, height: 34, radius: 12),
+                    SizedBox(width: 10),
+                    PosShimmerBox(width: 74, height: 34, radius: 12),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: isTablet ? 2 : 1,
+                childAspectRatio: isTablet ? 3.5 : 2.5,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: isTablet ? 8 : 5,
+              itemBuilder: (context, index) => const _ProductListSkeletonCard(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductListSkeletonCard extends StatelessWidget {
+  const _ProductListSkeletonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE8ECF3)),
+      ),
+      child: const Row(
+        children: [
+          PosShimmerCircle(size: 46),
+          SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PosShimmerLine(width: double.infinity, height: 14),
+                SizedBox(height: 10),
+                PosShimmerLine(width: 140, height: 12),
+              ],
+            ),
+          ),
+          SizedBox(width: 12),
+          PosShimmerBox(width: 74, height: 34, radius: 12),
+        ],
+      ),
+    );
+  }
+}

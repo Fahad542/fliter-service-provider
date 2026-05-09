@@ -554,10 +554,24 @@ class PosRepository {
     }
   }
 
-  Future<InvoicedOrderResponse> getInvoicedOrdersByCustomer(String customerId, String token) async {
+  /// Fetches invoiced orders for [customerId].
+  ///
+  /// Pass [scope] = `'all'` for the cross-branch read-only history view (chevron `>`
+  /// on the home customer card). Omit it for the branch-scoped sales-return picker —
+  /// when the customer was serviced only from another branch the backend responds with
+  /// `success: false` + `message: 'This customer belongs to another branch.'`.
+  Future<InvoicedOrderResponse> getInvoicedOrdersByCustomer(
+    String customerId,
+    String token, {
+    String? scope,
+  }) async {
     try {
+      final base = ApiConstants.invoicedOrdersEndpoint(customerId);
+      final endpoint = (scope != null && scope.isNotEmpty)
+          ? '$base?scope=${Uri.encodeQueryComponent(scope)}'
+          : base;
       final response = await _apiService.get(
-        ApiConstants.invoicedOrdersEndpoint(customerId),
+        endpoint,
         headers: {
           'Authorization': 'Bearer $token',
         },

@@ -1,12 +1,18 @@
 class InvoicedOrderResponse {
   final bool success;
+  final String? message;
   final List<InvoicedOrder> orders;
 
-  InvoicedOrderResponse({required this.success, required this.orders});
+  InvoicedOrderResponse({
+    required this.success,
+    this.message,
+    required this.orders,
+  });
 
   factory InvoicedOrderResponse.fromJson(Map<String, dynamic> json) {
     return InvoicedOrderResponse(
       success: json['success'] ?? false,
+      message: json['message']?.toString(),
       orders: (json['orders'] as List<dynamic>?)
               ?.map((e) => InvoicedOrder.fromJson(e as Map<String, dynamic>))
               .toList() ??

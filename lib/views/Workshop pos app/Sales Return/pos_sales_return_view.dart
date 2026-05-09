@@ -121,12 +121,18 @@ class _PosSalesReturnViewState extends State<PosSalesReturnView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final vm = context.read<SalesReturnViewModel>();
-      // Only clear state when shown as a shell/drawer tab (not when pushed with pre-filled state)
       if (!widget.showBackButton) {
+        // Drawer/shell tab — reset and clear results.
         vm.clearSelection();
         vm.searchController.clear();
         vm.searchInvoice(); // clears results
+      } else if (vm.searchController.text.trim().isNotEmpty) {
+        // Pushed from home with a pre-filled customer id — kick off the lookup
+        // here so the cross-branch toast/banner lands on THIS screen instead of
+        // firing under the home view during the route transition.
+        vm.searchInvoice();
       }
     });
   }

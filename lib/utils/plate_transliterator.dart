@@ -68,16 +68,19 @@ class PlateTransliterator {
   static const List<String> _arabicDigits  = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
 
   // ── Plate pattern ──────────────────────────────────────────────────────────
-  // Matches:  "SOT 578"  "FUJ578"  "AB-1234"  "1-ABC-23"
+  // Matches:  "SOT 578"  "FUJ578"  "AB-1234"  "345 - DFG"  "1-ABC-23"
   static final _plateRe = RegExp(r'^([A-Z]{1,4})[\s\-]?(\d{1,5})$');
-  static final _oldStyleRe = RegExp(r'^(\d{1,4})-([A-Z]{1,4})-(\d{1,5})$');
+  static final _digitsFirstPlateRe = RegExp(r'^(\d{1,5})\s*[-\s]?\s*([A-Z]{1,4})$');
+  static final _oldStyleRe = RegExp(r'^(\d{1,4})\s*-\s*([A-Z]{1,4})\s*-\s*(\d{1,5})$');
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
   /// Returns true when [text] looks like a vehicle plate number.
   static bool looksLikePlate(String text) {
-    final v = text.trim();
-    return _plateRe.hasMatch(v) || _oldStyleRe.hasMatch(v);
+    final v = _normalizeWesternDigits(text).trim().toUpperCase();
+    return _plateRe.hasMatch(v) ||
+        _digitsFirstPlateRe.hasMatch(v) ||
+        _oldStyleRe.hasMatch(v);
   }
 
   /// Locale-aware entry point.
@@ -96,13 +99,19 @@ class PlateTransliterator {
   /// • Unrecognised letters are kept as-is.
   /// • Non-plate strings are digit-localized only (safe fallback).
   static String toArabic(String plate) {
-    final v = plate.trim();
+    final v = _normalizeWesternDigits(plate).trim().toUpperCase();
     if (v.isEmpty) return plate;
 
     // Modern plate: "SOT 578" / "FUJ578" / "AB-1234"
     final m = _plateRe.firstMatch(v);
     if (m != null) {
       return _buildArabicPlate(m.group(1)!, m.group(2)!);
+    }
+
+    // Already formatted digit-first plate from UI helpers: "345 - DFG".
+    final mf = _digitsFirstPlateRe.firstMatch(v);
+    if (mf != null) {
+      return _buildArabicPlate(mf.group(2)!, mf.group(1)!);
     }
 
     // Old-style plate: "1-ABC-23"
@@ -131,6 +140,20 @@ class PlateTransliterator {
   /// Converts each letter to its Arabic equivalent, space-separated.
   static String _transliterateLetters(String letters) =>
       letters.split('').map((c) => _letterMap[c] ?? c).join(' ');
+
+  /// Converts Arabic-Indic / Eastern Arabic-Indic digits back to Western digits
+  /// before regex matching. This lets already-localized UI strings such as
+  /// `٣٤٥ - DFG` still transliterate their Latin letters correctly.
+  static String _normalizeWesternDigits(String text) {
+    const arabicIndic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+    const easternArabicIndic = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    var out = text;
+    for (var i = 0; i < _westernDigits.length; i++) {
+      out = out.replaceAll(arabicIndic[i], _westernDigits[i]);
+      out = out.replaceAll(easternArabicIndic[i], _westernDigits[i]);
+    }
+    return out;
+  }
 
   /// Replaces Western digits with Arabic-Indic digits.
   static String _localizeDigits(String text) {

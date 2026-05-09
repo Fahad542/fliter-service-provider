@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../utils/app_colors.dart';
 import '../../../../utils/pos_tablet_layout.dart';
 import '../../../../widgets/pos_widgets.dart';
+import '../../../../widgets/pos_shimmer.dart';
 import '../../../models/pos_order_model.dart';
 import '../Home Screen/pos_view_model.dart';
 import '../Navbar/pos_shell.dart';
@@ -14,7 +15,11 @@ import '../../../../services/LocalizedApiText.dart';
 import '../../../../services/locker_translation_mixin.dart';
 
 class PosCorporateBookingsView extends StatefulWidget {
-  const PosCorporateBookingsView({super.key});
+  /// When `false`, the app bar shows the shell drawer (hamburger) instead of a
+  /// back button. Used when this view is mounted directly as a shell tab.
+  final bool showBackButton;
+
+  const PosCorporateBookingsView({super.key, this.showBackButton = true});
 
   @override
   State<PosCorporateBookingsView> createState() =>
@@ -103,7 +108,10 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
       ).copyWith(textScaler: PosTabletLayout.textScaler(context)),
       child: Scaffold(
         backgroundColor: const Color(0xFFFBF9F6),
-        appBar: PosScreenAppBar(title: AppLocalizations.of(context)!.posCorporateBookingsTitle),
+        appBar: PosScreenAppBar(
+          title: AppLocalizations.of(context)!.posCorporateBookingsTitle,
+          showBackButton: widget.showBackButton,
+        ),
         body: Consumer<CorporateBookingViewModel>(
           builder: (context, vm, child) {
             final bookings = vm.filteredBookings;
@@ -156,31 +164,27 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                 // ─── List of Bookings ───
                 Expanded(
                   child: vm.isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primaryLight,
-                          ),
-                        )
+                      ? _CorporateBookingsShimmer(isTablet: isTablet)
                       : (bookings.isEmpty
-                            ? _buildEmptyState(isTablet)
-                            : GridView.builder(
-                                physics: const BouncingScrollPhysics(),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 32 : 20,
-                                  vertical: 8,
-                                ),
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: isTablet ? 1.9 : 1.55,
-                                ),
-                                itemCount: bookings.length,
-                                itemBuilder: (context, index) {
-                                  final booking = bookings[index];
-                                  return _buildBookingCard(booking, isTablet);
-                                },
-                              )),
+                      ? _buildEmptyState(isTablet)
+                      : GridView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 32 : 20,
+                      vertical: 8,
+                    ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: isTablet ? 1.9 : 1.55,
+                    ),
+                    itemCount: bookings.length,
+                    itemBuilder: (context, index) {
+                      final booking = bookings[index];
+                      return _buildBookingCard(booking, isTablet);
+                    },
+                  )),
                 ),
               ],
             );
@@ -232,12 +236,12 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   }
 
   Widget _buildFilterChip(
-    String filterKey,
-    String label,
-    bool isSelected,
-    CorporateBookingViewModel vm,
-    bool isTablet,
-  ) {
+      String filterKey,
+      String label,
+      bool isSelected,
+      CorporateBookingViewModel vm,
+      bool isTablet,
+      ) {
     return GestureDetector(
       onTap: () => vm.setFilter(filterKey),
       child: AnimatedContainer(
@@ -256,19 +260,19 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
           ),
           boxShadow: isSelected
               ? [
-                  BoxShadow(
-                    color: AppColors.primaryLight.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
+            BoxShadow(
+              color: AppColors.primaryLight.withValues(alpha: 0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ]
               : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Text(
           label,
@@ -400,21 +404,24 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     flex: 1,
                     child: ElevatedButton(
                       onPressed: () => _viewDetails(context, booking, isTablet),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.secondaryLight,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: EdgeInsets.symmetric(
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(AppColors.secondaryLight),
+                        foregroundColor: WidgetStateProperty.all(Colors.white),
+                        overlayColor: WidgetStateProperty.all(Colors.transparent),
+                        shadowColor: WidgetStateProperty.all(Colors.transparent),
+                        surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                        elevation: WidgetStateProperty.all(0),
+                        padding: WidgetStateProperty.all(EdgeInsets.symmetric(
                           vertical: isTablet ? 10 : 8,
-                        ),
-                        shape: RoundedRectangleBorder(
+                        )),
+                        shape: WidgetStateProperty.all(RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                        ),
+                        )),
                       ),
                       child: Text(
                         AppLocalizations.of(context)!.posCorporateActionDetails,
                         style: TextStyle(
-                            fontSize: isTablet ? 12 : 11,
+                          fontSize: isTablet ? 12 : 11,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
@@ -429,62 +436,58 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                       onPressed: isRedirecting
                           ? null
                           : () async {
-                              if (_canReviewBooking(booking)) {
-                                final vm = Provider.of<CorporateBookingViewModel>(
-                                  context,
-                                  listen: false,
-                                );
-                                final success = await vm.approveBooking(booking.id);
-                                if (!success) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          vm.errorMessage ??
-                                              AppLocalizations.of(context)!.posCorporateApproveError,
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                  return;
-                                }
-                                vm.setFilter('All');
-                              }
+                        if (_canReviewBooking(booking)) {
+                          final vm = Provider.of<CorporateBookingViewModel>(
+                            context,
+                            listen: false,
+                          );
+                          final success = await vm.approveBooking(booking.id);
+                          if (!success) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    vm.errorMessage ??
+                                        AppLocalizations.of(context)!.posCorporateApproveError,
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+                          vm.setFilter('All');
+                        }
 
-                              if (_isApproved(booking) && context.mounted) {
-                                _navigateToProductGrid(context, booking);
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryLight,
-                        foregroundColor: AppColors.secondaryLight,
-                        elevation: 0,
-                        padding: EdgeInsets.symmetric(
+                        if (_isApproved(booking) && context.mounted) {
+                          _navigateToProductGrid(context, booking);
+                        }
+                      },
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(AppColors.primaryLight),
+                        foregroundColor: WidgetStateProperty.all(AppColors.secondaryLight),
+                        overlayColor: WidgetStateProperty.all(Colors.transparent),
+                        shadowColor: WidgetStateProperty.all(Colors.transparent),
+                        surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                        elevation: WidgetStateProperty.all(0),
+                        padding: WidgetStateProperty.all(EdgeInsets.symmetric(
                           vertical: isTablet ? 10 : 8,
-                        ),
-                        shape: RoundedRectangleBorder(
+                        )),
+                        shape: WidgetStateProperty.all(RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                        ),
+                        )),
                       ),
                       child: isRedirecting
-                          ? SizedBox(
-                              width: isTablet ? 18 : 16,
-                              height: isTablet ? 18 : 16,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.secondaryLight,
-                              ),
-                            )
+                          ? _CorporateButtonShimmer(size: isTablet ? 18 : 16)
                           : Text(
-                              AppLocalizations.of(context)!.posCorporateActionContinue,
-                              style: TextStyle(
-                                color: AppColors.secondaryLight,
-                                fontSize: isTablet ? 12 : 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
+                        AppLocalizations.of(context)!.posCorporateActionContinue,
+                        style: TextStyle(
+                          color: AppColors.secondaryLight,
+                          fontSize: isTablet ? 12 : 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -497,12 +500,12 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   }
 
   Widget _buildInfoTag(
-    String label,
-    String value,
-    IconData icon,
-    bool isTablet, {
-    bool translateValue = false,
-  }) {
+      String label,
+      String value,
+      IconData icon,
+      bool isTablet, {
+        bool translateValue = false,
+      }) {
     return Container(
       padding: EdgeInsets.all(isTablet ? 12 : 10),
       decoration: BoxDecoration(
@@ -550,25 +553,25 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                 const SizedBox(height: 1),
                 translateValue
                     ? LocalizedApiText(
-                        value,
-                        style: TextStyle(
-                          fontSize: isTablet ? 11 : 10,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF1E2124),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
+                  value,
+                  style: TextStyle(
+                    fontSize: isTablet ? 11 : 10,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF1E2124),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
                     : LocalizedApiText(
-                        value,
-                        style: TextStyle(
-                          fontSize: isTablet ? 11 : 10,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF1E2124),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  value,
+                  style: TextStyle(
+                    fontSize: isTablet ? 11 : 10,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF1E2124),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -827,8 +830,8 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                               final item = booking.items![index];
                               final itemName =
                                   item['serviceName'] ??
-                                  item['productName'] ??
-                                  AppLocalizations.of(context)!.posCorporateDetailsSectionProducts;
+                                      item['productName'] ??
+                                      AppLocalizations.of(context)!.posCorporateDetailsSectionProducts;
                               final qty = item['qty'] ?? 1;
 
                               return Padding(
@@ -847,7 +850,7 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        CrossAxisAlignment.start,
                                         children: [
                                           LocalizedApiText(
                                             itemName.toString(),
@@ -943,14 +946,17 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(ctx),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryLight,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(AppColors.secondaryLight),
+                          foregroundColor: WidgetStateProperty.all(Colors.white),
+                          overlayColor: WidgetStateProperty.all(Colors.transparent),
+                          shadowColor: WidgetStateProperty.all(Colors.transparent),
+                          surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                          elevation: WidgetStateProperty.all(0),
+                          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+                          shape: WidgetStateProperty.all(RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
-                          ),
+                          )),
                         ),
                         child: Text(
                           AppLocalizations.of(context)!.posCorporateActionClose,
@@ -986,19 +992,22 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                                 );
                               }
                             } else {
-                            // Keep UX consistent with card-level approve action.
-                            vm.setFilter('All');
+                              // Keep UX consistent with card-level approve action.
+                              vm.setFilter('All');
                               if (context.mounted) Navigator.pop(ctx);
                             }
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryLight,
-                            foregroundColor: AppColors.secondaryLight,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all(AppColors.primaryLight),
+                            foregroundColor: WidgetStateProperty.all(AppColors.secondaryLight),
+                            overlayColor: WidgetStateProperty.all(Colors.transparent),
+                            shadowColor: WidgetStateProperty.all(Colors.transparent),
+                            surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                            elevation: WidgetStateProperty.all(0),
+                            padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+                            shape: WidgetStateProperty.all(RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
-                            ),
+                            )),
                           ),
                           child: Text(
                             AppLocalizations.of(context)!.posCorporateActionApproveBooking,
@@ -1024,36 +1033,32 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                             Navigator.pop(ctx);
                             _navigateToProductGrid(context, booking);
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryLight,
-                            foregroundColor: AppColors.secondaryLight,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all(AppColors.primaryLight),
+                            foregroundColor: WidgetStateProperty.all(AppColors.secondaryLight),
+                            overlayColor: WidgetStateProperty.all(Colors.transparent),
+                            shadowColor: WidgetStateProperty.all(Colors.transparent),
+                            surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                            elevation: WidgetStateProperty.all(0),
+                            padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+                            shape: WidgetStateProperty.all(RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
-                            ),
+                            )),
                           ),
                           child: _redirectingBookingId == booking.id.toString()
-                              ? SizedBox(
-                                  width: isTablet ? 18 : 16,
-                                  height: isTablet ? 18 : 16,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.secondaryLight,
-                                  ),
-                                )
+                              ? _CorporateButtonShimmer(size: isTablet ? 18 : 16)
                               : Text(
-                                  AppLocalizations.of(context)!.posCorporateActionContinue,
-                                  style: TextStyle(
-                                    color: AppColors.secondaryLight,
-                                    fontSize: isTablet ? 15 : 14,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                ),
+                            AppLocalizations.of(context)!.posCorporateActionContinue,
+                            style: TextStyle(
+                              color: AppColors.secondaryLight,
+                              fontSize: isTablet ? 15 : 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       )
                     else
@@ -1069,10 +1074,10 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   }
 
   Widget _buildDetailSectionHeading(
-    String title,
-    IconData icon,
-    bool isTablet,
-  ) {
+      String title,
+      IconData icon,
+      bool isTablet,
+      ) {
     return Row(
       children: [
         Icon(icon, size: isTablet ? 20 : 18, color: Colors.grey.shade600),
@@ -1124,11 +1129,11 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   }
 
   void _showReasonDialog(
-    BuildContext context,
-    booking,
-    String action,
-    bool isTablet,
-  ) {
+      BuildContext context,
+      booking,
+      String action,
+      bool isTablet,
+      ) {
     final TextEditingController reasonController = TextEditingController();
     // action is already localised, use color based on heuristic
     final bool isReject = true; // Reject dialog only opens via Reject button
@@ -1354,14 +1359,17 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
                             );
                           }
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: themeColor,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(themeColor),
+                          foregroundColor: WidgetStateProperty.all(Colors.white),
+                          overlayColor: WidgetStateProperty.all(Colors.transparent),
+                          shadowColor: WidgetStateProperty.all(Colors.transparent),
+                          surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                          elevation: WidgetStateProperty.all(0),
+                          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+                          shape: WidgetStateProperty.all(RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
-                          ),
+                          )),
                         ),
                         child: Text(
                           AppLocalizations.of(context)!.posCorporateActionSubmitReason,
@@ -1447,10 +1455,10 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
   }
 
   PosOrder? _resolveCorporateOrderMatch(
-    PosViewModel posVm,
-    dynamic booking,
-    String bookingOrderId,
-  ) {
+      PosViewModel posVm,
+      dynamic booking,
+      String bookingOrderId,
+      ) {
     final allOrders = List<PosOrder>.from(posVm.orders)
       ..sort((a, b) =>
           (int.tryParse(b.id) ?? 0).compareTo(int.tryParse(a.id) ?? 0));
@@ -1499,8 +1507,8 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
 
   bool _bookingLooksCompleted(dynamic booking) {
     final statusRaw =
-        '${booking.statusDisplay?.toString() ?? ''} ${booking.status?.toString() ?? ''}'
-            .toLowerCase();
+    '${booking.statusDisplay?.toString() ?? ''} ${booking.status?.toString() ?? ''}'
+        .toLowerCase();
     return statusRaw.contains('complete') || statusRaw.contains('invoiced');
   }
 
@@ -1536,6 +1544,98 @@ class _PosCorporateBookingsViewState extends State<PosCorporateBookingsView> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CorporateBookingsShimmer extends StatelessWidget {
+  const _CorporateBookingsShimmer({required this.isTablet});
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 20, vertical: 8),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isTablet ? 3 : 1,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: isTablet ? 1.9 : 2.55,
+        ),
+        itemCount: isTablet ? 6 : 4,
+        itemBuilder: (_, __) => const _CorporateBookingCardShimmer(),
+      ),
+    );
+  }
+}
+
+class _CorporateBookingCardShimmer extends StatelessWidget {
+  const _CorporateBookingCardShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF1F3F6)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+              child: Row(
+                children: const [
+                  PosShimmerBox(width: 44, height: 44, radius: 12),
+                  SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        PosShimmerBox(width: double.infinity, height: 13, radius: 7),
+                        SizedBox(height: 8),
+                        PosShimmerBox(width: 130, height: 11, radius: 6),
+                        SizedBox(height: 7),
+                        PosShimmerBox(width: 105, height: 10, radius: 5),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  PosShimmerBox(width: 74, height: 24, radius: 8),
+                ],
+              ),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+              child: Row(
+                children: const [
+                  Expanded(child: PosShimmerBox(width: double.infinity, height: 34, radius: 12)),
+                  SizedBox(width: 10),
+                  Expanded(child: PosShimmerBox(width: double.infinity, height: 34, radius: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CorporateButtonShimmer extends StatelessWidget {
+  const _CorporateButtonShimmer({required this.size});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return PosShimmer(
+      child: PosShimmerBox(width: size * 2.2, height: size, radius: size / 2),
     );
   }
 }
