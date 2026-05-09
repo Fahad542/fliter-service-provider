@@ -1352,14 +1352,14 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                             ),
                                           ),
                                           child: saving
-                                              ? const PosShimmer(
-                                            child: PosShimmerBox(
-                                              width: 70,
-                                              height: 14,
-                                              radius: 7,
-                                              dark: true,
-                                            ),
-                                          )
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2.5,
+                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                  ),
+                                                )
                                               : Text(
                                             AppLocalizations.of(context)!.posProductSave,
                                             style: TextStyle(
@@ -1930,17 +1930,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppColors.primaryLight,
                                       foregroundColor: const Color(0xFF1E2124),
+                                      disabledBackgroundColor: AppColors.primaryLight,
+                                      disabledForegroundColor: const Color(0xFF1E2124),
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
                                     child: completing
-                                        ? const PosShimmer(
-                                      child: PosShimmerBox(
-                                        width: 64,
-                                        height: 12,
-                                        radius: 6,
-                                      ),
-                                    )
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1E2124)),
+                                            ),
+                                          )
                                         : Text(
                                       AppLocalizations.of(context)!.posProductMarkComplete,
                                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 18 : 15),
@@ -1996,20 +1999,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: AppColors.secondaryLight,
                                                     foregroundColor: Colors.white,
-                                                    disabledBackgroundColor: AppColors.secondaryLight.withOpacity(0.7),
+                                                    disabledBackgroundColor: AppColors.secondaryLight,
                                                     disabledForegroundColor: Colors.white,
                                                     elevation: 0,
                                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                   ),
                                                   child: isSavingDraft
-                                                      ? const PosShimmer(
-                                                    child: PosShimmerBox(
-                                                      width: 64,
-                                                      height: 12,
-                                                      radius: 6,
-                                                      dark: true,
-                                                    ),
-                                                  )
+                                                      ? const SizedBox(
+                                                          width: 20,
+                                                          height: 20,
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2.5,
+                                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                          ),
+                                                        )
                                                       : Text(
                                                     AppLocalizations.of(context)!.posProductSaveDraft,
                                                     style: TextStyle(
@@ -2066,19 +2069,20 @@ class _PosProductGridViewState extends State<PosProductGridView> {
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: const Color(0xFFFFC145),
                                                   foregroundColor: const Color(0xFF1E2124),
-                                                  disabledBackgroundColor: const Color(0xFFFFC145).withOpacity(0.7),
-                                                  disabledForegroundColor: const Color(0xFF1E2124).withOpacity(0.7),
+                                                  disabledBackgroundColor: const Color(0xFFFFC145),
+                                                  disabledForegroundColor: const Color(0xFF1E2124),
                                                   elevation: 0,
                                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                 ),
                                                 child: isForwarding
-                                                    ? const PosShimmer(
-                                                  child: PosShimmerBox(
-                                                    width: 64,
-                                                    height: 12,
-                                                    radius: 6,
-                                                  ),
-                                                )
+                                                    ? const SizedBox(
+                                                        width: 20,
+                                                        height: 20,
+                                                        child: CircularProgressIndicator(
+                                                          strokeWidth: 2.5,
+                                                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1E2124)),
+                                                        ),
+                                                      )
                                                     : Text(
                                                   AppLocalizations.of(context)!.posProductForwardTechnician,
                                                   style: TextStyle(

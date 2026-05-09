@@ -68,9 +68,9 @@ class _PosShimmerState extends State<PosShimmer>
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 colors: const [
-                  Color(0xFFE9EEF5),
-                  Color(0xFFF8FAFC),
-                  Color(0xFFE9EEF5),
+                  Color(0xFFE0E0E0),
+                  Color(0xFFF2F2F2),
+                  Color(0xFFE0E0E0),
                 ],
                 stops: const [0.25, 0.50, 0.75],
                 transform: _PosSlidingGradientTransform(dx),
@@ -120,7 +120,7 @@ class PosShimmerBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: dark
             ? Colors.white.withValues(alpha: 0.18)
-            : const Color(0xFFE9EEF5),
+            : const Color(0xFFDFDFDF),
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -174,7 +174,7 @@ class PosShimmerCircle extends StatelessWidget {
       decoration: BoxDecoration(
         color: dark
             ? Colors.white.withValues(alpha: 0.18)
-            : const Color(0xFFE9EEF5),
+            : const Color(0xFFDFDFDF),
         shape: BoxShape.circle,
       ),
     );

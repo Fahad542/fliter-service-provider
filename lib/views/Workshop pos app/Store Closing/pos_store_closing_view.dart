@@ -889,6 +889,8 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryLight,
                   foregroundColor: AppColors.secondaryLight,
+                  disabledBackgroundColor: AppColors.primaryLight,
+                  disabledForegroundColor: AppColors.secondaryLight,
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
@@ -896,11 +898,12 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                   shadowColor: AppColors.primaryLight.withOpacity(0.3),
                 ),
                 child: closingVm.isReconciling
-                    ? const PosShimmer(
-                        child: PosShimmerBox(
-                          width: 20,
-                          height: 20,
-                          radius: 10,
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondaryLight),
                         ),
                       )
                     : Text(AppLocalizations.of(context)!.posStoreClosingCloseShift,
@@ -961,17 +964,20 @@ class _PosStoreClosingViewState extends State<PosStoreClosingView> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondaryLight,
                       foregroundColor: AppColors.onSecondaryLight,
+                      disabledBackgroundColor: AppColors.secondaryLight,
+                      disabledForegroundColor: AppColors.onSecondaryLight,
                       minimumSize: const Size(0, 48),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 2,
                     ),
                     child: _closingThermalPrintBusy
-                        ? const PosShimmer(
-                            child: PosShimmerBox(
-                              width: 22,
-                              height: 22,
-                              radius: 11,
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(

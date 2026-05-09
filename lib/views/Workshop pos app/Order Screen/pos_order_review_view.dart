@@ -894,6 +894,8 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primaryLight,
                       foregroundColor: AppColors.onPrimaryLight,
+                      disabledBackgroundColor: AppColors.primaryLight,
+                      disabledForegroundColor: AppColors.onPrimaryLight,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                       shape: RoundedRectangleBorder(
@@ -907,8 +909,8 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.onPrimaryLight,
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.onPrimaryLight),
                       ),
                     )
                         : Text(
@@ -1352,6 +1354,10 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                   },
                 ),
                 style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  disabledBackgroundColor: Theme.of(context).colorScheme.primary,
+                  disabledForegroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding:
                   const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   shape: RoundedRectangleBorder(
@@ -1367,8 +1373,8 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Colors.white,
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     ),
                   ),
@@ -3854,6 +3860,10 @@ class _GenerateInvoiceButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canTap = enabled && !isLoading;
+    final activeStyle = enabled;
+    final activeBg =
+        activeStyle ? AppColors.primaryLight : const Color(0xFFCBD5E1);
+    final activeFg = activeStyle ? Colors.black : const Color(0xFF64748B);
     return ElevatedButton.icon(
       onPressed: canTap ? onTap : null,
       icon: isLoading
@@ -3861,7 +3871,7 @@ class _GenerateInvoiceButton extends StatelessWidget {
           : Icon(
         Icons.auto_awesome_rounded,
         size: 18,
-        color: canTap ? Colors.black : const Color(0xFF64748B),
+        color: activeFg,
       ),
       label: isLoading
           ? const SizedBox(
@@ -3877,15 +3887,14 @@ class _GenerateInvoiceButton extends StatelessWidget {
         style: TextStyle(
           fontWeight: FontWeight.w800,
           fontSize: 14,
-          color: canTap ? Colors.black : const Color(0xFF64748B),
+          color: activeFg,
         ),
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor:
-        canTap ? AppColors.primaryLight : const Color(0xFFCBD5E1),
-        foregroundColor: Colors.black,
-        disabledBackgroundColor: const Color(0xFFCBD5E1),
-        disabledForegroundColor: const Color(0xFF64748B),
+        backgroundColor: activeBg,
+        foregroundColor: activeFg,
+        disabledBackgroundColor: activeBg,
+        disabledForegroundColor: activeFg,
         elevation: 0,
         minimumSize: const Size.fromHeight(56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

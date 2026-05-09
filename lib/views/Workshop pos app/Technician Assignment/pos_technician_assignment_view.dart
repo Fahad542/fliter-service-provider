@@ -998,11 +998,12 @@ class _PosTechnicianAssignmentViewState
                                         ),
                                       ),
                                       child: (_broadcastingDuty == 'on_call')
-                                          ? const PosShimmer(
-                                              child: PosShimmerBox(
-                                                width: 20,
-                                                height: 20,
-                                                radius: 10,
+                                          ? const SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondaryLight),
                                               ),
                                             )
                                           : broadcastCooldown
@@ -1052,18 +1053,19 @@ class _PosTechnicianAssignmentViewState
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppColors.secondaryLight,
                                       foregroundColor: Colors.white,
-                                      disabledBackgroundColor: Colors.grey.shade300,
-                                      disabledForegroundColor: Colors.grey.shade500,
+                                      disabledBackgroundColor: AppColors.secondaryLight,
+                                      disabledForegroundColor: Colors.white,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                     ),
-                                    child: busy ? const PosShimmer(
-                                      child: PosShimmerBox(
-                                        width: 20,
-                                        height: 20,
-                                        radius: 10,
+                                    child: busy ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                       ),
                                     ) : Text(
                                       AppLocalizations.of(context)!.posTechnicianSave,

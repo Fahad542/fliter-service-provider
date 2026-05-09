@@ -1634,8 +1634,13 @@ class _CorporateButtonShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PosShimmer(
-      child: PosShimmerBox(width: size * 2.2, height: size, radius: size / 2),
+    return SizedBox(
+      width: size + 4,
+      height: size + 4,
+      child: const CircularProgressIndicator(
+        strokeWidth: 2.5,
+        valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondaryLight),
+      ),
     );
   }
 }

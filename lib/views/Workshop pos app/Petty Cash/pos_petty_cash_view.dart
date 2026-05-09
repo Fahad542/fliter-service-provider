@@ -438,19 +438,20 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondaryLight,
-              disabledBackgroundColor: AppColors.secondaryLight.withOpacity(0.7),
+              disabledBackgroundColor: AppColors.secondaryLight,
               foregroundColor: Colors.white,
+              disabledForegroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               elevation: 3,
               shadowColor: AppColors.secondaryLight.withOpacity(0.4),
             ),
             child: vm.isExpenseSubmitting
-                ? const PosShimmer(
-                    child: PosShimmerBox(
-                      width: 86,
-                      height: 14,
-                      radius: 7,
-                      dark: true,
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
                 : Row(
@@ -515,19 +516,20 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondaryLight,
-              disabledBackgroundColor: AppColors.secondaryLight.withOpacity(0.7),
+              disabledBackgroundColor: AppColors.secondaryLight,
               foregroundColor: Colors.white,
+              disabledForegroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               elevation: 3,
               shadowColor: AppColors.secondaryLight.withOpacity(0.4),
             ),
             child: vm.isRequestSubmitting
-                ? const PosShimmer(
-                    child: PosShimmerBox(
-                      width: 86,
-                      height: 14,
-                      radius: 7,
-                      dark: true,
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
                 : Row(
@@ -969,8 +971,13 @@ class _PosPettyCashViewState extends State<PosPettyCashView> with SingleTickerPr
                                       ? null
                                       : () => vm.fetchExpenseHistory(refresh: false),
                                   child: vm.expenseHistoryLoading
-                                      ? const PosShimmer(
-                                          child: PosShimmerBox(width: 76, height: 12, radius: 6),
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondaryLight),
+                                          ),
                                         )
                                       : Text(AppLocalizations.of(context)!.posPettyCashLoadMore),
                                 ),

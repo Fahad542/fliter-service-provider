@@ -258,6 +258,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondaryLight,
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.secondaryLight,
+                      disabledForegroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -267,11 +269,12 @@ class _PosPromoViewState extends State<PosPromoView> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                     ),
                     child: promoVm.isLoading
-                        ? const PosShimmer(
-                            child: PosShimmerBox(
-                              width: 20,
-                              height: 20,
-                              radius: 10,
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
@@ -353,6 +356,8 @@ class _PosPromoViewState extends State<PosPromoView> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondaryLight,
                           foregroundColor: Colors.white,
+                          disabledBackgroundColor: AppColors.secondaryLight,
+                          disabledForegroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -362,11 +367,12 @@ class _PosPromoViewState extends State<PosPromoView> {
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                         ),
                         child: promoVm.isLoading
-                            ? const PosShimmer(
-                                child: PosShimmerBox(
-                                  width: 20,
-                                  height: 20,
-                                  radius: 10,
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
                             : Text(

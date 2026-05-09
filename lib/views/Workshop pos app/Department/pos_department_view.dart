@@ -533,8 +533,7 @@ class _PosDepartmentViewState extends State<PosDepartmentView> {
               backgroundColor: AppColors.primaryLight,
               foregroundColor: AppColors.secondaryLight,
               overlayColor: Colors.transparent,
-              disabledBackgroundColor: AppColors.primaryLight.withValues(
-                  alpha: 0.85),
+              disabledBackgroundColor: AppColors.primaryLight,
               disabledForegroundColor: AppColors.secondaryLight,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -615,8 +614,13 @@ class _DepartmentButtonShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const PosShimmer(
-      child: PosShimmerBox(width: 58, height: 18, radius: 9),
+    return const SizedBox(
+      width: 22,
+      height: 22,
+      child: CircularProgressIndicator(
+        strokeWidth: 2.5,
+        valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondaryLight),
+      ),
     );
   }
 }
