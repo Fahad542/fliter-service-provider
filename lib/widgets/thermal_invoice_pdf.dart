@@ -26,6 +26,58 @@ String _arMixedLtr(String s) => reshapeArabicForMixedLtr(s);
 bool _thermalInvoicePdfHasArabic(String s) =>
     RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]').hasMatch(s);
 
+String _thermalInvoiceQrClip(String raw, int maxChars) {
+  final clean = pdfStripBidiAndInvisible(raw.trim());
+  if (clean.length <= maxChars) return clean;
+  return '${clean.substring(0, maxChars - 1)}…';
+}
+
+/// Plain-text QR fallback: scanners can show invoice items immediately without
+/// needing a public invoice webpage/API. Keep it compact so thermal QR stays scanable.
+String _thermalInvoiceItemsQrText(Invoice invoice, num totalInvoiceAmount) {
+  final lines = <String>[
+    'Invoice: ${pdfStripBidiAndInvisible(invoice.invoiceNo.trim())}',
+  ];
+
+  final customer = pdfStripBidiAndInvisible(invoice.customerName.trim());
+  if (customer.isNotEmpty && customer.toLowerCase() != 'unknown') {
+    lines.add('Customer: ${_thermalInvoiceQrClip(customer, 42)}');
+  }
+
+  final mobile = pdfStripBidiAndInvisible((invoice.customerMobile ?? '').trim());
+  if (mobile.isNotEmpty) {
+    lines.add('Mobile: ${_thermalInvoiceQrClip(mobile, 28)}');
+  }
+
+  lines.add('Items:');
+
+  var count = 0;
+  const maxItemsInQr = 18;
+  accumulateInvoiceItems(invoice, (item) {
+    if (count >= maxItemsInQr) return;
+    count++;
+
+    final nameEn = _thermalInvoiceQrClip(thermalSafeText(item.productName), 52);
+    final nameAr = _thermalInvoiceQrClip((item.productNameArabic ?? '').trim(), 52);
+    final qty = item.qty % 1 == 0
+        ? item.qty.toInt().toString()
+        : item.qty.toStringAsFixed(2);
+    final total = thermalR2(item.lineTotal).toStringAsFixed(2);
+
+    lines.add('$count) $nameEn');
+    if (nameAr.isNotEmpty) lines.add('   $nameAr');
+    lines.add('   Qty: $qty | Total: $total SR');
+  });
+
+  if (count >= maxItemsInQr) {
+    lines.add('More items available on printed invoice.');
+  }
+
+  lines.add('Grand Total: ${totalInvoiceAmount.toStringAsFixed(2)} SR');
+  return lines.join('\n');
+}
+
+
 /// Vector checkbox for maintenance lines (avoids Unicode ballot glyphs on some printers).
 pw.Widget thermalMaintenanceCheckbox(bool checked, {double side = 9.2}) {
   return pw.SizedBox(
@@ -83,7 +135,7 @@ pw.Document buildThermalInvoicePdfDocument({
   Map<String, String> dynamicArabicValues = const <String, String>{},
 }) {
   final t = computeThermalInvoiceTotals(invoice);
-  final qrData = thermalInvoiceQrPayload(invoice, t.totalInvoiceAmount);
+  final qrData = _thermalInvoiceItemsQrText(invoice, t.totalInvoiceAmount);
   final issued = formatInvoiceIssuedAtDateTime(invoice.issuedAt) ??
       formatInvoiceLegalDate(invoice.invoiceDate);
   final workshopLine = (invoice.workshopName ?? '').trim();
@@ -961,6 +1013,14 @@ pw.Document buildThermalInvoicePdfDocument({
                 pw.SizedBox(height: 2),
               ],
               dashed(),
+              pw.Center(
+                child: pw.Text(
+                  'Scan to view invoice items',
+                  style: pw.TextStyle(font: fontBold, fontSize: 7.6),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+              pw.SizedBox(height: 2),
               pw.Center(
                 child: pw.BarcodeWidget(
                   barcode: pw.Barcode.qrCode(),
