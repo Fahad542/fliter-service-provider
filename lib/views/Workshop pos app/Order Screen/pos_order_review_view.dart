@@ -19,6 +19,7 @@ import 'package:provider/provider.dart';
 import '../../../data/repositories/pos_repository.dart';
 import '../../../models/cashier_expense_models.dart';
 import '../../../services/session_service.dart';
+import '../Add Customer Screen/pos_add_customer_phone_format.dart';
 
 
 
@@ -143,6 +144,64 @@ InputDecoration _walkInInvoiceFieldDecoration(
     focusedBorder: OutlineInputBorder(
       borderRadius: borderRadius,
       borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
+    ),
+  );
+}
+
+const PosAddCustomerMobileDial _walkInInvoiceMobileDial =
+    PosAddCustomerMobileDial.saudiArabia;
+
+String _walkInInvoiceMobileDisplay(String raw) {
+  final normalized = PosAddCustomerPhoneFormat.normalizeNational(
+    _walkInInvoiceMobileDial,
+    raw,
+  );
+  return PosAddCustomerPhoneFormat.formatDigits(
+    _walkInInvoiceMobileDial,
+    normalized,
+  );
+}
+
+String _walkInInvoiceMobilePayload(String raw) {
+  final normalized = PosAddCustomerPhoneFormat.normalizeNational(
+    _walkInInvoiceMobileDial,
+    raw,
+  );
+  return normalized.isEmpty
+      ? ''
+      : '+${_walkInInvoiceMobileDial.dialDigits}$normalized';
+}
+
+InputDecoration _walkInInvoiceMobileFieldDecoration(
+  BuildContext context, {
+  bool compact = false,
+}) {
+  final dial = _walkInInvoiceMobileDial;
+  final textStyle = TextStyle(
+    fontSize: compact ? 12 : 13,
+    fontWeight: FontWeight.w700,
+    color: AppColors.secondaryLight,
+  );
+  return _walkInInvoiceFieldDecoration(
+    AppLocalizations.of(context)!.posInvoiceDetailsMobile,
+    compact: compact,
+  ).copyWith(
+    hintText: dial.inputHintSample,
+    prefixIconConstraints: BoxConstraints(
+      minWidth: compact ? 72 : 78,
+      minHeight: compact ? 40 : 46,
+    ),
+    prefixIcon: Padding(
+      padding: EdgeInsets.only(left: compact ? 10 : 12, right: compact ? 8 : 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(dial.flagEmoji, style: TextStyle(fontSize: compact ? 15 : 16)),
+          const SizedBox(width: 5),
+          Text('+${dial.dialDigits}', style: textStyle),
+          const SizedBox(width: 2),
+        ],
+      ),
     ),
   );
 }
@@ -274,7 +333,9 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
           text: snap.name.trim().isNotEmpty ? snap.name : (c?.name ?? '').trim(),
         );
         _mobileCtrl = TextEditingController(
-          text: snap.mobile.trim().isNotEmpty ? snap.mobile : (c?.mobile ?? '').trim(),
+          text: _walkInInvoiceMobileDisplay(
+            snap.mobile.trim().isNotEmpty ? snap.mobile : (c?.mobile ?? '').trim(),
+          ),
         );
         _vatCtrl = TextEditingController(
           text: snap.vat.trim().isNotEmpty ? snap.vat : (c?.vatNumber ?? '').trim(),
@@ -286,7 +347,9 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
         );
       } else {
         _nameCtrl = TextEditingController(text: (c?.name ?? '').trim());
-        _mobileCtrl = TextEditingController(text: (c?.mobile ?? '').trim());
+        _mobileCtrl = TextEditingController(
+          text: _walkInInvoiceMobileDisplay((c?.mobile ?? '').trim()),
+        );
         _vatCtrl = TextEditingController(text: (c?.vatNumber ?? '').trim());
         _plateCtrl = TextEditingController(text: (v?.plateNo ?? '').trim());
       }
@@ -328,7 +391,9 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
     } else {
       final d = widget.standaloneInitial!;
       _nameCtrl = TextEditingController(text: d.name);
-      _mobileCtrl = TextEditingController(text: d.mobile);
+      _mobileCtrl = TextEditingController(
+        text: _walkInInvoiceMobileDisplay(d.mobile),
+      );
       _vatCtrl = TextEditingController(text: d.vat);
       _plateCtrl = TextEditingController(text: d.vehicleNumber);
       _makeCtrl = TextEditingController(text: d.make);
@@ -388,7 +453,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
     if (!widget.showVehicleSection) {
       formResult = WalkInInvoiceFormResult(
         name: _nameCtrl.text,
-        mobile: _mobileCtrl.text,
+        mobile: _walkInInvoiceMobilePayload(_mobileCtrl.text),
         vat: _vatCtrl.text,
         vehicleNumber: '',
         vin: '',
@@ -422,7 +487,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
           : '';
       formResult = WalkInInvoiceFormResult(
         name: _nameCtrl.text,
-        mobile: _mobileCtrl.text,
+        mobile: _walkInInvoiceMobilePayload(_mobileCtrl.text),
         vat: _vatCtrl.text,
         vehicleNumber: _plateCtrl.text,
         vin: _vinCtrl.text,
@@ -629,7 +694,7 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                         _billingEmployeePickSelection = e;
                         if (e != null) {
                           _nameCtrl.text = e.name;
-                          _mobileCtrl.text = e.mobile ?? '';
+                          _mobileCtrl.text = _walkInInvoiceMobileDisplay(e.mobile ?? '');
                         }
                       });
                     },
@@ -670,11 +735,16 @@ class WalkInInvoiceDetailsDialogState extends State<WalkInInvoiceDetailsDialog> 
                     style: _kWalkInInvoiceDialogFieldStyle.copyWith(
                       color: Colors.grey.shade900,
                     ),
-                    decoration: _walkInInvoiceFieldDecoration(
-                      AppLocalizations.of(context)!.posInvoiceDetailsMobile,
+                    decoration: _walkInInvoiceMobileFieldDecoration(
+                      context,
                       compact: true,
                     ),
                     keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      PosAddCustomerNationalMobileFormatter(
+                        _walkInInvoiceMobileDial,
+                      ),
+                    ],
                     validator: (s) =>
                     isCorporateLocked
                         ? null
@@ -1111,7 +1181,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
     final snap = posVm.walkInBillingSnapshotForOrder(o.id);
     if (snap != null) {
       _nameCtrl = TextEditingController(text: snap.name);
-      _mobileCtrl = TextEditingController(text: snap.mobile);
+      _mobileCtrl = TextEditingController(
+        text: _walkInInvoiceMobileDisplay(snap.mobile),
+      );
       _vatCtrl = TextEditingController(text: snap.vat);
       _plateCtrl = TextEditingController(text: snap.vehicleNumber);
       _makeCtrl = TextEditingController(text: snap.make);
@@ -1125,7 +1197,9 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       );
     } else {
       _nameCtrl = TextEditingController(text: (c?.name ?? '').trim());
-      _mobileCtrl = TextEditingController(text: (c?.mobile ?? '').trim());
+      _mobileCtrl = TextEditingController(
+          text: _walkInInvoiceMobileDisplay((c?.mobile ?? '').trim()),
+        );
       _vatCtrl = TextEditingController(text: (c?.vatNumber ?? '').trim());
       _plateCtrl = TextEditingController(text: (v?.plateNo ?? '').trim());
       _makeCtrl = TextEditingController(text: (v?.make ?? '').trim());
@@ -2050,7 +2124,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                         _inlineBillingEmployeePickSelection = e;
                         if (e != null) {
                           _nameCtrl.text = e.name;
-                          _mobileCtrl.text = e.mobile ?? '';
+                          _mobileCtrl.text = _walkInInvoiceMobileDisplay(e.mobile ?? '');
                         }
                       });
                     },
@@ -2089,8 +2163,13 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade900,
                     ),
-                    decoration: _walkInInvoiceFieldDecoration(AppLocalizations.of(context)!.posInvoiceDetailsMobile),
+                    decoration: _walkInInvoiceMobileFieldDecoration(context),
                     keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      PosAddCustomerNationalMobileFormatter(
+                        _walkInInvoiceMobileDial,
+                      ),
+                    ],
                     validator: (s) =>
                     (s == null || s.trim().isEmpty) ? AppLocalizations.of(context)!.posInvoiceDetailsRequired : null,
                   ),
@@ -2298,7 +2377,7 @@ class _PosOrderReviewViewState extends State<PosOrderReviewView> {
       posVm.updateWalkInBillingContact(
         forOrderId: widget.order.id,
         name: _nameCtrl.text,
-        mobile: _mobileCtrl.text,
+        mobile: _walkInInvoiceMobilePayload(_mobileCtrl.text),
         vat: _vatCtrl.text,
         vehicleNumber: _plateCtrl.text,
         vin: _vinCtrl.text,

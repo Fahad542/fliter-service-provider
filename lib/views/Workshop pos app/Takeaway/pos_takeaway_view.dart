@@ -184,6 +184,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         textScaler: PosTabletLayout.textScaler(context),
       ),
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: const Color(0xFFF5F3F0),
         appBar: PosScreenAppBar(
           title: AppLocalizations.of(context)!.posTakeawayTitle,
@@ -478,6 +479,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
       ),
+      clipBehavior: Clip.hardEdge,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -513,7 +515,7 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
             ),
           ),
           Divider(height: 1, color: Colors.grey.shade200),
-          Expanded(
+          Flexible(
             child: vm.cart.isEmpty
                 ? Center(
               child: Text(
@@ -535,12 +537,15 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
             ),
           ),
           Divider(height: 1, color: Colors.grey.shade200),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                buildRow(AppLocalizations.of(context)!.posTakeawayGrossExVat, _takeawayMoney(context, gross)),
+          Flexible(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  buildRow(AppLocalizations.of(context)!.posTakeawayGrossExVat, _takeawayMoney(context, gross)),
                 const SizedBox(height: 6),
                 buildRow(
                   AppLocalizations.of(context)!.posTakeawayLineDiscount,
@@ -796,7 +801,8 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
                     ),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -1616,7 +1622,6 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
 
   Future<void> _openTakeawayCustomerVehicleDialog(BuildContext context) async {
     final vm = context.read<TakeawayViewModel>();
-    final posVm = context.read<PosViewModel>();
     final initial = WalkInInvoiceFormResult(
       name: vm.customerNameController.text.trim(),
       mobile: vm.customerMobileController.text.trim(),
@@ -1632,12 +1637,20 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
     final result = await showDialog<WalkInInvoiceFormResult?>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => WalkInInvoiceDetailsDialog(
-        order: null,
-        posVm: posVm,
-        standaloneInitial: initial,
-        showVehicleSection: false,
-      ),
+      builder: (ctx) {
+        final media = MediaQuery.of(ctx);
+        final bottomInset = media.viewInsets.bottom;
+
+        // Prevent the dialog route from squeezing the background/tablet layout.
+        // The custom dialog below handles keyboard insets itself.
+        return MediaQuery(
+          data: media.copyWith(viewInsets: EdgeInsets.zero),
+          child: _TakeawayCustomerDetailsDialog(
+            initial: initial,
+            keyboardBottomInset: bottomInset,
+          ),
+        );
+      },
     );
     if (result == null || !context.mounted) return;
     vm.customerNameController.text = result.name.trim();
@@ -1738,6 +1751,301 @@ class _PosTakeawayViewState extends State<PosTakeawayView> {
       ),
     );
     vm.resetLastInvoice();
+  }
+}
+
+
+class _TakeawayCustomerDetailsDialog extends StatefulWidget {
+  const _TakeawayCustomerDetailsDialog({
+    required this.initial,
+    required this.keyboardBottomInset,
+  });
+
+  final WalkInInvoiceFormResult initial;
+  final double keyboardBottomInset;
+
+  @override
+  State<_TakeawayCustomerDetailsDialog> createState() =>
+      _TakeawayCustomerDetailsDialogState();
+}
+
+class _TakeawayCustomerDetailsDialogState
+    extends State<_TakeawayCustomerDetailsDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _mobileController;
+  late final TextEditingController _vatController;
+  bool _isBranchEmployee = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initial.name);
+    _mobileController = TextEditingController(text: widget.initial.mobile);
+    _vatController = TextEditingController(text: widget.initial.vat);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _mobileController.dispose();
+    _vatController.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _fieldDecoration(String label, {bool required = false}) {
+    return InputDecoration(
+      labelText: label,
+      helperText: required ? 'Required' : null,
+      isDense: true,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFFFC145), width: 1.4),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.red.shade700),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.red.shade700, width: 1.4),
+      ),
+    );
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.of(context).pop(
+      WalkInInvoiceFormResult(
+        name: _nameController.text.trim(),
+        mobile: _mobileController.text.trim(),
+        vat: _vatController.text.trim(),
+        vehicleNumber: '',
+        vin: '',
+        make: '',
+        model: '',
+        year: '',
+        color: '',
+        odometer: 0,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final safeVertical = media.padding.top + media.padding.bottom;
+    final availableHeight = media.size.height -
+        widget.keyboardBottomInset -
+        safeVertical -
+        24;
+    final maxDialogHeight = availableHeight.clamp(220.0, 560.0);
+    final maxDialogWidth = min(media.size.width - 32, 560.0).toDouble();
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: widget.keyboardBottomInset + 10,
+      ),
+      child: SafeArea(
+        child: Align(
+          alignment: Alignment.center,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: maxDialogWidth,
+              maxHeight: maxDialogHeight,
+            ),
+            child: Material(
+              color: Colors.white,
+              elevation: 10,
+              shadowColor: Colors.black.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(
+                  left: 18,
+                  right: 18,
+                  top: 14,
+                  bottom: max(12.0, media.padding.bottom + 12),
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Customer details',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1E2124),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Confirm billing contact before creating the invoice.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          height: 1.25,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.person_outline, size: 16),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Billing',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: _isBranchEmployee,
+                            onChanged: (value) {
+                              setState(() => _isBranchEmployee = value);
+                            },
+                            activeColor: AppColors.primaryLight,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Customer is a branch employee',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Pick from staff list to fill name and mobile.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final twoColumns = constraints.maxWidth >= 460;
+                          final nameField = TextFormField(
+                            controller: _nameController,
+                            textInputAction: TextInputAction.next,
+                            scrollPadding: const EdgeInsets.only(bottom: 180),
+                            decoration: _fieldDecoration(
+                              'Customer name',
+                              required: true,
+                            ),
+                            validator: (value) {
+                              if ((value ?? '').trim().isEmpty) {
+                                return 'Required';
+                              }
+                              return null;
+                            },
+                          );
+                          final mobileField = TextFormField(
+                            controller: _mobileController,
+                            keyboardType: TextInputType.phone,
+                            textInputAction: TextInputAction.next,
+                            scrollPadding: const EdgeInsets.only(bottom: 180),
+                            decoration: _fieldDecoration(
+                              'Mobile',
+                              required: true,
+                            ),
+                            validator: (value) {
+                              if ((value ?? '').trim().isEmpty) {
+                                return 'Required';
+                              }
+                              return null;
+                            },
+                          );
+
+                          if (!twoColumns) {
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                nameField,
+                                const SizedBox(height: 10),
+                                mobileField,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: nameField),
+                              const SizedBox(width: 10),
+                              Expanded(child: mobileField),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _vatController,
+                        textInputAction: TextInputAction.done,
+                        keyboardType: TextInputType.text,
+                        scrollPadding: const EdgeInsets.only(bottom: 180),
+                        onFieldSubmitted: (_) => _submit(),
+                        decoration: _fieldDecoration('VAT (optional)'),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: _submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFC145),
+                              foregroundColor: const Color(0xFF1E2124),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                                vertical: 11,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text(
+                              'Continue',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

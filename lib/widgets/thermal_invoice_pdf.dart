@@ -133,7 +133,7 @@ pw.Document buildThermalInvoicePdfDocument({
   }
 
   String pdfMoneyEn(num amount) => '${amount.toStringAsFixed(2)} SR';
-  String pdfMoneyAr(num amount) => '${pdfArabicDigits(amount.toStringAsFixed(2))} ر.س';
+  String pdfMoneyAr(num amount) => '${amount.toStringAsFixed(2)} ر.س';
 
   String dynamicArabicFor(String raw) {
     final clean = pdfUserLine(raw);
@@ -142,8 +142,7 @@ pw.Document buildThermalInvoicePdfDocument({
     final direct = dynamicArabicValues[clean] ?? dynamicArabicValues[raw.trim()];
     final ar = pdfUserLine(direct ?? '');
     if (ar.isNotEmpty && ar.toLowerCase() != clean.toLowerCase()) return ar;
-    final digitMirror = pdfArabicDigits(clean);
-    return digitMirror == clean ? '' : digitMirror;
+    return '';
   }
 
   pw.Widget bilingualHeaderLeading(String ar, String en) {
@@ -316,31 +315,17 @@ pw.Document buildThermalInvoicePdfDocument({
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         mainAxisSize: pw.MainAxisSize.min,
         children: [
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  _ar(arabicLines),
-                  style: pw.TextStyle(
-                    font: fontArabic,
-                    fontSize: arabicSize,
-                    height: 1.08,
-                  ),
-                  textAlign: pw.TextAlign.left,
-                  maxLines: 10,
-                ),
-              ),
-              pw.Text(
-                _ar(pdfMoneyAr(amount)),
-                style: pw.TextStyle(
-                  font: fontArabic,
-                  fontSize: arabicSize,
-                  height: 1.08,
-                ),
-                textAlign: pw.TextAlign.right,
-              ),
-            ],
+          // Arabic label only. Amount is intentionally NOT repeated here.
+          // Right-side amounts must stay English digits + SR only.
+          pw.Text(
+            _ar(arabicLines),
+            style: pw.TextStyle(
+              font: fontArabic,
+              fontSize: arabicSize,
+              height: 1.08,
+            ),
+            textAlign: pw.TextAlign.left,
+            maxLines: 10,
           ),
           pw.SizedBox(height: 0.5),
           pw.Row(
@@ -404,28 +389,58 @@ pw.Document buildThermalInvoicePdfDocument({
     return pad;
   }
 
+  /// Clean bilingual field: Arabic label row, then English label/value row.
+  /// Dynamic values (customer names, mobile, VAT, dates, etc.) are kept exactly as typed
+  /// to avoid mixed/incorrect Arabic transliteration in the invoice.
   pw.Widget richLabelValueBilingual(String label, String value) {
     final v = pdfUserLine(value);
-    final ar = dynamicArabicFor(v);
-    if (ar.isEmpty) return richLabelValue(label, v);
+    final cleanLabel = pdfStripBidiAndInvisible(label.trim());
+    String arLabel = cleanLabel;
+    String enLabel = cleanLabel;
+    if (cleanLabel.contains(' / ')) {
+      final parts = cleanLabel.split(' / ');
+      arLabel = parts.first.trim();
+      enLabel = parts.sublist(1).join(' / ').trim();
+    }
+    if (!enLabel.endsWith(':')) enLabel = '$enLabel:';
+
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 0.55),
+      padding: const pw.EdgeInsets.only(bottom: 1.25),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         mainAxisSize: pw.MainAxisSize.min,
         children: [
           pw.Text(
-            _ar(ar),
+            _ar(arLabel),
             style: pw.TextStyle(
               font: fontArabic,
               fontSize: fsMeta + 0.1,
               height: 1.05,
             ),
             textAlign: pw.TextAlign.left,
-            maxLines: 6,
+            maxLines: 4,
             softWrap: true,
           ),
-          richLabelValue(label, v),
+          pw.SizedBox(height: 0.35),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '$enLabel ',
+                style: tsLabel(),
+                textAlign: pw.TextAlign.left,
+              ),
+              pw.Expanded(
+                child: pw.Text(
+                  v.isEmpty ? '-' : v,
+                  style: tsValue(),
+                  textAlign: pw.TextAlign.left,
+                  maxLines: 4,
+                  softWrap: true,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -577,15 +592,7 @@ pw.Document buildThermalInvoicePdfDocument({
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           mainAxisSize: pw.MainAxisSize.min,
           children: [
-            if (ar.isNotEmpty) ...[
-              pw.Text(
-                _ar(ar),
-                style: itemArStyle,
-                textAlign: pw.TextAlign.left,
-                maxLines: 4,
-              ),
-              pw.SizedBox(height: 1.1),
-            ],
+            // English item row first. Rates on the right are English-only.
             pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
@@ -601,22 +608,13 @@ pw.Document buildThermalInvoicePdfDocument({
                 pw.SizedBox(
                   width: 22,
                   child: pw.Center(
-                    child: pw.Column(
-                      mainAxisSize: pw.MainAxisSize.min,
-                      children: [
-                        pw.Text(qty, style: itemNumStyle),
-                        pw.Text(
-                          pdfArabicDigits(qty),
-                          style: pw.TextStyle(font: fontArabic, fontSize: 6.3),
-                        ),
-                      ],
-                    ),
+                    child: pw.Text(qty, style: itemNumStyle),
                   ),
                 ),
                 pw.Expanded(
                   flex: 3,
                   child: pw.Text(
-                    '${unit.toStringAsFixed(2)} SR\n${pdfMoneyAr(unit)}',
+                    pdfMoneyEn(unit),
                     style: itemNumStyle,
                     textAlign: pw.TextAlign.right,
                   ),
@@ -624,13 +622,22 @@ pw.Document buildThermalInvoicePdfDocument({
                 pw.Expanded(
                   flex: 3,
                   child: pw.Text(
-                    '${total.toStringAsFixed(2)} SR\n${pdfMoneyAr(total)}',
+                    pdfMoneyEn(total),
                     style: itemNumStyle,
                     textAlign: pw.TextAlign.right,
                   ),
                 ),
               ],
             ),
+            if (ar.isNotEmpty) ...[
+              pw.SizedBox(height: 0.9),
+              pw.Text(
+                _ar(ar),
+                style: itemArStyle,
+                textAlign: pw.TextAlign.left,
+                maxLines: 4,
+              ),
+            ],
           ],
         ),
       ),
@@ -873,24 +880,27 @@ pw.Document buildThermalInvoicePdfDocument({
                 t.grossExVatBeforeDiscount,
                 enSize: 7.8,
               ),
-              arabicEnglishAmountLabelSized(
-                ThermalInvoicePdfLabels.itemDiscountAr,
-                '${ThermalInvoicePdfLabels.itemDiscountEn}: ',
-                pdfItemDiscount,
-                enSize: 7.6,
-              ),
-              arabicEnglishAmountLabelSized(
-                ThermalInvoicePdfLabels.invoiceDiscountAr,
-                '${ThermalInvoicePdfLabels.invoiceDiscountEn}: ',
-                pdfInvoiceDiscount,
-                enSize: 7.6,
-              ),
-              arabicEnglishAmountLabelSized(
-                ThermalInvoicePdfLabels.promoDiscountAr,
-                '${ThermalInvoicePdfLabels.promoDiscountEn}: ',
-                pdfPromoDiscount,
-                enSize: 7.6,
-              ),
+              if (pdfItemDiscount > 0)
+                arabicEnglishAmountLabelSized(
+                  ThermalInvoicePdfLabels.itemDiscountAr,
+                  '${ThermalInvoicePdfLabels.itemDiscountEn}: ',
+                  pdfItemDiscount,
+                  enSize: 7.6,
+                ),
+              if (pdfInvoiceDiscount > 0)
+                arabicEnglishAmountLabelSized(
+                  ThermalInvoicePdfLabels.invoiceDiscountAr,
+                  '${ThermalInvoicePdfLabels.invoiceDiscountEn}: ',
+                  pdfInvoiceDiscount,
+                  enSize: 7.6,
+                ),
+              if (pdfPromoDiscount > 0)
+                arabicEnglishAmountLabelSized(
+                  ThermalInvoicePdfLabels.promoDiscountAr,
+                  '${ThermalInvoicePdfLabels.promoDiscountEn}: ',
+                  pdfPromoDiscount,
+                  enSize: 7.6,
+                ),
               arabicEnglishAmountLabelSized(
                 ThermalInvoicePdfLabels.taxableAr,
                 '${ThermalInvoicePdfLabels.taxableEn}: ',
@@ -918,7 +928,7 @@ pw.Document buildThermalInvoicePdfDocument({
                 arabicAboveRichLabelSized(
                   ThermalInvoicePdfLabels.nextOilChangeAr,
                   '${ThermalInvoicePdfLabels.nextOilChangeEn}: ',
-                  '${NumberFormat('#,##0', 'en_US').format(invoice.nextOilChangeKm!)} km / ${pdfArabicDigits(NumberFormat('#,##0', 'en_US').format(invoice.nextOilChangeKm!))} كم',
+                  '${NumberFormat('#,##0', 'en_US').format(invoice.nextOilChangeKm!)} km',
                   enSize: 7.4,
                 ),
               ],
@@ -1077,11 +1087,8 @@ Future<Uint8List> buildThermalInvoicePdfBytes({
     addDynamicArabic(invoice.branchAddress),
     addDynamicArabic(invoice.workshopAddress),
     addDynamicArabic(invoice.cashierName),
-    addDynamicArabic(invoice.customerName),
-    addDynamicArabic(invoice.thermalDisplayedCustomerType),
-    addDynamicArabic(invoice.vehicleInfo),
-    addDynamicArabic(invoice.vehicleMake),
-    addDynamicArabic(invoice.vehicleModel),
+    // Do not auto-translate customer / vehicle free-text values in the PDF; keep them as entered.
+    // This avoids confusing mixed output such as Arabic transliteration of customer names.
     for (final item in invoice.items) addDynamicArabic(item.productName),
     for (final dept in invoice.departments)
       for (final item in dept.items) addDynamicArabic(item.productName),

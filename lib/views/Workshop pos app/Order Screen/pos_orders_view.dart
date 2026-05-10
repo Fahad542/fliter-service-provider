@@ -310,6 +310,7 @@ class _PosOrdersViewState extends State<PosOrdersView> {
         (vm.isLoading && vm.orders.isEmpty);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFFBFBFD),
       appBar: PosScreenAppBar(
         title: AppLocalizations.of(context)!.posOrdersHubTitle,
@@ -3729,75 +3730,105 @@ class _OrderSummaryPanel extends StatelessWidget {
       ],
     );
 
-    return Container(
-      margin: EdgeInsets.zero,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE8ECF3), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text(
-                  AppLocalizations.of(context)!.posOrdersOrderSummary,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                    color: Color(0xFF64748B),
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        final isVeryTight = availableHeight.isFinite && availableHeight < 260;
+
+        Widget summaryHeader() => Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                AppLocalizations.of(context)!.posOrdersOrderSummary,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                  color: Color(0xFF64748B),
                 ),
               ),
-              Expanded(
-                flex: 3,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 8,
-                          backgroundColor: const Color(0xFFF1F4F9),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF34C759),
-                          ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 8,
+                        backgroundColor: const Color(0xFFF1F4F9),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF34C759),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$completedJobs/$totalJobs',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.grey.shade600,
-                      ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$completedJobs/$totalJobs',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.grey.shade600,
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: detailChildren,
+                  ),
+                ],
               ),
             ),
+          ],
+        );
+
+        final normalContent = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            summaryHeader(),
+            const SizedBox(height: 12),
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: detailChildren,
+                ),
+              ),
+            ),
+            fixedFooter,
+          ],
+        );
+
+        final tightContent = SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              summaryHeader(),
+              const SizedBox(height: 10),
+              ...detailChildren,
+              if (detailChildren.isNotEmpty) const SizedBox(height: 12),
+              fixedFooter,
+            ],
           ),
-          fixedFooter,
-        ],
-      ),
+        );
+
+        return Container(
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE8ECF3), width: 1.5),
+          ),
+          child: isVeryTight ? tightContent : normalContent,
+        );
+      },
     );
   }
 }
